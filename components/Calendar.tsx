@@ -37,9 +37,7 @@ export default function Calendar() {
     const week: Array<{ num: number; stat?: DayStats }> = [];
     for (let i = 0; i < 7; i++) {
       if (current > 0 && current <= daysInMonth) {
-        const iso = new Date(year, month - 1, current)
-          .toISOString()
-          .slice(0, 10);
+        const iso = `${year}-${String(month).padStart(2, '0')}-${String(current).padStart(2, '0')}`;
         week.push({ num: current, stat: stats[iso] });
       } else {
         week.push({ num: 0 });
