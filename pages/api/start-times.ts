@@ -12,7 +12,9 @@ function parseDate(value: any): Date | null {
 
 function formatTime(date: Date | null): string {
   if (!date) return 'N/A';
-  return date.toISOString().slice(11, 16);
+  const h = String(date.getHours()).padStart(2, '0');
+  const m = String(date.getMinutes()).padStart(2, '0');
+  return `${h}:${m}`;
 }
 
 function calcTimes(rows: any[]) {

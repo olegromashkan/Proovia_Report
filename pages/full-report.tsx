@@ -17,6 +17,20 @@ function diffInfo(trip: Trip) {
   return { arrival: arrival.split(' ')[1], done: done.split(' ')[1], diff: d - a };
 }
 
+function calcLoad(start: string) {
+  const [h, m] = start.split(':').map(Number);
+  if (isNaN(h) || isNaN(m)) return 'N/A';
+  const date = new Date();
+  date.setHours(h);
+  date.setMinutes(m);
+  date.setSeconds(0);
+  date.setMilliseconds(0);
+  date.setMinutes(date.getMinutes() - 90);
+  const hh = String(date.getHours()).padStart(2, '0');
+  const mm = String(date.getMinutes()).padStart(2, '0');
+  return `${hh}:${mm}`;
+}
+
 interface Trip {
   ID: string;
   [key: string]: any;
@@ -225,10 +239,10 @@ export default function FullReport() {
                   <th className="border px-2 py-1">Asset</th>
                   <th className="border px-2 py-1">Driver</th>
                   <th className="border px-2 py-1">Contractor</th>
-                  <th className="border px-2 py-1">Date</th>
+                  <th className="border px-2 py-1">To WH</th>
+                  <th className="border px-2 py-1">Load Time</th>
                   <th className="border px-2 py-1">Start Time</th>
-                  <th className="border px-2 py-1">First</th>
-                  <th className="border px-2 py-1">Last</th>
+                  <th className="border px-2 py-1">From WH</th>
                   <th className="border px-2 py-1">Duration</th>
                 </tr>
               </thead>
@@ -238,9 +252,9 @@ export default function FullReport() {
                     <td className="border px-2 py-1">{r.Asset}</td>
                     <td className="border px-2 py-1">{r.Driver}</td>
                     <td className="border px-2 py-1">{r.Contractor_Name}</td>
-                    <td className="border px-2 py-1">{r.Date}</td>
-                    <td className="border px-2 py-1">{r.Start_Time}</td>
                     <td className="border px-2 py-1">{r.First_Mention_Time}</td>
+                    <td className="border px-2 py-1">{calcLoad(r.Start_Time)}</td>
+                    <td className="border px-2 py-1">{r.Start_Time}</td>
                     <td className="border px-2 py-1">{r.Last_Mention_Time}</td>
                     <td className="border px-2 py-1">{r.Duration}</td>
                   </tr>
