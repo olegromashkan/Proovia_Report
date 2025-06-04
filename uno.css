@@ -1,1 +1,4 @@
 @unocss all;
+body {
+  font-family: Arial, sans-serif;
+}

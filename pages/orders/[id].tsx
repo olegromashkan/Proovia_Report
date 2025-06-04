@@ -4,9 +4,30 @@ import Layout from '../../components/Layout';
 
 type Data = Record<string, any>;
 
+const HIDDEN_PATTERNS = [
+  'Is_Locked',
+  'Route',
+  'Drivers',
+  'Checksum',
+  'OptimoId',
+  'isLast',
+  'Order_Link',
+  'Trip',
+  'Address1',
+  'Tasks_Ref',
+  'Current_Location',
+  'Driver_Total',
+  'Warehouse_Locations',
+  'Longitude',
+  'is_Geocoded',
+  'Latitude',
+  'ID',
+];
+
 function categorize(data: Data) {
   const categories: Record<string, [string, any][]> = {};
   for (const [key, value] of Object.entries(data)) {
+    if (HIDDEN_PATTERNS.some((p) => key.includes(p))) continue;
     const parts = key.split('.');
     const group = parts.length > 1 ? parts[0] : 'General';
     const label = parts.length > 1 ? parts.slice(1).join('.') : parts[0];
