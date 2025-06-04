@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Layout from '../components/Layout';
+import TripModal from '../components/TripModal';
 
 function parseMinutes(str: string) {
   const time = str.split(' ')[1] || str;
@@ -32,7 +33,10 @@ export default function FullReport() {
   const [end, setEnd] = useState(today);
   const [trips, setTrips] = useState<Trip[]>([]);
   const [statusFilter, setStatusFilter] = useState('');
+  const [driverFilter, setDriverFilter] = useState('');
   const [search, setSearch] = useState('');
+  const [drivers, setDrivers] = useState<string[]>([]);
+  const [selected, setSelected] = useState<Trip | null>(null);
   const [startData, setStartData] = useState<any[]>([]);
   const [filterField, setFilterField] = useState('');
   const [filterOp, setFilterOp] = useState('contains');
@@ -43,7 +47,10 @@ export default function FullReport() {
     const res = await fetch(`/api/report?start=${start}&end=${end}`);
     if (res.ok) {
       const data = await res.json();
-      setTrips(data.items as Trip[]);
+      const items = data.items as Trip[];
+      setTrips(items);
+      const unique = Array.from(new Set(items.map((t) => t['Trip.Driver1']))).sort();
+      setDrivers(unique);
     }
     const resStart = await fetch(`/api/start-times?start=${start}&end=${end}`);
     if (resStart.ok) {
@@ -89,9 +96,12 @@ export default function FullReport() {
     const matchesStatus =
       !statusFilter || t.Status.toLowerCase() === statusFilter.toLowerCase();
     const matchesSearch = search
-      ? String(t['Order.OrderNumber']).includes(search)
+      ? String(t['Order.OrderNumber']).includes(search) ||
+        (t['Trip.Driver1'] || '').toLowerCase().includes(search.toLowerCase()) ||
+        (t['Address.Postcode'] || '').toLowerCase().includes(search.toLowerCase())
       : true;
-    return matchesStatus && matchesSearch && filterMatch(t);
+    const matchesDriver = !driverFilter || (t['Trip.Driver1'] || '') === driverFilter;
+    return matchesStatus && matchesSearch && matchesDriver && filterMatch(t);
   });
 
   return (
@@ -124,9 +134,43 @@ export default function FullReport() {
           <option value="Complete">Complete</option>
           <option value="Failed">Failed</option>
         </select>
+        <select
+          value={driverFilter}
+          onChange={(e) => setDriverFilter(e.target.value)}
+          className="border p-1 rounded"
+        >
+          <option value="">All drivers</option>
+          {drivers.map((d) => (
+            <option key={d} value={d}>
+              {d}
+            </option>
+          ))}
+        </select>
+        <button
+          onClick={() => setStatusFilter('Failed')}
+          className="border px-2 py-1 rounded bg-red-100"
+        >
+          Failed
+        </button>
+        <button
+          onClick={() => setStatusFilter('Complete')}
+          className="border px-2 py-1 rounded bg-green-100"
+        >
+          Complete
+        </button>
+        <button
+          onClick={() => {
+            setStatusFilter('');
+            setDriverFilter('');
+            setSearch('');
+          }}
+          className="border px-2 py-1 rounded"
+        >
+          Reset
+        </button>
         <input
           type="text"
-          placeholder="Search order"
+          placeholder="Search..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           className="border p-1 rounded"
@@ -226,7 +270,11 @@ export default function FullReport() {
               const postcode = trip['Address.Postcode'] || '';
               const auction = trip.Auction ?? trip['Auction'];
               return (
-                <div key={trip.ID} className="bg-white rounded shadow p-3 space-y-1">
+                <div
+                  key={trip.ID}
+                  className="bg-white rounded shadow p-3 space-y-1 cursor-pointer"
+                  onClick={() => setSelected(trip)}
+                >
                   <div className="flex justify-between items-center">
                     <Link href={`/orders/${trip.ID}`} className="font-semibold hover:underline">
                       #{trip['Order.OrderNumber']}
@@ -249,6 +297,7 @@ export default function FullReport() {
         </div>
       </div>
 
+      <TripModal trip={selected} onClose={() => setSelected(null)} allTrips={trips} />
     </Layout>
   );
 }
