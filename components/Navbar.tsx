@@ -14,6 +14,11 @@ export default function Navbar() {
             <span className="hover:underline">Upload</span>
           </Link>
         </li>
+        <li>
+          <Link href="/admin">
+            <span className="hover:underline">Admin</span>
+          </Link>
+        </li>
       </ul>
     </nav>
   );
