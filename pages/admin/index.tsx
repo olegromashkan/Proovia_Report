@@ -65,6 +65,12 @@ export default function Admin() {
                 <td className="border px-2">{item.id}</td>
                 <td className="border px-2">{item.created_at}</td>
                 <td className="border px-2">
+                  <a
+                    href={`/admin/${table}/${item.id}`}
+                    className="text-blue-600 hover:underline mr-2"
+                  >
+                    Edit
+                  </a>
                   <button
                     onClick={() => handleDelete(item.id)}
                     className="text-red-600 hover:underline"
