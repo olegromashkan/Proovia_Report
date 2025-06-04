@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import OrderCard from './OrderCard';
 
 interface Result {
   id: string;
@@ -10,6 +11,7 @@ export default function SearchOverlay({ open, onClose }: { open: boolean; onClos
   const [q, setQ] = useState('');
   const [results, setResults] = useState<Result[]>([]);
   const [suggest, setSuggest] = useState<string[]>([]);
+  const [selected, setSelected] = useState<any | null>(null);
 
   useEffect(() => {
     if (!q) {
@@ -27,6 +29,14 @@ export default function SearchOverlay({ open, onClose }: { open: boolean; onClos
       .catch(() => {});
     return () => controller.abort();
   }, [q]);
+
+  const selectResult = async (id: string) => {
+    const res = await fetch(`/api/items?table=copy_of_tomorrow_trips&id=${id}`);
+    if (res.ok) {
+      const data = await res.json();
+      setSelected(data.item?.data || null);
+    }
+  };
 
   if (!open) return null;
 
@@ -48,11 +58,21 @@ export default function SearchOverlay({ open, onClose }: { open: boolean; onClos
         )}
         <ul>
           {results.map(r => (
-            <li key={r.id} className="border-b py-1">
-              {r.order} {r.postcode && (<span className="text-gray-500">({r.postcode})</span>)}
+            <li
+              key={r.id}
+              className="border-b py-1 cursor-pointer hover:bg-gray-100"
+              onClick={() => selectResult(r.id)}
+            >
+              {r.order}{' '}
+              {r.postcode && <span className="text-gray-500">({r.postcode})</span>}
             </li>
           ))}
         </ul>
+        {selected && (
+          <div className="mt-4">
+            <OrderCard data={selected} />
+          </div>
+        )}
         {suggest.length > 0 && (
           <div className="mt-2 text-sm text-gray-500">
             <div>Did you mean:</div>

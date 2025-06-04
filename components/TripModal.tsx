@@ -70,15 +70,36 @@ export default function TripModal({ trip, onClose, allTrips }: Props) {
   if (!trip) return null;
 
   return (
-    <Modal open={!!trip} onClose={onClose}>
-      <h2 className="text-xl font-bold mb-2">
-        Order #{trip['Order.OrderNumber']}
-      </h2>
-      <div className="mb-2 text-sm">Driver: {trip['Trip.Driver1']}</div>
-      <div ref={mapRef} className="h-48 w-full mb-4" />
-      <canvas ref={chartRef} className="w-full h-40 mb-4" />
-      <div className="max-h-80 overflow-auto">
-        <OrderView data={trip} />
+    <Modal open={!!trip} onClose={onClose} className="max-w-5xl">
+      <div className="grid md:grid-cols-2 gap-4">
+        <div>
+          <h2 className="text-xl font-bold mb-2">
+            <a
+              href={`https://creatorapp.zoho.eu/dragrusu/copy-of-steeltrans-new/#Report:Copy_of_Tomorrow_trips?Order.OrderNumber=${trip['Order.OrderNumber']}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hover:underline"
+            >
+              Order #{trip['Order.OrderNumber']}
+            </a>
+          </h2>
+          <div className="mb-2 text-sm flex gap-4">
+            <span>Driver: {trip['Trip.Driver1']}</span>
+            <a
+              href={`https://crm.proovia.uk/event-stream/order?search=${trip['Order.OrderNumber']}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-blue-600 hover:underline"
+            >
+              View photos
+            </a>
+          </div>
+          <div ref={mapRef} className="h-48 w-full mb-4" />
+          <canvas ref={chartRef} className="w-full h-40" />
+        </div>
+        <div className="max-h-[70vh] overflow-auto">
+          <OrderView data={trip} />
+        </div>
       </div>
     </Modal>
   );
