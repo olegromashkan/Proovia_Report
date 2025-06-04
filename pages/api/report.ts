@@ -41,13 +41,5 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
       return iso >= startDate && iso <= endDate;
     });
 
-  const rows = db
-    .prepare(
-      `SELECT data FROM copy_of_tomorrow_trips WHERE date(created_at) BETWEEN date(?) AND date(?)`
-    )
-    .all(startDate, endDate);
-
-  const items = rows.map((r: any) => JSON.parse(r.data));
- main
   res.status(200).json({ items });
 }
