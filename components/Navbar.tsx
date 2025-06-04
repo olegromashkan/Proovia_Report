@@ -19,6 +19,11 @@ export default function Navbar() {
             <span className="hover:underline">Admin</span>
           </Link>
         </li>
+        <li>
+          <Link href="/full-report">
+            <span className="hover:underline">Full Report</span>
+          </Link>
+        </li>
       </ul>
     </nav>
   );
