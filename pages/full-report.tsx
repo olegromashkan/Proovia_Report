@@ -104,7 +104,7 @@ export default function FullReport() {
   });
 
   return (
-    <Layout title="Full Report">
+    <Layout title="Full Report" fullWidth>
       <div className="flex flex-wrap gap-2 items-end mb-4">
         <input
           type="date"

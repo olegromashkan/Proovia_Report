@@ -5,9 +5,10 @@ import Navbar from './Navbar';
 interface LayoutProps {
   children: ReactNode;
   title?: string;
+  fullWidth?: boolean;
 }
 
-export default function Layout({ children, title }: LayoutProps) {
+export default function Layout({ children, title, fullWidth }: LayoutProps) {
   return (
     <>
       <Head>
@@ -23,7 +24,13 @@ export default function Layout({ children, title }: LayoutProps) {
       </Head>
       <div className="min-h-screen bg-gradient-to-br from-slate-100 to-white text-gray-800">
         <Navbar />
-        <main className="max-w-screen-xl mx-auto p-4 space-y-4">{children}</main>
+        <main
+          className={
+            fullWidth ? 'p-4 space-y-4' : 'max-w-screen-xl mx-auto p-4 space-y-4'
+          }
+        >
+          {children}
+        </main>
       </div>
     </>
   );
