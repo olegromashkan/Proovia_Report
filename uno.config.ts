@@ -1,5 +1,12 @@
-import { defineConfig, presetUno } from 'unocss';
+import { defineConfig, presetWind3 } from 'unocss'
 
 export default defineConfig({
-  presets: [presetUno()],
-});
+  content: {
+    filesystem: [
+      '**/*.{html,js,ts,jsx,tsx,vue,svelte,astro}',
+    ],
+  },
+  presets: [
+    presetWind3(),
+  ],
+})

@@ -1,6 +1,7 @@
+import UnoCSS from '@unocss/postcss'
+
 export default {
-    plugins: {
-      '@unocss/postcss': {},
-    },
-  };
-  
+  plugins: [
+    UnoCSS(),
+  ],
+}
