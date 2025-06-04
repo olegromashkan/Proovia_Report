@@ -1,5 +1,5 @@
-import { defineConfig, presetWind } from 'unocss';
+import { defineConfig, presetUno } from 'unocss';
 
 export default defineConfig({
-  presets: [presetWind()],
+  presets: [presetUno()],
 });
