@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import Head from 'next/head';
-import Navbar from '../components/Navbar';
+import Navbar from '../../components/Navbar';
 
 const TABLES = [
   'copy_of_tomorrow_trips',
