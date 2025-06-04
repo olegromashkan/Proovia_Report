@@ -21,10 +21,35 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
   }
 
   if (req.method === 'GET') {
+    if (typeof id === 'string') {
+      const row = db
+        .prepare(`SELECT id, created_at, data FROM ${table} WHERE id = ?`)
+        .get(id);
+      if (!row) {
+        return res.status(404).json({ message: 'Not found' });
+      }
+      return res.status(200).json({ item: { ...row, data: JSON.parse(row.data) } });
+    }
+
     const rows = db
       .prepare(`SELECT id, created_at FROM ${table} ORDER BY created_at DESC`)
       .all();
     return res.status(200).json({ items: rows });
+  }
+
+  if (req.method === 'PUT') {
+    if (typeof id !== 'string') {
+      return res.status(400).json({ message: 'Missing id' });
+    }
+    if (typeof req.body !== 'object' || req.body === null) {
+      return res.status(400).json({ message: 'Invalid body' });
+    }
+
+    db.prepare(`UPDATE ${table} SET data = ? WHERE id = ?`).run(
+      JSON.stringify(req.body),
+      id
+    );
+    return res.status(200).json({ message: 'Updated' });
   }
 
   if (req.method === 'DELETE') {
