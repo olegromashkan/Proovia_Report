@@ -60,6 +60,11 @@ function calcTimes(rows: any[]) {
 }
 
 export default function handler(req: NextApiRequest, res: NextApiResponse) {
+  const { start, end } = req.query;
+  const startStr = typeof start === 'string' ? start : '';
+  const endStr = typeof end === 'string' ? end : '';
+  const startDate = startStr ? new Date(startStr) : null;
+  const endDate = endStr ? new Date(endStr + 'T23:59:59') : null;
   const csvRows = db.prepare('SELECT data FROM csv_trips').all();
   const events = db.prepare('SELECT data FROM event_stream').all();
   const schedules = db.prepare('SELECT data FROM schedule_trips').all();
@@ -98,6 +103,13 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
     const d2 = parseDate(row['End At']);
     row['Start At'] = d1;
     row['End At'] = d2;
+    const dateIso = (d1 || d2)?.toISOString().slice(0, 10) ?? null;
+    if (
+      (startDate && dateIso && dateIso < startStr) ||
+      (endDate && dateIso && dateIso > endStr)
+    ) {
+      return;
+    }
     const asset = row['Asset'];
     if (!groups[asset]) groups[asset] = [];
     groups[asset].push(row);
