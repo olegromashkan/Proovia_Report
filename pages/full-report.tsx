@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import Link from 'next/link';
 import Layout from '../components/Layout';
 import TripModal from '../components/TripModal';
 
@@ -276,9 +275,7 @@ export default function FullReport() {
                   onClick={() => setSelected(trip)}
                 >
                   <div className="flex justify-between items-center">
-                    <Link href={`/orders/${trip.ID}`} className="font-semibold hover:underline">
-                      #{trip['Order.OrderNumber']}
-                    </Link>
+                    <span className="font-semibold">#{trip['Order.OrderNumber']}</span>
                     <i className={`fa-solid ${statusIcon}`} />
                   </div>
                   {driver && (
