@@ -41,14 +41,15 @@ export default function FullReport() {
       const data = await res.json();
       setTrips(data.items as Trip[]);
     }
+    const resStart = await fetch(`/api/start-times?start=${start}&end=${end}`);
+    if (resStart.ok) {
+      const d = await resStart.json();
+      setStartData(d.items || []);
+    }
   };
 
   useEffect(() => {
     fetchTrips();
-    fetch('/api/start-times')
-      .then((res) => (res.ok ? res.json() : Promise.reject()))
-      .then((d) => setStartData(d.items || []))
-      .catch(() => {});
   }, []);
 
   const total = trips.length;
@@ -77,38 +78,98 @@ export default function FullReport() {
         </button>
       </div>
 
-      {startData.length > 0 && (
-        <div className="overflow-x-auto mt-6">
+      <div className="flex flex-col lg:flex-row gap-4 mt-6">
+        {startData.length > 0 && (
+          <div className="overflow-x-auto flex-1">
+            <table className="min-w-full text-sm border rounded-lg overflow-hidden">
+              <thead className="bg-gray-100">
+                <tr>
+                  <th className="border px-2 py-1">Asset</th>
+                  <th className="border px-2 py-1">Driver</th>
+                  <th className="border px-2 py-1">Contractor</th>
+                  <th className="border px-2 py-1">Date</th>
+                  <th className="border px-2 py-1">Start Time</th>
+                  <th className="border px-2 py-1">First</th>
+                  <th className="border px-2 py-1">Last</th>
+                  <th className="border px-2 py-1">Duration</th>
+                </tr>
+              </thead>
+              <tbody>
+                {startData.map((r, idx) => (
+                  <tr key={idx} className="odd:bg-gray-50">
+                    <td className="border px-2 py-1">{r.Asset}</td>
+                    <td className="border px-2 py-1">{r.Driver}</td>
+                    <td className="border px-2 py-1">{r.Contractor_Name}</td>
+                    <td className="border px-2 py-1">{r.Date}</td>
+                    <td className="border px-2 py-1">{r.Start_Time}</td>
+                    <td className="border px-2 py-1">{r.First_Mention_Time}</td>
+                    <td className="border px-2 py-1">{r.Last_Mention_Time}</td>
+                    <td className="border px-2 py-1">{r.Duration}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+        <div className="overflow-x-auto flex-1">
           <table className="min-w-full text-sm border rounded-lg overflow-hidden">
             <thead className="bg-gray-100">
               <tr>
-                <th className="border px-2 py-1">Asset</th>
-                <th className="border px-2 py-1">Driver</th>
-                <th className="border px-2 py-1">Contractor</th>
-                <th className="border px-2 py-1">Date</th>
-                <th className="border px-2 py-1">Start Time</th>
-                <th className="border px-2 py-1">First</th>
-                <th className="border px-2 py-1">Last</th>
-                <th className="border px-2 py-1">Duration</th>
+                <th className="border px-2 py-1 text-left">Order #</th>
+                <th className="border px-2 py-1 text-left">Description</th>
+                <th className="border px-2 py-1 text-left">Status</th>
+                <th className="border px-2 py-1 text-left">Punctuality</th>
               </tr>
             </thead>
             <tbody>
-              {startData.map((r, idx) => (
-                <tr key={idx} className="odd:bg-gray-50">
-                  <td className="border px-2 py-1">{r.Asset}</td>
-                  <td className="border px-2 py-1">{r.Driver}</td>
-                  <td className="border px-2 py-1">{r.Contractor_Name}</td>
-                  <td className="border px-2 py-1">{r.Date}</td>
-                  <td className="border px-2 py-1">{r.Start_Time}</td>
-                  <td className="border px-2 py-1">{r.First_Mention_Time}</td>
-                  <td className="border px-2 py-1">{r.Last_Mention_Time}</td>
-                  <td className="border px-2 py-1">{r.Duration}</td>
-                </tr>
-              ))}
+              {filtered.map((trip) => {
+                const info = diffInfo(trip);
+                const diff = info ? info.diff : 0;
+                const abs = Math.abs(diff);
+                const minutes = Math.round(abs);
+                const diffClass =
+                  abs > 30
+                    ? diff > 0
+                      ? 'text-blue-600 font-semibold'
+                      : 'text-red-600 font-semibold'
+                    : '';
+                const statusIcon =
+                  trip.Status === 'Complete'
+                    ? '✅'
+                    : trip.Status === 'Failed'
+                    ? '❌'
+                    : '⌛';
+                const desc =
+                  trip.Description ||
+                  trip['Order.Description'] ||
+                  trip['Address.Postcode'] ||
+                  '';
+                return (
+                  <tr key={trip.ID} className="odd:bg-gray-50 hover:bg-gray-100 transition-colors">
+                    <td className="border px-2 py-1 whitespace-nowrap">
+                      <Link href={`/orders/${trip.ID}`}>#{trip['Order.OrderNumber']}</Link>
+                    </td>
+                    <td className="border px-2 py-1 break-all">{desc}</td>
+                    <td className="border px-2 py-1 whitespace-nowrap">
+                      {statusIcon} {trip.Status}
+                    </td>
+                    <td className={`border px-2 py-1 whitespace-nowrap ${diffClass}`}>
+                      {info ? (
+                        <>
+                          {info.done?.slice(0, 5)} - {info.arrival?.slice(0, 5)}{' '}
+                          {minutes}m {diff >= 0 ? 'early' : 'late'}
+                        </>
+                      ) : (
+                        'N/A'
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
-      )}
+      </div>
 
       <div className="flex space-x-4">
         <div className="p-2 bg-gray-100 rounded">Total: {total}</div>
@@ -135,64 +196,6 @@ export default function FullReport() {
         />
       </div>
 
-      <div className="overflow-x-auto">
-        <table className="min-w-full text-sm border rounded-lg overflow-hidden">
-          <thead className="bg-gray-100">
-            <tr>
-              <th className="border px-2 py-1 text-left">Order #</th>
-              <th className="border px-2 py-1 text-left">Description</th>
-              <th className="border px-2 py-1 text-left">Status</th>
-              <th className="border px-2 py-1 text-left">Punctuality</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filtered.map((trip) => {
-              const info = diffInfo(trip);
-              const diff = info ? info.diff : 0;
-              const abs = Math.abs(diff);
-              const minutes = Math.round(abs);
-              const diffClass =
-                abs > 30
-                  ? diff > 0
-                    ? 'text-blue-600 font-semibold'
-                    : 'text-red-600 font-semibold'
-                  : '';
-              const statusIcon =
-                trip.Status === 'Complete'
-                  ? '✅'
-                  : trip.Status === 'Failed'
-                  ? '❌'
-                  : '⌛';
-              const desc =
-                trip.Description ||
-                trip['Order.Description'] ||
-                trip['Address.Postcode'] ||
-                '';
-              return (
-                <tr key={trip.ID} className="odd:bg-gray-50 hover:bg-gray-100 transition-colors">
-                  <td className="border px-2 py-1 whitespace-nowrap">
-                    <Link href={`/orders/${trip.ID}`}>#{trip['Order.OrderNumber']}</Link>
-                  </td>
-                  <td className="border px-2 py-1 break-all">{desc}</td>
-                  <td className="border px-2 py-1 whitespace-nowrap">
-                    {statusIcon} {trip.Status}
-                  </td>
-                  <td className={`border px-2 py-1 whitespace-nowrap ${diffClass}`}>
-                    {info ? (
-                      <>
-                        {info.done?.slice(0, 5)} - {info.arrival?.slice(0, 5)} ={' '}
-                        {minutes}m {diff >= 0 ? 'early' : 'late'}
-                      </>
-                    ) : (
-                      'N/A'
-                    )}
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
     </Layout>
   );
 }
