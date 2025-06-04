@@ -1,8 +1,7 @@
 // postcss.config.js
-// Use the dedicated Tailwind CSS PostCSS plugin that ships separately in
-// Tailwind v4+. This avoids the build error where `tailwindcss` is used as a
-// plugin directly.
-import tailwindcss from '@tailwindcss/postcss';
+// Use the standard Tailwind CSS PostCSS plugin. The experimental
+// `@tailwindcss/postcss` package can cause build issues in some setups.
+import tailwindcss from 'tailwindcss';
 import autoprefixer from 'autoprefixer';
 
 export default {
