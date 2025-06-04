@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import Layout from '../components/Layout';
 import Card from '../components/Card';
 import Modal from '../components/Modal';
+import Calendar from '../components/Calendar';
 
 type Summary = { total: number; complete: number; failed: number; avgPunctuality: number };
 
@@ -31,6 +32,8 @@ export default function Home() {
           <Card key={c.id} title={c.title} value={c.value} onClick={() => setOpen(c.id)} />
         ))}
       </div>
+
+      <Calendar />
 
       <Modal open={!!open} onClose={() => setOpen(null)}>
         <h2 className="text-xl font-bold mb-2">{cards.find(c => c.id === open)?.title}</h2>
