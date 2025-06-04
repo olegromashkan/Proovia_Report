@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import Modal from './Modal';
+import OrderView from './OrderView';
 
 interface Trip {
   ID: string;
@@ -75,7 +76,10 @@ export default function TripModal({ trip, onClose, allTrips }: Props) {
       </h2>
       <div className="mb-2 text-sm">Driver: {trip['Trip.Driver1']}</div>
       <div ref={mapRef} className="h-48 w-full mb-4" />
-      <canvas ref={chartRef} className="w-full h-40" />
+      <canvas ref={chartRef} className="w-full h-40 mb-4" />
+      <div className="max-h-80 overflow-auto">
+        <OrderView data={trip} />
+      </div>
     </Modal>
   );
 }
