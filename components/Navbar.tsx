@@ -2,26 +2,26 @@ import Link from 'next/link';
 
 export default function Navbar() {
   return (
-    <nav className="navbar">
-      <ul>
+    <nav className="bg-gray-800 p-4 text-white">
+      <ul className="flex gap-4 list-none m-0 p-0">
         <li>
-          <Link href="/">
-            <span className="hover:underline">Home</span>
+          <Link href="/" className="hover:underline">
+            Home
           </Link>
         </li>
         <li>
-          <Link href="/upload">
-            <span className="hover:underline">Upload</span>
+          <Link href="/upload" className="hover:underline">
+            Upload
           </Link>
         </li>
         <li>
-          <Link href="/admin">
-            <span className="hover:underline">Admin</span>
+          <Link href="/admin" className="hover:underline">
+            Admin
           </Link>
         </li>
         <li>
-          <Link href="/full-report">
-            <span className="hover:underline">Full Report</span>
+          <Link href="/full-report" className="hover:underline">
+            Full Report
           </Link>
         </li>
       </ul>
