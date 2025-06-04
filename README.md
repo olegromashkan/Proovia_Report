@@ -21,6 +21,12 @@ and saves it into an SQLite database (`database.db`). If the server is running
 on a machine connected to your local network or via Tailscale, the API will be
 reachable on that network as well.
 
+## Managing uploaded data
+
+Navigate to `/admin` to view a list of rows in each database table. Each entry
+has an **Edit** link that lets you inspect and modify the stored JSON directly
+in a text area. Changes are saved back to the database via the same API.
+
 ## Uploading data
 
 Navigate to `/upload` in the browser and select a `.json` file with the
