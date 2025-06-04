@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
-import Head from 'next/head';
-import Navbar from '../components/Navbar';
+import Layout from '../components/Layout';
 
 interface Trip {
   ID: string;
@@ -34,45 +33,39 @@ export default function FullReport() {
   const failed = trips.filter(t => t.Status === 'Failed').length;
 
   return (
-    <>
-      <Head>
-        <title>Full Report</title>
-      </Head>
-      <Navbar />
-      <main className="p-4 space-y-4">
-        <div className="space-x-2">
-          <input type="date" value={start} onChange={e => setStart(e.target.value)} />
-          <input type="date" value={end} onChange={e => setEnd(e.target.value)} />
-          <button onClick={fetchTrips} className="px-4 py-2 bg-blue-600 text-white rounded">Load</button>
-        </div>
-        <div className="flex space-x-4">
-          <div className="p-2 bg-gray-100 rounded">Total: {total}</div>
-          <div className="p-2 bg-green-100 rounded">Complete: {complete}</div>
-          <div className="p-2 bg-red-100 rounded">Failed: {failed}</div>
-        </div>
-        <table className="min-w-full border">
-          <thead>
-            <tr>
-              <th className="border px-2">Order Number</th>
-              <th className="border px-2">Auction</th>
-              <th className="border px-2">Driver</th>
-              <th className="border px-2">Postcode</th>
-              <th className="border px-2">Status</th>
+    <Layout title="Full Report">
+      <div className="space-x-2">
+        <input type="date" value={start} onChange={e => setStart(e.target.value)} />
+        <input type="date" value={end} onChange={e => setEnd(e.target.value)} />
+        <button onClick={fetchTrips} className="px-4 py-2 bg-blue-600 text-white rounded">Load</button>
+      </div>
+      <div className="flex space-x-4">
+        <div className="p-2 bg-gray-100 rounded">Total: {total}</div>
+        <div className="p-2 bg-green-100 rounded">Complete: {complete}</div>
+        <div className="p-2 bg-red-100 rounded">Failed: {failed}</div>
+      </div>
+      <table className="min-w-full border">
+        <thead>
+          <tr>
+            <th className="border px-2">Order Number</th>
+            <th className="border px-2">Auction</th>
+            <th className="border px-2">Driver</th>
+            <th className="border px-2">Postcode</th>
+            <th className="border px-2">Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          {trips.map(trip => (
+            <tr key={trip.ID}>
+              <td className="border px-2">{trip["Order.OrderNumber"]}</td>
+              <td className="border px-2">{trip["Order.Auction"]}</td>
+              <td className="border px-2">{trip["Trip.Driver1"]}</td>
+              <td className="border px-2">{trip["Address.Postcode"]}</td>
+              <td className="border px-2">{trip.Status}</td>
             </tr>
-          </thead>
-          <tbody>
-            {trips.map(trip => (
-              <tr key={trip.ID}>
-                <td className="border px-2">{trip["Order.OrderNumber"]}</td>
-                <td className="border px-2">{trip["Order.Auction"]}</td>
-                <td className="border px-2">{trip["Trip.Driver1"]}</td>
-                <td className="border px-2">{trip["Address.Postcode"]}</td>
-                <td className="border px-2">{trip.Status}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </main>
-    </>
+          ))}
+        </tbody>
+      </table>
+    </Layout>
   );
 }
