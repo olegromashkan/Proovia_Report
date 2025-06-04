@@ -112,6 +112,7 @@ export default function FullReport() {
               const info = diffInfo(trip);
               const diff = info ? info.diff : 0;
               const abs = Math.abs(diff);
+              const minutes = Math.round(abs);
               const diffClass =
                 abs > 30
                   ? diff > 0
@@ -142,8 +143,7 @@ export default function FullReport() {
                     {info ? (
                       <>
                         {info.done?.slice(0, 5)} - {info.arrival?.slice(0, 5)} ={' '}
-                        {diff >= 0 ? diff : -diff}m{' '}
-                        {diff >= 0 ? 'early' : 'late'}
+                        {minutes}m {diff >= 0 ? 'early' : 'late'}
                       </>
                     ) : (
                       'N/A'
