@@ -1,10 +1,78 @@
-@config "../tailwind.config.js";
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
-
-@layer base {
-  body {
-    @apply bg-gray-50 text-gray-900;
-  }
+/* Global styles replacing Tailwind */
+body {
+  background-color: #f9fafb; /* gray-50 */
+  color: #111827; /* gray-900 */
+  font-family: sans-serif;
+  margin: 0;
 }
+
+.page {
+  min-height: 100vh;
+}
+
+.container {
+  max-width: 64rem;
+  margin-left: auto;
+  margin-right: auto;
+  padding: 1rem;
+}
+
+.navbar {
+  background-color: #1f2937; /* gray-800 */
+  padding: 1rem;
+}
+
+.navbar ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  gap: 1rem;
+  color: white;
+}
+
+.navbar a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.navbar a:hover {
+  text-decoration: underline;
+}
+
+/* Utility classes mimicking Tailwind used in the project */
+.flex { display: flex; }
+.space-x-2 > :not(:last-child) { margin-right: 0.5rem; }
+.space-x-4 > :not(:last-child) { margin-right: 1rem; }
+.space-y-4 > :not(:last-child) { margin-bottom: 1rem; }
+.p-1 { padding: 0.25rem; }
+.p-2 { padding: 0.5rem; }
+.p-4 { padding: 1rem; }
+.px-2 { padding-left: 0.5rem; padding-right: 0.5rem; }
+.px-4 { padding-left: 1rem; padding-right: 1rem; }
+.py-2 { padding-top: 0.5rem; padding-bottom: 0.5rem; }
+.mb-4 { margin-bottom: 1rem; }
+.mr-2 { margin-right: 0.5rem; }
+.w-full { width: 100%; }
+.h-64 { height: 16rem; }
+.min-w-full { min-width: 100%; }
+.border { border: 1px solid #ddd; }
+.rounded { border-radius: 0.25rem; }
+.bg-gray-100 { background-color: #f3f4f6; }
+.bg-gray-50 { background-color: #f9fafb; }
+.bg-gray-800 { background-color: #1f2937; }
+.bg-green-100 { background-color: #d1fae5; }
+.bg-red-100 { background-color: #fee2e2; }
+.bg-blue-600 { background-color: #2563eb; }
+.text-white { color: white; }
+.text-red-600 { color: #dc2626; }
+.text-blue-600 { color: #2563eb; }
+.text-gray-900 { color: #111827; }
+.text-sm { font-size: 0.875rem; }
+.text-2xl { font-size: 1.5rem; }
+.font-bold { font-weight: 700; }
+.font-semibold { font-weight: 600; }
+.font-mono { font-family: monospace; }
+.list-disc { list-style-type: disc; }
+.list-inside { list-style-position: inside; }
+.hover\:underline:hover { text-decoration: underline; }
