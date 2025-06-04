@@ -19,12 +19,10 @@
     "better-sqlite3": "^9.0.0"
   },
   "devDependencies": {
-    "@tailwindcss/postcss": "^4.1.8",
     "@types/node": "latest",
     "@types/react": "latest",
-    "autoprefixer": "^10.4.21",
-    "postcss": "latest",
-    "tailwindcss": "^4.1.8",
-    "typescript": "latest"
+    "typescript": "latest",
+    "@unocss/next": "latest",
+    "unocss": "latest"
   }
 }

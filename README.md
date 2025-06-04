@@ -1,6 +1,6 @@
 # Proovia Report
 
-This project uses **Next.js** with Tailwind CSS and a small SQLite database.
+This project uses **Next.js** with UnoCSS and a small SQLite database.
 
 ## Development
 
