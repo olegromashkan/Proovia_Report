@@ -31,17 +31,17 @@ export default function SearchOverlay({ open, onClose }: { open: boolean; onClos
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-40 flex items-start justify-center p-4 z-20">
-      <div className="bg-white rounded shadow-lg w-full max-w-xl p-4">
+    <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-start justify-center p-4 z-20">
+      <div className="bg-white rounded-lg shadow-xl w-full max-w-xl p-6">
         <div className="flex justify-between mb-2">
           <input
             autoFocus
             value={q}
             onChange={(e) => setQ(e.target.value)}
             placeholder="Search..."
-            className="border p-1 flex-grow mr-2"
+            className="border p-1 flex-grow mr-2 rounded"
           />
-          <button onClick={onClose}>✖</button>
+          <button onClick={onClose} className="px-2">✖</button>
         </div>
         {results.length === 0 && q && (
           <div className="text-sm text-gray-500">No exact matches</div>

@@ -98,7 +98,7 @@ export default function FullReport() {
       </div>
 
       <div className="overflow-x-auto">
-        <table className="min-w-full text-sm border">
+        <table className="min-w-full text-sm border rounded-lg overflow-hidden">
           <thead className="bg-gray-100">
             <tr>
               <th className="border px-2 py-1 text-left">Order #</th>
@@ -131,7 +131,7 @@ export default function FullReport() {
                 trip['Address.Postcode'] ||
                 '';
               return (
-                <tr key={trip.ID} className="odd:bg-gray-50">
+                <tr key={trip.ID} className="odd:bg-gray-50 hover:bg-gray-100 transition-colors">
                   <td className="border px-2 py-1 whitespace-nowrap">
                     <Link href={`/orders/${trip.ID}`}>#{trip['Order.OrderNumber']}</Link>
                   </td>

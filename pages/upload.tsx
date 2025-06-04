@@ -54,8 +54,8 @@ export default function Upload() {
   return (
     <Layout title="Upload JSON">
       <h1 className="text-2xl font-bold">Upload JSON</h1>
-      <input type="file" accept=".json" onChange={handleFile} />
-      <progress className="w-full" value={progress} max={100}></progress>
+      <input type="file" accept=".json" onChange={handleFile} className="block mb-2" />
+      <progress className="w-full h-2 rounded" value={progress} max={100}></progress>
       {message && <p>{message}</p>}
       {logs.length > 0 && (
         <div className="bg-gray-100 p-2 rounded">
