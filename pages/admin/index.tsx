@@ -45,7 +45,7 @@ export default function Admin() {
             </option>
           ))}
         </select>
-        <table className="min-w-full border">
+        <table className="min-w-full border rounded-lg overflow-hidden text-sm">
           <thead>
             <tr>
               <th className="border px-2">ID</th>
@@ -55,7 +55,7 @@ export default function Admin() {
           </thead>
           <tbody>
             {items.map((item) => (
-              <tr key={item.id}>
+              <tr key={item.id} className="odd:bg-gray-50 hover:bg-gray-100 transition-colors">
                 <td className="border px-2">{item.id}</td>
                 <td className="border px-2">{item.created_at}</td>
                 <td className="border px-2">

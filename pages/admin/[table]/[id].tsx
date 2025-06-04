@@ -39,12 +39,12 @@ export default function ItemEditor() {
     <Layout title="Edit Item">
       <h1 className="text-2xl font-bold">Edit {id}</h1>
       <textarea
-        className="w-full h-64 border p-2 font-mono"
+        className="w-full h-64 border p-2 font-mono rounded"
         value={text}
         onChange={(e) => setText(e.target.value)}
       />
-      <div className="space-x-2">
-        <button onClick={handleSave} className="px-4 py-2 bg-blue-600 text-white rounded">
+      <div className="space-x-2 mt-2">
+        <button onClick={handleSave} className="px-4 py-2 bg-blue-600 text-white rounded shadow">
           Save
         </button>
         {message && <span>{message}</span>}
