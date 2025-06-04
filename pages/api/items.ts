@@ -1,5 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
-import db from '../../lib/db';
+import db, { addNotification } from '../../lib/db';
 
 const TABLES = [
   'copy_of_tomorrow_trips',
@@ -49,6 +49,7 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
       JSON.stringify(req.body),
       id
     );
+    addNotification('update', `Updated ${id} in ${table}`);
     return res.status(200).json({ message: 'Updated' });
   }
 
@@ -57,6 +58,7 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
       return res.status(400).json({ message: 'Missing id' });
     }
     db.prepare(`DELETE FROM ${table} WHERE id = ?`).run(id);
+    addNotification('delete', `Deleted ${id} from ${table}`);
     return res.status(200).json({ message: 'Deleted' });
   }
 

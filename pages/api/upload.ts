@@ -1,5 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
-import db from '../../lib/db';
+import db, { addNotification } from '../../lib/db';
 
 export const config = {
   api: {
@@ -30,6 +30,7 @@ export default function handler(
       for (const item of payload.Copy_of_Tomorrow_trips) {
         stmt.run(item.ID, JSON.stringify(item));
       }
+      addNotification('upload', `Uploaded ${payload.Copy_of_Tomorrow_trips.length} tomorrow trips`);
     }
 
     if (Array.isArray(payload.Event_Stream)) {
@@ -39,6 +40,7 @@ export default function handler(
       for (const item of payload.Event_Stream) {
         stmt.run(item.ID, JSON.stringify(item));
       }
+      addNotification('upload', `Uploaded ${payload.Event_Stream.length} event stream items`);
     }
 
     if (Array.isArray(payload.Drivers_Report)) {
@@ -48,6 +50,7 @@ export default function handler(
       for (const item of payload.Drivers_Report) {
         stmt.run(item.ID, JSON.stringify(item));
       }
+      addNotification('upload', `Uploaded ${payload.Drivers_Report.length} drivers report items`);
     }
 
     if (Array.isArray(payload.Schedule_Trips)) {
@@ -57,11 +60,13 @@ export default function handler(
       for (const item of payload.Schedule_Trips) {
         stmt.run(item.ID, JSON.stringify(item));
       }
+      addNotification('upload', `Uploaded ${payload.Schedule_Trips.length} schedule trips`);
     }
 
     res.status(200).json({ message: 'Uploaded' });
   } catch (err) {
     console.error(err);
+    addNotification('error', 'Upload failed');
     res.status(500).json({ message: 'Server error' });
   }
 }
