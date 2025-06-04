@@ -34,6 +34,10 @@ export default function FullReport() {
   const [statusFilter, setStatusFilter] = useState('');
   const [search, setSearch] = useState('');
   const [startData, setStartData] = useState<any[]>([]);
+  const [filterField, setFilterField] = useState('');
+  const [filterOp, setFilterOp] = useState('contains');
+  const [filterValue, setFilterValue] = useState('');
+  const fields = trips.length > 0 ? Object.keys(trips[0]) : [];
 
   const fetchTrips = async () => {
     const res = await fetch(`/api/report?start=${start}&end=${end}`);
@@ -56,32 +60,123 @@ export default function FullReport() {
   const complete = trips.filter((t) => t.Status === 'Complete').length;
   const failed = trips.filter((t) => t.Status === 'Failed').length;
 
+  const filterMatch = (t: Trip) => {
+    if (!filterField || filterValue === '') return true;
+    const val = t[filterField];
+    if (val === undefined || val === null) return false;
+    const v = String(val);
+    switch (filterOp) {
+      case 'contains':
+        return v.toLowerCase().includes(filterValue.toLowerCase());
+      case 'equals':
+        return v.toLowerCase() === filterValue.toLowerCase();
+      case 'between': {
+        const [a, b] = filterValue.split(',').map(Number);
+        const num = parseFloat(v);
+        if (isNaN(a) || isNaN(b) || isNaN(num)) return false;
+        return num >= a && num <= b;
+      }
+      case 'gt':
+        return parseFloat(v) > parseFloat(filterValue);
+      case 'lt':
+        return parseFloat(v) < parseFloat(filterValue);
+      default:
+        return true;
+    }
+  };
+
   const filtered = trips.filter((t) => {
     const matchesStatus =
       !statusFilter || t.Status.toLowerCase() === statusFilter.toLowerCase();
     const matchesSearch = search
       ? String(t['Order.OrderNumber']).includes(search)
       : true;
-    return matchesStatus && matchesSearch;
+    return matchesStatus && matchesSearch && filterMatch(t);
   });
 
   return (
     <Layout title="Full Report">
-      <div className="space-x-2">
-        <input type="date" value={start} onChange={(e) => setStart(e.target.value)} />
-        <input type="date" value={end} onChange={(e) => setEnd(e.target.value)} />
+      <div className="flex flex-wrap gap-2 items-end mb-4">
+        <input
+          type="date"
+          value={start}
+          onChange={(e) => setStart(e.target.value)}
+          className="border p-1 rounded"
+        />
+        <input
+          type="date"
+          value={end}
+          onChange={(e) => setEnd(e.target.value)}
+          className="border p-1 rounded"
+        />
         <button
           onClick={fetchTrips}
           className="px-4 py-2 bg-blue-600 text-white rounded"
         >
           Load
         </button>
+        <select
+          value={statusFilter}
+          onChange={(e) => setStatusFilter(e.target.value)}
+          className="border p-1 rounded"
+        >
+          <option value="">All statuses</option>
+          <option value="Complete">Complete</option>
+          <option value="Failed">Failed</option>
+        </select>
+        <input
+          type="text"
+          placeholder="Search order"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="border p-1 rounded"
+        />
+        {fields.length > 0 && (
+          <>
+            <select
+              value={filterField}
+              onChange={(e) => setFilterField(e.target.value)}
+              className="border p-1 rounded"
+            >
+              <option value="">Field</option>
+              {fields.map((f) => (
+                <option key={f} value={f}>
+                  {f}
+                </option>
+              ))}
+            </select>
+            <select
+              value={filterOp}
+              onChange={(e) => setFilterOp(e.target.value)}
+              className="border p-1 rounded"
+            >
+              <option value="contains">contains</option>
+              <option value="equals">equals</option>
+              <option value="between">between</option>
+              <option value="gt">&gt;</option>
+              <option value="lt">&lt;</option>
+            </select>
+            <input
+              type="text"
+              value={filterValue}
+              onChange={(e) => setFilterValue(e.target.value)}
+              placeholder="value"
+              className="border p-1 rounded"
+            />
+          </>
+        )}
       </div>
 
-      <div className="flex flex-col lg:flex-row gap-4 mt-6">
+      <div className="flex space-x-4 mb-4">
+        <div className="p-2 bg-gray-100 rounded">Total: {total}</div>
+        <div className="p-2 bg-green-100 rounded">Complete: {complete}</div>
+        <div className="p-2 bg-red-100 rounded">Failed: {failed}</div>
+      </div>
+
+      <div className="grid lg:grid-cols-2 gap-4 h-[70vh]">
         {startData.length > 0 && (
-          <div className="overflow-x-auto flex-1">
-            <table className="min-w-full text-sm border rounded-lg overflow-hidden">
+          <div className="overflow-auto border rounded">
+            <table className="min-w-full text-sm border-collapse">
               <thead className="bg-gray-100">
                 <tr>
                   <th className="border px-2 py-1">Asset</th>
@@ -111,89 +206,47 @@ export default function FullReport() {
             </table>
           </div>
         )}
-        <div className="overflow-x-auto flex-1">
-          <table className="min-w-full text-sm border rounded-lg overflow-hidden">
-            <thead className="bg-gray-100">
-              <tr>
-                <th className="border px-2 py-1 text-left">Order #</th>
-                <th className="border px-2 py-1 text-left">Description</th>
-                <th className="border px-2 py-1 text-left">Status</th>
-                <th className="border px-2 py-1 text-left">Punctuality</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.map((trip) => {
-                const info = diffInfo(trip);
-                const diff = info ? info.diff : 0;
-                const abs = Math.abs(diff);
-                const minutes = Math.round(abs);
-                const diffClass =
-                  abs > 30
-                    ? diff > 0
-                      ? 'text-blue-600 font-semibold'
-                      : 'text-red-600 font-semibold'
-                    : '';
-                const statusIcon =
-                  trip.Status === 'Complete'
-                    ? '✅'
-                    : trip.Status === 'Failed'
-                    ? '❌'
-                    : '⌛';
-                const desc =
-                  trip.Description ||
-                  trip['Order.Description'] ||
-                  trip['Address.Postcode'] ||
-                  '';
-                return (
-                  <tr key={trip.ID} className="odd:bg-gray-50 hover:bg-gray-100 transition-colors">
-                    <td className="border px-2 py-1 whitespace-nowrap">
-                      <Link href={`/orders/${trip.ID}`}>#{trip['Order.OrderNumber']}</Link>
-                    </td>
-                    <td className="border px-2 py-1 break-all">{desc}</td>
-                    <td className="border px-2 py-1 whitespace-nowrap">
-                      {statusIcon} {trip.Status}
-                    </td>
-                    <td className={`border px-2 py-1 whitespace-nowrap ${diffClass}`}>
-                      {info ? (
-                        <>
-                          {info.done?.slice(0, 5)} - {info.arrival?.slice(0, 5)}{' '}
-                          {minutes}m {diff >= 0 ? 'early' : 'late'}
-                        </>
-                      ) : (
-                        'N/A'
-                      )}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+        <div className="overflow-auto border rounded p-2">
+          <div className="grid sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-3">
+            {filtered.map((trip) => {
+              const info = diffInfo(trip);
+              const diff = info ? Math.round(info.diff) : 0;
+              const statusIcon =
+                trip.Status === 'Complete'
+                  ? 'fa-check text-green-600'
+                  : trip.Status === 'Failed'
+                  ? 'fa-xmark text-red-600'
+                  : 'fa-clock text-gray-500';
+              const desc =
+                trip.Description ||
+                trip['Order.Description'] ||
+                trip['Address.Postcode'] ||
+                '';
+              const driver = trip.Driver || trip['Driver'] || trip['Driver.Full_Name'] || '';
+              const postcode = trip['Address.Postcode'] || '';
+              const auction = trip.Auction ?? trip['Auction'];
+              return (
+                <div key={trip.ID} className="bg-white rounded shadow p-3 space-y-1">
+                  <div className="flex justify-between items-center">
+                    <Link href={`/orders/${trip.ID}`} className="font-semibold hover:underline">
+                      #{trip['Order.OrderNumber']}
+                    </Link>
+                    <i className={`fa-solid ${statusIcon}`} />
+                  </div>
+                  {driver && (
+                    <div className="text-sm text-gray-500">{driver}</div>
+                  )}
+                  {postcode && <div className="text-sm">{postcode}</div>}
+                  {typeof auction !== 'undefined' && (
+                    <div className="text-sm">Auction: {String(auction)}</div>
+                  )}
+                  <div className="text-sm">Punctuality: {diff} min</div>
+                  <div className="text-sm break-all">{desc}</div>
+                </div>
+              );
+            })}
+          </div>
         </div>
-      </div>
-
-      <div className="flex space-x-4">
-        <div className="p-2 bg-gray-100 rounded">Total: {total}</div>
-        <div className="p-2 bg-green-100 rounded">Complete: {complete}</div>
-        <div className="p-2 bg-red-100 rounded">Failed: {failed}</div>
-      </div>
-
-      <div className="flex flex-wrap gap-2 items-end">
-        <select
-          value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value)}
-          className="border p-1"
-        >
-          <option value="">All statuses</option>
-          <option value="Complete">Complete</option>
-          <option value="Failed">Failed</option>
-        </select>
-        <input
-          type="text"
-          placeholder="Search order"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="border p-1"
-        />
       </div>
 
     </Layout>
