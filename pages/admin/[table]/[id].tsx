@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
-import Head from 'next/head';
-import Navbar from '../../../components/Navbar';
+import Layout from '../../../components/Layout';
 
 export default function ItemEditor() {
   const router = useRouter();
@@ -37,25 +36,19 @@ export default function ItemEditor() {
   };
 
   return (
-    <>
-      <Head>
-        <title>Edit Item</title>
-      </Head>
-      <Navbar />
-      <main className="p-4 space-y-4">
-        <h1 className="text-2xl font-bold">Edit {id}</h1>
-        <textarea
-          className="w-full h-64 border p-2 font-mono"
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-        />
-        <div className="space-x-2">
-          <button onClick={handleSave} className="px-4 py-2 bg-blue-600 text-white rounded">
-            Save
-          </button>
-          {message && <span>{message}</span>}
-        </div>
-      </main>
-    </>
+    <Layout title="Edit Item">
+      <h1 className="text-2xl font-bold">Edit {id}</h1>
+      <textarea
+        className="w-full h-64 border p-2 font-mono"
+        value={text}
+        onChange={(e) => setText(e.target.value)}
+      />
+      <div className="space-x-2">
+        <button onClick={handleSave} className="px-4 py-2 bg-blue-600 text-white rounded">
+          Save
+        </button>
+        {message && <span>{message}</span>}
+      </div>
+    </Layout>
   );
 }

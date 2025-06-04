@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
-import Head from 'next/head';
-import Navbar from '../../components/Navbar';
+import Layout from '../../components/Layout';
 
 const TABLES = [
   'copy_of_tomorrow_trips',
@@ -33,18 +32,13 @@ export default function Admin() {
   };
 
   return (
-    <>
-      <Head>
-        <title>Admin</title>
-      </Head>
-      <Navbar />
-      <main className="p-4">
-        <h1 className="text-2xl font-bold mb-4">Admin</h1>
-        <select
-          value={table}
-          onChange={(e) => setTable(e.target.value as (typeof TABLES)[number])}
-          className="mb-4 border p-1"
-        >
+    <Layout title="Admin">
+      <h1 className="text-2xl font-bold mb-4">Admin</h1>
+      <select
+        value={table}
+        onChange={(e) => setTable(e.target.value as (typeof TABLES)[number])}
+        className="mb-4 border p-1"
+      >
           {TABLES.map((t) => (
             <option key={t} value={t}>
               {t}
@@ -82,7 +76,6 @@ export default function Admin() {
             ))}
           </tbody>
         </table>
-      </main>
-    </>
+    </Layout>
   );
 }

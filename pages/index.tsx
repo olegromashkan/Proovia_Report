@@ -1,16 +1,9 @@
-import Head from 'next/head';
-import Navbar from '../components/Navbar';
+import Layout from '../components/Layout';
 
 export default function Home() {
   return (
-    <>
-      <Head>
-        <title>Home</title>
-      </Head>
-      <Navbar />
-      <main className="p-4">
-        <h1 className="text-2xl font-bold">Welcome to the Home Page</h1>
-      </main>
-    </>
+    <Layout title="Home">
+      <h1 className="text-2xl font-bold">Welcome to the Home Page</h1>
+    </Layout>
   );
 }

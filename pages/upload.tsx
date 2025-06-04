@@ -1,6 +1,5 @@
 import { useState, ChangeEvent } from 'react';
-import Head from 'next/head';
-import Navbar from '../components/Navbar';
+import Layout from '../components/Layout';
 
 export default function Upload() {
   const [message, setMessage] = useState('');
@@ -53,27 +52,21 @@ export default function Upload() {
   };
 
   return (
-    <>
-      <Head>
-        <title>Upload JSON</title>
-      </Head>
-      <Navbar />
-      <main className="p-4 space-y-4">
-        <h1 className="text-2xl font-bold">Upload JSON</h1>
-        <input type="file" accept=".json" onChange={handleFile} />
-        <progress className="w-full" value={progress} max={100}></progress>
-        {message && <p>{message}</p>}
-        {logs.length > 0 && (
-          <div className="bg-gray-100 p-2 rounded">
-            <h2 className="font-semibold">Logs</h2>
-            <ul className="list-disc list-inside text-sm">
-              {logs.map((log, idx) => (
-                <li key={idx}>{log}</li>
-              ))}
-            </ul>
-          </div>
-        )}
-      </main>
-    </>
+    <Layout title="Upload JSON">
+      <h1 className="text-2xl font-bold">Upload JSON</h1>
+      <input type="file" accept=".json" onChange={handleFile} />
+      <progress className="w-full" value={progress} max={100}></progress>
+      {message && <p>{message}</p>}
+      {logs.length > 0 && (
+        <div className="bg-gray-100 p-2 rounded">
+          <h2 className="font-semibold">Logs</h2>
+          <ul className="list-disc list-inside text-sm">
+            {logs.map((log, idx) => (
+              <li key={idx}>{log}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </Layout>
   );
 }
