@@ -6,6 +6,7 @@ const TABLES = [
   'event_stream',
   'drivers_report',
   'schedule_trips',
+  'csv_trips',
 ] as const;
 
 type Item = { id: string; created_at: string };

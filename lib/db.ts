@@ -24,6 +24,11 @@ export function init() {
       data TEXT,
       created_at TEXT DEFAULT CURRENT_TIMESTAMP
     );
+    CREATE TABLE IF NOT EXISTS csv_trips (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      data TEXT,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP
+    );
     CREATE TABLE IF NOT EXISTS notifications (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       type TEXT,
@@ -38,6 +43,7 @@ export function init() {
     'event_stream',
     'drivers_report',
     'schedule_trips',
+    'csv_trips',
   ];
   for (const table of tables) {
     try {
