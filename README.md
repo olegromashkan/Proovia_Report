@@ -25,4 +25,6 @@ reachable on that network as well.
 
 Navigate to `/upload` in the browser and select a `.json` file with the
 structure shown in the examples. The file will be uploaded to the server and
-each section will be stored in its corresponding table.
+each section will be stored in its corresponding table. The API accepts payloads
+up to **10&nbsp;MB**. The upload page now shows a progress bar and a log of steps
+to help you monitor the upload process.
