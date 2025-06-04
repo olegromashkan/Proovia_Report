@@ -24,6 +24,12 @@ export function init() {
       data TEXT,
       created_at TEXT DEFAULT CURRENT_TIMESTAMP
     );
+    CREATE TABLE IF NOT EXISTS notifications (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      type TEXT,
+      message TEXT,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP
+    );
   `);
 
   // ensure legacy databases have the created_at column
@@ -43,5 +49,12 @@ export function init() {
 }
 
 init();
+
+export function addNotification(type: string, message: string) {
+  db.prepare('INSERT INTO notifications (type, message) VALUES (?, ?)').run(
+    type,
+    message,
+  );
+}
 
 export default db;
