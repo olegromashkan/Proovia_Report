@@ -12,9 +12,16 @@ This project uses **Next.js** with UnoCSS and a small SQLite database.
 
 2. Run the development server:
 
-   ```bash
-   npm run dev
-   ```
+ ```bash
+  npm run dev
+  ```
+
+For production builds the UnoCSS stylesheet must be generated first:
+
+```bash
+npm run unocss
+npm run build
+```
 
 The application exposes an API route at `/api/upload` which accepts JSON data
 and saves it into an SQLite database (`database.db`). If the server is running

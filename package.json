@@ -5,7 +5,8 @@
   "main": "index.js",
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "unocss": "unocss -o uno.css",
+    "build": "npm run unocss && next build",
     "start": "next start"
   },
   "keywords": [],
