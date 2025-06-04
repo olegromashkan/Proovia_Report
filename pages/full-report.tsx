@@ -2,6 +2,21 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Layout from '../components/Layout';
 
+function parseMinutes(str: string) {
+  const time = str.split(' ')[1] || str;
+  const [h = '0', m = '0', s = '0'] = time.split(':');
+  return Number(h) * 60 + Number(m) + Number(s) / 60;
+}
+
+function diffInfo(trip: Trip) {
+  const arrival = trip.Arrival_Time || trip['Arrival_Time'];
+  const done = trip.Time_Completed || trip['Time_Completed'];
+  if (!arrival || !done) return null;
+  const a = parseMinutes(arrival);
+  const d = parseMinutes(done);
+  return { arrival: arrival.split(' ')[1], done: done.split(' ')[1], diff: d - a };
+}
+
 interface Trip {
   ID: string;
   [key: string]: any;
@@ -82,19 +97,63 @@ export default function FullReport() {
         />
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {filtered.map((trip) => (
-          <Link key={trip.ID} href={`/orders/${trip.ID}`} className="block">
-            <div className="border rounded p-4 shadow hover:bg-gray-50">
-              <div className="font-semibold">
-                Order {trip['Order.OrderNumber']}
-              </div>
-              <div>Driver: {trip['Trip.Driver1']}</div>
-              <div>Postcode: {trip['Address.Postcode']}</div>
-              <div>Status: {trip.Status}</div>
-            </div>
-          </Link>
-        ))}
+      <div className="overflow-x-auto">
+        <table className="min-w-full text-sm border">
+          <thead className="bg-gray-100">
+            <tr>
+              <th className="border px-2 py-1 text-left">Order #</th>
+              <th className="border px-2 py-1 text-left">Description</th>
+              <th className="border px-2 py-1 text-left">Status</th>
+              <th className="border px-2 py-1 text-left">Punctuality</th>
+            </tr>
+          </thead>
+          <tbody>
+            {filtered.map((trip) => {
+              const info = diffInfo(trip);
+              const diff = info ? info.diff : 0;
+              const abs = Math.abs(diff);
+              const diffClass =
+                abs > 30
+                  ? diff > 0
+                    ? 'text-blue-600 font-semibold'
+                    : 'text-red-600 font-semibold'
+                  : '';
+              const statusIcon =
+                trip.Status === 'Complete'
+                  ? '✅'
+                  : trip.Status === 'Failed'
+                  ? '❌'
+                  : '⌛';
+              const desc =
+                trip.Description ||
+                trip['Order.Description'] ||
+                trip['Address.Postcode'] ||
+                '';
+              return (
+                <tr key={trip.ID} className="odd:bg-gray-50">
+                  <td className="border px-2 py-1 whitespace-nowrap">
+                    <Link href={`/orders/${trip.ID}`}>#{trip['Order.OrderNumber']}</Link>
+                  </td>
+                  <td className="border px-2 py-1 break-all">{desc}</td>
+                  <td className="border px-2 py-1 whitespace-nowrap">
+                    {statusIcon} {trip.Status}
+                  </td>
+                  <td className={`border px-2 py-1 whitespace-nowrap ${diffClass}`}>
+                    {info ? (
+                      <>
+                        {info.done?.slice(0, 5)} - {info.arrival?.slice(0, 5)} ={' '}
+                        {diff >= 0 ? diff : -diff}m{' '}
+                        {diff >= 0 ? 'early' : 'late'}
+                      </>
+                    ) : (
+                      'N/A'
+                    )}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
       </div>
     </Layout>
   );
