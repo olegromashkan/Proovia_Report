@@ -33,6 +33,7 @@ export default function FullReport() {
   const [trips, setTrips] = useState<Trip[]>([]);
   const [statusFilter, setStatusFilter] = useState('');
   const [search, setSearch] = useState('');
+  const [startData, setStartData] = useState<any[]>([]);
 
   const fetchTrips = async () => {
     const res = await fetch(`/api/report?start=${start}&end=${end}`);
@@ -44,6 +45,10 @@ export default function FullReport() {
 
   useEffect(() => {
     fetchTrips();
+    fetch('/api/start-times')
+      .then((res) => (res.ok ? res.json() : Promise.reject()))
+      .then((d) => setStartData(d.items || []))
+      .catch(() => {});
   }, []);
 
   const total = trips.length;
@@ -71,6 +76,39 @@ export default function FullReport() {
           Load
         </button>
       </div>
+
+      {startData.length > 0 && (
+        <div className="overflow-x-auto mt-6">
+          <table className="min-w-full text-sm border rounded-lg overflow-hidden">
+            <thead className="bg-gray-100">
+              <tr>
+                <th className="border px-2 py-1">Asset</th>
+                <th className="border px-2 py-1">Driver</th>
+                <th className="border px-2 py-1">Contractor</th>
+                <th className="border px-2 py-1">Date</th>
+                <th className="border px-2 py-1">Start Time</th>
+                <th className="border px-2 py-1">First</th>
+                <th className="border px-2 py-1">Last</th>
+                <th className="border px-2 py-1">Duration</th>
+              </tr>
+            </thead>
+            <tbody>
+              {startData.map((r, idx) => (
+                <tr key={idx} className="odd:bg-gray-50">
+                  <td className="border px-2 py-1">{r.Asset}</td>
+                  <td className="border px-2 py-1">{r.Driver}</td>
+                  <td className="border px-2 py-1">{r.Contractor_Name}</td>
+                  <td className="border px-2 py-1">{r.Date}</td>
+                  <td className="border px-2 py-1">{r.Start_Time}</td>
+                  <td className="border px-2 py-1">{r.First_Mention_Time}</td>
+                  <td className="border px-2 py-1">{r.Last_Mention_Time}</td>
+                  <td className="border px-2 py-1">{r.Duration}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
 
       <div className="flex space-x-4">
         <div className="p-2 bg-gray-100 rounded">Total: {total}</div>

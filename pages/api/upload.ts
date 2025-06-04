@@ -63,6 +63,16 @@ export default function handler(
       addNotification('upload', `Uploaded ${payload.Schedule_Trips.length} schedule trips`);
     }
 
+    if (Array.isArray(payload.csvTrips)) {
+      const stmt = db.prepare(
+        'INSERT INTO csv_trips (data, created_at) VALUES (?, datetime(\'now\'))'
+      );
+      for (const row of payload.csvTrips) {
+        stmt.run(JSON.stringify(row));
+      }
+      addNotification('upload', `Uploaded ${payload.csvTrips.length} csv trips`);
+    }
+
     res.status(200).json({ message: 'Uploaded' });
   } catch (err) {
     console.error(err);
