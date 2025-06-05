@@ -1,5 +1,6 @@
 import { useState, useEffect, Fragment } from 'react';
 import Layout from '../../components/Layout';
+import Icon from '../../components/Icon';
 
 const TABLES = [
   'copy_of_tomorrow_trips',
@@ -162,10 +163,7 @@ export default function Admin() {
           placeholder="Search"
           className="border p-1 rounded"
         />
-        <button
-          onClick={fetchItems}
-          className="border px-2 py-1 rounded bg-gray-100"
-        >
+        <button onClick={fetchItems} className="btn bg-gray-600">
           Refresh
         </button>
         <div className="text-sm text-gray-600 ml-auto">
@@ -182,8 +180,9 @@ export default function Admin() {
                 className="text-lg font-semibold cursor-pointer flex items-center gap-2"
                 onClick={() => setCollapsed((c) => ({ ...c, [d]: !c[d] }))}
               >
-                <i
-                  className={`fa-solid ${isCollapsed ? 'fa-chevron-right' : 'fa-chevron-down'}`}
+                <Icon
+                  name={isCollapsed ? 'chevron-right' : 'chevron-down'}
+                  className="icon"
                 />
                 {d}
               </h2>
@@ -191,7 +190,7 @@ export default function Admin() {
                 onClick={() => handleDeleteDate(d)}
                 className="text-red-600 hover:underline flex items-center gap-1"
               >
-                <i className="fa-solid fa-trash" />
+                <Icon name="trash" className="icon" />
                 <span>Delete day</span>
               </button>
             </div>
@@ -211,21 +210,21 @@ export default function Admin() {
                         onClick={() => openEdit(item.id)}
                         className="text-blue-600 hover:underline flex items-center gap-1"
                       >
-                        <i className="fa-solid fa-pen" />
+                        <Icon name="pen" className="icon" />
                         <span>{editing?.id === item.id ? 'Close' : 'Edit'}</span>
                       </button>
                       <button
                         onClick={() => handleDelete(item.id)}
                         className="text-red-600 hover:underline flex items-center gap-1"
                       >
-                        <i className="fa-solid fa-trash" />
+                        <Icon name="trash" className="icon" />
                         <span>Delete</span>
                       </button>
                       <button
                         onClick={() => navigator.clipboard.writeText(item.id)}
                         className="text-gray-600 hover:underline flex items-center gap-1"
                       >
-                        <i className="fa-solid fa-copy" />
+                        <Icon name="copy" className="icon" />
                         <span>Copy</span>
                       </button>
                     </div>
@@ -241,21 +240,21 @@ export default function Admin() {
                             onClick={saveEdit}
                             className="btn bg-blue-600"
                           >
-                            <i className="fa-solid fa-save" />
+                            <Icon name="save" className="icon" />
                             <span>Save</span>
                           </button>
                           <button
                             onClick={() => setEditing(null)}
                             className="btn bg-gray-600"
                           >
-                            <i className="fa-solid fa-ban" />
+                            <Icon name="ban" className="icon" />
                             <span>Cancel</span>
                           </button>
                           <a
                             href={`/admin/${table}/${item.id}`}
                             className="btn border border-gray-300 text-gray-700 bg-white"
                           >
-                            <i className="fa-solid fa-up-right-from-square" />
+                            <Icon name="up-right-from-square" className="icon" />
                             <span>Open</span>
                           </a>
                         </div>
@@ -276,14 +275,14 @@ export default function Admin() {
               onClick={() => fetchItems()}
               className="btn bg-gray-600"
             >
-              <i className="fa-solid fa-rotate-left" />
+              <Icon name="rotate-left" className="icon" />
               <span>Revert All</span>
             </button>
             <button
               onClick={saveAll}
               className="btn bg-blue-600"
             >
-              <i className="fa-solid fa-save" />
+              <Icon name="save" className="icon" />
               <span>Save</span>
             </button>
           </div>

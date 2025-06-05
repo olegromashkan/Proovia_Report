@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
+import Icon from './Icon';
 
 interface DayStats {
   date: string;
@@ -80,7 +81,7 @@ export default function Calendar() {
     <div className="space-y-2">
       <div className="flex items-center gap-2">
         <button onClick={() => changeMonth(-1)} className="px-2">
-          <i className="fa-solid fa-chevron-left" />
+          <Icon name="chevron-left" className="icon" />
         </button>
         <select
           value={month}
@@ -100,7 +101,7 @@ export default function Calendar() {
           className="border p-1 rounded w-24"
         />
         <button onClick={() => changeMonth(1)} className="px-2">
-          <i className="fa-solid fa-chevron-right" />
+          <Icon name="chevron-right" className="icon" />
         </button>
       </div>
       <div className="grid grid-cols-7 gap-px text-center">

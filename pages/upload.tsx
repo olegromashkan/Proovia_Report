@@ -1,5 +1,6 @@
 import { useState, ChangeEvent } from 'react';
 import Layout from '../components/Layout';
+import Icon from '../components/Icon';
 
 export default function Upload() {
   const [message, setMessage] = useState('');
@@ -104,7 +105,7 @@ export default function Upload() {
       <h1 className="text-2xl font-bold">Upload JSON</h1>
       <input id="file" type="file" accept=".json,.csv" onChange={handleFile} className="hidden" />
       <label htmlFor="file" className="btn mb-2 cursor-pointer bg-indigo-600">
-        <i className="fa-solid fa-file-arrow-up" />
+        <Icon name="file-arrow-up" className="icon" />
         <span>Select File</span>
       </label>
       <progress className="w-full h-2 rounded bg-gray-200" value={progress} max={100}></progress>
