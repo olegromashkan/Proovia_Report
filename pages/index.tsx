@@ -27,7 +27,7 @@ export default function Home() {
   return (
     <Layout title="Home">
       <h1 className="text-2xl font-bold mb-2">Proovia Reporting Dashboard</h1>
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
         {cards.map(c => (
           <Card key={c.id} title={c.title} value={c.value} onClick={() => setOpen(c.id)} />
         ))}
