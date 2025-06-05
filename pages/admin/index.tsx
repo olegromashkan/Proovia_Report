@@ -9,11 +9,47 @@ const TABLES = [
   'csv_trips',
 ] as const;
 
-type Item = { id: string | number; created_at: string };
+type Item = {
+  id: string | number;
+  created_at: string;
+  primary?: string | number;
+  secondary?: string;
+};
 
 interface EditState {
   id: string | number;
   text: string;
+}
+
+interface PendingChange {
+  id: string | number;
+  action: 'update' | 'delete';
+  data?: any;
+}
+
+function summarize(table: (typeof TABLES)[number], data: any, id: string | number) {
+  let primary: string | number = id;
+  let secondary = '';
+  switch (table) {
+    case 'copy_of_tomorrow_trips':
+      primary = data['Order.OrderNumber'] || id;
+      break;
+    case 'event_stream':
+      primary = data['Vans'] || id;
+      break;
+    case 'drivers_report':
+      primary = data['Full_Name'] || id;
+      secondary = data['Contractor_Name'] || '';
+      break;
+    case 'schedule_trips':
+      primary = data['Calendar_Name'] || id;
+      break;
+    case 'csv_trips':
+      primary = `${data['Start At'] || ''} - ${data['End At'] || ''}`.trim();
+      secondary = data['Asset'] || '';
+      break;
+  }
+  return { primary, secondary };
 }
 
 export default function Admin() {
@@ -22,12 +58,14 @@ export default function Admin() {
   const [editing, setEditing] = useState<EditState | null>(null);
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
   const [search, setSearch] = useState('');
+  const [pending, setPending] = useState<PendingChange[]>([]);
 
   const fetchItems = async () => {
     const res = await fetch(`/api/items?table=${table}`);
     if (res.ok) {
       const data = await res.json();
       setItems(data.items as Item[]);
+      setPending([]);
     }
   };
 
@@ -35,14 +73,14 @@ export default function Admin() {
     fetchItems();
   }, [table]);
 
-  const handleDelete = async (id: string | number) => {
-    await fetch(`/api/items?table=${table}&id=${id}`, { method: 'DELETE' });
-    fetchItems();
+  const handleDelete = (id: string | number) => {
+    setPending((p) => [...p.filter((ch) => ch.id !== id), { id, action: 'delete' }]);
+    setItems((items) => items.filter((it) => it.id !== id));
   };
 
-  const handleDeleteDate = async (d: string) => {
-    await fetch(`/api/items?table=${table}&date=${d}`, { method: 'DELETE' });
-    fetchItems();
+  const handleDeleteDate = (d: string) => {
+    const rows = groups[d] || [];
+    rows.forEach((r) => handleDelete(r.id));
   };
 
   const openEdit = async (id: string | number) => {
@@ -61,25 +99,46 @@ export default function Admin() {
     if (!editing) return;
     try {
       const payload = JSON.parse(editing.text);
-      await fetch(`/api/items?table=${table}&id=${editing.id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
+      setPending((p) => [
+        ...p.filter((ch) => !(ch.id === editing.id && ch.action === 'update')),
+        { id: editing.id, action: 'update', data: payload },
+      ]);
+      setItems((itms) =>
+        itms.map((it) =>
+          it.id === editing.id ? { ...it, ...summarize(table, payload, it.id) } : it
+        )
+      );
       setEditing(null);
-      fetchItems();
     } catch {
       alert('Invalid JSON');
     }
   };
 
   const groups = items
-    .filter((i) => String(i.id).includes(search))
+    .filter((i) =>
+      String(i.id).includes(search) ||
+      String(i.primary ?? '').toLowerCase().includes(search.toLowerCase())
+    )
     .reduce<Record<string, Item[]>>((acc, item) => {
       const d = item.created_at.slice(0, 10);
       (acc[d] ||= []).push(item);
       return acc;
     }, {});
+
+  const saveAll = async () => {
+    for (const ch of pending) {
+      if (ch.action === 'update') {
+        await fetch(`/api/items?table=${table}&id=${ch.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(ch.data),
+        });
+      } else if (ch.action === 'delete') {
+        await fetch(`/api/items?table=${table}&id=${ch.id}`, { method: 'DELETE' });
+      }
+    }
+    fetchItems();
+  };
 
   return (
     <Layout title="Admin" fullWidth>
@@ -100,7 +159,7 @@ export default function Admin() {
           type="text"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          placeholder="Search by ID"
+          placeholder="Search"
           className="border p-1 rounded"
         />
         <button
@@ -136,10 +195,15 @@ export default function Admin() {
               </button>
             </div>
             {!isCollapsed && (
-              <div className="grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+              <div className="grid sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-3">
                 {rows.map((item) => (
                   <div key={item.id} className="bg-white rounded shadow p-3 text-sm">
-                    <div className="font-mono text-xs text-gray-500">{item.id}</div>
+                    <div className="font-mono text-xs text-gray-500">
+                      {item.primary ?? item.id}
+                    </div>
+                    {item.secondary && (
+                      <div className="text-xs text-gray-500">{item.secondary}</div>
+                    )}
                     <div className="text-xs mb-2">{item.created_at}</div>
                     <div className="flex justify-end space-x-2">
                       <button
@@ -197,6 +261,25 @@ export default function Admin() {
           </div>
         );
       })}
+      {pending.length > 0 && (
+        <div className="fixed bottom-0 left-0 right-0 bg-gray-800 text-white px-4 py-2 flex justify-between items-center z-10">
+          <div>{pending.length} pending change{pending.length > 1 ? 's' : ''}</div>
+          <div className="space-x-2">
+            <button
+              onClick={() => fetchItems()}
+              className="px-3 py-1 border rounded bg-gray-600"
+            >
+              Revert All
+            </button>
+            <button
+              onClick={saveAll}
+              className="px-3 py-1 border rounded bg-blue-600"
+            >
+              Save
+            </button>
+          </div>
+        </div>
+      )}
     </Layout>
   );
 }
