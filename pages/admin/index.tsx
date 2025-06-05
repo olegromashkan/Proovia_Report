@@ -19,6 +19,7 @@ type Item = {
 
 interface EditState {
   id: string | number;
+  date: string;
   text: string;
 }
 
@@ -55,40 +56,65 @@ function summarize(table: (typeof TABLES)[number], data: any, id: string | numbe
 
 export default function Admin() {
   const [table, setTable] = useState<(typeof TABLES)[number]>(TABLES[0]);
-  const [items, setItems] = useState<Item[]>([]);
+  const [dates, setDates] = useState<{ date: string; count: number }[]>([]);
+  const [itemsByDate, setItemsByDate] = useState<Record<string, Item[]>>({});
+  const [loadingDates, setLoadingDates] = useState<Record<string, boolean>>({});
   const [editing, setEditing] = useState<EditState | null>(null);
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
   const [search, setSearch] = useState('');
   const [pending, setPending] = useState<PendingChange[]>([]);
   const [loading, setLoading] = useState(false);
 
-  const fetchItems = async () => {
-    setLoading(true);
-    const res = await fetch(`/api/items?table=${table}`);
+  const loadDate = async (d: string) => {
+    if (itemsByDate[d]) return;
+    setLoadingDates((l) => ({ ...l, [d]: true }));
+    const res = await fetch(`/api/items?table=${table}&date=${d}`);
     if (res.ok) {
       const data = await res.json();
-      setItems(data.items as Item[]);
+      setItemsByDate((m) => ({ ...m, [d]: data.items as Item[] }));
+    }
+    setLoadingDates((l) => ({ ...l, [d]: false }));
+  };
+
+  const fetchDates = async () => {
+    setLoading(true);
+    const res = await fetch(`/api/dates?table=${table}`);
+    if (res.ok) {
+      const data = await res.json();
+      setDates(data.dates as { date: string; count: number }[]);
+      setItemsByDate({});
       setPending([]);
+      const collapsedInit: Record<string, boolean> = {};
+      (data.dates as { date: string; count: number }[]).forEach((d: any, i: number) => {
+        collapsedInit[d.date] = i !== 0;
+      });
+      setCollapsed(collapsedInit);
+      if (data.dates[0]) {
+        await loadDate(data.dates[0].date);
+      }
     }
     setLoading(false);
   };
 
   useEffect(() => {
-    fetchItems();
+    fetchDates();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [table]);
 
-  const handleDelete = (id: string | number) => {
+  const handleDelete = (id: string | number, date: string) => {
     setPending((p) => [...p.filter((ch) => ch.id !== id), { id, action: 'delete' }]);
-    setItems((it) => it.filter((r) => r.id !== id));
+    setItemsByDate((m) => ({
+      ...m,
+      [date]: (m[date] || []).filter((r) => r.id !== id),
+    }));
   };
 
   const handleDeleteDate = (d: string) => {
     const rows = groups[d] || [];
-    rows.forEach((r) => handleDelete(r.id));
+    rows.forEach((r) => handleDelete(r.id, d));
   };
 
-  const openEdit = async (id: string | number) => {
+  const openEdit = async (id: string | number, date: string) => {
     if (editing?.id === id) {
       setEditing(null);
       return;
@@ -96,7 +122,7 @@ export default function Admin() {
     const res = await fetch(`/api/items?table=${table}&id=${id}`);
     if (res.ok) {
       const data = await res.json();
-      setEditing({ id, text: JSON.stringify(data.item.data, null, 2) });
+      setEditing({ id, date, text: JSON.stringify(data.item.data, null, 2) });
     }
   };
 
@@ -108,24 +134,29 @@ export default function Admin() {
         ...p.filter((ch) => !(ch.id === editing.id && ch.action === 'update')),
         { id: editing.id, action: 'update', data: payload },
       ]);
-      setItems((itms) =>
-        itms.map((it) => (it.id === editing.id ? { ...it, ...summarize(table, payload, it.id) } : it))
-      );
+      setItemsByDate((m) => ({
+        ...m,
+        [editing.date]: (m[editing.date] || []).map((it) =>
+          it.id === editing.id ? { ...it, ...summarize(table, payload, it.id) } : it
+        ),
+      }));
       setEditing(null);
     } catch {
       alert('Invalid JSON');
     }
   };
 
-  const groups = items
-    .filter(
-      (i) => String(i.id).includes(search) || String(i.primary ?? '').toLowerCase().includes(search.toLowerCase())
-    )
-    .reduce<Record<string, Item[]>>((acc, item) => {
-      const d = item.created_at.slice(0, 10);
-      (acc[d] ||= []).push(item);
-      return acc;
-    }, {});
+  const groups = dates.reduce<Record<string, Item[]>>((acc, { date }) => {
+    const rows = (itemsByDate[date] || []).filter(
+      (i) =>
+        String(i.id).includes(search) ||
+        String(i.primary ?? '').toLowerCase().includes(search.toLowerCase())
+    );
+    acc[date] = rows;
+    return acc;
+  }, {});
+
+  const totalRecords = dates.reduce((sum, d) => sum + d.count, 0);
 
   const saveAll = async () => {
     setLoading(true);
@@ -140,7 +171,7 @@ export default function Admin() {
         await fetch(`/api/items?table=${table}&id=${ch.id}`, { method: 'DELETE' });
       }
     }
-    await fetchItems();
+    await fetchDates();
   };
 
   const getTableDisplayName = (name: string) => name.replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase());
@@ -165,7 +196,7 @@ export default function Admin() {
           <div className="stats shadow">
             <div className="stat place-items-center">
               <div className="stat-title">Total Records</div>
-              <div className="stat-value text-primary">{items.length}</div>
+              <div className="stat-value text-primary">{totalRecords}</div>
             </div>
           </div>
         </div>
@@ -209,7 +240,7 @@ export default function Admin() {
                 </div>
               </div>
 
-              <button onClick={fetchItems} className={`btn btn-primary gap-2 ${loading ? 'loading' : ''}`} disabled={loading}>
+              <button onClick={fetchDates} className={`btn btn-primary gap-2 ${loading ? 'loading' : ''}`} disabled={loading}>
                 {!loading && <Icon name="refresh" />}
                 Refresh
               </button>
@@ -217,7 +248,7 @@ export default function Admin() {
 
             <div className="flex flex-wrap gap-2 mt-4">
               <div className={`badge ${getTableBadgeColor(table)} badge-lg`}>{getTableDisplayName(table)}</div>
-              <div className="badge badge-outline badge-lg">{Object.keys(groups).length} days</div>
+              <div className="badge badge-outline badge-lg">{dates.length} days</div>
             </div>
           </div>
         </div>
@@ -237,13 +268,18 @@ export default function Admin() {
                     <div className="flex justify-between items-center">
                       <div
                         className="flex items-center gap-3 cursor-pointer hover:text-primary transition-colors"
-                        onClick={() => setCollapsed((c) => ({ ...c, [d]: !c[d] }))}
+                        onClick={() => {
+                          setCollapsed((c) => ({ ...c, [d]: !c[d] }));
+                          if (collapsed[d] && !itemsByDate[d]) {
+                            loadDate(d);
+                          }
+                        }}
                       >
                         <Icon name={isCollapsed ? 'chevron-right' : 'chevron-down'} />
                         <div className="flex items-center gap-3">
                           <Icon name="calendar" className="text-primary" />
                           <span className="text-xl font-semibold">{d}</span>
-                          <div className="badge badge-primary badge-lg">{rows.length} records</div>
+                          <div className="badge badge-primary badge-lg">{dates.find(dt => dt.date === d)?.count ?? 0} records</div>
                         </div>
                       </div>
                       <div className="dropdown dropdown-end">
@@ -266,9 +302,10 @@ export default function Admin() {
 
                     <div className="collapse-content">
                       {!isCollapsed && (
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mt-4">
-                          {rows.map((item) => (
-                            <div key={item.id} className="card bg-base-200 shadow-sm hover:shadow-md transition-shadow">
+                        itemsByDate[d] ? (
+                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mt-4">
+                            {rows.map((item) => (
+                              <div key={item.id} className="card bg-base-200 shadow-sm hover:shadow-md transition-shadow">
                               <div className="card-body p-4">
                                 <div className="flex justify-between items-start mb-3">
                                   <div className="flex-1 min-w-0">
@@ -289,7 +326,7 @@ export default function Admin() {
                                 <div className="card-actions justify-end">
                                   <div className="btn-group">
                                     <button
-                                      onClick={() => openEdit(item.id)}
+                                      onClick={() => openEdit(item.id, d)}
                                       className="btn btn-xs btn-outline btn-info"
                                       title="Edit"
                                     >
@@ -303,7 +340,7 @@ export default function Admin() {
                                       <Icon name="copy" />
                                     </button>
                                     <button
-                                      onClick={() => handleDelete(item.id)}
+                                      onClick={() => handleDelete(item.id, d)}
                                       className="btn btn-xs btn-outline btn-error"
                                       title="Delete"
                                     >
@@ -341,9 +378,16 @@ export default function Admin() {
                                   </div>
                                 )}
                               </div>
-                            </div>
-                          ))}
-                        </div>
+                              </div>
+                            ))}
+                          </div>
+                        ) : loadingDates[d] ? (
+                          <div className="flex justify-center p-4">
+                            <span className="loading loading-spinner"></span>
+                          </div>
+                        ) : (
+                          <div className="p-4 text-sm text-gray-500">No records</div>
+                        )
                       )}
                     </div>
                   </div>
@@ -366,7 +410,7 @@ export default function Admin() {
                 </div>
               </div>
               <div className="flex-none">
-                <button onClick={() => fetchItems()} className="btn btn-sm btn-ghost">
+                <button onClick={() => fetchDates()} className="btn btn-sm btn-ghost">
                   <Icon name="rotate-left" />
                   Revert
                 </button>
