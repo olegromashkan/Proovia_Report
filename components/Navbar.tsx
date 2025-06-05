@@ -27,9 +27,6 @@ export default function Navbar() {
         <Link href="/scheduled-trips" className="hover:text-indigo-600 transition-colors">
           Scheduled Trips
         </Link>
-        <Link href="/punctuality" className="hover:text-indigo-600 transition-colors">
-          Punctuality
-        </Link>
       </div>
       <div className="flex items-center gap-2">
         <button onClick={() => setSearchOpen(true)} className="p-2 hover:bg-gray-100 rounded-full transition-colors">🔍</button>
