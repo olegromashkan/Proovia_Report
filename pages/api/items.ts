@@ -16,7 +16,7 @@ function isValidTable(name: string | string[] | undefined): name is Table {
 }
 
 export default function handler(req: NextApiRequest, res: NextApiResponse) {
-  const { table, id } = req.query;
+  const { table, id, date } = req.query;
   if (!isValidTable(table)) {
     return res.status(400).json({ message: 'Invalid table' });
   }
@@ -32,9 +32,18 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
       return res.status(200).json({ item: { ...row, data: JSON.parse(row.data) } });
     }
 
-    const rows = db
-      .prepare(`SELECT id, created_at FROM ${table} ORDER BY created_at DESC`)
-      .all();
+    let rows;
+    if (typeof date === 'string') {
+      rows = db
+        .prepare(
+          `SELECT id, created_at FROM ${table} WHERE date(created_at) = date(?) ORDER BY created_at DESC`
+        )
+        .all(date);
+    } else {
+      rows = db
+        .prepare(`SELECT id, created_at FROM ${table} ORDER BY created_at DESC`)
+        .all();
+    }
     return res.status(200).json({ items: rows });
   }
 
@@ -55,12 +64,17 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
   }
 
   if (req.method === 'DELETE') {
-    if (typeof id !== 'string') {
-      return res.status(400).json({ message: 'Missing id' });
+    if (typeof id === 'string') {
+      db.prepare(`DELETE FROM ${table} WHERE id = ?`).run(id);
+      addNotification('delete', `Deleted ${id} from ${table}`);
+      return res.status(200).json({ message: 'Deleted' });
     }
-    db.prepare(`DELETE FROM ${table} WHERE id = ?`).run(id);
-    addNotification('delete', `Deleted ${id} from ${table}`);
-    return res.status(200).json({ message: 'Deleted' });
+    if (typeof date === 'string') {
+      db.prepare(`DELETE FROM ${table} WHERE date(created_at) = date(?)`).run(date);
+      addNotification('delete', `Deleted ${table} items for ${date}`);
+      return res.status(200).json({ message: 'Deleted' });
+    }
+    return res.status(400).json({ message: 'Missing id or date' });
   }
 
   return res.status(405).json({ message: 'Method not allowed' });
