@@ -20,6 +20,8 @@ export default function Admin() {
   const [table, setTable] = useState<(typeof TABLES)[number]>(TABLES[0]);
   const [items, setItems] = useState<Item[]>([]);
   const [editing, setEditing] = useState<EditState | null>(null);
+  const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
+  const [search, setSearch] = useState('');
 
   const fetchItems = async () => {
     const res = await fetch(`/api/items?table=${table}`);
@@ -71,53 +73,75 @@ export default function Admin() {
     }
   };
 
-  const groups = items.reduce<Record<string, Item[]>>((acc, item) => {
-    const d = item.created_at.slice(0, 10);
-    (acc[d] ||= []).push(item);
-    return acc;
-  }, {});
+  const groups = items
+    .filter((i) => i.id.includes(search))
+    .reduce<Record<string, Item[]>>((acc, item) => {
+      const d = item.created_at.slice(0, 10);
+      (acc[d] ||= []).push(item);
+      return acc;
+    }, {});
 
   return (
     <Layout title="Admin" fullWidth>
       <h1 className="text-2xl font-bold mb-4">Admin</h1>
-      <select
-        value={table}
-        onChange={(e) => setTable(e.target.value as (typeof TABLES)[number])}
-        className="mb-4 border p-1"
-      >
-        {TABLES.map((t) => (
-          <option key={t} value={t}>
-            {t}
-          </option>
-        ))}
-      </select>
+      <div className="flex flex-wrap gap-2 mb-4 items-end">
+        <select
+          value={table}
+          onChange={(e) => setTable(e.target.value as (typeof TABLES)[number])}
+          className="border p-1"
+        >
+          {TABLES.map((t) => (
+            <option key={t} value={t}>
+              {t}
+            </option>
+          ))}
+        </select>
+        <input
+          type="text"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Search by ID"
+          className="border p-1 rounded"
+        />
+        <button
+          onClick={fetchItems}
+          className="border px-2 py-1 rounded bg-gray-100"
+        >
+          Refresh
+        </button>
+        <div className="text-sm text-gray-600 ml-auto">
+          Total: {items.length}
+        </div>
+      </div>
 
-      {Object.entries(groups).map(([d, rows]) => (
-        <div key={d} className="mb-8">
-          <div className="flex justify-between items-center mb-2">
-            <h2 className="text-lg font-semibold">{d}</h2>
-            <button
-              onClick={() => handleDeleteDate(d)}
-              className="text-red-600 hover:underline"
-            >
-              Delete day
-            </button>
-          </div>
-          <table className="min-w-full border rounded-lg overflow-hidden text-sm">
-            <thead>
-              <tr>
-                <th className="border px-2">ID</th>
-                <th className="border px-2">Uploaded</th>
-                <th className="border px-2">Action</th>
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map((item) => (
-                <Fragment key={item.id}>
-                  <tr className="odd:bg-gray-50 hover:bg-gray-100 transition-colors">
-                    <td className="border px-2">{item.id}</td>
-                    <td className="border px-2">{item.created_at}</td>
-                    <td className="border px-2 space-x-2">
+      {Object.entries(groups).map(([d, rows]) => {
+        const isCollapsed = collapsed[d];
+        return (
+          <div key={d} className="mb-8">
+            <div className="flex justify-between items-center mb-2">
+              <h2
+                className="text-lg font-semibold cursor-pointer flex items-center gap-2"
+                onClick={() => setCollapsed((c) => ({ ...c, [d]: !c[d] }))}
+              >
+                <i
+                  className={`fa-solid ${isCollapsed ? 'fa-chevron-right' : 'fa-chevron-down'}`}
+                />
+                {d}
+              </h2>
+              <button
+                onClick={() => handleDeleteDate(d)}
+                className="text-red-600 hover:underline"
+              >
+                Delete day
+              </button>
+            </div>
+            {!isCollapsed && (
+              <div className="grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                {rows.map((item) => (
+                  <div key={item.id} className="bg-white rounded shadow p-3 text-sm">
+                    <div className="font-mono text-xs text-gray-500">{item.id}</div>
+                    <div className="text-xs mb-2">{item.created_at}</div>
+                    <div className="flex justify-end space-x-2">
                       <button
                         onClick={() => openEdit(item.id)}
                         className="text-blue-600 hover:underline"
@@ -130,17 +154,21 @@ export default function Admin() {
                       >
                         Delete
                       </button>
-                    </td>
-                  </tr>
-                  {editing?.id === item.id && (
-                    <tr className="bg-gray-50">
-                      <td colSpan={3} className="border p-2">
+                      <button
+                        onClick={() => navigator.clipboard.writeText(item.id)}
+                        className="text-gray-600 hover:underline"
+                      >
+                        Copy
+                      </button>
+                    </div>
+                    {editing?.id === item.id && (
+                      <div className="mt-2 space-y-2">
                         <textarea
                           className="w-full h-40 border p-2 font-mono rounded"
                           value={editing.text}
                           onChange={(e) => setEditing({ ...editing, text: e.target.value })}
                         />
-                        <div className="space-x-2 mt-2">
+                        <div className="space-x-2">
                           <button
                             onClick={saveEdit}
                             className="px-3 py-1 bg-blue-600 text-white rounded"
@@ -153,16 +181,22 @@ export default function Admin() {
                           >
                             Cancel
                           </button>
+                          <a
+                            href={`/admin/${table}/${item.id}`}
+                            className="px-3 py-1 border rounded"
+                          >
+                            Open
+                          </a>
                         </div>
-                      </td>
-                    </tr>
-                  )}
-                </Fragment>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      ))}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        );
+      })}
     </Layout>
   );
 }
