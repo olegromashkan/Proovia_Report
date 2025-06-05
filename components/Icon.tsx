@@ -5,32 +5,38 @@ interface IconProps {
   className?: string;
 }
 
-const icons: Record<string, string> = {
-  house: '🏠',
-  upload: '⬆️',
-  'user-cog': '👤',
-  'table-list': '📊',
-  search: '🔍',
-  bell: '🔔',
-  xmark: '❌',
-  trash: '🗑️',
-  'chevron-left': '◀️',
-  'chevron-right': '▶️',
-  'chevron-down': '🔽',
-  check: '✅',
-  clock: '⏰',
-  pen: '✏️',
-  copy: '📋',
-  ban: '🚫',
-  save: '💾',
-  'file-arrow-up': '📤',
-  'rotate-left': '↩️',
-  'up-right-from-square': '↗️',
-  refresh: '🔄',
-  calendar: '📅',
-  database: '🗄️',
+const iconMap: Record<string, string> = {
+  house: 'house',
+  upload: 'upload',
+  'user-cog': 'person-gear',
+  'table-list': 'table',
+  search: 'search',
+  bell: 'bell',
+  xmark: 'x-lg',
+  trash: 'trash',
+  'chevron-left': 'chevron-left',
+  'chevron-right': 'chevron-right',
+  'chevron-down': 'chevron-down',
+  check: 'check',
+  clock: 'clock',
+  pen: 'pencil',
+  copy: 'clipboard',
+  ban: 'ban',
+  save: 'save',
+  'file-arrow-up': 'file-earmark-arrow-up',
+  'rotate-left': 'arrow-counterclockwise',
+  'up-right-from-square': 'box-arrow-up-right',
+  refresh: 'arrow-clockwise',
+  calendar: 'calendar',
+  database: 'hdd-stack',
 };
 
 export default function Icon({ name, className }: IconProps) {
-  return <span className={className}>{icons[name] || '❓'}</span>;
+  const icon = iconMap[name] || name;
+  return (
+    <i
+      className={`bi bi-${icon} ${className || ''}`.trim()}
+      aria-hidden="true"
+    ></i>
+  );
 }
