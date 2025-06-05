@@ -14,8 +14,8 @@ export default function Modal({ open, onClose, children, className }: ModalProps
       <div
         className={`bg-white rounded-lg shadow-xl w-full p-6 relative ${className || 'max-w-lg'}`}
       >
-        <button className="absolute top-2 right-2 text-xl" onClick={onClose}>
-          ✖
+        <button className="absolute top-2 right-2 text-xl hover:text-red-600" onClick={onClose}>
+          <i className="fa-solid fa-xmark" />
         </button>
         {children}
       </div>

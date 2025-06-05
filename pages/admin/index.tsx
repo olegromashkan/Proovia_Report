@@ -189,9 +189,10 @@ export default function Admin() {
               </h2>
               <button
                 onClick={() => handleDeleteDate(d)}
-                className="text-red-600 hover:underline"
+                className="text-red-600 hover:underline flex items-center gap-1"
               >
-                Delete day
+                <i className="fa-solid fa-trash" />
+                <span>Delete day</span>
               </button>
             </div>
             {!isCollapsed && (
@@ -208,21 +209,24 @@ export default function Admin() {
                     <div className="flex justify-end space-x-2">
                       <button
                         onClick={() => openEdit(item.id)}
-                        className="text-blue-600 hover:underline"
+                        className="text-blue-600 hover:underline flex items-center gap-1"
                       >
-                        {editing?.id === item.id ? 'Close' : 'Edit'}
+                        <i className="fa-solid fa-pen" />
+                        <span>{editing?.id === item.id ? 'Close' : 'Edit'}</span>
                       </button>
                       <button
                         onClick={() => handleDelete(item.id)}
-                        className="text-red-600 hover:underline"
+                        className="text-red-600 hover:underline flex items-center gap-1"
                       >
-                        Delete
+                        <i className="fa-solid fa-trash" />
+                        <span>Delete</span>
                       </button>
                       <button
                         onClick={() => navigator.clipboard.writeText(item.id)}
-                        className="text-gray-600 hover:underline"
+                        className="text-gray-600 hover:underline flex items-center gap-1"
                       >
-                        Copy
+                        <i className="fa-solid fa-copy" />
+                        <span>Copy</span>
                       </button>
                     </div>
                     {editing?.id === item.id && (
@@ -235,21 +239,24 @@ export default function Admin() {
                         <div className="space-x-2">
                           <button
                             onClick={saveEdit}
-                            className="px-3 py-1 bg-blue-600 text-white rounded"
+                            className="btn bg-blue-600"
                           >
-                            Save
+                            <i className="fa-solid fa-save" />
+                            <span>Save</span>
                           </button>
                           <button
                             onClick={() => setEditing(null)}
-                            className="px-3 py-1 border rounded"
+                            className="btn bg-gray-600"
                           >
-                            Cancel
+                            <i className="fa-solid fa-ban" />
+                            <span>Cancel</span>
                           </button>
                           <a
                             href={`/admin/${table}/${item.id}`}
-                            className="px-3 py-1 border rounded"
+                            className="btn border border-gray-300 text-gray-700 bg-white"
                           >
-                            Open
+                            <i className="fa-solid fa-up-right-from-square" />
+                            <span>Open</span>
                           </a>
                         </div>
                       </div>
@@ -267,15 +274,17 @@ export default function Admin() {
           <div className="space-x-2">
             <button
               onClick={() => fetchItems()}
-              className="px-3 py-1 border rounded bg-gray-600"
+              className="btn bg-gray-600"
             >
-              Revert All
+              <i className="fa-solid fa-rotate-left" />
+              <span>Revert All</span>
             </button>
             <button
               onClick={saveAll}
-              className="px-3 py-1 border rounded bg-blue-600"
+              className="btn bg-blue-600"
             >
-              Save
+              <i className="fa-solid fa-save" />
+              <span>Save</span>
             </button>
           </div>
         </div>

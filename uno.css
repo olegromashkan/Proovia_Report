@@ -1,6 +1,14 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@400;600;700&display=swap');
 @unocss all;
 body {
   font-family: 'Inter', system-ui, sans-serif;
-  background: #f6f9fc;
+  background: linear-gradient(to bottom right, #f8fafc, #eef2f7);
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: 'Poppins', system-ui, sans-serif;
+}
+
+.btn {
+  @apply px-3 py-1 rounded bg-indigo-600 text-white hover:bg-indigo-700 transition-colors inline-flex items-center gap-2;
 }
