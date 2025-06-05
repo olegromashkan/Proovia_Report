@@ -36,15 +36,43 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
     if (typeof date === 'string') {
       rows = db
         .prepare(
-          `SELECT id, created_at FROM ${table} WHERE date(created_at) = date(?) ORDER BY created_at DESC`
+          `SELECT id, created_at, data FROM ${table} WHERE date(created_at) = date(?) ORDER BY created_at DESC`
         )
         .all(date);
     } else {
       rows = db
-        .prepare(`SELECT id, created_at FROM ${table} ORDER BY created_at DESC`)
+        .prepare(`SELECT id, created_at, data FROM ${table} ORDER BY created_at DESC`)
         .all();
     }
-    return res.status(200).json({ items: rows });
+
+    const items = rows.map((row: any) => {
+      let primary: string | number = row.id;
+      let secondary = '';
+      try {
+        const data = JSON.parse(row.data);
+        switch (table) {
+          case 'copy_of_tomorrow_trips':
+            primary = data['Order.OrderNumber'] || row.id;
+            break;
+          case 'event_stream':
+            primary = data['Vans'] || row.id;
+            break;
+          case 'drivers_report':
+            primary = data['Full_Name'] || row.id;
+            secondary = data['Contractor_Name'] || '';
+            break;
+          case 'schedule_trips':
+            primary = data['Calendar_Name'] || row.id;
+            break;
+          case 'csv_trips':
+            primary = `${data['Start At'] || ''} - ${data['End At'] || ''}`.trim();
+            secondary = data['Asset'] || '';
+            break;
+        }
+      } catch {}
+      return { id: row.id, created_at: row.created_at, primary, secondary };
+    });
+    return res.status(200).json({ items });
   }
 
   if (req.method === 'PUT') {
