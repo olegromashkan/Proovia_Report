@@ -74,6 +74,12 @@ export default function FullReport() {
     setRange(d, d);
   };
 
+  const shortcutYesterday = () => {
+    const d = new Date();
+    d.setDate(d.getDate() - 1);
+    setRange(d, d);
+  };
+
   const shortcutLast7 = () => {
     const end = new Date();
     const start = new Date();
@@ -127,8 +133,9 @@ export default function FullReport() {
   }, [router.isReady, router.query]);
 
   useEffect(() => {
+    if (!router.isReady) return;
     fetchTrips();
-  }, [start, end]);
+  }, [router.isReady, start, end]);
 
   const total = trips.length;
   const complete = trips.filter((t) => t.Status === 'Complete').length;
@@ -189,6 +196,9 @@ export default function FullReport() {
         <div className="flex flex-wrap gap-1">
           <button onClick={shortcutToday} className="border px-2 py-1 rounded">
             Today
+          </button>
+          <button onClick={shortcutYesterday} className="border px-2 py-1 rounded">
+            Yesterday
           </button>
           <button onClick={shortcutTomorrow} className="border px-2 py-1 rounded">
             Tomorrow
