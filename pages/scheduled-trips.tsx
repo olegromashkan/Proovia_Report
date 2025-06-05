@@ -36,7 +36,7 @@ export default function ScheduledTrips() {
   const [end, setEnd] = useState(today);
   const [drivers, setDrivers] = useState<DriverData[]>([]);
   const [dates, setDates] = useState<string[]>([]);
-  const [view, setView] = useState<'original' | 'time'>('original');
+  const [view, setView] = useState<'original' | 'time' | 'routes'>('original');
   const [contractors, setContractors] = useState<string[]>([]);
   const [regions, setRegions] = useState<string[]>([]);
   const [contractorFilter, setContractorFilter] = useState('All');
@@ -172,35 +172,40 @@ export default function ScheduledTrips() {
       <th className="border px-1">Driver</th>
       <th className="border px-1">Contractor</th>
       {dates.map((d) => (
-        <th key={d} className="border px-1" colSpan={view === 'time' ? 3 : 4}>
+        <th
+          key={d}
+          className="border px-1"
+          colSpan={view === 'time' ? 3 : view === 'original' ? 4 : 1}
+        >
           {d}
         </th>
       ))}
     </tr>
   );
 
-  const subHeaderRow = (
-    <tr>
-      <th className="border px-1"></th>
-      <th className="border px-1"></th>
-      {dates.map((d) => (
-        view === 'time' ? (
-          <>
-            <th key={`${d}-s`} className="border px-1">Start</th>
-            <th key={`${d}-e`} className="border px-1">End</th>
-            <th key={`${d}-p`} className="border px-1">Price</th>
-          </>
-        ) : (
-          <>
-            <th key={`${d}-r`} className="border px-1">Region</th>
-            <th key={`${d}-t`} className="border px-1">Tasks</th>
-            <th key={`${d}-pu`} className="border px-1">Punctuality</th>
-            <th key={`${d}-pr`} className="border px-1">Price</th>
-          </>
-        )
-      ))}
-    </tr>
-  );
+  const subHeaderRow =
+    view === 'routes' ? null : (
+      <tr>
+        <th className="border px-1"></th>
+        <th className="border px-1"></th>
+        {dates.map((d) =>
+          view === 'time' ? (
+            <>
+              <th key={`${d}-s`} className="border px-1">Start</th>
+              <th key={`${d}-e`} className="border px-1">End</th>
+              <th key={`${d}-p`} className="border px-1">Price</th>
+            </>
+          ) : (
+            <>
+              <th key={`${d}-r`} className="border px-1">Region</th>
+              <th key={`${d}-t`} className="border px-1">Tasks</th>
+              <th key={`${d}-pu`} className="border px-1">Punctuality</th>
+              <th key={`${d}-pr`} className="border px-1">Price</th>
+            </>
+          ),
+        )}
+      </tr>
+    );
 
   const filteredDrivers = drivers.filter(d => {
     const contractorMatch = contractorFilter === 'All' || d.contractor === contractorFilter;
@@ -225,7 +230,10 @@ export default function ScheduledTrips() {
           <button onClick={shortcutThisWeek} className="border px-2 py-1 rounded">This week</button>
           <button onClick={shortcutLastWeek} className="border px-2 py-1 rounded">Last week</button>
           <button onClick={() => setView(view === 'time' ? 'original' : 'time')} className="border px-2 py-1 rounded">
-            Switch View
+            Toggle Detail
+          </button>
+          <button onClick={() => setView('routes')} className="border px-2 py-1 rounded">
+            Routes View
           </button>
         </div>
         <select value={contractorFilter} onChange={e => setContractorFilter(e.target.value)} className="border p-1 rounded">
@@ -261,37 +269,73 @@ export default function ScheduledTrips() {
                     ? (
                         <>
                           <td key={`${d.name}-${date}-s`} className="border px-1">
-                            {trips.map(t => <div key={t.startTime}>{t.startTime}</div>)}
+                            {trips.map((t) => (
+                              <div key={t.startTime}>{t.startTime}</div>
+                            ))}
                           </td>
                           <td key={`${d.name}-${date}-e`} className="border px-1">
-                            {trips.map(t => <div key={t.endTime}>{t.endTime}</div>)}
+                            {trips.map((t) => (
+                              <div key={t.endTime}>{t.endTime}</div>
+                            ))}
                           </td>
                           <td key={`${d.name}-${date}-p`} className="border px-1">
-                            {trips.map((t,i) => (
-                              <div key={i} className={`px-1 rounded ${orderValueClass(t.orderValue)}`}>£{t.orderValue}</div>
+                            {trips.map((t, i) => (
+                              <div
+                                key={i}
+                                className={`px-1 rounded ${orderValueClass(t.orderValue)}`}
+                              >
+                                £{t.orderValue}
+                              </div>
+                            ))}
+                          </td>
+                        </>
+                      )
+                    : view === 'original'
+                    ? (
+                        <>
+                          <td key={`${d.name}-${date}-r`} className={`border px-1`}>
+                            {trips.map((t, i) => (
+                              <div key={i} className={regionClass(t.region)}>
+                                {t.region}
+                              </div>
+                            ))}
+                          </td>
+                          <td key={`${d.name}-${date}-t`} className="border px-1">
+                            {trips.map((t) => (
+                              <div key={t.region}>{t.ordersCount}</div>
+                            ))}
+                          </td>
+                          <td key={`${d.name}-${date}-pu`} className="border px-1">
+                            {trips.map((t) => (
+                              <div
+                                key={t.punctuality}
+                                className={punctualityClass(t.punctuality)}
+                              >
+                                {t.punctuality}
+                              </div>
+                            ))}
+                          </td>
+                          <td key={`${d.name}-${date}-pr`} className="border px-1">
+                            {trips.map((t, i) => (
+                              <div
+                                key={i}
+                                className={`px-1 rounded ${orderValueClass(t.orderValue)}`}
+                              >
+                                £{t.orderValue}
+                              </div>
                             ))}
                           </td>
                         </>
                       )
                     : (
-                        <>
-                          <td key={`${d.name}-${date}-r`} className={`border px-1`}>
-                            {trips.map((t,i)=>(<div key={i} className={regionClass(t.region)}>{t.region}</div>))}
-                          </td>
-                          <td key={`${d.name}-${date}-t`} className="border px-1">
-                            {trips.map(t => <div key={t.region}>{t.ordersCount}</div>)}
-                          </td>
-                          <td key={`${d.name}-${date}-pu`} className="border px-1">
-                            {trips.map(t => (
-                              <div key={t.punctuality} className={punctualityClass(t.punctuality)}>{t.punctuality}</div>
-                            ))}
-                          </td>
-                          <td key={`${d.name}-${date}-pr`} className="border px-1">
-                            {trips.map((t,i) => (
-                              <div key={i} className={`px-1 rounded ${orderValueClass(t.orderValue)}`}>£{t.orderValue}</div>
-                            ))}
-                          </td>
-                        </>
+                        <td
+                          key={`${d.name}-${date}-routes`}
+                          className="border px-1"
+                        >
+                          {trips.length > 0
+                            ? Array.from(new Set(trips.map((t) => t.region))).join(', ')
+                            : ''}
+                        </td>
                       );
                 })}
               </tr>
