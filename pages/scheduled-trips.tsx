@@ -250,6 +250,15 @@ export default function ScheduledTrips() {
         <input type="text" placeholder="Search" value={search} onChange={e => setSearch(e.target.value)} className="border p-1 rounded" />
       </div>
 
+      <div className="mb-4">
+        <h2 className="font-semibold">Driver List</h2>
+        <ul className="list-disc pl-4">
+          {drivers.map(d => (
+            <li key={d.name}>{d.name}</li>
+          ))}
+        </ul>
+      </div>
+
       <div className="overflow-auto border rounded">
         <table className="min-w-full text-xs border-collapse">
           <thead className="bg-gray-100">
