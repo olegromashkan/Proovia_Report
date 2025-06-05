@@ -8,12 +8,11 @@ interface CardProps {
 
 export default function Card({ title, value, onClick }: CardProps) {
   return (
-    <div
-      onClick={onClick}
-      className="cursor-pointer bg-white/80 backdrop-blur border border-gray-200 rounded-xl shadow-md p-6 flex flex-col items-center transition hover:-translate-y-1 hover:shadow-xl"
-    >
-      <div className="text-xs font-semibold uppercase text-gray-500 tracking-wide">{title}</div>
-      <div className="text-4xl font-bold">{value}</div>
+    <div onClick={onClick} className="card bg-base-100 shadow cursor-pointer hover:shadow-lg">
+      <div className="card-body items-center p-4">
+        <h2 className="card-title text-sm font-medium">{title}</h2>
+        <p className="text-4xl font-bold">{value}</p>
+      </div>
     </div>
   );
 }

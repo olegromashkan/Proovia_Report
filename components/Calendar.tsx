@@ -80,13 +80,13 @@ export default function Calendar() {
   return (
     <div className="space-y-2">
       <div className="flex items-center gap-2">
-        <button onClick={() => changeMonth(-1)} className="px-2">
+        <button onClick={() => changeMonth(-1)} className="btn btn-square btn-sm">
           <Icon name="chevron-left" className="icon" />
         </button>
         <select
           value={month}
           onChange={e => setMonth(Number(e.target.value))}
-          className="border p-1 rounded"
+          className="select select-bordered"
         >
           {months.map((m, i) => (
             <option key={i} value={i + 1}>
@@ -98,9 +98,9 @@ export default function Calendar() {
           type="number"
           value={year}
           onChange={e => setYear(Number(e.target.value))}
-          className="border p-1 rounded w-24"
+          className="input input-bordered w-24"
         />
-        <button onClick={() => changeMonth(1)} className="px-2">
+        <button onClick={() => changeMonth(1)} className="btn btn-square btn-sm">
           <Icon name="chevron-right" className="icon" />
         </button>
       </div>
