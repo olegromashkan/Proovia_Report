@@ -36,13 +36,15 @@ export default function NotificationCenter() {
         onClick={() => setOpen(!open)}
         className="p-2 hover:bg-gray-100 rounded-full transition"
       >
-        🔔
+        <i className="fa-solid fa-bell" />
       </button>
       {open && (
         <div className="absolute right-0 mt-2 w-80 bg-white/90 backdrop-blur border shadow-lg z-10 rounded-lg overflow-auto max-h-60">
           <div className="flex justify-between items-center p-2 border-b font-bold">
             <span>Notifications</span>
-            <button onClick={() => setOpen(false)} className="text-sm text-gray-500 hover:text-gray-700">x</button>
+            <button onClick={() => setOpen(false)} className="text-sm text-gray-500 hover:text-gray-700">
+              <i className="fa-solid fa-xmark" />
+            </button>
           </div>
           {items.length === 0 && (
             <div className="p-2 text-sm text-gray-500">No notifications</div>
@@ -56,9 +58,10 @@ export default function NotificationCenter() {
               </div>
               <button
                 onClick={() => remove(n.id)}
-                className="text-red-600 hover:underline transition"
+                className="text-red-600 hover:underline transition flex items-center gap-1"
               >
-                Delete
+                <i className="fa-solid fa-trash" />
+                <span>Delete</span>
               </button>
             </div>
           ))}

@@ -51,7 +51,9 @@ export default function SearchOverlay({ open, onClose }: { open: boolean; onClos
             placeholder="Search..."
             className="border p-1 flex-grow mr-2 rounded"
           />
-          <button onClick={onClose} className="px-2">✖</button>
+          <button onClick={onClose} className="px-2">
+            <i className="fa-solid fa-xmark" />
+          </button>
         </div>
         {results.length === 0 && q && (
           <div className="text-sm text-gray-500">No exact matches</div>

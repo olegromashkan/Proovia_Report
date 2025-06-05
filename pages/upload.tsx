@@ -102,8 +102,12 @@ export default function Upload() {
   return (
     <Layout title="Upload JSON">
       <h1 className="text-2xl font-bold">Upload JSON</h1>
-      <input type="file" accept=".json,.csv" onChange={handleFile} className="block mb-2" />
-      <progress className="w-full h-2 rounded" value={progress} max={100}></progress>
+      <input id="file" type="file" accept=".json,.csv" onChange={handleFile} className="hidden" />
+      <label htmlFor="file" className="btn mb-2 cursor-pointer bg-indigo-600">
+        <i className="fa-solid fa-file-arrow-up" />
+        <span>Select File</span>
+      </label>
+      <progress className="w-full h-2 rounded bg-gray-200" value={progress} max={100}></progress>
       {message && <p>{message}</p>}
       {logs.length > 0 && (
         <div className="bg-gray-100 p-2 rounded">

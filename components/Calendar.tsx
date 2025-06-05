@@ -79,7 +79,9 @@ export default function Calendar() {
   return (
     <div className="space-y-2">
       <div className="flex items-center gap-2">
-        <button onClick={() => changeMonth(-1)} className="px-2">«</button>
+        <button onClick={() => changeMonth(-1)} className="px-2">
+          <i className="fa-solid fa-chevron-left" />
+        </button>
         <select
           value={month}
           onChange={e => setMonth(Number(e.target.value))}
@@ -97,7 +99,9 @@ export default function Calendar() {
           onChange={e => setYear(Number(e.target.value))}
           className="border p-1 rounded w-24"
         />
-        <button onClick={() => changeMonth(1)} className="px-2">»</button>
+        <button onClick={() => changeMonth(1)} className="px-2">
+          <i className="fa-solid fa-chevron-right" />
+        </button>
       </div>
       <div className="grid grid-cols-7 gap-px text-center">
         {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(d => (

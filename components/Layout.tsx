@@ -22,7 +22,7 @@ export default function Layout({ children, title, fullWidth }: LayoutProps) {
           referrerPolicy="no-referrer"
         />
       </Head>
-      <div className="min-h-screen bg-gradient-to-br from-slate-100 to-white text-gray-800">
+      <div className="min-h-screen bg-gradient-to-br from-indigo-50 to-white text-gray-800">
         <Navbar />
         <main
           className={
