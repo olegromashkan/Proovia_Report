@@ -2,8 +2,15 @@ import type { AppProps } from 'next/app';
 import Head from 'next/head';
 import Script from 'next/script';
 import '../uno.css';
+import { useEffect } from 'react';
 
 export default function MyApp({ Component, pageProps }: AppProps) {
+  useEffect(() => {
+    const saved = localStorage.getItem('theme');
+    const theme = saved || 'light';
+    document.documentElement.setAttribute('data-theme', theme);
+  }, []);
+
   return (
     <>
       <Head>

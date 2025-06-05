@@ -50,9 +50,9 @@ export default function SearchOverlay({ open, onClose }: { open: boolean; onClos
             value={q}
             onChange={(e) => setQ(e.target.value)}
             placeholder="Search..."
-            className="border p-1 flex-grow mr-2 rounded"
+            className="input input-bordered flex-grow mr-2"
           />
-          <button onClick={onClose} className="px-2">
+          <button onClick={onClose} className="btn btn-square btn-ghost btn-sm">
             <Icon name="xmark" className="icon" />
           </button>
         </div>
