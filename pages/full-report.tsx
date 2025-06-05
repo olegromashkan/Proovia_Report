@@ -186,26 +186,26 @@ export default function FullReport() {
           type="date"
           value={start}
           onChange={(e) => setStart(e.target.value)}
-          className="border p-1 rounded"
+          className="input input-bordered"
         />
         <input
           type="date"
           value={end}
           onChange={(e) => setEnd(e.target.value)}
-          className="border p-1 rounded"
+          className="input input-bordered"
         />
         <div className="flex flex-wrap gap-1">
-          <button onClick={shortcutToday} className="btn bg-gray-600">Today</button>
-          <button onClick={shortcutYesterday} className="btn bg-gray-600">Yesterday</button>
-          <button onClick={shortcutTomorrow} className="btn bg-gray-600">Tomorrow</button>
-          <button onClick={shortcutLast7} className="btn bg-gray-600">Last 7 days</button>
-          <button onClick={shortcutThisWeek} className="btn bg-gray-600">This week</button>
-          <button onClick={shortcutLastWeek} className="btn bg-gray-600">Last week</button>
+          <button onClick={shortcutToday} className="btn btn-primary btn-sm">Today</button>
+          <button onClick={shortcutYesterday} className="btn btn-primary btn-sm">Yesterday</button>
+          <button onClick={shortcutTomorrow} className="btn btn-primary btn-sm">Tomorrow</button>
+          <button onClick={shortcutLast7} className="btn btn-primary btn-sm">Last 7 days</button>
+          <button onClick={shortcutThisWeek} className="btn btn-primary btn-sm">This week</button>
+          <button onClick={shortcutLastWeek} className="btn btn-primary btn-sm">Last week</button>
         </div>
         <select
           value={statusFilter}
           onChange={(e) => setStatusFilter(e.target.value)}
-          className="border p-1 rounded"
+          className="select select-bordered"
         >
           <option value="">All statuses</option>
           <option value="Complete">Complete</option>
@@ -214,7 +214,7 @@ export default function FullReport() {
         <select
           value={driverFilter}
           onChange={(e) => setDriverFilter(e.target.value)}
-          className="border p-1 rounded"
+          className="select select-bordered"
         >
           <option value="">All drivers</option>
           {drivers.map((d) => (
@@ -223,10 +223,10 @@ export default function FullReport() {
             </option>
           ))}
         </select>
-        <button onClick={() => setStatusFilter('Failed')} className="btn bg-red-600">
+        <button onClick={() => setStatusFilter('Failed')} className="btn btn-error btn-sm">
           Failed
         </button>
-        <button onClick={() => setStatusFilter('Complete')} className="btn bg-green-600">
+        <button onClick={() => setStatusFilter('Complete')} className="btn btn-success btn-sm">
           Complete
         </button>
         <button
@@ -235,7 +235,7 @@ export default function FullReport() {
             setDriverFilter('');
             setSearch('');
           }}
-          className="btn bg-gray-600"
+          className="btn btn-primary btn-sm"
         >
           Reset
         </button>
@@ -244,14 +244,14 @@ export default function FullReport() {
           placeholder="Search..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="border p-1 rounded"
+          className="input input-bordered"
         />
         {fields.length > 0 && (
           <>
             <select
               value={filterField}
               onChange={(e) => setFilterField(e.target.value)}
-              className="border p-1 rounded"
+              className="select select-bordered"
             >
               <option value="">Field</option>
               {fields.map((f) => (
@@ -263,7 +263,7 @@ export default function FullReport() {
             <select
               value={filterOp}
               onChange={(e) => setFilterOp(e.target.value)}
-              className="border p-1 rounded"
+              className="select select-bordered"
             >
               <option value="contains">contains</option>
               <option value="equals">equals</option>
@@ -276,7 +276,7 @@ export default function FullReport() {
               value={filterValue}
               onChange={(e) => setFilterValue(e.target.value)}
               placeholder="value"
-              className="border p-1 rounded"
+              className="input input-bordered"
             />
           </>
         )}

@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { useState } from 'react';
+import ThemeToggle from './ThemeToggle';
 import NotificationCenter from './NotificationCenter';
 import SearchOverlay from './SearchOverlay';
 import Icon from './Icon';
@@ -35,6 +36,7 @@ export default function Navbar() {
           <Icon name="search" className="icon" />
         </button>
         <NotificationCenter />
+        <ThemeToggle />
       </div>
       <SearchOverlay open={searchOpen} onClose={() => setSearchOpen(false)} />
     </nav>

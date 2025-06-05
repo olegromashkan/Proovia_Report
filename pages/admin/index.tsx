@@ -148,7 +148,7 @@ export default function Admin() {
         <select
           value={table}
           onChange={(e) => setTable(e.target.value as (typeof TABLES)[number])}
-          className="border p-1"
+          className="select select-bordered"
         >
           {TABLES.map((t) => (
             <option key={t} value={t}>
@@ -161,9 +161,9 @@ export default function Admin() {
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Search"
-          className="border p-1 rounded"
+          className="input input-bordered"
         />
-        <button onClick={fetchItems} className="btn bg-gray-600">
+        <button onClick={fetchItems} className="btn btn-primary btn-sm">
           Refresh
         </button>
         <div className="text-sm text-gray-600 ml-auto">
@@ -238,21 +238,21 @@ export default function Admin() {
                         <div className="space-x-2">
                           <button
                             onClick={saveEdit}
-                            className="btn bg-blue-600"
+                            className="btn btn-primary btn-sm"
                           >
                             <Icon name="save" className="icon" />
                             <span>Save</span>
                           </button>
                           <button
                             onClick={() => setEditing(null)}
-                            className="btn bg-gray-600"
+                            className="btn btn-primary btn-sm"
                           >
                             <Icon name="ban" className="icon" />
                             <span>Cancel</span>
                           </button>
                           <a
                             href={`/admin/${table}/${item.id}`}
-                            className="btn border border-gray-300 text-gray-700 bg-white"
+                            className="btn btn-outline btn-sm"
                           >
                             <Icon name="up-right-from-square" className="icon" />
                             <span>Open</span>
@@ -273,14 +273,14 @@ export default function Admin() {
           <div className="space-x-2">
             <button
               onClick={() => fetchItems()}
-              className="btn bg-gray-600"
+              className="btn btn-primary btn-sm"
             >
               <Icon name="rotate-left" className="icon" />
               <span>Revert All</span>
             </button>
             <button
               onClick={saveAll}
-              className="btn bg-blue-600"
+              className="btn btn-primary btn-sm"
             >
               <Icon name="save" className="icon" />
               <span>Save</span>
