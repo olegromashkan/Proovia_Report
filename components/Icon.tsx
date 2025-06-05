@@ -26,6 +26,9 @@ const icons: Record<string, string> = {
   'file-arrow-up': '📤',
   'rotate-left': '↩️',
   'up-right-from-square': '↗️',
+  refresh: '🔄',
+  calendar: '📅',
+  database: '🗄️',
 };
 
 export default function Icon({ name, className }: IconProps) {
