@@ -3,6 +3,7 @@ import Image from 'next/image';
 import { useState } from 'react';
 import NotificationCenter from './NotificationCenter';
 import SearchOverlay from './SearchOverlay';
+import Icon from './Icon';
 
 export default function Navbar() {
   const [searchOpen, setSearchOpen] = useState(false);
@@ -12,26 +13,26 @@ export default function Navbar() {
         <Link href="/" className="flex items-center gap-2">
           <Image src="https://cdn.proovia.uk/pd/images/logo/logo-default.svg" alt="Proovia" width={120} height={40} />
         </Link>
-        <Link href="/" className="hover:text-indigo-600 transition-colors flex items-center gap-1">
-          <i className="fa-solid fa-house" />
+        <Link href="/" className="nav-link flex items-center gap-1">
+          <Icon name="house" className="icon" />
           <span className="hidden sm:inline">Home</span>
         </Link>
-        <Link href="/upload" className="hover:text-indigo-600 transition-colors flex items-center gap-1">
-          <i className="fa-solid fa-upload" />
+        <Link href="/upload" className="nav-link flex items-center gap-1">
+          <Icon name="upload" className="icon" />
           <span className="hidden sm:inline">Upload</span>
         </Link>
-        <Link href="/admin" className="hover:text-indigo-600 transition-colors flex items-center gap-1">
-          <i className="fa-solid fa-user-cog" />
+        <Link href="/admin" className="nav-link flex items-center gap-1">
+          <Icon name="user-cog" className="icon" />
           <span className="hidden sm:inline">Admin</span>
         </Link>
-        <Link href="/full-report" className="hover:text-indigo-600 transition-colors flex items-center gap-1">
-          <i className="fa-solid fa-table-list" />
+        <Link href="/full-report" className="nav-link flex items-center gap-1">
+          <Icon name="table-list" className="icon" />
           <span className="hidden sm:inline">Full Report</span>
         </Link>
       </div>
       <div className="flex items-center gap-2">
         <button onClick={() => setSearchOpen(true)} className="p-2 hover:bg-gray-100 rounded-full transition-colors">
-          <i className="fa-solid fa-search" />
+          <Icon name="search" className="icon" />
         </button>
         <NotificationCenter />
       </div>

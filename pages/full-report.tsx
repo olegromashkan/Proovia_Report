@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import Layout from '../components/Layout';
 import TripModal from '../components/TripModal';
+import Icon from '../components/Icon';
 
 function parseMinutes(str: string) {
   const time = str.split(' ')[1] || str;
@@ -194,24 +195,12 @@ export default function FullReport() {
           className="border p-1 rounded"
         />
         <div className="flex flex-wrap gap-1">
-          <button onClick={shortcutToday} className="border px-2 py-1 rounded">
-            Today
-          </button>
-          <button onClick={shortcutYesterday} className="border px-2 py-1 rounded">
-            Yesterday
-          </button>
-          <button onClick={shortcutTomorrow} className="border px-2 py-1 rounded">
-            Tomorrow
-          </button>
-          <button onClick={shortcutLast7} className="border px-2 py-1 rounded">
-            Last 7 days
-          </button>
-          <button onClick={shortcutThisWeek} className="border px-2 py-1 rounded">
-            This week
-          </button>
-          <button onClick={shortcutLastWeek} className="border px-2 py-1 rounded">
-            Last week
-          </button>
+          <button onClick={shortcutToday} className="btn bg-gray-600">Today</button>
+          <button onClick={shortcutYesterday} className="btn bg-gray-600">Yesterday</button>
+          <button onClick={shortcutTomorrow} className="btn bg-gray-600">Tomorrow</button>
+          <button onClick={shortcutLast7} className="btn bg-gray-600">Last 7 days</button>
+          <button onClick={shortcutThisWeek} className="btn bg-gray-600">This week</button>
+          <button onClick={shortcutLastWeek} className="btn bg-gray-600">Last week</button>
         </div>
         <select
           value={statusFilter}
@@ -234,16 +223,10 @@ export default function FullReport() {
             </option>
           ))}
         </select>
-        <button
-          onClick={() => setStatusFilter('Failed')}
-          className="border px-2 py-1 rounded bg-red-100"
-        >
+        <button onClick={() => setStatusFilter('Failed')} className="btn bg-red-600">
           Failed
         </button>
-        <button
-          onClick={() => setStatusFilter('Complete')}
-          className="border px-2 py-1 rounded bg-green-100"
-        >
+        <button onClick={() => setStatusFilter('Complete')} className="btn bg-green-600">
           Complete
         </button>
         <button
@@ -252,7 +235,7 @@ export default function FullReport() {
             setDriverFilter('');
             setSearch('');
           }}
-          className="border px-2 py-1 rounded"
+          className="btn bg-gray-600"
         >
           Reset
         </button>
@@ -343,12 +326,18 @@ export default function FullReport() {
             {filtered.map((trip) => {
               const info = diffInfo(trip);
               const diff = info ? Math.round(info.diff) : 0;
-              const statusIcon =
+              const statusName =
                 trip.Status === 'Complete'
-                  ? 'fa-check text-green-600'
+                  ? 'check'
                   : trip.Status === 'Failed'
-                  ? 'fa-xmark text-red-600'
-                  : 'fa-clock text-gray-500';
+                  ? 'xmark'
+                  : 'clock';
+              const statusColor =
+                trip.Status === 'Complete'
+                  ? 'text-green-600'
+                  : trip.Status === 'Failed'
+                  ? 'text-red-600'
+                  : 'text-gray-500';
               const desc =
                 trip.Description ||
                 trip['Order.Description'] ||
@@ -365,7 +354,7 @@ export default function FullReport() {
                 >
                   <div className="flex justify-between items-center">
                     <span className="font-semibold">#{trip['Order.OrderNumber']}</span>
-                    <i className={`fa-solid ${statusIcon}`} />
+                    <Icon name={statusName} className={`icon ${statusColor}`} />
                   </div>
                   {driver && (
                     <div className="text-sm text-gray-500">{driver}</div>

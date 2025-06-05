@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import Icon from './Icon';
 import OrderCard from './OrderCard';
 
 interface Result {
@@ -52,7 +53,7 @@ export default function SearchOverlay({ open, onClose }: { open: boolean; onClos
             className="border p-1 flex-grow mr-2 rounded"
           />
           <button onClick={onClose} className="px-2">
-            <i className="fa-solid fa-xmark" />
+            <Icon name="xmark" className="icon" />
           </button>
         </div>
         {results.length === 0 && q && (
