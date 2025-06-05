@@ -9,10 +9,10 @@ const TABLES = [
   'csv_trips',
 ] as const;
 
-type Item = { id: string; created_at: string };
+type Item = { id: string | number; created_at: string };
 
 interface EditState {
-  id: string;
+  id: string | number;
   text: string;
 }
 
@@ -35,7 +35,7 @@ export default function Admin() {
     fetchItems();
   }, [table]);
 
-  const handleDelete = async (id: string) => {
+  const handleDelete = async (id: string | number) => {
     await fetch(`/api/items?table=${table}&id=${id}`, { method: 'DELETE' });
     fetchItems();
   };
@@ -45,7 +45,7 @@ export default function Admin() {
     fetchItems();
   };
 
-  const openEdit = async (id: string) => {
+  const openEdit = async (id: string | number) => {
     if (editing?.id === id) {
       setEditing(null);
       return;
@@ -74,7 +74,7 @@ export default function Admin() {
   };
 
   const groups = items
-    .filter((i) => i.id.includes(search))
+    .filter((i) => String(i.id).includes(search))
     .reduce<Record<string, Item[]>>((acc, item) => {
       const d = item.created_at.slice(0, 10);
       (acc[d] ||= []).push(item);
