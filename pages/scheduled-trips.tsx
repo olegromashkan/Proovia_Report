@@ -37,6 +37,11 @@ export default function ScheduledTrips() {
   const [drivers, setDrivers] = useState<DriverData[]>([]);
   const [dates, setDates] = useState<string[]>([]);
   const [view, setView] = useState<'original' | 'time'>('original');
+  const [contractors, setContractors] = useState<string[]>([]);
+  const [regions, setRegions] = useState<string[]>([]);
+  const [contractorFilter, setContractorFilter] = useState('All');
+  const [regionFilter, setRegionFilter] = useState<string[]>([]);
+  const [search, setSearch] = useState('');
 
   useEffect(() => {
     const fetchTrips = async () => {
@@ -47,6 +52,8 @@ export default function ScheduledTrips() {
         const items: Trip[] = data.items || [];
         const dMap: Record<string, Omit<DriverData, 'name'> & { name?: string }> = {};
         const dateSet = new Set<string>();
+        const contractorSet = new Set<string>();
+        const regionSet = new Set<string>();
 
         items.forEach((t) => {
           const name = t.Driver1 || 'Unknown';
@@ -60,6 +67,8 @@ export default function ScheduledTrips() {
           const punctuality = parseInt(t.Punctuality || '0');
 
           dateSet.add(date);
+          contractorSet.add(contractor);
+          regionSet.add(region);
           if (!dMap[name]) dMap[name] = { contractor, trips: {} };
           if (!dMap[name].trips[date]) dMap[name].trips[date] = [];
           dMap[name].trips[date].push({ region, ordersCount, orderValue: t.Order_Value, startTime, endTime, punctuality });
@@ -69,6 +78,8 @@ export default function ScheduledTrips() {
         list.sort((a, b) => a.contractor.localeCompare(b.contractor));
         setDrivers(list);
         setDates(Array.from(dateSet).sort());
+        setContractors(Array.from(contractorSet).sort());
+        setRegions(Array.from(regionSet).sort());
       } catch {
         // ignore errors
       }
@@ -93,6 +104,33 @@ export default function ScheduledTrips() {
       }
     }
     return '';
+  }
+
+  function punctualityClass(p: number) {
+    if (p <= 45) return 'text-green-600';
+    if (p <= 90) return 'text-orange-600';
+    return 'text-red-600';
+  }
+
+  function orderValueClass(v: number) {
+    return v < 650 ? 'bg-red-100 text-red-800' : 'bg-blue-100 text-blue-800';
+  }
+
+  const contractorColors: Record<string, string> = {
+    'Proovia Couriers LTD': 'bg-red-200',
+    'YZY LTD': 'bg-blue-200',
+    'B C J Delivery LTD': 'bg-green-200',
+    'Smaro LTD': 'bg-purple-200',
+    'Dragos Rusu': 'bg-pink-200',
+    'Pagnali LTD': 'bg-gray-200',
+    'Proovia LTD': 'bg-red-200',
+    'T4U LTD': 'bg-yellow-200',
+    'KRYSH LTD': 'bg-cyan-200',
+    'Leonard Nunuca': 'bg-slate-200',
+  };
+
+  function contractorClass(name: string) {
+    return contractorColors[name] || 'bg-gray-100';
   }
 
   const setRange = (s: Date, e: Date) => {
@@ -164,6 +202,19 @@ export default function ScheduledTrips() {
     </tr>
   );
 
+  const filteredDrivers = drivers.filter(d => {
+    const contractorMatch = contractorFilter === 'All' || d.contractor === contractorFilter;
+    const searchMatch = d.name.toLowerCase().includes(search.toLowerCase());
+    const regionMatch =
+      regionFilter.length === 0 ||
+      regionFilter.some(r =>
+        Object.values(d.trips)
+          .flat()
+          .some(t => t.region === r)
+      );
+    return contractorMatch && searchMatch && regionMatch;
+  });
+
   return (
     <Layout title="Scheduled Trips" fullWidth>
       <div className="flex flex-wrap gap-2 items-end mb-4">
@@ -177,6 +228,18 @@ export default function ScheduledTrips() {
             Switch View
           </button>
         </div>
+        <select value={contractorFilter} onChange={e => setContractorFilter(e.target.value)} className="border p-1 rounded">
+          <option value="All">All contractors</option>
+          {contractors.map(c => (
+            <option key={c} value={c}>{c}</option>
+          ))}
+        </select>
+        <select multiple value={regionFilter} onChange={e => setRegionFilter(Array.from(e.target.selectedOptions).map(o => o.value))} className="border p-1 rounded">
+          {regions.map(r => (
+            <option key={r} value={r}>{r}</option>
+          ))}
+        </select>
+        <input type="text" placeholder="Search" value={search} onChange={e => setSearch(e.target.value)} className="border p-1 rounded" />
       </div>
 
       <div className="overflow-auto border rounded">
@@ -186,10 +249,12 @@ export default function ScheduledTrips() {
             {subHeaderRow}
           </thead>
           <tbody>
-            {drivers.map((d) => (
+            {filteredDrivers.map((d) => (
               <tr key={d.name} className="odd:bg-gray-50">
                 <td className="border px-1 font-semibold">{d.name}</td>
-                <td className="border px-1">{d.contractor}</td>
+                <td className="border px-1">
+                  <span className={`px-1 rounded ${contractorClass(d.contractor)}`}>{d.contractor}</span>
+                </td>
                 {dates.map((date) => {
                   const trips = d.trips[date] || [];
                   return view === 'time'
@@ -202,7 +267,9 @@ export default function ScheduledTrips() {
                             {trips.map(t => <div key={t.endTime}>{t.endTime}</div>)}
                           </td>
                           <td key={`${d.name}-${date}-p`} className="border px-1">
-                            {trips.map((t,i) => <div key={i}>£{t.orderValue}</div>)}
+                            {trips.map((t,i) => (
+                              <div key={i} className={`px-1 rounded ${orderValueClass(t.orderValue)}`}>£{t.orderValue}</div>
+                            ))}
                           </td>
                         </>
                       )
@@ -215,10 +282,14 @@ export default function ScheduledTrips() {
                             {trips.map(t => <div key={t.region}>{t.ordersCount}</div>)}
                           </td>
                           <td key={`${d.name}-${date}-pu`} className="border px-1">
-                            {trips.map(t => <div key={t.punctuality}>{t.punctuality}</div>)}
+                            {trips.map(t => (
+                              <div key={t.punctuality} className={punctualityClass(t.punctuality)}>{t.punctuality}</div>
+                            ))}
                           </td>
                           <td key={`${d.name}-${date}-pr`} className="border px-1">
-                            {trips.map((t,i) => <div key={i}>£{t.orderValue}</div>)}
+                            {trips.map((t,i) => (
+                              <div key={i} className={`px-1 rounded ${orderValueClass(t.orderValue)}`}>£{t.orderValue}</div>
+                            ))}
                           </td>
                         </>
                       );
