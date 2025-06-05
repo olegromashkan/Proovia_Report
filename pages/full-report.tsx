@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/router';
 import Layout from '../components/Layout';
 import TripModal from '../components/TripModal';
 
@@ -41,6 +42,7 @@ function formatDate(date: Date) {
 }
 
 export default function FullReport() {
+  const router = useRouter();
   const today = formatDate(new Date());
   const [start, setStart] = useState(today);
   const [end, setEnd] = useState(today);
@@ -55,6 +57,51 @@ export default function FullReport() {
   const [filterOp, setFilterOp] = useState('contains');
   const [filterValue, setFilterValue] = useState('');
   const fields = trips.length > 0 ? Object.keys(trips[0]) : [];
+
+  const setRange = (s: Date, e: Date) => {
+    setStart(formatDate(s));
+    setEnd(formatDate(e));
+  };
+
+  const shortcutToday = () => {
+    const d = new Date();
+    setRange(d, d);
+  };
+
+  const shortcutTomorrow = () => {
+    const d = new Date();
+    d.setDate(d.getDate() + 1);
+    setRange(d, d);
+  };
+
+  const shortcutLast7 = () => {
+    const end = new Date();
+    const start = new Date();
+    start.setDate(end.getDate() - 6);
+    setRange(start, end);
+  };
+
+  const shortcutThisWeek = () => {
+    const now = new Date();
+    const day = now.getDay();
+    const diff = day === 0 ? 6 : day - 1;
+    const start = new Date(now);
+    start.setDate(now.getDate() - diff);
+    const end = new Date(start);
+    end.setDate(start.getDate() + 6);
+    setRange(start, end);
+  };
+
+  const shortcutLastWeek = () => {
+    const now = new Date();
+    const day = now.getDay();
+    const diff = day === 0 ? 6 : day - 1;
+    const start = new Date(now);
+    start.setDate(now.getDate() - diff - 7);
+    const end = new Date(start);
+    end.setDate(start.getDate() + 6);
+    setRange(start, end);
+  };
 
   const fetchTrips = async () => {
     const res = await fetch(`/api/report?start=${start}&end=${end}`);
@@ -73,8 +120,15 @@ export default function FullReport() {
   };
 
   useEffect(() => {
+    if (!router.isReady) return;
+    const qs = router.query;
+    if (typeof qs.start === 'string') setStart(qs.start);
+    if (typeof qs.end === 'string') setEnd(qs.end);
+  }, [router.isReady, router.query]);
+
+  useEffect(() => {
     fetchTrips();
-  }, []);
+  }, [start, end]);
 
   const total = trips.length;
   const complete = trips.filter((t) => t.Status === 'Complete').length;
@@ -132,12 +186,23 @@ export default function FullReport() {
           onChange={(e) => setEnd(e.target.value)}
           className="border p-1 rounded"
         />
-        <button
-          onClick={fetchTrips}
-          className="px-4 py-2 bg-blue-600 text-white rounded"
-        >
-          Load
-        </button>
+        <div className="flex flex-wrap gap-1">
+          <button onClick={shortcutToday} className="border px-2 py-1 rounded">
+            Today
+          </button>
+          <button onClick={shortcutTomorrow} className="border px-2 py-1 rounded">
+            Tomorrow
+          </button>
+          <button onClick={shortcutLast7} className="border px-2 py-1 rounded">
+            Last 7 days
+          </button>
+          <button onClick={shortcutThisWeek} className="border px-2 py-1 rounded">
+            This week
+          </button>
+          <button onClick={shortcutLastWeek} className="border px-2 py-1 rounded">
+            Last week
+          </button>
+        </div>
         <select
           value={statusFilter}
           onChange={(e) => setStatusFilter(e.target.value)}
