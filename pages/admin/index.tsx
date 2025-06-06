@@ -64,6 +64,8 @@ export default function Admin() {
   const [search, setSearch] = useState('');
   const [pending, setPending] = useState<PendingChange[]>([]);
   const [loading, setLoading] = useState(false);
+  const [adding, setAdding] = useState(false);
+  const [newText, setNewText] = useState('{}');
 
   const loadDate = async (d: string) => {
     if (itemsByDate[d]) return;
@@ -109,7 +111,12 @@ export default function Admin() {
     }));
   };
 
-  const handleDeleteDate = (d: string) => {
+  const handleDeleteDate = async (d: string) => {
+    if (!itemsByDate[d]) {
+      await fetch(`/api/items?table=${table}&date=${d}`, { method: 'DELETE' });
+      await fetchDates();
+      return;
+    }
     const rows = groups[d] || [];
     rows.forEach((r) => handleDelete(r.id, d));
   };
@@ -146,6 +153,22 @@ export default function Admin() {
     }
   };
 
+  const addItem = async () => {
+    try {
+      const payload = JSON.parse(newText);
+      await fetch(`/api/items?table=${table}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      setAdding(false);
+      setNewText('{}');
+      await fetchDates();
+    } catch {
+      alert('Invalid JSON');
+    }
+  };
+
   const groups = dates.reduce<Record<string, Item[]>>((acc, { date }) => {
     const rows = (itemsByDate[date] || []).filter(
       (i) =>
@@ -172,6 +195,10 @@ export default function Admin() {
       }
     }
     await fetchDates();
+  };
+
+  const exportData = () => {
+    window.open(`/api/export?table=${table}`);
   };
 
   const getTableDisplayName = (name: string) => name.replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase());
@@ -243,6 +270,14 @@ export default function Admin() {
               <button onClick={fetchDates} className={`btn btn-primary gap-2 ${loading ? 'loading' : ''}`} disabled={loading}>
                 {!loading && <Icon name="refresh" />}
                 Refresh
+              </button>
+              <button onClick={() => setAdding(true)} className="btn btn-secondary gap-2">
+                <Icon name="plus" />
+                Add Item
+              </button>
+              <button onClick={exportData} className="btn btn-outline gap-2">
+                <Icon name="download" />
+                Export
               </button>
             </div>
 
@@ -394,6 +429,29 @@ export default function Admin() {
                 </div>
               );
             })}
+          </div>
+        )}
+
+        {adding && (
+          <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-30 p-4">
+            <div className="bg-base-100 p-4 rounded shadow-lg w-full max-w-lg space-y-3">
+              <h2 className="font-bold text-lg">New Item</h2>
+              <textarea
+                className="textarea textarea-bordered w-full h-40 font-mono text-sm"
+                value={newText}
+                onChange={(e) => setNewText(e.target.value)}
+                placeholder="Enter JSON data..."
+              />
+              <div className="flex gap-2 justify-end">
+                <button onClick={addItem} className="btn btn-primary">
+                  <Icon name="save" />
+                  Save
+                </button>
+                <button onClick={() => setAdding(false)} className="btn">
+                  Cancel
+                </button>
+              </div>
+            </div>
           </div>
         )}
 
