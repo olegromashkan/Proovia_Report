@@ -170,8 +170,16 @@ export default function FullReport() {
     </div>
   );
 
-  function calcLoad(Start_Time: any): import("react").ReactNode {
-    throw new Error('Function not implemented.');
+  function calcLoad(startTime: string) {
+    if (!startTime || startTime === 'Unknown') return 'N/A';
+    const [h, m] = startTime.split(':').map(Number);
+    if (isNaN(h) || isNaN(m)) return startTime;
+    const date = new Date();
+    date.setHours(h);
+    date.setMinutes(m - 30);
+    const hh = String(date.getHours()).padStart(2, '0');
+    const mm = String(date.getMinutes()).padStart(2, '0');
+    return `${hh}:${mm}`;
   }
 
   return (
@@ -190,9 +198,15 @@ export default function FullReport() {
             <div className="card bg-base-100 shadow-xl"><div className="card-body p-4">
                 <h2 className="card-title mb-2">Start Times Analysis</h2>
                 <div className="overflow-auto h-[75vh]">
-                    <table className="table table-xs table-pin-rows table-zebra">
-                        <thead>
-                            <tr><th>Asset</th><th>Driver</th><th>Load Time</th><th>Start Time</th><th>Duration</th></tr>
+                    <table className="table table-xs table-pin-rows table-zebra w-full table-fixed">
+                        <thead className="sticky top-0 bg-base-100">
+                            <tr>
+                                <th className="whitespace-nowrap">Asset</th>
+                                <th className="whitespace-nowrap">Driver</th>
+                                <th className="whitespace-nowrap">Load Time</th>
+                                <th className="whitespace-nowrap">Start Time</th>
+                                <th className="whitespace-nowrap">Duration</th>
+                            </tr>
                         </thead>
                         <tbody>
                             {startData.map((r, idx) => (
