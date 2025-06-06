@@ -68,12 +68,17 @@ export default function Admin() {
   const loadDate = async (d: string) => {
     if (itemsByDate[d]) return;
     setLoadingDates((l) => ({ ...l, [d]: true }));
-    const res = await fetch(`/api/items?table=${table}&date=${d}`);
-    if (res.ok) {
-      const data = await res.json();
-      setItemsByDate((m) => ({ ...m, [d]: data.items as Item[] }));
+    try {
+        const res = await fetch(`/api/items?table=${table}&date=${d}`);
+        if (res.ok) {
+          const data = await res.json();
+          setItemsByDate((m) => ({ ...m, [d]: data.items as Item[] }));
+        }
+    } catch (error) {
+        console.error("Failed to load date items:", error);
+    } finally {
+        setLoadingDates((l) => ({ ...l, [d]: false }));
     }
-    setLoadingDates((l) => ({ ...l, [d]: false }));
   };
 
   const fetchDates = async () => {
@@ -152,7 +157,9 @@ export default function Admin() {
         String(i.id).includes(search) ||
         String(i.primary ?? '').toLowerCase().includes(search.toLowerCase())
     );
-    acc[date] = rows;
+    if(rows.length > 0) {
+      acc[date] = rows;
+    }
     return acc;
   }, {});
 
@@ -300,8 +307,8 @@ export default function Admin() {
                       </div>
                     </div>
 
-                    <div className="collapse-content">
-                      {!isCollapsed && (
+                    {/* FIX: Removed the problematic .collapse-content wrapper div */}
+                    {!isCollapsed && (
                         itemsByDate[d] ? (
                           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mt-4">
                             {rows.map((item) => (
@@ -389,7 +396,6 @@ export default function Admin() {
                           <div className="p-4 text-sm text-gray-500">No records</div>
                         )
                       )}
-                    </div>
                   </div>
                 </div>
               );
