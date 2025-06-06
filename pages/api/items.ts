@@ -1,5 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import db, { addNotification } from '../../lib/db';
+import { randomUUID } from 'crypto';
 
 const TABLES = [
   'copy_of_tomorrow_trips',
@@ -73,6 +74,19 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
       return { id: row.id, created_at: row.created_at, primary, secondary };
     });
     return res.status(200).json({ items });
+  }
+
+  if (req.method === 'POST') {
+    if (typeof req.body !== 'object' || req.body === null) {
+      return res.status(400).json({ message: 'Invalid body' });
+    }
+    const newId = req.body.id ? String(req.body.id) : randomUUID();
+    db.prepare(`INSERT INTO ${table} (id, data) VALUES (?, ?)`).run(
+      newId,
+      JSON.stringify(req.body)
+    );
+    addNotification('create', `Created ${newId} in ${table}`);
+    return res.status(200).json({ message: 'Created', id: newId });
   }
 
   if (req.method === 'PUT') {
