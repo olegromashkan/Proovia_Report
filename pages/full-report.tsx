@@ -1,38 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/router';
 import Layout from '../components/Layout';
 import TripModal from '../components/TripModal';
 import Icon from '../components/Icon';
 
-function parseMinutes(str: string) {
-  const time = str.split(' ')[1] || str;
-  const [h = '0', m = '0', s = '0'] = time.split(':');
-  return Number(h) * 60 + Number(m) + Number(s) / 60;
-}
-
-function diffInfo(trip: Trip) {
-  const arrival = trip.Arrival_Time || trip['Arrival_Time'];
-  const done = trip.Time_Completed || trip['Time_Completed'];
-  if (!arrival || !done) return null;
-  const a = parseMinutes(arrival);
-  const d = parseMinutes(done);
-  return { arrival: arrival.split(' ')[1], done: done.split(' ')[1], diff: d - a };
-}
-
-function calcLoad(start: string) {
-  const [h, m] = start.split(':').map(Number);
-  if (isNaN(h) || isNaN(m)) return 'N/A';
-  const date = new Date();
-  date.setHours(h);
-  date.setMinutes(m);
-  date.setSeconds(0);
-  date.setMilliseconds(0);
-  date.setMinutes(date.getMinutes() - 90);
-  const hh = String(date.getHours()).padStart(2, '0');
-  const mm = String(date.getMinutes()).padStart(2, '0');
-  return `${hh}:${mm}`;
-}
-
+// --- Хелперы ---
 interface Trip {
   ID: string;
   [key: string]: any;
@@ -42,336 +14,245 @@ function formatDate(date: Date) {
   return date.toISOString().slice(0, 10);
 }
 
+// --- Основной компонент ---
 export default function FullReport() {
   const router = useRouter();
-  const today = formatDate(new Date());
+  const today = useMemo(() => formatDate(new Date()), []);
+
+  // --- Состояния (State) ---
+  const [trips, setTrips] = useState<Trip[]>([]);
+  const [startData, setStartData] = useState<any[]>([]);
+  const [selected, setSelected] = useState<Trip | null>(null);
+  const [isDrawerOpen, setDrawerOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Состояния фильтров
   const [start, setStart] = useState(today);
   const [end, setEnd] = useState(today);
-  const [trips, setTrips] = useState<Trip[]>([]);
   const [statusFilter, setStatusFilter] = useState('');
   const [driverFilter, setDriverFilter] = useState('');
+  const [auctionFilter, setAuctionFilter] = useState('');
   const [search, setSearch] = useState('');
-  const [drivers, setDrivers] = useState<string[]>([]);
-  const [selected, setSelected] = useState<Trip | null>(null);
-  const [startData, setStartData] = useState<any[]>([]);
-  const [filterField, setFilterField] = useState('');
-  const [filterOp, setFilterOp] = useState('contains');
-  const [filterValue, setFilterValue] = useState('');
-  const fields = trips.length > 0 ? Object.keys(trips[0]) : [];
+  const [sortField, setSortField] = useState('Order.OrderNumber');
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
 
-  const setRange = (s: Date, e: Date) => {
-    setStart(formatDate(s));
-    setEnd(formatDate(e));
-  };
+  // Динамические данные для фильтров
+  const { drivers, auctions } = useMemo(() => {
+    const driverSet = new Set<string>();
+    const auctionSet = new Set<string>();
+    trips.forEach(t => {
+      if (t['Trip.Driver1']) driverSet.add(t['Trip.Driver1']);
+      if (t['Order.Auction']) auctionSet.add(t['Order.Auction']);
+    });
+    return {
+      drivers: Array.from(driverSet).sort(),
+      auctions: Array.from(auctionSet).sort(),
+    };
+  }, [trips]);
 
-  const shortcutToday = () => {
-    const d = new Date();
-    setRange(d, d);
-  };
-
-  const shortcutTomorrow = () => {
-    const d = new Date();
-    d.setDate(d.getDate() + 1);
-    setRange(d, d);
-  };
-
-  const shortcutYesterday = () => {
-    const d = new Date();
-    d.setDate(d.getDate() - 1);
-    setRange(d, d);
-  };
-
-  const shortcutLast7 = () => {
-    const end = new Date();
-    const start = new Date();
-    start.setDate(end.getDate() - 6);
-    setRange(start, end);
-  };
-
-  const shortcutThisWeek = () => {
-    const now = new Date();
-    const day = now.getDay();
-    const diff = day === 0 ? 6 : day - 1;
-    const start = new Date(now);
-    start.setDate(now.getDate() - diff);
-    const end = new Date(start);
-    end.setDate(start.getDate() + 6);
-    setRange(start, end);
-  };
-
-  const shortcutLastWeek = () => {
-    const now = new Date();
-    const day = now.getDay();
-    const diff = day === 0 ? 6 : day - 1;
-    const start = new Date(now);
-    start.setDate(now.getDate() - diff - 7);
-    const end = new Date(start);
-    end.setDate(start.getDate() + 6);
-    setRange(start, end);
-  };
-
-  const fetchTrips = async () => {
-    const res = await fetch(`/api/report?start=${start}&end=${end}`);
-    if (res.ok) {
-      const data = await res.json();
-      const items = data.items as Trip[];
-      setTrips(items);
-      const unique = Array.from(new Set(items.map((t) => t['Trip.Driver1']))).sort();
-      setDrivers(unique);
-    }
-    const resStart = await fetch(`/api/start-times?start=${start}&end=${end}`);
-    if (resStart.ok) {
-      const d = await resStart.json();
-      setStartData(d.items || []);
-    }
-  };
-
+  // --- Загрузка данных ---
   useEffect(() => {
     if (!router.isReady) return;
-    const qs = router.query;
-    if (typeof qs.start === 'string') setStart(qs.start);
-    if (typeof qs.end === 'string') setEnd(qs.end);
+    const { start: qStart, end: qEnd } = router.query;
+    if (typeof qStart === 'string') setStart(qStart);
+    if (typeof qEnd === 'string') setEnd(qEnd);
   }, [router.isReady, router.query]);
 
   useEffect(() => {
     if (!router.isReady) return;
+    const fetchTrips = async () => {
+      setIsLoading(true);
+      const res = await fetch(`/api/report?start=${start}&end=${end}`);
+      if (res.ok) {
+        const data = await res.json();
+        setTrips((data.items || []) as Trip[]);
+      }
+      const resStart = await fetch(`/api/start-times?start=${start}&end=${end}`);
+      if (resStart.ok) {
+          const d = await resStart.json();
+          setStartData(d.items || []);
+      }
+      setIsLoading(false);
+    };
     fetchTrips();
   }, [router.isReady, start, end]);
 
-  const total = trips.length;
-  const complete = trips.filter((t) => t.Status === 'Complete').length;
-  const failed = trips.filter((t) => t.Status === 'Failed').length;
+  // --- Фильтрация и сортировка ---
+  const filteredAndSorted = useMemo(() => {
+    return trips
+      .filter((t) => {
+        const matchesStatus = !statusFilter || t.Status?.toLowerCase() === statusFilter.toLowerCase();
+        const matchesDriver = !driverFilter || t['Trip.Driver1'] === driverFilter;
+        const matchesAuction = !auctionFilter || t['Order.Auction'] === auctionFilter;
+        const matchesSearch = search ? (
+            String(t['Order.OrderNumber'] || '').toLowerCase().includes(search.toLowerCase()) ||
+            String(t['Trip.Driver1'] || '').toLowerCase().includes(search.toLowerCase()) ||
+            String(t['Address.Postcode'] || '').toLowerCase().includes(search.toLowerCase())
+        ) : true;
+        return matchesStatus && matchesDriver && matchesAuction && matchesSearch;
+      })
+      .sort((a, b) => {
+        let valA = a[sortField] ?? '';
+        let valB = b[sortField] ?? '';
+        if (typeof valA === 'number' && typeof valB === 'number') {
+          return sortDir === 'asc' ? valA - valB : valB - valA;
+        }
+        return sortDir === 'asc'
+          ? String(valA).localeCompare(String(valB))
+          : String(valB).localeCompare(String(valA));
+      });
+  }, [trips, statusFilter, driverFilter, auctionFilter, search, sortField, sortDir]);
 
-  const filterMatch = (t: Trip) => {
-    if (!filterField || filterValue === '') return true;
-    const val = t[filterField];
-    if (val === undefined || val === null) return false;
-    const v = String(val);
-    switch (filterOp) {
-      case 'contains':
-        return v.toLowerCase().includes(filterValue.toLowerCase());
-      case 'equals':
-        return v.toLowerCase() === filterValue.toLowerCase();
-      case 'between': {
-        const [a, b] = filterValue.split(',').map(Number);
-        const num = parseFloat(v);
-        if (isNaN(a) || isNaN(b) || isNaN(num)) return false;
-        return num >= a && num <= b;
-      }
-      case 'gt':
-        return parseFloat(v) > parseFloat(filterValue);
-      case 'lt':
-        return parseFloat(v) < parseFloat(filterValue);
-      default:
-        return true;
-    }
+  const stats = useMemo(() => ({
+    total: filteredAndSorted.length,
+    complete: filteredAndSorted.filter((t) => t.Status === 'Complete').length,
+    failed: filteredAndSorted.filter((t) => t.Status === 'Failed').length,
+  }), [filteredAndSorted]);
+
+  const handleReset = () => {
+    setStart(today); setEnd(today);
+    setStatusFilter(''); setDriverFilter(''); setAuctionFilter(''); setSearch('');
+    setSortField('Order.OrderNumber'); setSortDir('asc');
   };
 
-  const filtered = trips.filter((t) => {
-    const matchesStatus =
-      !statusFilter || t.Status.toLowerCase() === statusFilter.toLowerCase();
-    const matchesSearch = search
-      ? String(t['Order.OrderNumber']).includes(search) ||
-        (t['Trip.Driver1'] || '').toLowerCase().includes(search.toLowerCase()) ||
-        (t['Address.Postcode'] || '').toLowerCase().includes(search.toLowerCase())
-      : true;
-    const matchesDriver = !driverFilter || (t['Trip.Driver1'] || '') === driverFilter;
-    return matchesStatus && matchesSearch && matchesDriver && filterMatch(t);
-  });
+  // --- UI Компоненты ---
+  const FilterPanel = (
+    <div className="menu p-4 w-96 min-h-full bg-base-100 text-base-content space-y-4">
+      <div className="flex justify-between items-center">
+        <h3 className="font-bold text-xl">Filters & Sort</h3>
+        <button onClick={() => setDrawerOpen(false)} className="btn btn-sm btn-ghost btn-circle">✕</button>
+      </div>
+      <div className="form-control">
+        <label className="label"><span className="label-text">Date Range</span></label>
+        <div className="flex gap-2">
+            <input type="date" value={start} onChange={(e) => setStart(e.target.value)} className="input input-bordered w-full input-sm" />
+            <input type="date" value={end} onChange={(e) => setEnd(e.target.value)} className="input input-bordered w-full input-sm" />
+        </div>
+      </div>
+      <div className="form-control">
+        <label className="label"><span className="label-text">Search</span></label>
+        <input type="text" placeholder="Order, Driver, Postcode..." value={search} onChange={(e) => setSearch(e.target.value)} className="input input-bordered input-sm" />
+      </div>
+      <div className="form-control">
+        <label className="label"><span className="label-text">Status</span></label>
+        <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="select select-bordered select-sm">
+          <option value="">All</option><option value="Complete">Complete</option><option value="Failed">Failed</option>
+        </select>
+      </div>
+      <div className="form-control">
+        <label className="label"><span className="label-text">Driver</span></label>
+        <select value={driverFilter} onChange={(e) => setDriverFilter(e.target.value)} className="select select-bordered select-sm">
+          <option value="">All</option>{drivers.map((d) => <option key={d} value={d}>{d}</option>)}
+        </select>
+      </div>
+      <div className="form-control">
+        <label className="label"><span className="label-text">Auction</span></label>
+        <select value={auctionFilter} onChange={(e) => setAuctionFilter(e.target.value)} className="select select-bordered select-sm">
+          <option value="">All</option>{auctions.map((a) => <option key={a} value={a}>{a}</option>)}
+        </select>
+      </div>
+      <div className="divider">Sort By</div>
+      <div className="form-control">
+         <label className="label"><span className="label-text">Field</span></label>
+        <select value={sortField} onChange={(e) => setSortField(e.target.value)} className="select select-bordered select-sm">
+          <option value="Order.OrderNumber">Order Number</option><option value="Trip.Driver1">Driver</option><option value="Address.Postcode">Postcode</option><option value="Seq">Sequence</option>
+        </select>
+      </div>
+       <div className="form-control">
+         <label className="label"><span className="label-text">Direction</span></label>
+        <div className="btn-group w-full">
+            <button onClick={() => setSortDir('asc')} className={`btn btn-sm flex-1 ${sortDir === 'asc' ? 'btn-active' : ''}`}>Ascending</button>
+            <button onClick={() => setSortDir('desc')} className={`btn btn-sm flex-1 ${sortDir === 'desc' ? 'btn-active' : ''}`}>Descending</button>
+        </div>
+      </div>
+      <div className="flex-grow"></div>
+      <button onClick={handleReset} className="btn btn-primary btn-outline w-full"><Icon name="refresh" />Reset</button>
+    </div>
+  );
+
+  function calcLoad(Start_Time: any): import("react").ReactNode {
+    throw new Error('Function not implemented.');
+  }
 
   return (
-    <Layout title="Full Report" fullWidth>
-      <div className="flex flex-wrap gap-2 items-end mb-4">
-        <input
-          type="date"
-          value={start}
-          onChange={(e) => setStart(e.target.value)}
-          className="input input-bordered"
-        />
-        <input
-          type="date"
-          value={end}
-          onChange={(e) => setEnd(e.target.value)}
-          className="input input-bordered"
-        />
-        <div className="flex flex-wrap gap-1">
-          <button onClick={shortcutToday} className="btn btn-primary btn-sm">Today</button>
-          <button onClick={shortcutYesterday} className="btn btn-primary btn-sm">Yesterday</button>
-          <button onClick={shortcutTomorrow} className="btn btn-primary btn-sm">Tomorrow</button>
-          <button onClick={shortcutLast7} className="btn btn-primary btn-sm">Last 7 days</button>
-          <button onClick={shortcutThisWeek} className="btn btn-primary btn-sm">This week</button>
-          <button onClick={shortcutLastWeek} className="btn btn-primary btn-sm">Last week</button>
-        </div>
-        <select
-          value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value)}
-          className="select select-bordered"
-        >
-          <option value="">All statuses</option>
-          <option value="Complete">Complete</option>
-          <option value="Failed">Failed</option>
-        </select>
-        <select
-          value={driverFilter}
-          onChange={(e) => setDriverFilter(e.target.value)}
-          className="select select-bordered"
-        >
-          <option value="">All drivers</option>
-          {drivers.map((d) => (
-            <option key={d} value={d}>
-              {d}
-            </option>
-          ))}
-        </select>
-        <button onClick={() => setStatusFilter('Failed')} className="btn btn-error btn-sm">
-          Failed
-        </button>
-        <button onClick={() => setStatusFilter('Complete')} className="btn btn-success btn-sm">
-          Complete
-        </button>
-        <button
-          onClick={() => {
-            setStatusFilter('');
-            setDriverFilter('');
-            setSearch('');
-          }}
-          className="btn btn-primary btn-sm"
-        >
-          Reset
-        </button>
-        <input
-          type="text"
-          placeholder="Search..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="input input-bordered"
-        />
-        {fields.length > 0 && (
-          <>
-            <select
-              value={filterField}
-              onChange={(e) => setFilterField(e.target.value)}
-              className="select select-bordered"
-            >
-              <option value="">Field</option>
-              {fields.map((f) => (
-                <option key={f} value={f}>
-                  {f}
-                </option>
-              ))}
-            </select>
-            <select
-              value={filterOp}
-              onChange={(e) => setFilterOp(e.target.value)}
-              className="select select-bordered"
-            >
-              <option value="contains">contains</option>
-              <option value="equals">equals</option>
-              <option value="between">between</option>
-              <option value="gt">&gt;</option>
-              <option value="lt">&lt;</option>
-            </select>
-            <input
-              type="text"
-              value={filterValue}
-              onChange={(e) => setFilterValue(e.target.value)}
-              placeholder="value"
-              className="input input-bordered"
-            />
-          </>
-        )}
-      </div>
-
-      <div className="flex space-x-4 mb-4">
-        <div className="p-2 bg-gray-100 rounded">Total: {total}</div>
-        <div className="p-2 bg-green-100 rounded">Complete: {complete}</div>
-        <div className="p-2 bg-red-100 rounded">Failed: {failed}</div>
-      </div>
-
-      <div className="grid lg:grid-cols-2 gap-4 h-[70vh]">
-        {startData.length > 0 && (
-          <div className="overflow-auto border rounded">
-            <table className="min-w-full text-sm border-collapse">
-              <thead className="bg-gray-100">
-                <tr>
-                  <th className="border px-2 py-1">Asset</th>
-                  <th className="border px-2 py-1">Driver</th>
-                  <th className="border px-2 py-1">Contractor</th>
-                  <th className="border px-2 py-1">To WH</th>
-                  <th className="border px-2 py-1">Load Time</th>
-                  <th className="border px-2 py-1">Start Time</th>
-                  <th className="border px-2 py-1">From WH</th>
-                  <th className="border px-2 py-1">Duration</th>
-                </tr>
-              </thead>
-              <tbody>
-                {startData.map((r, idx) => (
-                  <tr key={idx} className="odd:bg-gray-50">
-                    <td className="border px-2 py-1">{r.Asset}</td>
-                    <td className="border px-2 py-1">{r.Driver}</td>
-                    <td className="border px-2 py-1">{r.Contractor_Name}</td>
-                    <td className="border px-2 py-1">{r.First_Mention_Time}</td>
-                    <td className="border px-2 py-1">{calcLoad(r.Start_Time)}</td>
-                    <td className="border px-2 py-1">{r.Start_Time}</td>
-                    <td className="border px-2 py-1">{r.Last_Mention_Time}</td>
-                    <td className="border px-2 py-1">{r.Duration}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+    <Layout title="Orders Report" fullWidth>
+      <div className="drawer drawer-end">
+        <input id="filter-drawer" type="checkbox" className="drawer-toggle" checked={isDrawerOpen} onChange={() => setDrawerOpen(!isDrawerOpen)} />
+        <div className="drawer-content p-4">
+          <div className="flex justify-between items-center mb-4">
+            <h1 className="text-3xl font-bold">Orders Report</h1>
+            <label htmlFor="filter-drawer" className="btn btn-primary drawer-button gap-2">
+              <Icon name="search" /> Filters & Sort
+            </label>
           </div>
-        )}
-        <div className="overflow-auto border rounded p-2">
-          <div className="grid sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-3">
-            {filtered.map((trip) => {
-              const info = diffInfo(trip);
-              const diff = info ? Math.round(info.diff) : 0;
-              const statusName =
-                trip.Status === 'Complete'
-                  ? 'check'
-                  : trip.Status === 'Failed'
-                  ? 'xmark'
-                  : 'clock';
-              const statusColor =
-                trip.Status === 'Complete'
-                  ? 'text-green-600'
-                  : trip.Status === 'Failed'
-                  ? 'text-red-600'
-                  : 'text-gray-500';
-              const desc =
-                trip.Description ||
-                trip['Order.Description'] ||
-                trip['Address.Postcode'] ||
-                '';
-              const driver = trip.Driver || trip['Driver'] || trip['Driver.Full_Name'] || '';
-              const postcode = trip['Address.Postcode'] || '';
-              const auction = trip.Auction ?? trip['Auction'];
-              return (
-                <div
-                  key={trip.ID}
-                  className="bg-white rounded shadow p-3 space-y-1 cursor-pointer"
-                  onClick={() => setSelected(trip)}
-                >
-                  <div className="flex justify-between items-center">
-                    <span className="font-semibold">#{trip['Order.OrderNumber']}</span>
-                    <Icon name={statusName} className={`icon ${statusColor}`} />
-                  </div>
-                  {driver && (
-                    <div className="text-sm text-gray-500">{driver}</div>
-                  )}
-                  {postcode && <div className="text-sm">{postcode}</div>}
-                  {typeof auction !== 'undefined' && (
-                    <div className="text-sm">Auction: {String(auction)}</div>
-                  )}
-                  <div className="text-sm">Punctuality: {diff} min</div>
-                  <div className="text-sm break-all">{desc}</div>
+
+          <div className="grid lg:grid-cols-2 gap-6">
+            <div className="card bg-base-100 shadow-xl"><div className="card-body p-4">
+                <h2 className="card-title mb-2">Start Times Analysis</h2>
+                <div className="overflow-auto h-[75vh]">
+                    <table className="table table-xs table-pin-rows table-zebra">
+                        <thead>
+                            <tr><th>Asset</th><th>Driver</th><th>Load Time</th><th>Start Time</th><th>Duration</th></tr>
+                        </thead>
+                        <tbody>
+                            {startData.map((r, idx) => (
+                                <tr key={idx} className="hover"><td>{r.Asset}</td><td>{r.Driver}</td><td>{calcLoad(r.Start_Time)}</td><td>{r.Start_Time}</td><td>{r.Duration}</td></tr>
+                            ))}
+                        </tbody>
+                    </table>
                 </div>
-              );
-            })}
+            </div></div>
+
+            <div className="card bg-base-100 shadow-xl"><div className="card-body p-4">
+                <div className="flex justify-between items-center mb-2">
+                    <h2 className="card-title">Orders</h2>
+                    <div className="stats bg-transparent text-right stats-horizontal shadow-none">
+                        <div className="stat p-2"><div className="stat-title text-xs">Total</div><div className="stat-value text-md">{stats.total}</div></div>
+                        <div className="stat p-2"><div className="stat-title text-xs text-success">Complete</div><div className="stat-value text-md text-success">{stats.complete}</div></div>
+                        <div className="stat p-2"><div className="stat-title text-xs text-error">Failed</div><div className="stat-value text-md text-error">{stats.failed}</div></div>
+                    </div>
+                </div>
+                <div className="overflow-y-auto h-[calc(75vh-50px)] space-y-2 pr-1">
+                    {isLoading ? <div className="loading loading-spinner loading-lg mx-auto mt-10 block"></div> : filteredAndSorted.map((trip) => {
+                        const statusColor = trip.Status === 'Complete' ? 'bg-success' : trip.Status === 'Failed' ? 'bg-error' : 'bg-gray-400';
+                        const summaryText = (trip.Summary || '').split(' ')[0];
+                        return (
+                            <div key={trip.ID} onClick={() => setSelected(trip)} className="card card-compact bg-base-200 shadow-sm hover:shadow-lg transition-all duration-200 cursor-pointer">
+                                <div className="flex items-stretch">
+                                    <div className={`w-2 rounded-l-md ${statusColor}`}></div>
+                                    <div className="card-body p-3 flex-row items-center gap-3">
+                                        {trip.Seq && (
+                                            <div className="flex-shrink-0 avatar placeholder">
+                                                <div className="bg-primary/20 text-primary-content rounded-full w-10 h-10">
+                                                    <span className="text-lg font-bold text-primary">{trip.Seq}</span>
+                                                </div>
+                                            </div>
+                                        )}
+                                        <div className="flex-grow min-w-0">
+                                            <div className="flex justify-between items-baseline">
+                                                <p className="font-bold text-md truncate" title={trip['Order.OrderNumber']}>#{trip['Order.OrderNumber']}</p>
+                                                <p className="text-xs font-mono badge badge-ghost">{trip['Address.Postcode']}</p>
+                                            </div>
+                                            <p className="text-sm text-base-content/70 truncate">{trip['Trip.Driver1'] || 'No Driver'}</p>
+                                        </div>
+                                        <div className="flex-shrink-0 flex flex-col items-end gap-1 text-xs">
+                                            {summaryText && <div className="badge badge-outline badge-sm">{summaryText}</div>}
+                                            {trip['Order.Auction'] && <div className="badge badge-ghost badge-sm mt-1">{trip['Order.Auction']}</div>}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        );
+                    })}
+                </div>
+            </div></div>
           </div>
         </div>
+        <div className="drawer-side z-50">
+          <label htmlFor="filter-drawer" aria-label="close sidebar" className="drawer-overlay"></label>
+          {FilterPanel}
+        </div>
       </div>
-
       <TripModal trip={selected} onClose={() => setSelected(null)} allTrips={trips} />
     </Layout>
   );

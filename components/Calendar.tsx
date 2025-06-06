@@ -29,7 +29,7 @@ export default function Calendar() {
         setStats(map);
       })
       .catch(() => setStats({}))
-      .finally(() => setTimeout(() => setLoading(false), 300)); // Небольшая задержка для анимации
+      .finally(() => setLoading(false));
   }, [year, month]);
 
   const daysInMonth = new Date(year, month, 0).getDate();
@@ -70,13 +70,8 @@ export default function Calendar() {
   const changeMonth = (delta: number) => {
     let m = month + delta;
     let y = year;
-    if (m < 1) {
-      m = 12;
-      y -= 1;
-    } else if (m > 12) {
-      m = 1;
-      y += 1;
-    }
+    if (m < 1) { m = 12; y -= 1; } 
+    else if (m > 12) { m = 1; y += 1; }
     setYear(y);
     setMonth(m);
   };
@@ -88,7 +83,7 @@ export default function Calendar() {
   };
 
   const getIntensityClass = (stat?: DayStats) => {
-    if (!stat || stat.total === 0) return 'bg-base-content/5';
+    if (!stat || stat.total === 0) return 'bg-base-200/40';
     const successRate = stat.complete / stat.total;
     if (successRate >= 0.9) return 'bg-success/20';
     if (successRate >= 0.7) return 'bg-success/10';
@@ -97,32 +92,30 @@ export default function Calendar() {
   };
 
   return (
-    <div className="card bg-white/30 dark:bg-gray-900/30 backdrop-blur-xl border border-white/20 dark:border-gray-700/20 shadow-2xl shadow-blue-500/10 overflow-hidden">
-      <div className="card-body p-6">
+    <div className="card bg-base-100 shadow-xl border border-base-content/10">
+      <div className="card-body p-4">
         {/* Header */}
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
-          <div className="flex items-center gap-4">
-            <h2 className="card-title text-2xl font-bold">
-              Calendar Overview
-            </h2>
-          </div>
-          <div className="flex items-center gap-2">
-            <button onClick={() => changeMonth(-1)} className="btn btn-ghost btn-circle">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 mb-4">
+          <h2 className="card-title text-xl font-bold">
+            Calendar Overview
+          </h2>
+          <div className="flex items-center gap-1">
+            <button onClick={() => changeMonth(-1)} className="btn btn-ghost btn-sm btn-circle">
               <Icon name="chevron-left" />
             </button>
-            <span className="font-semibold text-lg w-32 text-center">{months[month - 1]} {year}</span>
-            <button onClick={() => changeMonth(1)} className="btn btn-ghost btn-circle">
+            <span className="font-semibold text-md w-32 text-center">{months[month - 1]} {year}</span>
+            <button onClick={() => changeMonth(1)} className="btn btn-ghost btn-sm btn-circle">
               <Icon name="chevron-right" />
             </button>
-             <button onClick={goToToday} className="btn btn-ghost ml-4">Today</button>
+             <button onClick={goToToday} className="btn btn-ghost btn-sm ml-2">Today</button>
           </div>
         </div>
 
         {/* Calendar Grid */}
-        <div className={`transition-opacity duration-300 ${loading ? 'opacity-0' : 'opacity-100'}`}>
+        <div className={`transition-opacity duration-200 ${loading ? 'opacity-20' : 'opacity-100'}`}>
           <div className="grid grid-cols-7 gap-1 text-center">
             {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map(d => (
-              <div key={d} className="font-light text-xs text-base-content/50 p-2">
+              <div key={d} className="font-normal text-xs text-base-content/60 pb-2">
                 {d}
               </div>
             ))}
@@ -131,39 +124,39 @@ export default function Calendar() {
               week.map((day, j) => {
                 const isClickable = day.stat && !day.isOtherMonth;
                 const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(day.num).padStart(2, '0')}`;
-
+                
                 return (
                   <div
                     key={`${i}-${j}`}
                     onClick={() => isClickable && router.push(`/full-report?start=${dateStr}&end=${dateStr}`)}
                     className={`
-                      relative aspect-square p-2 border border-transparent flex flex-col justify-start
-                      transition-all duration-300 rounded-lg group
-                      ${day.isOtherMonth ? 'opacity-30' : ''}
-                      ${isClickable ? 'cursor-pointer' : ''}
+                      p-2 border border-transparent flex flex-col justify-between h-20
+                      transition-all duration-200 rounded-lg
+                      ${day.isOtherMonth ? 'opacity-40' : ''}
+                      ${isClickable ? 'cursor-pointer hover:border-primary/50' : 'cursor-default'}
+                      ${day.isToday && !day.isOtherMonth ? 'border-primary' : ''}
+                      ${getIntensityClass(day.stat)}
                     `}
                   >
-                    <div className={`absolute inset-0 rounded-lg transform-gpu transition-all duration-300 ${getIntensityClass(day.stat)} ${isClickable ? 'group-hover:scale-105 group-hover:shadow-lg' : ''}`} />
-                    <div className="relative z-10 flex justify-between items-center w-full">
-                       <span className={`font-medium text-sm ${day.isToday ? 'text-primary' : 'text-base-content/70'}`}>
+                    <div className="text-left">
+                      <span className={`font-medium text-xs ${day.isToday ? 'text-primary' : 'text-base-content/70'}`}>
                         {day.num}
                       </span>
-                      {day.isToday && <div className="w-1.5 h-1.5 bg-primary rounded-full animate-pulse"></div>}
                     </div>
 
                     {day.stat && !day.isOtherMonth && (
-                      <div className="relative z-10 mt-auto text-xs space-y-1 text-left opacity-70 group-hover:opacity-100 transition-opacity">
-                        <div className="flex items-center gap-1.5">
-                           <Icon name="table-list" className="text-info" /> 
-                           <span>{day.stat.total}</span>
+                      <div className="flex items-center justify-end gap-x-2 text-xs flex-wrap">
+                        <div className="flex items-center gap-1" title="Total">
+                          <Icon name="table-list" className="text-info/80" /> 
+                          <span className="font-semibold">{day.stat.total}</span>
                         </div>
-                        <div className="flex items-center gap-1.5">
-                           <Icon name="check" className="text-success" /> 
-                           <span>{day.stat.complete}</span>
+                        <div className="flex items-center gap-1" title="Completed">
+                          <Icon name="check" className="text-success/80" /> 
+                          <span className="font-semibold text-success">{day.stat.complete}</span>
                         </div>
-                         <div className="flex items-center gap-1.5">
-                           <Icon name="ban" className="text-error" /> 
-                           <span>{day.stat.failed}</span>
+                        <div className="flex items-center gap-1" title="Failed">
+                          <Icon name="ban" className="text-error/80" /> 
+                          <span className="font-semibold text-error">{day.stat.failed}</span>
                         </div>
                       </div>
                     )}
