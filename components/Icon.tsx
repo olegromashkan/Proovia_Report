@@ -26,6 +26,8 @@ const iconMap: Record<string, string> = {
   'file-arrow-up': 'file-earmark-arrow-up',
   'rotate-left': 'arrow-counterclockwise',
   'up-right-from-square': 'box-arrow-up-right',
+  download: 'download',
+  plus: 'plus',
   refresh: 'arrow-clockwise',
   calendar: 'calendar',
   database: 'hdd-stack',
