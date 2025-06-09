@@ -11,19 +11,33 @@ interface VanCheckData {
 }
 
 export default function VanState() {
+  const formatDate = (d: Date) => d.toISOString().slice(0, 10);
+  const today = formatDate(new Date());
+
   const [checks, setChecks] = useState<VanCheckData[]>([]);
   const [selected, setSelected] = useState<string | null>(null);
+  const [start, setStart] = useState(today);
+  const [end, setEnd] = useState(today);
+  const [search, setSearch] = useState('');
 
   useEffect(() => {
-    fetch('/api/van-checks')
+    const params = new URLSearchParams({ start, end }).toString();
+    fetch(`/api/van-checks?${params}`)
       .then(res => (res.ok ? res.json() : Promise.reject()))
       .then(data => setChecks(data.items || []))
       .catch(() => {});
-  }, []);
+  }, [start, end]);
+
+  const filteredChecks = useMemo(() => {
+    return checks.filter(c => {
+      const text = `${c.van_id || ''} ${c.driver_id || ''}`.toLowerCase();
+      return !search || text.includes(search.toLowerCase());
+    });
+  }, [checks, search]);
 
   const latest = useMemo(() => {
     const map: Record<string, VanCheckData> = {};
-    checks.forEach(c => {
+    filteredChecks.forEach(c => {
       if (!c.van_id) return;
       const existing = map[c.van_id];
       const d = new Date(c.date);
@@ -32,11 +46,11 @@ export default function VanState() {
       }
     });
     return Object.values(map).sort((a, b) => a.van_id.localeCompare(b.van_id));
-  }, [checks]);
+  }, [filteredChecks]);
 
   const history = useMemo(() => {
     const map: Record<string, VanCheckData[]> = {};
-    checks.forEach(c => {
+    filteredChecks.forEach(c => {
       if (!c.van_id) return;
       if (!map[c.van_id]) map[c.van_id] = [];
       map[c.van_id].push(c);
@@ -45,7 +59,44 @@ export default function VanState() {
       arr.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
     );
     return map;
-  }, [checks]);
+  }, [filteredChecks]);
+
+  const hasIssue = (val: any): boolean => {
+    if (val === null || val === undefined) return false;
+    if (typeof val === 'boolean') return !val;
+    if (typeof val === 'object') return Object.values(val).some(v => hasIssue(v));
+    const str = String(val).toLowerCase();
+    if (['true', 'yes', 'ok', 'undamaged', 'good'].includes(str)) return false;
+    if (['false', 'no', 'bad', 'damaged', 'empty'].includes(str)) return true;
+    return false;
+  };
+
+  const analytics = useMemo(() => {
+    const vans: Record<string, { issues: number; total: number }> = {};
+    const drivers: Record<string, { issues: number; total: number }> = {};
+    filteredChecks.forEach(vc => {
+      const vanId = vc.van_id || 'Unknown';
+      const driverId = vc.driver_id || 'Unknown';
+      if (!vans[vanId]) vans[vanId] = { issues: 0, total: 0 };
+      if (!drivers[driverId]) drivers[driverId] = { issues: 0, total: 0 };
+      const issue = vc.parameters && Object.values(vc.parameters).some(hasIssue);
+      vans[vanId].total += 1;
+      drivers[driverId].total += 1;
+      if (issue) {
+        vans[vanId].issues += 1;
+        drivers[driverId].issues += 1;
+      }
+    });
+    const vanList = Object.entries(vans)
+      .map(([id, v]) => ({ id, ...v }))
+      .sort((a, b) => b.issues - a.issues)
+      .slice(0, 5);
+    const driverList = Object.entries(drivers)
+      .map(([id, v]) => ({ id, ...v }))
+      .sort((a, b) => b.issues - a.issues)
+      .slice(0, 5);
+    return { vanList, driverList };
+  }, [filteredChecks]);
 
   const renderParams = (vc: VanCheckData) => {
     if (!vc.parameters) return null;
@@ -73,13 +124,90 @@ export default function VanState() {
 
   return (
     <Layout title="Van State">
-      <h1 className="text-2xl font-bold mb-4">Van State</h1>
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
-        {latest.map(vc => (
-          <div key={vc.van_id} onClick={() => setSelected(vc.van_id)} className="cursor-pointer">
-            <VanCheck data={vc} />
+      <h1 className="text-2xl font-bold mb-2">Van State</h1>
+      <div className="flex flex-wrap gap-2 mb-4">
+        <input
+          type="date"
+          value={start}
+          onChange={e => setStart(e.target.value)}
+          className="input input-bordered input-sm"
+        />
+        <input
+          type="date"
+          value={end}
+          onChange={e => setEnd(e.target.value)}
+          className="input input-bordered input-sm"
+        />
+        <input
+          type="text"
+          placeholder="Search..."
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+          className="input input-bordered input-sm flex-1 min-w-[150px]"
+        />
+      </div>
+
+      <div className="grid lg:grid-cols-3 gap-4">
+        <div className="lg:col-span-2">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
+            {latest.map(vc => (
+              <div key={vc.van_id} onClick={() => setSelected(vc.van_id)} className="cursor-pointer">
+                <VanCheck data={vc} />
+              </div>
+            ))}
           </div>
-        ))}
+        </div>
+        <div className="space-y-4">
+          <h2 className="text-lg font-bold">Analytics</h2>
+          <div className="stats shadow">
+            <div className="stat">
+              <div className="stat-title">Total Checks</div>
+              <div className="stat-value">{filteredChecks.length}</div>
+            </div>
+          </div>
+          <div>
+            <h3 className="font-semibold mb-1">Most Problematic Vans</h3>
+            <table className="table table-xs">
+              <thead>
+                <tr>
+                  <th>Van</th>
+                  <th>Issues</th>
+                  <th>Checks</th>
+                </tr>
+              </thead>
+              <tbody>
+                {analytics.vanList.map(v => (
+                  <tr key={v.id}>
+                    <td>{v.id}</td>
+                    <td>{v.issues}</td>
+                    <td>{v.total}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <div>
+            <h3 className="font-semibold mb-1 mt-4">Drivers with Most Issues</h3>
+            <table className="table table-xs">
+              <thead>
+                <tr>
+                  <th>Driver</th>
+                  <th>Issues</th>
+                  <th>Checks</th>
+                </tr>
+              </thead>
+              <tbody>
+                {analytics.driverList.map(d => (
+                  <tr key={d.id}>
+                    <td>{d.id}</td>
+                    <td>{d.issues}</td>
+                    <td>{d.total}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
       </div>
       <Modal open={!!selected} onClose={() => setSelected(null)} className="max-w-3xl">
         <h2 className="text-xl font-bold mb-4">History for {selected}</h2>
