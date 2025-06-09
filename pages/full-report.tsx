@@ -20,7 +20,8 @@ function calcLoad(startTime: string) {
   if (isNaN(h) || isNaN(m)) return 'N/A';
   const date = new Date();
   date.setHours(h, m, 0, 0);
-  date.setMinutes(date.getMinutes() - 30); // Расчет времени загрузки
+  // Время загрузки = время выезда минус 1.5 часа
+  date.setMinutes(date.getMinutes() - 90);
   return date.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
 }
 
