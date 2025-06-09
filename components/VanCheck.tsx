@@ -1,72 +1,86 @@
+// components/VanCheck.tsx
 import React from 'react';
+import Icon from './Icon';
+import VanVisual from './VanVisual';
+
+interface CheckItem {
+  value: string | number;
+  status: 'OK' | 'Warning' | 'Error';
+}
+
+interface VanCheckData {
+  van_id: string;
+  driver_id: string;
+  date: string;
+  checks: {
+    mileage: CheckItem;
+    tires: CheckItem;
+    oil: CheckItem;
+    lights: CheckItem;
+    damage: CheckItem;
+    washer_fluid: CheckItem;
+  };
+}
 
 interface Props {
-  data: any;
+  data: VanCheckData;
   contractor?: string;
 }
 
-function iconize(val: any): string {
-  const s = String(val).toLowerCase();
-  if (val === true || s === 'true' || s === 'good' || s === 'undamaged') return '✅';
-  if (val === false || s === 'false' || s === 'low' || s === 'damaged') return '❌';
-  if (s === 'medium') return '⚠️';
-  return '⚠️';
-}
+const statusMap = {
+  OK: { color: 'text-success', icon: 'check' },
+  Warning: { color: 'text-warning', icon: 'clock' },
+  Error: { color: 'text-error', icon: 'ban' },
+};
 
-const Item = ({ label, value }: { label: string; value: any }) => (
-  <div className="flex flex-col items-center" title={String(value)}>
-    <span className="text-lg">{iconize(value)}</span>
-    <span className="text-xs">{label}</span>
-  </div>
-);
-
-export default function VanCheck({ data, contractor }: Props) {
-  if (!data) return null;
-  const { van_id, driver_id, tools = {}, parameters = {}, date } = data;
-  const tires = parameters.tires || {};
+const CheckRow = ({ label, item }: { label: string; item: CheckItem }) => {
+  const { color, icon } = statusMap[item.status] || { color: 'text-base-content', icon: 'up-right-from-square' };
+  const hasDetails = typeof item.value === 'string' && item.value.toLowerCase() !== 'ok' && item.value.toLowerCase() !== 'no';
 
   return (
-    <div className="card bg-base-100 shadow-sm">
-      <div className="card-body p-3 space-y-3 text-sm">
-        <div>
-          <h3 className="font-bold">
-            {driver_id}
-            {contractor && (
-              <div className="text-xs text-base-content/60">{contractor}</div>
-            )}
-          </h3>
-          <div className="text-xs text-base-content/60">Van {van_id}{date ? ` • ${new Date(date).toLocaleDateString()}` : ''}</div>
+    <div className={`flex justify-between items-center text-sm py-1.5 border-b border-base-100 ${hasDetails ? 'items-start' : ''}`}>
+      <span className="text-base-content/80">{label}</span>
+      <div className="tooltip tooltip-left" data-tip={hasDetails ? item.value : label}>
+        <div className={`flex items-center gap-2 font-semibold ${color}`}>
+            <span>{hasDetails ? item.status : String(item.value)}</span>
+            <Icon name={icon} />
         </div>
-        <div className="grid grid-cols-5 gap-2">
-          <Item label="Spare" value={tools.spare_wheel} />
-          <Item label="Straps" value={tools.straps} />
-          <Item label="Ramp" value={tools.ramp} />
-          <Item label="Blankets" value={tools.blankets} />
-          <Item label="Trolley" value={tools.trolley} />
-        </div>
-        <div className="grid grid-cols-3 gap-2">
-          <Item label="Corners" value={parameters.corners} />
-          <Item label="Windshield" value={parameters.windshield} />
-          {parameters.miles && (
-            <div className="flex flex-col items-center" title={String(parameters.miles)}>
-              <span className="text-lg">{Number(parameters.miles).toLocaleString()}</span>
-              <span className="text-xs">Miles</span>
+      </div>
+    </div>
+  );
+};
+
+export default function VanCheck({ data, contractor }: Props) {
+  const { van_id, driver_id, checks } = data;
+
+  const visualStatuses = {
+    tires: checks.tires.status,
+    lights: checks.lights.status,
+    oil: checks.oil.status,
+    damage: checks.damage.status,
+  };
+
+  return (
+    <div className="card card-side bg-base-200 shadow-md transition-all duration-300 hover:shadow-xl">
+        <figure className="p-4 w-2/5 bg-base-300/50">
+            <VanVisual statuses={visualStatuses} />
+        </figure>
+      <div className="card-body p-4">
+        <div className="flex justify-between items-start">
+            <div>
+                 <h2 className="card-title text-primary">{van_id}</h2>
+                 <p className="text-xs text-base-content/60">{driver_id} ({contractor || 'N/A'})</p>
             </div>
-          )}
+            <div className="badge badge-outline">{new Date(data.date).toLocaleDateString()}</div>
         </div>
-        <div className="grid grid-cols-6 gap-2">
-          <Item label="Coolant" value={parameters.coolant_level} />
-          <Item label="Fuel" value={parameters.fuel} />
-          <Item label="Oil" value={parameters.check_oil} />
-          <Item label="Antifr" value={parameters.check_antifreeze} />
-          <Item label="Engine" value={parameters.check_engine} />
-          <Item label="AdBlue" value={parameters.check_adblue} />
-        </div>
-        <div className="grid grid-cols-4 gap-2">
-          <Item label="LF" value={tires.left_front} />
-          <Item label="RF" value={tires.right_front} />
-          <Item label="LR" value={tires.left_back} />
-          <Item label="RR" value={tires.right_back} />
+        <div className="divider my-1"></div>
+        <div className="space-y-1">
+            <CheckRow label="Mileage" item={{ value: checks.mileage.value, status: 'OK'}} />
+            <CheckRow label="Tires" item={checks.tires} />
+            <CheckRow label="Lights" item={checks.lights} />
+            <CheckRow label="Oil Level" item={checks.oil} />
+            <CheckRow label="Washer Fluid" item={checks.washer_fluid} />
+            <CheckRow label="Body Damage" item={checks.damage} />
         </div>
       </div>
     </div>
