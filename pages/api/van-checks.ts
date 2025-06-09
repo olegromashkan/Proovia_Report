@@ -1,6 +1,17 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import db from '../../lib/db';
 
+function pick(obj: any, keys: string[]): any {
+  if (!obj || typeof obj !== 'object') return undefined;
+  for (const key of keys) {
+    if (obj[key] !== undefined) return obj[key];
+    const lower = key.toLowerCase();
+    const found = Object.keys(obj).find(k => k.toLowerCase() === lower);
+    if (found) return obj[found];
+  }
+  return undefined;
+}
+
 export default function handler(req: NextApiRequest, res: NextApiResponse) {
   const { start, end } = req.query;
   const startDate = typeof start === 'string' ? new Date(start) : null;
@@ -14,15 +25,17 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
   for (const r of eventRows) {
     try {
       const e = JSON.parse(r.data);
-      const vanId = e.van_id || e.Vans;
-      const driverId = e.driver_id || e.Driver;
-      const tools = e.tools || e.Tools;
-      const parameters = e.parameters || e.Parameters;
-      const date = e.date || e.Date;
-      if (vanId || tools || parameters) {
+      const vanId = pick(e, ['van_id', 'Vans', 'Van', 'vanID', 'VanID']);
+      const driverId = pick(e, ['driver_id', 'Driver', 'driver']);
+      const tools = pick(e, ['tools', 'Tools']);
+      const parameters = pick(e, ['parameters', 'Parameters']);
+      const date = pick(e, ['date', 'Date', 'created_at', 'timestamp']);
+      if (vanId || tools || parameters || driverId) {
         items.push({ van_id: vanId, driver_id: driverId, date, tools, parameters });
       }
-    } catch {}
+    } catch {
+      // ignore invalid rows
+    }
   }
 
   if (startDate || endDate) {

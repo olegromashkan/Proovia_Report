@@ -27,9 +27,9 @@ const VanVisual = ({ statuses }: { statuses: Statuses }) => {
       </defs>
       
       {/* --- Body --- */}
-      <path 
+      <path
         d="M10 50 L10 80 A10 10 0 0 0 20 90 L40 90 L40 80 L155 80 L155 90 L175 90 A10 10 0 0 0 185 80 L185 60 A15 15 0 0 0 170 45 L110 45 L85 20 L25 20 A15 15 0 0 0 10 35 Z"
-        className="fill-base-300"
+        className="fill-base-200"
         filter="url(#shadow)"
       />
       <path 
@@ -39,8 +39,8 @@ const VanVisual = ({ statuses }: { statuses: Statuses }) => {
         fill="none"
       />
       {/* --- Windows --- */}
-      <path d="M90 24 L108 41 L80 41 L62 24 Z" className="fill-base-100/70" />
-      <path d="M58 24 L76 41 L22 41 L22 35 A13 13 0 0 1 35 22 Z" className="fill-base-100/70" />
+      <path d="M90 24 L108 41 L80 41 L62 24 Z" className="fill-base-100/80" />
+      <path d="M58 24 L76 41 L22 41 L22 35 A13 13 0 0 1 35 22 Z" className="fill-base-100/80" />
 
       {/* --- Interactive Parts --- */}
       <circle cx="50" cy="90" r="12" className="fill-base-100" stroke={getStatusColor(statuses.tires)} strokeWidth="2" />
