@@ -7,6 +7,7 @@ const TABLES = [
   'drivers_report',
   'schedule_trips',
   'csv_trips',
+  'van_checks',
 ] as const;
 
 type Table = typeof TABLES[number];

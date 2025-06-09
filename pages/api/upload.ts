@@ -53,6 +53,17 @@ export default function handler(
       addNotification('upload', `Uploaded ${payload.Drivers_Report.length} drivers report items`);
     }
 
+    if (Array.isArray(payload.Van_Checks)) {
+      const stmt = db.prepare(
+        'INSERT OR REPLACE INTO van_checks (id, data, created_at) VALUES (?, ?, datetime(\'now\'))'
+      );
+      for (const item of payload.Van_Checks) {
+        const id = item.id || item.ID || `${item.van_id}-${item.date}`;
+        stmt.run(id, JSON.stringify(item));
+      }
+      addNotification('upload', `Uploaded ${payload.Van_Checks.length} van checks`);
+    }
+
     if (Array.isArray(payload.Schedule_Trips)) {
       const stmt = db.prepare(
         'INSERT OR REPLACE INTO schedule_trips (id, data, created_at) VALUES (?, ?, datetime(\'now\'))'

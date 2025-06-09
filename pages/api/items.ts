@@ -8,6 +8,7 @@ const TABLES = [
   'drivers_report',
   'schedule_trips',
   'csv_trips',
+  'van_checks',
 ] as const;
 
 type Table = typeof TABLES[number];
@@ -68,6 +69,10 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
           case 'csv_trips':
             primary = `${data['Start At'] || ''} - ${data['End At'] || ''}`.trim();
             secondary = data['Asset'] || '';
+            break;
+          case 'van_checks':
+            primary = data['van_id'] || row.id;
+            secondary = data['driver_id'] || '';
             break;
         }
       } catch {}
