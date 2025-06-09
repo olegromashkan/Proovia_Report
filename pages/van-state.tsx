@@ -147,17 +147,14 @@ export default function VanState() {
         />
       </div>
 
-      <div className="grid lg:grid-cols-3 gap-4">
-        <div className="lg:col-span-2">
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
-            {latest.map(vc => (
-              <div key={vc.van_id} onClick={() => setSelected(vc.van_id)} className="cursor-pointer">
-                <VanCheck data={vc} />
-              </div>
-            ))}
+      <div className="space-y-2">
+        {latest.map(vc => (
+          <div key={vc.van_id} onClick={() => setSelected(vc.van_id)} className="cursor-pointer">
+            <VanCheck data={vc} />
           </div>
-        </div>
-        <div className="space-y-4">
+        ))}
+      </div>
+      <div className="space-y-4 mt-4">
           <h2 className="text-lg font-bold">Analytics</h2>
           <div className="stats shadow">
             <div className="stat">
@@ -208,7 +205,6 @@ export default function VanState() {
             </table>
           </div>
         </div>
-      </div>
       <Modal open={!!selected} onClose={() => setSelected(null)} className="max-w-3xl">
         <h2 className="text-xl font-bold mb-4">History for {selected}</h2>
         <ul className="divide-y divide-base-300 max-h-[70vh] overflow-y-auto text-sm">
