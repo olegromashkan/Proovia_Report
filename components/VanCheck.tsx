@@ -73,13 +73,30 @@ const CheckRow = ({ label, item }: { label: string; item: CheckItem }) => {
 function parseStatus(val: any): 'OK' | 'Warning' | 'Error' {
   const str = String(val).toLowerCase();
   if (['ok', 'true', 'yes', 'undamaged', 'good'].includes(str)) return 'OK';
-  if (['warning', 'warn'].includes(str)) return 'Warning';
+  if (['warning', 'warn', 'medium'].includes(str)) return 'Warning';
   if (['error', 'bad', 'false', 'no', 'damaged'].includes(str)) return 'Error';
   return 'OK';
 }
 
+function normalizeTires(value: any): Record<string, any> | undefined {
+  if (typeof value !== 'object' || value === null) return undefined;
+  const v = value as Record<string, any>;
+  const pick = (...keys: string[]) => {
+    for (const k of keys) {
+      if (v[k] !== undefined) return v[k];
+    }
+    return undefined;
+  };
+  return {
+    front_left: pick('front_left', 'left_front'),
+    front_right: pick('front_right', 'right_front'),
+    rear_left: pick('rear_left', 'left_rear', 'left_back'),
+    rear_right: pick('rear_right', 'right_rear', 'right_back'),
+  };
+}
+
 const TiresRow = ({ item }: { item: CheckItem }) => {
-  const tires = typeof item.value === 'object' ? (item.value as Record<string, string>) : {};
+  const tires = normalizeTires(item.value) || {};
   const positions: [string, string][] = [
     ['FL', 'front_left'],
     ['FR', 'front_right'],
@@ -129,13 +146,14 @@ export default function VanCheck({ data, contractor }: Props) {
 
 
   const tiresValue = getItem(checks.tires).value;
+  const normalizedTires = normalizeTires(tiresValue);
   const visualTireStatuses =
-    typeof tiresValue === 'object'
+    normalizedTires
       ? {
-          front_left: parseStatus((tiresValue as any).front_left),
-          front_right: parseStatus((tiresValue as any).front_right),
-          rear_left: parseStatus((tiresValue as any).rear_left),
-          rear_right: parseStatus((tiresValue as any).rear_right),
+          front_left: parseStatus(normalizedTires.front_left),
+          front_right: parseStatus(normalizedTires.front_right),
+          rear_left: parseStatus(normalizedTires.rear_left),
+          rear_right: parseStatus(normalizedTires.rear_right),
         }
       : getItem(checks.tires).status;
 
@@ -147,7 +165,7 @@ export default function VanCheck({ data, contractor }: Props) {
   };
 
   const visualDetails = {
-    tires: tiresValue,
+    tires: normalizedTires || tiresValue,
     lights: String(getItem(checks.lights).value),
     oil: String(getItem(checks.oil).value),
     damage: String(getItem(checks.damage).value),
@@ -173,43 +191,32 @@ export default function VanCheck({ data, contractor }: Props) {
             <div className="font-mono text-sm mt-1">{getItem(checks.mileage).value}</div>
           </div>
         </div>
-        <div className="flex justify-center gap-4 my-2">
-          <div className="tooltip" data-tip={`Lights: ${getItem(checks.lights).value}`}> 
+        <div className="flex flex-wrap justify-center gap-4 my-2">
+          <div className="tooltip" data-tip={`Lights: ${getItem(checks.lights).value}`}>
             <Icon name={iconMap['Lights']} className={`w-6 h-6 ${statusMap[getItem(checks.lights).status].color}`} />
           </div>
-          <div className="tooltip" data-tip={`Fuel: ${getItem(checks.fuel).value}`}> 
+          <div className="tooltip" data-tip={`Fuel: ${getItem(checks.fuel).value}`}>
             <Icon name={iconMap['Fuel']} className={`w-6 h-6 ${statusMap[getItem(checks.fuel).status].color}`} />
           </div>
-          <div className="tooltip" data-tip={`Oil Level: ${getItem(checks.oil).value}`}> 
+          <div className="tooltip" data-tip={`Oil Level: ${getItem(checks.oil).value}`}>
             <Icon name={iconMap['Oil Level']} className={`w-6 h-6 ${statusMap[getItem(checks.oil).status].color}`} />
           </div>
-          <div className="tooltip" data-tip={`Antifreeze: ${getItem(checks.check_antifreeze).value}`}> 
+          <div className="tooltip" data-tip={`Washer Fluid: ${getItem(checks.washer_fluid).value}`}>
+            <Icon name={iconMap['Washer Fluid']} className={`w-6 h-6 ${statusMap[getItem(checks.washer_fluid).status].color}`} />
+          </div>
+          <div className="tooltip" data-tip={`Coolant Level: ${getItem(checks.coolant_level).value}`}>
+            <Icon name={iconMap['Coolant Level']} className={`w-6 h-6 ${statusMap[getItem(checks.coolant_level).status].color}`} />
+          </div>
+          <div className="tooltip" data-tip={`Body Damage: ${getItem(checks.damage).value}`}>
+            <Icon name={iconMap['Body Damage']} className={`w-6 h-6 ${statusMap[getItem(checks.damage).status].color}`} />
+          </div>
+          <div className="tooltip" data-tip={`AdBlue: ${getItem(checks.check_adblue).value}`}>
+            <Icon name={iconMap['Check AdBlue']} className={`w-6 h-6 ${statusMap[getItem(checks.check_adblue).status].color}`} />
+          </div>
+          <div className="tooltip" data-tip={`Antifreeze: ${getItem(checks.check_antifreeze).value}`}>
             <Icon name={iconMap['Check Antifreeze']} className={`w-6 h-6 ${statusMap[getItem(checks.check_antifreeze).status].color}`} />
           </div>
           <TiresRow item={getItem(checks.tires)} />
-        </div>
-        <div className="divider my-2 bg-gradient-to-r from-transparent via-base-300 to-transparent h-px"></div>
-        <div className="space-y-4">
-          <Section title="General">
-            <CheckRow label="Fuel" item={getItem(checks.fuel)} />
-            <CheckRow label="Lights" item={getItem(checks.lights)} />
-            <CheckRow label="Body Damage" item={getItem(checks.damage)} />
-          </Section>
-          <Section title="Fluids">
-            <CheckRow label="Oil Level" item={getItem(checks.oil)} />
-            <CheckRow label="Washer Fluid" item={getItem(checks.washer_fluid)} />
-            <CheckRow label="Coolant Level" item={getItem(checks.coolant_level)} />
-            <CheckRow label="Check AdBlue" item={getItem(checks.check_adblue)} />
-            <CheckRow label="Check Antifreeze" item={getItem(checks.check_antifreeze)} />
-          </Section>
-          {Object.entries(parameters).some(([k]) => !['miles','tires','check_engine','check_oil','corners','windshield','coolant','fuel','adblue','antifreeze'].includes(k)) && (
-            <Section title="Other">
-              {Object.entries(parameters).map(([k, v]) => {
-                if (['miles', 'tires', 'check_engine', 'check_oil', 'corners', 'windshield', 'coolant', 'fuel', 'adblue', 'antifreeze'].includes(k)) return null;
-                return <CheckRow key={k} label={k.replace(/_/g, ' ')} item={{ value: String(v), status: 'OK' }} />;
-              })}
-            </Section>
-          )}
         </div>
       </div>
     </div>
