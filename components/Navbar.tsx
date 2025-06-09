@@ -32,6 +32,7 @@ export default function Navbar() {
     { href: '/upload', icon: 'upload', label: 'Upload' },
     { href: '/admin', icon: 'user-cog', label: 'Admin' },
     { href: '/full-report', icon: 'table-list', label: 'Full Report' },
+    { href: '/van-state', icon: 'truck', label: 'Van State' },
   ];
 
   const isActiveLink = (href) => {
