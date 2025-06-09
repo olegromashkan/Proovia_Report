@@ -47,10 +47,17 @@ export default function VanState() {
     return map;
   }, [checks]);
 
+  const summarize = (vc: VanCheckData) => {
+    if (!vc.parameters) return '';
+    return Object.entries(vc.parameters)
+      .map(([k, v]) => `${k}: ${String(v)}`)
+      .join(', ');
+  };
+
   return (
     <Layout title="Van State">
       <h1 className="text-2xl font-bold mb-4">Van State</h1>
-      <div className="space-y-2">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
         {latest.map(vc => (
           <div key={vc.van_id} onClick={() => setSelected(vc.van_id)} className="cursor-pointer">
             <VanCheck data={vc} />
@@ -59,12 +66,20 @@ export default function VanState() {
       </div>
       <Modal open={!!selected} onClose={() => setSelected(null)} className="max-w-3xl">
         <h2 className="text-xl font-bold mb-4">History for {selected}</h2>
-        <div className="space-y-2 max-h-[70vh] overflow-y-auto">
+        <ul className="divide-y divide-base-300 max-h-[70vh] overflow-y-auto text-sm">
           {selected &&
             (history[selected] || []).map((vc, idx) => (
-              <VanCheck key={idx} data={vc} />
+              <li key={idx} className="py-2">
+                <div className="font-mono text-xs text-base-content/70">
+                  {new Date(vc.date).toLocaleString()}
+                </div>
+                <div className="mt-1">
+                  {vc.driver_id && <span className="mr-2">{vc.driver_id}</span>}
+                  {summarize(vc)}
+                </div>
+              </li>
             ))}
-        </div>
+        </ul>
       </Modal>
     </Layout>
   );
