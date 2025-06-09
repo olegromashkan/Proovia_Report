@@ -225,16 +225,21 @@ export default function FullReport() {
     </div>
   );
 
-  function calcLoad(startTime: string) {
-    if (!startTime || startTime === 'Unknown') return 'N/A';
-    const [h, m] = startTime.split(':').map(Number);
-    if (isNaN(h) || isNaN(m)) return startTime;
-    const date = new Date();
-    date.setHours(h);
-    date.setMinutes(m - 90);
-    const hh = String(date.getHours()).padStart(2, '0');
-    const mm = String(date.getMinutes()).padStart(2, '0');
-    return `${hh}:${mm}`;
+  function diffTime(t1: string, t2: string) {
+    if (!t1 || !t2) return 'N/A';
+    const [h1, m1] = t1.split(':').map(Number);
+    const [h2, m2] = t2.split(':').map(Number);
+    if ([h1, m1, h2, m2].some((n) => isNaN(n))) return 'N/A';
+    const d1 = new Date();
+    d1.setHours(h1, m1, 0, 0);
+    const d2 = new Date();
+    d2.setHours(h2, m2, 0, 0);
+    let diff = Math.round((d1.getTime() - d2.getTime()) / 60000);
+    const sign = diff < 0 ? '-' : '';
+    diff = Math.abs(diff);
+    const hh = String(Math.floor(diff / 60)).padStart(2, '0');
+    const mm = String(diff % 60).padStart(2, '0');
+    return `${sign}${hh}:${mm}`;
   }
 
   return (
@@ -254,20 +259,38 @@ export default function FullReport() {
                 <h2 className="card-title">Start Times Analysis</h2>
                 <div className="overflow-auto h-[75vh]">
                     <table className="table table-xs table-pin-rows table-zebra w-full">
-                        <thead><tr><th>Asset</th><th>Driver</th><th>Load Time</th><th>Start Time</th><th>Duration</th></tr></thead>
+                        <thead>
+                            <tr>
+                                <th>Asset</th>
+                                <th>Driver</th>
+                                <th>Contractor</th>
+                                <th>Arrive WH</th>
+                                <th>Load Time</th>
+                                <th>Start Time</th>
+                                <th>Left WH</th>
+                                <th>Duration</th>
+                                <th>WH - Start</th>
+                            </tr>
+                        </thead>
                         <tbody>
-                            {startData.map((r, idx) => (
-                                <tr key={idx} className="hover">
-                                    <td>{r.Asset}</td>
-                                    <td>{r.Driver}</td>
-                                    <td>{r.Contractor_Name}</td>
-                                    <td>{r.First_Mention_Time}</td>
-                                    <td>{calcLoad(r.Start_Time)}</td>
-                                    <td>{r.Start_Time}</td>
-                                    <td>{r.Last_Mention_Time}</td>
-                                    <td>{r.Duration}</td>
-                                </tr>
-                            ))}
+                            {startData.map((r, idx) => {
+                                const load = calcLoad(r.Start_Time);
+                                const duration = diffTime(load, r.First_Mention_Time);
+                                const startGap = diffTime(r.Last_Mention_Time, r.Start_Time);
+                                return (
+                                    <tr key={idx} className="hover">
+                                        <td>{r.Asset}</td>
+                                        <td>{r.Driver}</td>
+                                        <td>{r.Contractor_Name}</td>
+                                        <td>{r.First_Mention_Time}</td>
+                                        <td>{load}</td>
+                                        <td>{r.Start_Time}</td>
+                                        <td>{r.Last_Mention_Time}</td>
+                                        <td>{duration}</td>
+                                        <td>{startGap}</td>
+                                    </tr>
+                                );
+                            })}
                         </tbody>
                     </table>
                 </div>

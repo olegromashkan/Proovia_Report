@@ -24,11 +24,7 @@
 
 body {
   font-family: 'Inter', system-ui, sans-serif;
-  background: linear-gradient(to bottom right, #f8fafc, #eef2f7);
-}
-
-[data-theme='dark'] body {
-  background: #1b1b1b;
+  background: var(--b1);
 }
 
 h1, h2, h3, h4, h5, h6 {
