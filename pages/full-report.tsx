@@ -3,6 +3,7 @@ import { useRouter } from 'next/router';
 import Layout from '../components/Layout';
 import TripModal from '../components/TripModal';
 import Icon from '../components/Icon';
+import VanCheck from '../components/VanCheck';
 
 // --- Хелперы ---
 interface Trip {
@@ -33,6 +34,7 @@ export default function FullReport() {
   // --- Состояния (State) ---
   const [trips, setTrips] = useState<Trip[]>([]);
   const [startData, setStartData] = useState<any[]>([]);
+  const [vanChecks, setVanChecks] = useState<any[]>([]);
   const [startSearch, setStartSearch] = useState('');
   const [startContractor, setStartContractor] = useState('');
   const [selected, setSelected] = useState<Trip | null>(null);
@@ -90,6 +92,11 @@ export default function FullReport() {
       if (resStart.ok) {
         const d = await resStart.json();
         setStartData(d.items || []);
+      }
+      const resVan = await fetch(`/api/van-checks?start=${start}&end=${end}`);
+      if (resVan.ok) {
+        const v = await resVan.json();
+        setVanChecks(v.items || []);
       }
       setIsLoading(false);
     };
@@ -318,7 +325,7 @@ export default function FullReport() {
             </label>
           </div>
 
-          <div className="grid lg:grid-cols-2 gap-6">
+          <div className="grid lg:grid-cols-3 gap-6">
             <div className="card bg-base-100 shadow-xl"><div className="card-body p-4">
                 <h2 className="card-title">Start Times Analysis</h2>
                 <div className="flex flex-wrap gap-2 my-2">
@@ -384,6 +391,15 @@ export default function FullReport() {
                             })}
                         </tbody>
                     </table>
+                </div>
+            </div></div>
+
+            <div className="card bg-base-100 shadow-xl"><div className="card-body p-4">
+                <h2 className="card-title">Van Check</h2>
+                <div className="overflow-y-auto h-[75vh] space-y-2">
+                    {vanChecks.map((vc, idx) => (
+                      <VanCheck key={idx} data={vc} />
+                    ))}
                 </div>
             </div></div>
 

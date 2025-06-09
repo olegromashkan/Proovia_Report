@@ -19,6 +19,11 @@ export function init() {
       data TEXT,
       created_at TEXT DEFAULT CURRENT_TIMESTAMP
     );
+    CREATE TABLE IF NOT EXISTS van_checks (
+      id TEXT PRIMARY KEY,
+      data TEXT,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP
+    );
     CREATE TABLE IF NOT EXISTS schedule_trips (
       id TEXT PRIMARY KEY,
       data TEXT,
@@ -44,6 +49,7 @@ export function init() {
     'drivers_report',
     'schedule_trips',
     'csv_trips',
+    'van_checks',
   ];
   for (const table of tables) {
     try {
