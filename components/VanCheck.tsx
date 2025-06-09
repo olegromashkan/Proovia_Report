@@ -12,13 +12,13 @@ interface VanCheckData {
   van_id: string;
   driver_id: string;
   date: string;
-  checks: {
-    mileage: CheckItem;
-    tires: CheckItem;
-    oil: CheckItem;
-    lights: CheckItem;
-    damage: CheckItem;
-    washer_fluid: CheckItem;
+  checks?: {
+    mileage?: CheckItem;
+    tires?: CheckItem;
+    oil?: CheckItem;
+    lights?: CheckItem;
+    damage?: CheckItem;
+    washer_fluid?: CheckItem;
   };
 }
 
@@ -51,13 +51,17 @@ const CheckRow = ({ label, item }: { label: string; item: CheckItem }) => {
 };
 
 export default function VanCheck({ data, contractor }: Props) {
-  const { van_id, driver_id, checks } = data;
+  const { van_id, driver_id } = data;
+  const checks = data.checks || {};
+
+  const getItem = (item?: CheckItem): CheckItem =>
+    item || { value: 'N/A', status: 'OK' };
 
   const visualStatuses = {
-    tires: checks.tires.status,
-    lights: checks.lights.status,
-    oil: checks.oil.status,
-    damage: checks.damage.status,
+    tires: getItem(checks.tires).status,
+    lights: getItem(checks.lights).status,
+    oil: getItem(checks.oil).status,
+    damage: getItem(checks.damage).status,
   };
 
   return (
@@ -75,12 +79,12 @@ export default function VanCheck({ data, contractor }: Props) {
         </div>
         <div className="divider my-1"></div>
         <div className="space-y-1">
-            <CheckRow label="Mileage" item={{ value: checks.mileage.value, status: 'OK'}} />
-            <CheckRow label="Tires" item={checks.tires} />
-            <CheckRow label="Lights" item={checks.lights} />
-            <CheckRow label="Oil Level" item={checks.oil} />
-            <CheckRow label="Washer Fluid" item={checks.washer_fluid} />
-            <CheckRow label="Body Damage" item={checks.damage} />
+            <CheckRow label="Mileage" item={{ value: getItem(checks.mileage).value, status: 'OK' }} />
+            <CheckRow label="Tires" item={getItem(checks.tires)} />
+            <CheckRow label="Lights" item={getItem(checks.lights)} />
+            <CheckRow label="Oil Level" item={getItem(checks.oil)} />
+            <CheckRow label="Washer Fluid" item={getItem(checks.washer_fluid)} />
+            <CheckRow label="Body Damage" item={getItem(checks.damage)} />
         </div>
       </div>
     </div>
