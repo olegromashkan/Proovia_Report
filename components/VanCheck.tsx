@@ -173,7 +173,7 @@ export default function VanCheck({ data, contractor }: Props) {
             <div className="font-mono text-sm mt-1">{getItem(checks.mileage).value}</div>
           </div>
         </div>
-        <div className="flex justify-center gap-4 my-2">
+        <div className="flex justify-center gap-4 my-2">+
           <div className="tooltip" data-tip={`Lights: ${getItem(checks.lights).value}`}> 
             <Icon name={iconMap['Lights']} className={`w-6 h-6 ${statusMap[getItem(checks.lights).status].color}`} />
           </div>
