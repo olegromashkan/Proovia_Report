@@ -172,6 +172,21 @@ export default function VanCheck({ data, contractor }: Props) {
             {new Date(data.date).toLocaleDateString()}
           </div>
         </div>
+        <div className="flex justify-center gap-4 my-2">+
+          <div className="tooltip" data-tip={`Lights: ${getItem(checks.lights).value}`}> 
+            <Icon name={iconMap['Lights']} className={`w-6 h-6 ${statusMap[getItem(checks.lights).status].color}`} />
+          </div>
+          <div className="tooltip" data-tip={`Fuel: ${getItem(checks.fuel).value}`}> 
+            <Icon name={iconMap['Fuel']} className={`w-6 h-6 ${statusMap[getItem(checks.fuel).status].color}`} />
+          </div>
+          <div className="tooltip" data-tip={`Oil Level: ${getItem(checks.oil).value}`}> 
+            <Icon name={iconMap['Oil Level']} className={`w-6 h-6 ${statusMap[getItem(checks.oil).status].color}`} />
+          </div>
+          <div className="tooltip" data-tip={`Antifreeze: ${getItem(checks.check_antifreeze).value}`}> 
+            <Icon name={iconMap['Check Antifreeze']} className={`w-6 h-6 ${statusMap[getItem(checks.check_antifreeze).status].color}`} />
+          </div>
+          <TiresRow item={getItem(checks.tires)} />
+        </div>
         <div className="divider my-2 bg-gradient-to-r from-transparent via-base-300 to-transparent h-px"></div>
         <div className="space-y-4">
           <Section title="General">
