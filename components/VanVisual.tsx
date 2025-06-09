@@ -1,8 +1,15 @@
 import React from 'react';
 
 // Интерфейс для статусов (цвет индикатора)
+interface TireStatuses {
+  front_left?: string;
+  front_right?: string;
+  rear_left?: string;
+  rear_right?: string;
+}
+
 interface Statuses {
-  tires: string;
+  tires: string | TireStatuses;
   lights: string;
   oil: string;
   damage: string;
@@ -10,7 +17,7 @@ interface Statuses {
 
 // Интерфейс для детальной информации (текст подсказки)
 interface Details {
-  tires?: string;
+  tires?: string | TireStatuses;
   lights?: string;
   oil?: string;
   damage?: string;
@@ -29,6 +36,16 @@ const getStatusColor = (status: string, fallbackColor = 'hsl(var(--neutral))') =
 const VanVisual: React.FC<{ statuses: Statuses; details?: Details }> = ({ statuses, details = {} }) => {
   const isDamage = statuses.damage?.toLowerCase() !== 'ok';
   const strokeColor = 'hsl(var(--neutral-content) / 0.3)';
+
+  const tireStatus = (pos: keyof TireStatuses) =>
+    typeof statuses.tires === 'object' ? statuses.tires[pos] || '' : statuses.tires;
+  const tireDetail = (pos: keyof TireStatuses) =>
+    typeof details.tires === 'object' ? details.tires[pos] : details.tires;
+
+  const tiresTip =
+    typeof details.tires === 'object'
+      ? `FL: ${details.tires.front_left ?? '-'}, FR: ${details.tires.front_right ?? '-'}, RL: ${details.tires.rear_left ?? '-'}, RR: ${details.tires.rear_right ?? '-'}`
+      : details.tires;
 
   return (
     // @ts-ignore to suppress potential SVG attribute type errors
@@ -74,11 +91,11 @@ const VanVisual: React.FC<{ statuses: Statuses; details?: Details }> = ({ status
             </g>
           )}
           <rect x="1" y="1" width="178" height="88" rx="12" fill="none" stroke="hsl(var(--neutral-content) / 0.1)" strokeWidth="1.2" />
-          <g className="tooltip interactive" data-tip={`Tires Status${details.tires ? `: ${details.tires}` : ''}`}>
-            <rect x="20" y="-8" width="48" height="22" rx="6" fill="url(#highlightGradient)" stroke={getStatusColor(statuses.tires)} strokeWidth="1.8" />
-            <rect x="120" y="-8" width="48" height="22" rx="6" fill="url(#highlightGradient)" stroke={getStatusColor(statuses.tires)} strokeWidth="1.8" />
-            <rect x="20" y="80" width="48" height="22" rx="6" fill="url(#highlightGradient)" stroke={getStatusColor(statuses.tires)} strokeWidth="1.8" />
-            <rect x="120" y="80" width="48" height="22" rx="6" fill="url(#highlightGradient)" stroke={getStatusColor(statuses.tires)} strokeWidth="1.8" />
+          <g className="tooltip interactive" data-tip={`Tires Status${tiresTip ? `: ${tiresTip}` : ''}`}> 
+            <rect x="20" y="-8" width="48" height="22" rx="6" fill="url(#highlightGradient)" stroke={getStatusColor(tireStatus('front_left'))} strokeWidth="1.8" />
+            <rect x="120" y="-8" width="48" height="22" rx="6" fill="url(#highlightGradient)" stroke={getStatusColor(tireStatus('front_right'))} strokeWidth="1.8" />
+            <rect x="20" y="80" width="48" height="22" rx="6" fill="url(#highlightGradient)" stroke={getStatusColor(tireStatus('rear_left'))} strokeWidth="1.8" />
+            <rect x="120" y="80" width="48" height="22" rx="6" fill="url(#highlightGradient)" stroke={getStatusColor(tireStatus('rear_right'))} strokeWidth="1.8" />
           </g>
         </g>
       </g>
@@ -95,9 +112,9 @@ const VanVisual: React.FC<{ statuses: Statuses; details?: Details }> = ({ status
               <path d="M80 50 C 90 40, 100 60, 110 50" stroke={getStatusColor(statuses.damage)} strokeWidth="2.4" fill="none" strokeLinecap="round" strokeDasharray="4 4" />
             </g>
           )}
-          <g className="tooltip interactive" data-tip={`Tires Status${details.tires ? `: ${details.tires}` : ''}`}>
-            <circle cx="45" cy="85" r="19" fill="url(#highlightGradient)" stroke={getStatusColor(statuses.tires)} strokeWidth="2.4" />
-            <circle cx="150" cy="85" r="19" fill="url(#highlightGradient)" stroke={getStatusColor(statuses.tires)} strokeWidth="2.4" />
+          <g className="tooltip interactive" data-tip={`Tires Status${tiresTip ? `: ${tiresTip}` : ''}`}>
+            <circle cx="45" cy="85" r="19" fill="url(#highlightGradient)" stroke={getStatusColor(tireStatus('front_left'))} strokeWidth="2.4" />
+            <circle cx="150" cy="85" r="19" fill="url(#highlightGradient)" stroke={getStatusColor(tireStatus('rear_left'))} strokeWidth="2.4" />
           </g>
           <g className="tooltip interactive" data-tip={`Lights Status${details.lights ? `: ${details.lights}` : ''}`}>
             <rect x="180" y="25" width="6" height="12" rx="2.4" fill={getStatusColor(statuses.lights, 'transparent')} />

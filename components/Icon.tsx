@@ -31,6 +31,14 @@ const iconMap: Record<string, string> = {
   refresh: 'arrow-clockwise',
   calendar: 'calendar',
   database: 'hdd-stack',
+  truck: 'truck',
+  'light-bulb': 'lightbulb',
+  beaker: 'beaker',
+  droplet: 'droplet',
+  'shield-exclamation': 'shield-exclamation',
+  thermometer: 'thermometer',
+  'fuel-pump': 'fuel-pump',
+  snowflake: 'snow',
 };
 
 export default function Icon({ name, className }: IconProps) {
