@@ -37,7 +37,7 @@ const VanVisual = ({ statuses, details = {} }: { statuses: Statuses; details?: D
           <feDropShadow dx="1" dy="2" stdDeviation="2" floodColor="hsl(var(--bc) / 0.1)" />
         </filter>
       </defs>
-      
+
       {/* --- Top View --- */}
       <g transform="translate(10, 10)">
         <text x="0" y="10" className="text-xs font-sans" fill="currentColor" opacity="0.5">Top View</text>
@@ -70,9 +70,9 @@ const VanVisual = ({ statuses, details = {} }: { statuses: Statuses; details?: D
           <path d="M10 85 V 40 C 10 30, 18 20, 28 20 H 90 V 85 Z" className="fill-base-200/70" />
           <path d="M95 20 H 115 L 125 45 H 95 Z" className="fill-base-300/50" />
           {isDamage && (
-             <g className="tooltip" data-tip={details.damage || 'Damage Status'}>
-                <path d="M80 50 C 90 40, 100 60, 110 50" stroke={getStatusColor(statuses.damage)} strokeWidth="2" fill="none" strokeLinecap="round" strokeDasharray="4 4"/>
-             </g>
+            <g className="tooltip" data-tip={details.damage || 'Damage Status'}>
+              <path d="M80 50 C 90 40, 100 60, 110 50" stroke={getStatusColor(statuses.damage)} strokeWidth="2" fill="none" strokeLinecap="round" strokeDasharray="4 4"/>
+            </g>
           )}
           <g className="tooltip" data-tip={details.tires || 'Tires Status'}>
             <circle cx="45" cy="85" r="16" className="fill-base-300" stroke={getStatusColor(statuses.tires)} strokeWidth="2" />
@@ -89,20 +89,20 @@ const VanVisual = ({ statuses, details = {} }: { statuses: Statuses; details?: D
       <g transform="translate(10, 270)">
         <text x="0" y="10" className="text-xs font-sans" fill="currentColor" opacity="0.5">Front View</text>
         <g transform="translate(25, 20)" filter="url(#shadow)">
-            <path d="M5 90 V 20 C5 10 15 0 25 0 H 125 C 135 0 145 10 145 20 V 90 Z" className="fill-base-100" stroke={strokeColor} />
-            <path d="M20 0 H 130 L 115 40 H 35 Z" className="fill-base-200/70" />
-            <g className="tooltip" data-tip={details.oil || 'Oil Status'}>
-                <rect x="40" y="50" width="70" height="25" rx="3" fill={getStatusColor(statuses.oil)} opacity="0.5"/>
+          <path d="M5 90 V 20 C5 10 15 0 25 0 H 125 C 135 0 145 10 145 20 V 90 Z" className="fill-base-100" stroke={strokeColor} />
+          <path d="M20 0 H 130 L 115 40 H 35 Z" className="fill-base-200/70" />
+          <g className="tooltip" data-tip={details.oil || 'Oil Status'}>
+            <rect x="40" y="50" width="70" height="25" rx="3" fill={getStatusColor(statuses.oil)} opacity="0.5"/>
+          </g>
+          <g className="tooltip" data-tip={details.lights || 'Lights Status'}>
+            <rect x="15" y="50" width="20" height="8" rx="2" fill={getStatusColor(statuses.lights)} />
+            <rect x="115" y="50" width="20" height="8" rx="2" fill={getStatusColor(statuses.lights)} />
+          </g>
+          {isDamage && (
+            <g className="tooltip" data-tip={details.damage || 'Damage Status'}>
+              <circle cx="75" cy="45" r="10" fill="none" stroke={getStatusColor(statuses.damage)} strokeWidth="2" opacity="0.9" />
             </g>
-            <g className="tooltip" data-tip={details.lights || 'Lights Status'}>
-                <rect x="15" y="50" width="20" height="8" rx="2" fill={getStatusColor(statuses.lights)} />
-                <rect x="115" y="50" width="20" height="8" rx="2" fill={getStatusColor(statuses.lights)} />
-            </g>
-            {isDamage && (
-                <g className="tooltip" data-tip={details.damage || 'Damage Status'}>
-                    <circle cx="75" cy="45" r="10" fill="none" stroke={getStatusColor(statuses.damage)} strokeWidth="2" opacity="0.9" />
-                </g>
-            )}
+          )}
         </g>
       </g>
     </svg>
