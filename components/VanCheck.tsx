@@ -52,7 +52,15 @@ const CheckRow = ({ label, item }: { label: string; item: CheckItem }) => {
 
 export default function VanCheck({ data, contractor }: Props) {
   const { van_id, driver_id } = data;
-  const checks = data.checks || {};
+  const parameters: any = (data as any).parameters || {};
+  const checks = data.checks || {
+    mileage: parameters.miles ? { value: parameters.miles, status: 'OK' } : undefined,
+    tires: parameters.tires ? { value: Object.values(parameters.tires).join(' / '), status: 'OK' } : undefined,
+    lights: parameters.check_engine !== undefined ? { value: parameters.check_engine, status: parameters.check_engine === 'true' ? 'OK' : 'Error' } : undefined,
+    oil: parameters.check_oil !== undefined ? { value: parameters.check_oil, status: parameters.check_oil === 'true' ? 'OK' : 'Error' } : undefined,
+    damage: parameters.corners ? { value: parameters.corners, status: parameters.corners === 'undamaged' ? 'OK' : 'Warning' } : undefined,
+    washer_fluid: parameters.windshield ? { value: parameters.windshield, status: parameters.windshield === 'undamaged' ? 'OK' : 'Warning' } : undefined,
+  };
 
   const getItem = (item?: CheckItem): CheckItem =>
     item || { value: 'N/A', status: 'OK' };
@@ -64,10 +72,17 @@ export default function VanCheck({ data, contractor }: Props) {
     damage: getItem(checks.damage).status,
   };
 
+  const visualDetails = {
+    tires: String(getItem(checks.tires).value),
+    lights: String(getItem(checks.lights).value),
+    oil: String(getItem(checks.oil).value),
+    damage: String(getItem(checks.damage).value),
+  };
+
   return (
     <div className="card card-side bg-base-200 shadow-md transition-all duration-300 hover:shadow-xl">
         <figure className="p-4 w-2/5 bg-base-300/50">
-            <VanVisual statuses={visualStatuses} />
+            <VanVisual statuses={visualStatuses} details={visualDetails} />
         </figure>
       <div className="card-body p-4">
         <div className="flex justify-between items-start">
@@ -85,6 +100,10 @@ export default function VanCheck({ data, contractor }: Props) {
             <CheckRow label="Oil Level" item={getItem(checks.oil)} />
             <CheckRow label="Washer Fluid" item={getItem(checks.washer_fluid)} />
             <CheckRow label="Body Damage" item={getItem(checks.damage)} />
+            {Object.entries(parameters).map(([k, v]) => {
+              if (['miles','tires','check_engine','check_oil','corners','windshield'].includes(k)) return null;
+              return <CheckRow key={k} label={k.replace(/_/g,' ')} item={{ value: String(v), status: 'OK' }} />;
+            })}
         </div>
       </div>
     </div>
