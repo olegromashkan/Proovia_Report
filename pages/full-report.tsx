@@ -176,7 +176,7 @@ export default function FullReport() {
     if (isNaN(h) || isNaN(m)) return startTime;
     const date = new Date();
     date.setHours(h);
-    date.setMinutes(m - 30);
+    date.setMinutes(m - 90);
     const hh = String(date.getHours()).padStart(2, '0');
     const mm = String(date.getMinutes()).padStart(2, '0');
     return `${hh}:${mm}`;
@@ -203,14 +203,26 @@ export default function FullReport() {
                             <tr>
                                 <th className="whitespace-nowrap">Asset</th>
                                 <th className="whitespace-nowrap">Driver</th>
+                                <th className="whitespace-nowrap">Contractor</th>
+                                <th className="whitespace-nowrap">To WH</th>
                                 <th className="whitespace-nowrap">Load Time</th>
                                 <th className="whitespace-nowrap">Start Time</th>
+                                <th className="whitespace-nowrap">From WH</th>
                                 <th className="whitespace-nowrap">Duration</th>
                             </tr>
                         </thead>
                         <tbody>
                             {startData.map((r, idx) => (
-                                <tr key={idx} className="hover"><td>{r.Asset}</td><td>{r.Driver}</td><td>{calcLoad(r.Start_Time)}</td><td>{r.Start_Time}</td><td>{r.Duration}</td></tr>
+                                <tr key={idx} className="hover">
+                                    <td>{r.Asset}</td>
+                                    <td>{r.Driver}</td>
+                                    <td>{r.Contractor_Name}</td>
+                                    <td>{r.First_Mention_Time}</td>
+                                    <td>{calcLoad(r.Start_Time)}</td>
+                                    <td>{r.Start_Time}</td>
+                                    <td>{r.Last_Mention_Time}</td>
+                                    <td>{r.Duration}</td>
+                                </tr>
                             ))}
                         </tbody>
                     </table>
