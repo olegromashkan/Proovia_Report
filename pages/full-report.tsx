@@ -32,6 +32,8 @@ export default function FullReport() {
   // --- Состояния (State) ---
   const [trips, setTrips] = useState<Trip[]>([]);
   const [startData, setStartData] = useState<any[]>([]);
+  const [startSearch, setStartSearch] = useState('');
+  const [startDriver, setStartDriver] = useState('');
   const [selected, setSelected] = useState<Trip | null>(null);
   const [isDrawerOpen, setDrawerOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -129,6 +131,20 @@ export default function FullReport() {
     failed: filteredAndSorted.filter((t) => t.Status === 'Failed').length,
   }), [filteredAndSorted]);
 
+  const startDrivers = useMemo(() => {
+    const set = new Set<string>();
+    startData.forEach(s => { if (s.Driver) set.add(s.Driver); });
+    return Array.from(set).sort();
+  }, [startData]);
+
+  const filteredStart = useMemo(() => {
+    return startData.filter(r => {
+      const matchDriver = !startDriver || r.Driver === startDriver;
+      const matchSearch = startSearch ? Object.values(r).some(v => String(v).toLowerCase().includes(startSearch.toLowerCase())) : true;
+      return matchDriver && matchSearch;
+    }).sort((a,b) => String(a.Asset).localeCompare(String(b.Asset)));
+  }, [startData, startSearch, startDriver]);
+
   // --- Обработчики ---
   const setDateRange = (s: Date, e: Date) => {
     setStart(formatDate(s));
@@ -160,6 +176,35 @@ export default function FullReport() {
     setStart(today); setEnd(today);
     setStatusFilter(''); setDriverFilter(''); setAuctionFilter(''); setSearch('');
     setSortField('Order.OrderNumber'); setSortDir('asc');
+  };
+
+  const copyStartTable = () => {
+    const header = ['Asset','Driver','Contractor','Arrive WH','Load Time','Diff Load','Start Time','Left WH','Diff Start'];
+    const rows = filteredStart.map(r => {
+      const load = calcLoad(r.Start_Time);
+      const diffLoad = diffTime(load, r.First_Mention_Time);
+      const diffStart = diffTime(r.Last_Mention_Time, r.Start_Time);
+      return [r.Asset, r.Driver, r.Contractor_Name, r.First_Mention_Time, load, diffLoad, r.Start_Time, r.Last_Mention_Time, diffStart].join(',');
+    });
+    navigator.clipboard.writeText([header.join(','), ...rows].join('\n'));
+  };
+
+  const downloadStartCSV = () => {
+    const header = ['Asset','Driver','Contractor','Arrive WH','Load Time','Diff Load','Start Time','Left WH','Diff Start'];
+    const rows = filteredStart.map(r => {
+      const load = calcLoad(r.Start_Time);
+      const diffLoad = diffTime(load, r.First_Mention_Time);
+      const diffStart = diffTime(r.Last_Mention_Time, r.Start_Time);
+      return [r.Asset, r.Driver, r.Contractor_Name, r.First_Mention_Time, load, diffLoad, r.Start_Time, r.Last_Mention_Time, diffStart].join(',');
+    });
+    const csv = [header.join(','), ...rows].join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'start_times.csv';
+    a.click();
+    URL.revokeObjectURL(url);
   };
 
   // --- UI Компоненты ---
@@ -257,6 +302,33 @@ export default function FullReport() {
           <div className="grid lg:grid-cols-2 gap-6">
             <div className="card bg-base-100 shadow-xl"><div className="card-body p-4">
                 <h2 className="card-title">Start Times Analysis</h2>
+                <div className="flex flex-wrap gap-2 my-2">
+                    <input
+                      type="text"
+                      placeholder="Search..."
+                      value={startSearch}
+                      onChange={(e) => setStartSearch(e.target.value)}
+                      className="input input-bordered input-sm flex-1 max-w-xs"
+                    />
+                    <select
+                      value={startDriver}
+                      onChange={(e) => setStartDriver(e.target.value)}
+                      className="select select-bordered select-sm max-w-xs"
+                    >
+                      <option value="">All Drivers</option>
+                      {startDrivers.map((d) => (
+                        <option key={d} value={d}>{d}</option>
+                      ))}
+                    </select>
+                    <button onClick={copyStartTable} className="btn btn-sm btn-outline">
+                      <Icon name="copy" />
+                      Copy
+                    </button>
+                    <button onClick={downloadStartCSV} className="btn btn-sm btn-outline">
+                      <Icon name="download" />
+                      Download
+                    </button>
+                </div>
                 <div className="overflow-auto h-[75vh]">
                     <table className="table table-xs table-pin-rows table-zebra w-full">
                         <thead>
@@ -266,17 +338,17 @@ export default function FullReport() {
                                 <th>Contractor</th>
                                 <th>Arrive WH</th>
                                 <th>Load Time</th>
+                                <th>Diff Load</th>
                                 <th>Start Time</th>
                                 <th>Left WH</th>
-                                <th>Duration</th>
-                                <th>WH - Start</th>
+                                <th>Diff Start</th>
                             </tr>
                         </thead>
                         <tbody>
-                            {startData.map((r, idx) => {
+                            {filteredStart.map((r, idx) => {
                                 const load = calcLoad(r.Start_Time);
-                                const duration = diffTime(load, r.First_Mention_Time);
-                                const startGap = diffTime(r.Last_Mention_Time, r.Start_Time);
+                                const diffLoad = diffTime(load, r.First_Mention_Time);
+                                const diffStart = diffTime(r.Last_Mention_Time, r.Start_Time);
                                 return (
                                     <tr key={idx} className="hover">
                                         <td>{r.Asset}</td>
@@ -284,10 +356,10 @@ export default function FullReport() {
                                         <td>{r.Contractor_Name}</td>
                                         <td>{r.First_Mention_Time}</td>
                                         <td>{load}</td>
+                                        <td>{diffLoad}</td>
                                         <td>{r.Start_Time}</td>
                                         <td>{r.Last_Mention_Time}</td>
-                                        <td>{duration}</td>
-                                        <td>{startGap}</td>
+                                        <td>{diffStart}</td>
                                     </tr>
                                 );
                             })}
