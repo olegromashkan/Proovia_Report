@@ -186,14 +186,13 @@ export default function FullReport() {
   };
 
   const copyStartTable = () => {
-    const header = ['Asset','Contractor','Driver','Arrive WH','Load Time','Diff Load','Start Time','Left WH','Diff Start'];
     const rows = filteredStart.map(r => {
       const load = calcLoad(r.Start_Time);
-      const diffLoad = diffTime(load, r.First_Mention_Time);
+      const diffLoad = diffTime(r.First_Mention_Time, load);
       const diffStart = diffTime(r.Last_Mention_Time, r.Start_Time);
       return [r.Asset, r.Contractor_Name, r.Driver, r.First_Mention_Time, load, diffLoad, r.Start_Time, r.Last_Mention_Time, diffStart].join(',');
     });
-    const text = [header.join(','), ...rows].join('\n');
+    const text = rows.join('\n');
     if (typeof navigator !== 'undefined' && navigator.clipboard && window.isSecureContext) {
       navigator.clipboard.writeText(text);
     } else {
@@ -216,7 +215,7 @@ export default function FullReport() {
     const header = ['Asset','Contractor','Driver','Arrive WH','Load Time','Diff Load','Start Time','Left WH','Diff Start'];
     const rows = filteredStart.map(r => {
       const load = calcLoad(r.Start_Time);
-      const diffLoad = diffTime(load, r.First_Mention_Time);
+      const diffLoad = diffTime(r.First_Mention_Time, load);
       const diffStart = diffTime(r.Last_Mention_Time, r.Start_Time);
       return [r.Asset, r.Contractor_Name, r.Driver, r.First_Mention_Time, load, diffLoad, r.Start_Time, r.Last_Mention_Time, diffStart].join(',');
     });
@@ -366,7 +365,7 @@ export default function FullReport() {
                         <tbody>
                             {filteredStart.map((r, idx) => {
                                 const load = calcLoad(r.Start_Time);
-                                const diffLoad = diffTime(load, r.First_Mention_Time);
+                                const diffLoad = diffTime(r.First_Mention_Time, load);
                                 const diffStart = diffTime(r.Last_Mention_Time, r.Start_Time);
                                 return (
                                     <tr key={idx} className="hover">
