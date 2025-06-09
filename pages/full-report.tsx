@@ -33,7 +33,7 @@ export default function FullReport() {
   const [trips, setTrips] = useState<Trip[]>([]);
   const [startData, setStartData] = useState<any[]>([]);
   const [startSearch, setStartSearch] = useState('');
-  const [startDriver, setStartDriver] = useState('');
+  const [startContractor, setStartContractor] = useState('');
   const [selected, setSelected] = useState<Trip | null>(null);
   const [isDrawerOpen, setDrawerOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -42,25 +42,31 @@ export default function FullReport() {
   const [start, setStart] = useState(today);
   const [end, setEnd] = useState(today);
   const [statusFilter, setStatusFilter] = useState('');
-  const [driverFilter, setDriverFilter] = useState('');
+  const [contractorFilter, setContractorFilter] = useState('');
   const [auctionFilter, setAuctionFilter] = useState('');
   const [search, setSearch] = useState('');
   const [sortField, setSortField] = useState('Order.OrderNumber');
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
 
   // Динамические данные для фильтров
-  const { drivers, auctions } = useMemo(() => {
-    const driverSet = new Set<string>();
+  const { contractors, auctions } = useMemo(() => {
+    const contractorSet = new Set<string>();
+    startData.forEach(r => { if (r.Contractor_Name) contractorSet.add(r.Contractor_Name); });
     const auctionSet = new Set<string>();
     trips.forEach(t => {
-      if (t['Trip.Driver1']) driverSet.add(t['Trip.Driver1']);
       if (t['Order.Auction']) auctionSet.add(t['Order.Auction']);
     });
     return {
-      drivers: Array.from(driverSet).sort(),
+      contractors: Array.from(contractorSet).sort(),
       auctions: Array.from(auctionSet).sort(),
     };
-  }, [trips]);
+  }, [trips, startData]);
+
+  const driverToContractor = useMemo(() => {
+    const map: Record<string, string> = {};
+    startData.forEach(r => { if (r.Driver) map[r.Driver] = r.Contractor_Name; });
+    return map;
+  }, [startData]);
 
   // --- Загрузка данных ---
   useEffect(() => {
@@ -94,14 +100,15 @@ export default function FullReport() {
     return trips
       .filter((t) => {
         const matchesStatus = !statusFilter || t.Status?.toLowerCase() === statusFilter.toLowerCase();
-        const matchesDriver = !driverFilter || t['Trip.Driver1'] === driverFilter;
+        const contractor = driverToContractor[t['Trip.Driver1']] || 'Unknown';
+        const matchesContractor = !contractorFilter || contractor === contractorFilter;
         const matchesAuction = !auctionFilter || t['Order.Auction'] === auctionFilter;
         const matchesSearch = search ? (
             String(t['Order.OrderNumber'] || '').toLowerCase().includes(search.toLowerCase()) ||
             String(t['Trip.Driver1'] || '').toLowerCase().includes(search.toLowerCase()) ||
             String(t['Address.Postcode'] || '').toLowerCase().includes(search.toLowerCase())
         ) : true;
-        return matchesStatus && matchesDriver && matchesAuction && matchesSearch;
+        return matchesStatus && matchesContractor && matchesAuction && matchesSearch;
       })
       .sort((a, b) => {
         const valA = a[sortField] ?? '';
@@ -123,7 +130,7 @@ export default function FullReport() {
           ? String(valA).localeCompare(String(valB))
           : String(valB).localeCompare(String(valA));
       });
-  }, [trips, statusFilter, driverFilter, auctionFilter, search, sortField, sortDir]);
+  }, [trips, statusFilter, contractorFilter, auctionFilter, search, sortField, sortDir, driverToContractor]);
 
   const stats = useMemo(() => ({
     total: filteredAndSorted.length,
@@ -131,19 +138,19 @@ export default function FullReport() {
     failed: filteredAndSorted.filter((t) => t.Status === 'Failed').length,
   }), [filteredAndSorted]);
 
-  const startDrivers = useMemo(() => {
+  const startContractors = useMemo(() => {
     const set = new Set<string>();
-    startData.forEach(s => { if (s.Driver) set.add(s.Driver); });
+    startData.forEach(s => { if (s.Contractor_Name) set.add(s.Contractor_Name); });
     return Array.from(set).sort();
   }, [startData]);
 
   const filteredStart = useMemo(() => {
     return startData.filter(r => {
-      const matchDriver = !startDriver || r.Driver === startDriver;
+      const matchContractor = !startContractor || r.Contractor_Name === startContractor;
       const matchSearch = startSearch ? Object.values(r).some(v => String(v).toLowerCase().includes(startSearch.toLowerCase())) : true;
-      return matchDriver && matchSearch;
+      return matchContractor && matchSearch;
     }).sort((a,b) => String(a.Asset).localeCompare(String(b.Asset)));
-  }, [startData, startSearch, startDriver]);
+  }, [startData, startSearch, startContractor]);
 
   // --- Обработчики ---
   const setDateRange = (s: Date, e: Date) => {
@@ -174,7 +181,7 @@ export default function FullReport() {
 
   const handleReset = () => {
     setStart(today); setEnd(today);
-    setStatusFilter(''); setDriverFilter(''); setAuctionFilter(''); setSearch('');
+    setStatusFilter(''); setContractorFilter(''); setAuctionFilter(''); setSearch('');
     setSortField('Order.OrderNumber'); setSortDir('asc');
   };
 
@@ -186,7 +193,23 @@ export default function FullReport() {
       const diffStart = diffTime(r.Last_Mention_Time, r.Start_Time);
       return [r.Asset, r.Driver, r.Contractor_Name, r.First_Mention_Time, load, diffLoad, r.Start_Time, r.Last_Mention_Time, diffStart].join(',');
     });
-    navigator.clipboard.writeText([header.join(','), ...rows].join('\n'));
+    const text = [header.join(','), ...rows].join('\n');
+    if (typeof navigator !== 'undefined' && navigator.clipboard && window.isSecureContext) {
+      navigator.clipboard.writeText(text);
+    } else {
+      const textarea = document.createElement('textarea');
+      textarea.value = text;
+      textarea.style.position = 'fixed';
+      textarea.style.left = '-9999px';
+      document.body.appendChild(textarea);
+      textarea.focus();
+      textarea.select();
+      try {
+        document.execCommand('copy');
+      } finally {
+        document.body.removeChild(textarea);
+      }
+    }
   };
 
   const downloadStartCSV = () => {
@@ -240,9 +263,9 @@ export default function FullReport() {
         </select>
       </div>
       <div className="form-control">
-        <label className="label py-0"><span className="label-text">Driver</span></label>
-        <select value={driverFilter} onChange={(e) => setDriverFilter(e.target.value)} className="select select-bordered select-sm">
-          <option value="">All</option>{drivers.map((d) => <option key={d} value={d}>{d}</option>)}
+        <label className="label py-0"><span className="label-text">Contractor</span></label>
+        <select value={contractorFilter} onChange={(e) => setContractorFilter(e.target.value)} className="select select-bordered select-sm">
+          <option value="">All</option>{contractors.map((c) => <option key={c} value={c}>{c}</option>)}
         </select>
       </div>
       <div className="form-control">
@@ -311,13 +334,13 @@ export default function FullReport() {
                       className="input input-bordered input-sm flex-1 max-w-xs"
                     />
                     <select
-                      value={startDriver}
-                      onChange={(e) => setStartDriver(e.target.value)}
+                      value={startContractor}
+                      onChange={(e) => setStartContractor(e.target.value)}
                       className="select select-bordered select-sm max-w-xs"
                     >
-                      <option value="">All Drivers</option>
-                      {startDrivers.map((d) => (
-                        <option key={d} value={d}>{d}</option>
+                      <option value="">All Contractors</option>
+                      {startContractors.map((c) => (
+                        <option key={c} value={c}>{c}</option>
                       ))}
                     </select>
                     <button onClick={copyStartTable} className="btn btn-sm btn-outline">
