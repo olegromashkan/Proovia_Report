@@ -40,7 +40,7 @@ const iconMap = {
   Mileage: 'truck',
   Tires: 'truck', // Replace with tire-specific icon if available
   Lights: 'light-bulb',
-  'Oil Level': 'beaker',
+  'Oil Level': 'droplet-half',
   'Washer Fluid': 'droplet',
   'Body Damage': 'shield-exclamation',
   'Coolant Level': 'thermometer',
@@ -70,6 +70,14 @@ const CheckRow = ({ label, item }: { label: string; item: CheckItem }) => {
   );
 };
 
+function parseStatus(val: any): 'OK' | 'Warning' | 'Error' {
+  const str = String(val).toLowerCase();
+  if (['ok', 'true', 'yes', 'undamaged', 'good'].includes(str)) return 'OK';
+  if (['warning', 'warn'].includes(str)) return 'Warning';
+  if (['error', 'bad', 'false', 'no', 'damaged'].includes(str)) return 'Error';
+  return 'OK';
+}
+
 const TiresRow = ({ item }: { item: CheckItem }) => {
   const tires = typeof item.value === 'object' ? (item.value as Record<string, string>) : {};
   const positions: [string, string][] = [
@@ -79,19 +87,16 @@ const TiresRow = ({ item }: { item: CheckItem }) => {
     ['RR', 'rear_right'],
   ];
   return (
-    <div className="col-span-full flex justify-between items-center text-sm py-2 px-4 rounded-lg bg-base-100 transition-all hover:bg-base-200 hover:shadow-sm">
-      <div className="flex items-center gap-3">
-        <Icon name={iconMap['Tires']} className="w-5 h-5 text-base-content/60" />
-        <span className="text-base-content/80 font-medium">Tires</span>
-      </div>
-      <div className="flex gap-4">
-        {positions.map(([short, key]) => (
-          <div key={key} className="text-center text-xs">
-            <div className="font-semibold">{tires[key] ?? '-'}</div>
-            <div className="text-base-content/60">{short}</div>
+    <div className="flex gap-2">
+      {positions.map(([short, key]) => {
+        const status = parseStatus(tires[key]);
+        const color = statusMap[status].color;
+        return (
+          <div key={key} className={`tooltip`} data-tip={`${short}: ${tires[key] ?? '-'}`}> 
+            <div className={`w-6 h-6 rounded-full border flex items-center justify-center text-[10px] font-bold ${color}`}>{short}</div>
           </div>
-        ))}
-      </div>
+        );
+      })}
     </div>
   );
 };
@@ -122,13 +127,6 @@ export default function VanCheck({ data, contractor }: Props) {
   const getItem = (item?: CheckItem): CheckItem =>
     item || { value: 'N/A', status: 'OK' };
 
-  const parseStatus = (val: any): 'OK' | 'Warning' | 'Error' => {
-    const str = String(val).toLowerCase();
-    if (['ok', 'true', 'yes', 'undamaged', 'good'].includes(str)) return 'OK';
-    if (['warning', 'warn'].includes(str)) return 'Warning';
-    if (['error', 'bad', 'false', 'no', 'damaged'].includes(str)) return 'Error';
-    return 'OK';
-  };
 
   const tiresValue = getItem(checks.tires).value;
   const visualTireStatuses =
@@ -168,16 +166,32 @@ export default function VanCheck({ data, contractor }: Props) {
             <h2 className="card-title text-primary text-xl font-bold">{van_id}</h2>
             <p className="text-sm text-base-content/60">{driver_id} ({contractor || 'N/A'})</p>
           </div>
-          <div className="badge badge-outline bg-base-100 border-base-300 text-sm font-medium">
-            {new Date(data.date).toLocaleDateString()}
+          <div className="flex flex-col items-end">
+            <div className="badge badge-outline bg-base-100 border-base-300 text-sm font-medium">
+              {new Date(data.date).toLocaleDateString()}
+            </div>
+            <div className="font-mono text-sm mt-1">{getItem(checks.mileage).value}</div>
           </div>
+        </div>
+        <div className="flex justify-center gap-4 my-2">
+          <div className="tooltip" data-tip={`Lights: ${getItem(checks.lights).value}`}> 
+            <Icon name={iconMap['Lights']} className={`w-6 h-6 ${statusMap[getItem(checks.lights).status].color}`} />
+          </div>
+          <div className="tooltip" data-tip={`Fuel: ${getItem(checks.fuel).value}`}> 
+            <Icon name={iconMap['Fuel']} className={`w-6 h-6 ${statusMap[getItem(checks.fuel).status].color}`} />
+          </div>
+          <div className="tooltip" data-tip={`Oil Level: ${getItem(checks.oil).value}`}> 
+            <Icon name={iconMap['Oil Level']} className={`w-6 h-6 ${statusMap[getItem(checks.oil).status].color}`} />
+          </div>
+          <div className="tooltip" data-tip={`Antifreeze: ${getItem(checks.check_antifreeze).value}`}> 
+            <Icon name={iconMap['Check Antifreeze']} className={`w-6 h-6 ${statusMap[getItem(checks.check_antifreeze).status].color}`} />
+          </div>
+          <TiresRow item={getItem(checks.tires)} />
         </div>
         <div className="divider my-2 bg-gradient-to-r from-transparent via-base-300 to-transparent h-px"></div>
         <div className="space-y-4">
           <Section title="General">
-            <CheckRow label="Mileage" item={{ value: getItem(checks.mileage).value, status: 'OK' }} />
             <CheckRow label="Fuel" item={getItem(checks.fuel)} />
-            <TiresRow item={getItem(checks.tires)} />
             <CheckRow label="Lights" item={getItem(checks.lights)} />
             <CheckRow label="Body Damage" item={getItem(checks.damage)} />
           </Section>
