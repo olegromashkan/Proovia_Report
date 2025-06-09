@@ -39,6 +39,10 @@ const iconMap: Record<string, string> = {
   thermometer: 'thermometer',
   'fuel-pump': 'fuel-pump',
   snowflake: 'snow',
+  'check-circle': 'check-circle',
+  'exclamation-triangle': 'exclamation-triangle',
+  'x-circle': 'x-circle',
+  'question-mark-circle': 'question-circle',
 };
 
 export default function Icon({ name, className }: IconProps) {
