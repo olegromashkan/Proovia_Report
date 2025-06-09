@@ -17,7 +17,7 @@ function formatDate(date: Date) {
 
 function calcLoad(startTime: string) {
   if (!startTime || typeof startTime !== 'string' || !startTime.includes(':')) return 'N/A';
-  const [h, m] = startTime.split(':').map(Number);
+  const [h, m] = startTime.trim().split(':').map(Number);
   if (isNaN(h) || isNaN(m)) return 'N/A';
   const date = new Date();
   date.setHours(h, m, 0, 0);
@@ -124,12 +124,12 @@ export default function FullReport() {
         const valA = a[sortField] ?? '';
         const valB = b[sortField] ?? '';
         
-        if (sortField === 'Seq') {
-            const numA = parseInt(String(valA), 10);
-            const numB = parseInt(String(valB), 10);
-            if (!isNaN(numA) && !isNaN(numB)) {
-                return sortDir === 'asc' ? numA - numB : numB - numA;
-            }
+        if (sortField === 'Seq' || sortField === 'Order.OrderNumber') {
+          const numA = parseInt(String(valA), 10);
+          const numB = parseInt(String(valB), 10);
+          if (!isNaN(numA) && !isNaN(numB)) {
+            return sortDir === 'asc' ? numA - numB : numB - numA;
+          }
         }
         
         if (typeof valA === 'number' && typeof valB === 'number') {
@@ -332,7 +332,8 @@ export default function FullReport() {
     d1.setHours(h1, m1, 0, 0);
     const d2 = new Date();
     d2.setHours(h2, m2, 0, 0);
-    const diff = Math.round((d1.getTime() - d2.getTime()) / 60000);
+    let diff = Math.round((d1.getTime() - d2.getTime()) / 60000);
+    if (diff < 0) diff += 24 * 60;
     return diff.toString();
   }
 
