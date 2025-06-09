@@ -80,9 +80,9 @@ export default function VanCheck({ data, contractor }: Props) {
   };
 
   return (
-    <div className="card bg-base-200 shadow-md transition-all duration-300 hover:shadow-xl w-full">
+    <div className="card bg-base-200 shadow-md transition-all duration-300 hover:shadow-xl">
       <figure className="p-4 bg-base-300/50 w-full flex justify-center">
-        <div className="w-72">
+        <div className="w-60">
           <VanVisual statuses={visualStatuses} details={visualDetails} />
         </div>
       </figure>
