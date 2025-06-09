@@ -186,12 +186,12 @@ export default function FullReport() {
   };
 
   const copyStartTable = () => {
-    const header = ['Asset','Driver','Contractor','Arrive WH','Load Time','Diff Load','Start Time','Left WH','Diff Start'];
+    const header = ['Driver','Asset','Contractor','Arrive WH','Load Time','Diff Load','Start Time','Left WH','Diff Start'];
     const rows = filteredStart.map(r => {
       const load = calcLoad(r.Start_Time);
       const diffLoad = diffTime(load, r.First_Mention_Time);
       const diffStart = diffTime(r.Last_Mention_Time, r.Start_Time);
-      return [r.Asset, r.Driver, r.Contractor_Name, r.First_Mention_Time, load, diffLoad, r.Start_Time, r.Last_Mention_Time, diffStart].join(',');
+      return [r.Driver, r.Asset, r.Contractor_Name, r.First_Mention_Time, load, diffLoad, r.Start_Time, r.Last_Mention_Time, diffStart].join(',');
     });
     const text = [header.join(','), ...rows].join('\n');
     if (typeof navigator !== 'undefined' && navigator.clipboard && window.isSecureContext) {
@@ -213,12 +213,12 @@ export default function FullReport() {
   };
 
   const downloadStartCSV = () => {
-    const header = ['Asset','Driver','Contractor','Arrive WH','Load Time','Diff Load','Start Time','Left WH','Diff Start'];
+    const header = ['Driver','Asset','Contractor','Arrive WH','Load Time','Diff Load','Start Time','Left WH','Diff Start'];
     const rows = filteredStart.map(r => {
       const load = calcLoad(r.Start_Time);
       const diffLoad = diffTime(load, r.First_Mention_Time);
       const diffStart = diffTime(r.Last_Mention_Time, r.Start_Time);
-      return [r.Asset, r.Driver, r.Contractor_Name, r.First_Mention_Time, load, diffLoad, r.Start_Time, r.Last_Mention_Time, diffStart].join(',');
+      return [r.Driver, r.Asset, r.Contractor_Name, r.First_Mention_Time, load, diffLoad, r.Start_Time, r.Last_Mention_Time, diffStart].join(',');
     });
     const csv = [header.join(','), ...rows].join('\n');
     const blob = new Blob([csv], { type: 'text/csv' });
@@ -302,12 +302,8 @@ export default function FullReport() {
     d1.setHours(h1, m1, 0, 0);
     const d2 = new Date();
     d2.setHours(h2, m2, 0, 0);
-    let diff = Math.round((d1.getTime() - d2.getTime()) / 60000);
-    const sign = diff < 0 ? '-' : '';
-    diff = Math.abs(diff);
-    const hh = String(Math.floor(diff / 60)).padStart(2, '0');
-    const mm = String(diff % 60).padStart(2, '0');
-    return `${sign}${hh}:${mm}`;
+    const diff = Math.round((d1.getTime() - d2.getTime()) / 60000);
+    return diff.toString();
   }
 
   return (
@@ -356,8 +352,8 @@ export default function FullReport() {
                     <table className="table table-xs table-pin-rows table-zebra w-full">
                         <thead>
                             <tr>
-                                <th>Asset</th>
                                 <th>Driver</th>
+                                <th>Asset</th>
                                 <th>Contractor</th>
                                 <th>Arrive WH</th>
                                 <th>Load Time</th>
@@ -374,8 +370,8 @@ export default function FullReport() {
                                 const diffStart = diffTime(r.Last_Mention_Time, r.Start_Time);
                                 return (
                                     <tr key={idx} className="hover">
-                                        <td>{r.Asset}</td>
                                         <td>{r.Driver}</td>
+                                        <td>{r.Asset}</td>
                                         <td>{r.Contractor_Name}</td>
                                         <td>{r.First_Mention_Time}</td>
                                         <td>{load}</td>
