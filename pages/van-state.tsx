@@ -47,11 +47,28 @@ export default function VanState() {
     return map;
   }, [checks]);
 
-  const summarize = (vc: VanCheckData) => {
-    if (!vc.parameters) return '';
-    return Object.entries(vc.parameters)
-      .map(([k, v]) => `${k}: ${String(v)}`)
-      .join(', ');
+  const renderParams = (vc: VanCheckData) => {
+    if (!vc.parameters) return null;
+    const format = (val: any) => {
+      if (typeof val === 'boolean') return val ? '✅' : '❌';
+      if (typeof val === 'object') return Object.values(val).join(' / ');
+      const str = String(val).toLowerCase();
+      if (['true', 'yes', 'ok', 'undamaged', 'good'].includes(str)) return '✅';
+      if (['false', 'no', 'bad', 'damaged', 'empty'].includes(str)) return '❌';
+      return String(val);
+    };
+    return (
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-0.5">
+        {Object.entries(vc.parameters).map(([k, v]) => (
+          <div key={k} className="flex items-center gap-1 whitespace-nowrap">
+            <span className="capitalize text-base-content/70">
+              {k.replace(/_/g, ' ')}:
+            </span>
+            <span className="font-medium">{format(v)}</span>
+          </div>
+        ))}
+      </div>
+    );
   };
 
   return (
@@ -73,9 +90,11 @@ export default function VanState() {
                 <div className="font-mono text-xs text-base-content/70">
                   {new Date(vc.date).toLocaleString()}
                 </div>
-                <div className="mt-1">
-                  {vc.driver_id && <span className="mr-2">{vc.driver_id}</span>}
-                  {summarize(vc)}
+                <div className="mt-1 space-y-1">
+                  {vc.driver_id && (
+                    <div className="font-semibold">{vc.driver_id}</div>
+                  )}
+                  {renderParams(vc)}
                 </div>
               </li>
             ))}
