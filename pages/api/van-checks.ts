@@ -25,11 +25,20 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
   for (const r of eventRows) {
     try {
       const e = JSON.parse(r.data);
-      const vanId = pick(e, ['van_id', 'Vans', 'Van', 'vanID', 'VanID']);
-      const driverId = pick(e, ['driver_id', 'Driver', 'driver']);
-      const tools = pick(e, ['tools', 'Tools']);
-      const parameters = pick(e, ['parameters', 'Parameters']);
-      const date = pick(e, ['date', 'Date', 'created_at', 'timestamp']);
+
+      let payload: any = {};
+      if (typeof e.Payload === 'string') {
+        try { payload = JSON.parse(e.Payload); } catch {}
+      } else if (e.Payload && typeof e.Payload === 'object') {
+        payload = e.Payload;
+      }
+
+      const vanId = pick(e, ['van_id', 'Vans', 'Van', 'vanID', 'VanID']) || pick(payload, ['van_id', 'Vans', 'Van', 'vanID', 'VanID']);
+      const driverId = pick(e, ['driver_id', 'Driver', 'driver']) || pick(payload, ['driver_id', 'Driver', 'driver']);
+      const tools = pick(e, ['tools', 'Tools']) || pick(payload, ['tools', 'Tools']);
+      const parameters = pick(e, ['parameters', 'Parameters']) || pick(payload, ['parameters', 'Parameters']);
+      const date = pick(e, ['date', 'Date', 'created_at', 'timestamp']) || pick(payload, ['date', 'Date', 'created_at', 'timestamp']);
+
       if (vanId || tools || parameters || driverId) {
         items.push({ van_id: vanId, driver_id: driverId, date, tools, parameters });
       }
