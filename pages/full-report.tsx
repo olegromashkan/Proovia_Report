@@ -186,12 +186,12 @@ export default function FullReport() {
   };
 
   const copyStartTable = () => {
-    const header = ['Start Time','Asset','Contractor','Driver','Arrive WH','Load Time','Diff Load','Left WH','Diff Start'];
+    const header = ['Asset','Contractor','Driver','Arrive WH','Load Time','Diff Load','Start Time','Left WH','Diff Start'];
     const rows = filteredStart.map(r => {
       const load = calcLoad(r.Start_Time);
       const diffLoad = diffTime(load, r.First_Mention_Time);
       const diffStart = diffTime(r.Last_Mention_Time, r.Start_Time);
-      return [r.Start_Time, r.Asset, r.Contractor_Name, r.Driver, r.First_Mention_Time, load, diffLoad, r.Last_Mention_Time, diffStart].join(',');
+      return [r.Asset, r.Contractor_Name, r.Driver, r.First_Mention_Time, load, diffLoad, r.Start_Time, r.Last_Mention_Time, diffStart].join(',');
     });
     const text = [header.join(','), ...rows].join('\n');
     if (typeof navigator !== 'undefined' && navigator.clipboard && window.isSecureContext) {
@@ -213,12 +213,12 @@ export default function FullReport() {
   };
 
   const downloadStartCSV = () => {
-    const header = ['Start Time','Asset','Contractor','Driver','Arrive WH','Load Time','Diff Load','Left WH','Diff Start'];
+    const header = ['Asset','Contractor','Driver','Arrive WH','Load Time','Diff Load','Start Time','Left WH','Diff Start'];
     const rows = filteredStart.map(r => {
       const load = calcLoad(r.Start_Time);
       const diffLoad = diffTime(load, r.First_Mention_Time);
       const diffStart = diffTime(r.Last_Mention_Time, r.Start_Time);
-      return [r.Start_Time, r.Asset, r.Contractor_Name, r.Driver, r.First_Mention_Time, load, diffLoad, r.Last_Mention_Time, diffStart].join(',');
+      return [r.Asset, r.Contractor_Name, r.Driver, r.First_Mention_Time, load, diffLoad, r.Start_Time, r.Last_Mention_Time, diffStart].join(',');
     });
     const csv = [header.join(','), ...rows].join('\n');
     const blob = new Blob([csv], { type: 'text/csv' });
@@ -352,13 +352,13 @@ export default function FullReport() {
                     <table className="table table-xs table-pin-rows table-zebra w-full">
                         <thead>
                             <tr>
-                                <th>Start Time</th>
                                 <th>Asset</th>
                                 <th>Contractor</th>
                                 <th>Driver</th>
                                 <th>Arrive WH</th>
                                 <th>Load Time</th>
                                 <th>Diff Load</th>
+                                <th>Start Time</th>
                                 <th>Left WH</th>
                                 <th>Diff Start</th>
                             </tr>
@@ -370,13 +370,13 @@ export default function FullReport() {
                                 const diffStart = diffTime(r.Last_Mention_Time, r.Start_Time);
                                 return (
                                     <tr key={idx} className="hover">
-                                        <td>{r.Start_Time}</td>
                                         <td>{r.Asset}</td>
                                         <td>{r.Contractor_Name}</td>
                                         <td>{r.Driver}</td>
                                         <td>{r.First_Mention_Time}</td>
                                         <td>{load}</td>
                                         <td>{diffLoad}</td>
+                                        <td>{r.Start_Time}</td>
                                         <td>{r.Last_Mention_Time}</td>
                                         <td>{diffStart}</td>
                                     </tr>
@@ -409,9 +409,9 @@ export default function FullReport() {
                         const summaryText = (trip.Summary || '').split(' ')[0];
                         return (
                             <div key={trip.ID} onClick={() => setSelected(trip)} className="card card-compact bg-base-200 shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer">
-                                <div className="flex items-stretch">
+                                <div className="flex flex-wrap sm:flex-nowrap items-stretch">
                                     <div className={`w-2 rounded-l-md ${statusColor}`}></div>
-                                    <div className="card-body p-3 flex-row items-center gap-3">
+                                    <div className="card-body p-3 flex flex-wrap sm:flex-nowrap items-center gap-3">
                                         {trip.Seq && (
                                             <div className="flex-shrink-0 avatar placeholder">
                                                 <div className="bg-primary/20 text-primary-content rounded-full w-10 h-10 flex items-center justify-center">
