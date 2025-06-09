@@ -225,6 +225,18 @@ export default function FullReport() {
     </div>
   );
 
+  function calcLoad(startTime: string) {
+    if (!startTime || startTime === 'Unknown') return 'N/A';
+    const [h, m] = startTime.split(':').map(Number);
+    if (isNaN(h) || isNaN(m)) return startTime;
+    const date = new Date();
+    date.setHours(h);
+    date.setMinutes(m - 90);
+    const hh = String(date.getHours()).padStart(2, '0');
+    const mm = String(date.getMinutes()).padStart(2, '0');
+    return `${hh}:${mm}`;
+  }
+
   return (
     <Layout title="Orders Report" fullWidth>
       <div className="drawer drawer-end">
@@ -245,7 +257,16 @@ export default function FullReport() {
                         <thead><tr><th>Asset</th><th>Driver</th><th>Load Time</th><th>Start Time</th><th>Duration</th></tr></thead>
                         <tbody>
                             {startData.map((r, idx) => (
-                                <tr key={idx} className="hover"><td>{r.Asset}</td><td>{r.Driver}</td><td>{calcLoad(r.Start_Time)}</td><td>{r.Start_Time}</td><td>{r.Duration}</td></tr>
+                                <tr key={idx} className="hover">
+                                    <td>{r.Asset}</td>
+                                    <td>{r.Driver}</td>
+                                    <td>{r.Contractor_Name}</td>
+                                    <td>{r.First_Mention_Time}</td>
+                                    <td>{calcLoad(r.Start_Time)}</td>
+                                    <td>{r.Start_Time}</td>
+                                    <td>{r.Last_Mention_Time}</td>
+                                    <td>{r.Duration}</td>
+                                </tr>
                             ))}
                         </tbody>
                     </table>
