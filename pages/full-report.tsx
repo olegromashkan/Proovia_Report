@@ -50,6 +50,8 @@ export default function FullReport() {
   const [search, setSearch] = useState('');
   const [sortField, setSortField] = useState('Order.OrderNumber');
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
+  const [vanSearch, setVanSearch] = useState('');
+  const [vanContractor, setVanContractor] = useState('');
 
   // Динамические данные для фильтров
   const { contractors, auctions } = useMemo(() => {
@@ -151,6 +153,27 @@ export default function FullReport() {
     startData.forEach(s => { if (s.Contractor_Name) set.add(s.Contractor_Name); });
     return Array.from(set).sort();
   }, [startData]);
+
+  const vanContractors = useMemo(() => {
+    const set = new Set<string>();
+    vanChecks.forEach(vc => {
+      const c = driverToContractor[vc.driver_id];
+      if (c) set.add(c);
+    });
+    return Array.from(set).sort();
+  }, [vanChecks, driverToContractor]);
+
+  const filteredVanChecks = useMemo(() => {
+    return vanChecks.filter(vc => {
+      const contractor = driverToContractor[vc.driver_id] || 'Unknown';
+      const matchContractor = !vanContractor || contractor === vanContractor;
+      const matchSearch = vanSearch ? (
+        String(vc.driver_id).toLowerCase().includes(vanSearch.toLowerCase()) ||
+        String(vc.van_id).toLowerCase().includes(vanSearch.toLowerCase())
+      ) : true;
+      return matchContractor && matchSearch;
+    });
+  }, [vanChecks, vanSearch, vanContractor, driverToContractor]);
 
   const filteredStart = useMemo(() => {
     return startData.filter(r => {
@@ -396,9 +419,28 @@ export default function FullReport() {
 
             <div className="card bg-base-100 shadow-xl"><div className="card-body p-4">
                 <h2 className="card-title">Van Check</h2>
+                <div className="flex flex-wrap gap-2 my-2">
+                    <input
+                      type="text"
+                      placeholder="Search..."
+                      value={vanSearch}
+                      onChange={(e) => setVanSearch(e.target.value)}
+                      className="input input-bordered input-sm flex-1 max-w-xs"
+                    />
+                    <select
+                      value={vanContractor}
+                      onChange={(e) => setVanContractor(e.target.value)}
+                      className="select select-bordered select-sm max-w-xs"
+                    >
+                      <option value="">All Contractors</option>
+                      {vanContractors.map((c) => (
+                        <option key={c} value={c}>{c}</option>
+                      ))}
+                    </select>
+                </div>
                 <div className="overflow-y-auto h-[75vh] space-y-2">
-                    {vanChecks.map((vc, idx) => (
-                      <VanCheck key={idx} data={vc} />
+                    {filteredVanChecks.map((vc, idx) => (
+                      <VanCheck key={idx} data={vc} contractor={driverToContractor[vc.driver_id]} />
                     ))}
                 </div>
             </div></div>
