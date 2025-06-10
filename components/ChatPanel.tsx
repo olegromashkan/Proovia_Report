@@ -8,6 +8,8 @@ interface Message {
   id: number;
   sender: string;
   receiver: string;
+  group_id?: number | null;
+  reply_to?: number | null;
   text: string;
   created_at: string;
 }
@@ -29,9 +31,13 @@ interface ChatPanelProps {
 
 export default function ChatPanel({ open, user, onClose }: ChatPanelProps) {
   const me = useUser();
+  const isGroup = user.startsWith('g:');
+  const groupId = isGroup ? user.slice(2) : '';
   const [messages, setMessages] = useState<Message[]>([]);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [text, setText] = useState('');
+  const [reply, setReply] = useState<Message | null>(null);
+  const [status, setStatus] = useState('');
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
@@ -43,10 +49,25 @@ export default function ChatPanel({ open, user, onClose }: ChatPanelProps) {
   const load = useCallback(async () => {
     if (!user) return;
     try {
-      const res = await fetch(`/api/messages?user=${user}`);
+      const url = isGroup
+        ? `/api/messages?group=${groupId}`
+        : `/api/messages?user=${encodeURIComponent(user)}`;
+      const res = await fetch(url);
       if (res.ok) {
         const d = await res.json();
         setMessages(d.messages);
+      }
+      if (!isGroup) {
+        const infoRes = await fetch(`/api/user?username=${encodeURIComponent(user)}`);
+        if (infoRes.ok) {
+          const d = await infoRes.json();
+          const u = d.user;
+          if (u.show_last_seen) {
+            setStatus('last seen ' + new Date(u.last_seen).toLocaleString());
+          } else {
+            setStatus('last seen recently');
+          }
+        }
       }
     } catch (error) {
       console.error('Failed to load messages:', error);
@@ -112,14 +133,16 @@ export default function ChatPanel({ open, user, onClose }: ChatPanelProps) {
       await fetch('/api/messages', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ to: user, text: messageText }),
+        body: JSON.stringify(isGroup ? { group: groupId, text: messageText, replyTo: reply?.id } : { to: user, text: messageText, replyTo: reply?.id }),
       });
       
       // Optimistically add message to UI
       const tempMessage: Message = {
         id: Date.now(),
         sender: me,
-        receiver: user,
+        receiver: isGroup ? '' : user,
+        group_id: isGroup ? Number(groupId) : null,
+        reply_to: reply?.id ?? null,
         text: messageText,
         created_at: new Date().toISOString(),
       };
@@ -132,6 +155,7 @@ export default function ChatPanel({ open, user, onClose }: ChatPanelProps) {
       setText(messageText); // Restore text on error
     } finally {
       setIsLoading(false);
+      setReply(null);
       inputRef.current?.focus();
     }
   };
@@ -245,16 +269,26 @@ export default function ChatPanel({ open, user, onClose }: ChatPanelProps) {
               {user}
             </h3>
             <p className="text-xs text-gray-500 dark:text-gray-400">
-              {messages.length > 0 ? 'Active now' : 'Start conversation'}
+              {status || 'Start conversation'}
             </p>
           </div>
         </div>
-        <button
-          onClick={onClose}
-          className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-all duration-200"
-        >
-          <Icon name="xmark" className="w-5 h-5" />
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={() =>
+              (location.href = `/messages/${encodeURIComponent(user)}`)
+            }
+            className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-all duration-200"
+          >
+            <Icon name="arrows-angle-expand" className="w-5 h-5" />
+          </button>
+          <button
+            onClick={onClose}
+            className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-all duration-200"
+          >
+            <Icon name="xmark" className="w-5 h-5" />
+          </button>
+        </div>
       </div>
 
       {/* Messages */}
@@ -310,6 +344,7 @@ export default function ChatPanel({ open, user, onClose }: ChatPanelProps) {
                   )}
                   <div className={`flex flex-col ${isMe ? 'items-end' : 'items-start'} max-w-[75%]`}>
                     <div
+                      onDoubleClick={() => setReply(m)}
                       className={`
                         px-4 py-2 rounded-2xl text-sm relative
                         ${isMe
@@ -318,6 +353,9 @@ export default function ChatPanel({ open, user, onClose }: ChatPanelProps) {
                         }
                       `}
                     >
+                      {m.reply_to && (
+                        <div className="text-xs text-gray-500 mb-1">↪ #{m.reply_to}</div>
+                      )}
                       <div className="break-words leading-relaxed">{m.text}</div>
                     </div>
                     <div className={`text-xs text-gray-500 dark:text-gray-400 mt-1 px-1 ${isMe ? 'text-right' : 'text-left'}`}>
@@ -375,6 +413,12 @@ export default function ChatPanel({ open, user, onClose }: ChatPanelProps) {
 
       {/* Input Area */}
       <div className="p-4 border-t border-gray-200/30 dark:border-gray-700/30 bg-white/80 dark:bg-gray-800/80 space-y-2">
+        {reply && (
+          <div className="text-xs flex justify-between items-center bg-gray-200 dark:bg-gray-700 p-2 rounded">
+            <span>Replying to: {reply.text}</span>
+            <button onClick={() => setReply(null)} className="ml-2">x</button>
+          </div>
+        )}
         <input
           type="datetime-local"
           value={due}

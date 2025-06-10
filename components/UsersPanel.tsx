@@ -10,7 +10,7 @@ export default function UsersPanel() {
   const isAdmin = info?.user?.role === 'admin';
 
   const remove = async (name: string) => {
-    await fetch(`/api/user?username=${name}`, { method: 'DELETE' });
+    await fetch(`/api/user?username=${encodeURIComponent(name)}`, { method: 'DELETE' });
     location.reload();
   };
   return (

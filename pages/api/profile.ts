@@ -11,13 +11,13 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
   if (!username) return res.status(401).end();
 
   if (req.method === 'GET') {
-    const user = db.prepare('SELECT id, username, photo, header, role FROM users WHERE username = ?').get(username);
+    const user = db.prepare('SELECT id, username, photo, header, role, last_seen, show_last_seen FROM users WHERE username = ?').get(username);
     if (!user) return res.status(404).end();
     return res.status(200).json({ user });
   }
 
   if (req.method === 'PUT') {
-    const { password, photo, header } = req.body || {};
+    const { password, photo, header, showLastSeen } = req.body || {};
     const updates: string[] = [];
     const params: any[] = [];
     if (password) {
@@ -31,6 +31,10 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
     if (header !== undefined) {
       updates.push('header = ?');
       params.push(header);
+    }
+    if (showLastSeen !== undefined) {
+      updates.push('show_last_seen = ?');
+      params.push(showLastSeen ? 1 : 0);
     }
     if (!updates.length) return res.status(400).json({ message: 'No data' });
     params.push(username);
