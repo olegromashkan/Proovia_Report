@@ -29,6 +29,7 @@ const iconMap: Record<string, string> = {
   download: 'download',
   plus: 'plus',
   refresh: 'arrow-clockwise',
+  'arrows-angle-expand': 'arrows-angle-expand',
   people: 'people',
   chat: 'chat-dots',
   calendar: 'calendar',

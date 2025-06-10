@@ -26,6 +26,11 @@ export default function MyApp({ Component, pageProps }: AppProps) {
       const val = localStorage.getItem('style' + v);
       if (val) document.documentElement.style.setProperty(v, val);
     });
+
+    const interval = setInterval(() => {
+      fetch('/api/ping');
+    }, 30000);
+    return () => clearInterval(interval);
   }, []);
 
   return (
