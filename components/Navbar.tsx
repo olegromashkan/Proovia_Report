@@ -62,7 +62,7 @@ export default function Navbar() {
                 width={120}
                 height={32}
                 className="h-8 w-auto"
-                onError={(e) => (e.currentTarget.src = '/fallback-logo.png')} // Fallback image
+                onError={(e) => (e.currentTarget.src = '/fallback-logo.png')}
               />
             </div>
           </Link>
@@ -101,7 +101,7 @@ export default function Navbar() {
         </div>
 
         {/* Right Section */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
           {/* Search Button */}
           <button
             onClick={() => setSearchOpen(true)}
@@ -118,13 +118,21 @@ export default function Navbar() {
           <button
             onClick={() => setTasksOpen(true)}
             className="p-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg"
-            aria-label="Tasks"
+            aria-label="Open tasks"
           >
             <Icon name="check" className="w-5 h-5" />
           </button>
 
-          {/* User */}
-          <UserMenu />
+          {/* User Menu with Fallback Icon */}
+          <div className="relative">
+            <button
+              className="p-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg"
+              aria-label="User menu"
+            >
+              <Icon name="user" className="w-5 h-5" />
+            </button>
+            <UserMenu />
+          </div>
 
           {/* Theme Toggle */}
           <ThemeToggle />
@@ -209,6 +217,7 @@ export default function Navbar() {
 
       {/* Search Overlay */}
       <SearchOverlay open={searchOpen} onClose={() => setSearchOpen(false)} />
+      {/* Tasks Panel */}
       <TasksPanel open={tasksOpen} onClose={() => setTasksOpen(false)} />
     </>
   );
