@@ -282,7 +282,7 @@ export default function Admin() {
             <div className="flex gap-2">
               <button
                 onClick={fetchDates}
-                className={`flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                className={`btn btn-primary gap-2 ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
                 disabled={loading}
               >
                 <Icon name="refresh" className="w-5 h-5" />
@@ -290,14 +290,14 @@ export default function Admin() {
               </button>
               <button
                 onClick={() => setAdding(true)}
-                className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors"
+                className="btn btn-success gap-2"
               >
                 <Icon name="plus" className="w-5 h-5" />
                 Add Item
               </button>
               <button
                 onClick={exportData}
-                className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition-colors"
+                className="btn btn-secondary gap-2"
               >
                 <Icon name="download" className="w-5 h-5" />
                 Export
@@ -347,8 +347,8 @@ export default function Admin() {
                         </div>
                       </div>
                       <div className="relative group">
-                        <button className="p-2 hover:bg-gray-100 rounded-full">
-                          <Icon name="dots-vertical" className="w-5 h-5 text-gray-500" />
+                        <button className="btn btn-ghost btn-square btn-sm">
+                          <Icon name="dots-vertical" className="w-5 h-5" />
                         </button>
                         <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-10 hidden group-hover:block">
                           <button
@@ -386,21 +386,21 @@ export default function Admin() {
                               <div className="flex justify-end gap-2">
                                 <button
                                   onClick={() => openEdit(item.id, d)}
-                                  className="p-2 text-blue-600 hover:bg-blue-100 rounded-md"
+                                  className="btn btn-ghost btn-sm text-blue-600 hover:bg-blue-100"
                                   title="Edit"
                                 >
                                   <Icon name="pen" className="w-4 h-4" />
                                 </button>
                                 <button
                                   onClick={() => navigator.clipboard.writeText(String(item.id))}
-                                  className="p-2 text-gray-600 hover:bg-gray-100 rounded-md"
+                                  className="btn btn-ghost btn-sm text-gray-600 hover:bg-gray-100"
                                   title="Copy ID"
                                 >
                                   <Icon name="copy" className="w-4 h-4" />
                                 </button>
                                 <button
                                   onClick={() => handleDelete(item.id, d)}
-                                  className="p-2 text-red-600 hover:bg-red-100 rounded-md"
+                                  className="btn btn-ghost btn-sm text-red-600 hover:bg-red-100"
                                   title="Delete"
                                 >
                                   <Icon name="trash" className="w-4 h-4" />
@@ -419,21 +419,21 @@ export default function Admin() {
                                   <div className="flex flex-wrap gap-2">
                                     <button
                                       onClick={saveEdit}
-                                      className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                                      className="btn btn-primary flex-1 gap-2"
                                     >
                                       <Icon name="save" className="w-4 h-4" />
                                       Save
                                     </button>
                                     <button
                                       onClick={() => setEditing(null)}
-                                      className="flex items-center justify-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200"
+                                      className="btn btn-secondary gap-2"
                                     >
                                       <Icon name="ban" className="w-4 h-4" />
                                       Cancel
                                     </button>
                                     <button
                                       onClick={() => window.open(`/admin/${table}/${item.id}`, '_blank')}
-                                      className="flex items-center justify-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200"
+                                      className="btn btn-secondary gap-2"
                                     >
                                       <Icon name="up-right-from-square" className="w-4 h-4" />
                                       Open
@@ -472,14 +472,14 @@ export default function Admin() {
               <div className="flex gap-2 justify-end">
                 <button
                   onClick={addItem}
-                  className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                  className="btn btn-primary gap-2"
                 >
                   <Icon name="save" className="w-4 h-4" />
                   Save
                 </button>
                 <button
                   onClick={() => setAdding(false)}
-                  className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200"
+                  className="btn btn-secondary gap-2"
                 >
                   <Icon name="ban" className="w-4 h-4" />
                   Cancel
@@ -501,14 +501,14 @@ export default function Admin() {
               <div className="flex gap-2">
                 <button
                   onClick={() => fetchDates()}
-                  className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200"
+                  className="btn btn-secondary gap-2"
                 >
                   <Icon name="rotate-left" className="w-4 h-4" />
                   Revert
                 </button>
                 <button
                   onClick={saveAll}
-                  className={`flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                  className={`btn btn-primary gap-2 ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
                   disabled={loading}
                 >
                   <Icon name="save" className="w-4 h-4" />

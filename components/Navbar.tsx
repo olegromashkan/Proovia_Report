@@ -101,13 +101,12 @@ export default function Navbar() {
         {/* Right Section */}
         <div className="flex items-center gap-2">
           {/* Search Button */}
-          <button 
-            onClick={() => setSearchOpen(true)} 
-            className="p-2.5 hover:bg-gray-100/80 dark:hover:bg-gray-800/80 rounded-xl transition-all duration-200 group relative overflow-hidden"
+          <button
+            onClick={() => setSearchOpen(true)}
+            className="btn btn-ghost btn-square btn-sm"
             aria-label="Search"
           >
-            <div className="absolute inset-0 bg-gradient-to-r from-blue-500/10 to-indigo-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-200 rounded-xl" />
-            <Icon name="search" className="w-5 h-5 text-gray-600 dark:text-gray-400 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors duration-200 relative z-10" />
+            <Icon name="search" className="w-5 h-5" />
           </button>
 
           {/* Notification Center */}
@@ -121,16 +120,15 @@ export default function Navbar() {
           </div>
 
           {/* Mobile Menu Button */}
-          <button 
+          <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="lg:hidden p-2.5 hover:bg-gray-100/80 dark:hover:bg-gray-800/80 rounded-xl transition-all duration-200 group relative overflow-hidden"
+            className="btn btn-ghost btn-square btn-sm lg:hidden"
             aria-label="Toggle menu"
           >
-            <div className="absolute inset-0 bg-gradient-to-r from-blue-500/10 to-indigo-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-200 rounded-xl" />
             <div className="relative z-10 flex flex-col space-y-1">
-              <span className={`block h-0.5 w-5 bg-gray-600 dark:bg-gray-400 transition-all duration-200 ${mobileMenuOpen ? 'rotate-45 translate-y-1.5' : ''}`} />
-              <span className={`block h-0.5 w-5 bg-gray-600 dark:bg-gray-400 transition-all duration-200 ${mobileMenuOpen ? 'opacity-0' : ''}`} />
-              <span className={`block h-0.5 w-5 bg-gray-600 dark:bg-gray-400 transition-all duration-200 ${mobileMenuOpen ? '-rotate-45 -translate-y-1.5' : ''}`} />
+              <span className={`block h-0.5 w-5 bg-current transition-all duration-200 ${mobileMenuOpen ? 'rotate-45 translate-y-1.5' : ''}`} />
+              <span className={`block h-0.5 w-5 bg-current transition-all duration-200 ${mobileMenuOpen ? 'opacity-0' : ''}`} />
+              <span className={`block h-0.5 w-5 bg-current transition-all duration-200 ${mobileMenuOpen ? '-rotate-45 -translate-y-1.5' : ''}`} />
             </div>
           </button>
         </div>
