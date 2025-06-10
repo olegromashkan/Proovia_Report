@@ -149,7 +149,7 @@ export default function VanCheck({ data, contractor }: Props) {
 
         <div className="divider my-2"></div>
 
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="grid grid-cols-3 gap-y-4 gap-x-2 place-items-center">
             <StatusIndicator label="Lights" item={getItem(checks.lights)} />
             <StatusIndicator label="Fuel" item={getItem(checks.fuel)} />
