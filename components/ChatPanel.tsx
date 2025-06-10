@@ -58,6 +58,17 @@ export default function ChatPanel({ open, user, onClose }: ChatPanelProps) {
     inputRef.current?.focus();
   };
 
+  const createTask = async () => {
+    if (!text.trim()) return;
+    await fetch('/api/tasks', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ assignee: user, text }),
+    });
+    setText('');
+    inputRef.current?.focus();
+  };
+
   const onEmojiClick = (emojiObject: { emoji: string }) => {
     setText((prev) => prev + emojiObject.emoji);
     inputRef.current?.focus();
@@ -164,6 +175,14 @@ export default function ChatPanel({ open, user, onClose }: ChatPanelProps) {
             className="input input-bordered flex-1 bg-gray-100/50 dark:bg-gray-700/50 border-gray-200/50 dark:border-gray-600/50 rounded-lg text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 transition-all duration-200"
             placeholder="Type a message..."
           />
+          <button
+            onClick={createTask}
+            disabled={!text.trim()}
+            className="btn btn-secondary w-12 h-12 flex items-center justify-center rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
+            aria-label="Create task"
+          >
+            <Icon name="plus" className="w-5 h-5" />
+          </button>
           <button
             onClick={send}
             disabled={!text.trim()}
