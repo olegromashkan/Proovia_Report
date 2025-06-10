@@ -1,6 +1,6 @@
 import { useRouter } from 'next/router';
 import { useState, ChangeEvent } from 'react';
-import ChatPanel from '../../components/ChatPanel';
+import { useChat } from '../../contexts/ChatContext';
 import useFetch from '../../lib/useFetch';
 import Layout from '../../components/Layout';
 import useUser from '../../lib/useUser';
@@ -18,7 +18,7 @@ export default function Profile() {
   const [photo, setPhoto] = useState('');
   const [header, setHeader] = useState('');
   const [password, setPassword] = useState('');
-  const [chatOpen, setChatOpen] = useState(false);
+  const { openChat } = useChat();
 
   const handleImage = (e: ChangeEvent<HTMLInputElement>, set: (v:string)=>void) => {
     const file = e.target.files?.[0];
@@ -132,7 +132,7 @@ export default function Profile() {
             <div>
               <button
                 className="btn btn-primary"
-                onClick={() => setChatOpen(true)}
+                onClick={() => openChat(info.username)}
               >
                 Chat
               </button>
@@ -233,7 +233,6 @@ export default function Profile() {
           )}
         </div>
       </div>
-      <ChatPanel open={chatOpen} user={info.username} onClose={() => setChatOpen(false)} />
     </Layout>
   );
 }

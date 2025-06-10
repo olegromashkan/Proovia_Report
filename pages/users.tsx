@@ -1,14 +1,12 @@
 import Link from 'next/link';
 import Layout from '../components/Layout';
 import useFetch from '../lib/useFetch';
-import { useState } from 'react';
-import ChatPanel from '../components/ChatPanel';
+import { useChat } from '../contexts/ChatContext';
 
 export default function Users() {
   const { data } = useFetch<{ users: any[] }>('/api/users');
   const users = data?.users || [];
-  const [chatUser, setChatUser] = useState('');
-  const [chatOpen, setChatOpen] = useState(false);
+  const { openChat } = useChat();
 
   return (
     <Layout title="Users">
@@ -25,7 +23,7 @@ export default function Users() {
               </Link>
               <button
                 className="btn btn-xs"
-                onClick={() => { setChatUser(u.username); setChatOpen(true); }}
+                onClick={() => openChat(u.username)}
               >
                 Chat
               </button>
@@ -33,7 +31,6 @@ export default function Users() {
           ))}
         </ul>
       </div>
-      <ChatPanel open={chatOpen} user={chatUser} onClose={() => setChatOpen(false)} />
     </Layout>
   );
 }

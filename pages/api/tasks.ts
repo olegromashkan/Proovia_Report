@@ -6,6 +6,15 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
   if (!username) return res.status(401).end();
 
   if (req.method === 'GET') {
+    const peer = req.query.with as string | undefined;
+    if (peer) {
+      const rows = db
+        .prepare(
+          'SELECT * FROM tasks WHERE (creator = ? AND assignee = ?) OR (creator = ? AND assignee = ?) ORDER BY created_at DESC'
+        )
+        .all(username, peer, peer, username);
+      return res.status(200).json({ tasks: rows });
+    }
     const rows = db.prepare('SELECT * FROM tasks WHERE assignee = ? OR creator = ? ORDER BY created_at DESC').all(username, username);
     return res.status(200).json({ tasks: rows });
   }
