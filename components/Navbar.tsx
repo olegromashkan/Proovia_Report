@@ -123,16 +123,8 @@ export default function Navbar() {
             <Icon name="check" className="w-5 h-5" />
           </button>
 
-          {/* User Menu with Fallback Icon */}
-          <div className="relative">
-            <button
-              className="p-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg"
-              aria-label="User menu"
-            >
-              <Icon name="user" className="w-5 h-5" />
-            </button>
-            <UserMenu />
-          </div>
+          {/* User Menu */}
+          <UserMenu />
 
           {/* Theme Toggle */}
           <ThemeToggle />

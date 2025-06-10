@@ -1,5 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
-import db from '../../lib/db';
+import db, { addNotification } from '../../lib/db';
 
 export default function handler(req: NextApiRequest, res: NextApiResponse) {
   const username = req.cookies.user;
@@ -14,6 +14,11 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
     const { assignee, text } = req.body || {};
     if (!assignee || !text) return res.status(400).json({ message: 'Missing fields' });
     db.prepare('INSERT INTO tasks (creator, assignee, text) VALUES (?, ?, ?)').run(username, assignee, text);
+    if (assignee !== username) {
+      addNotification('task', `${username} assigned you a task: ${text}`);
+    } else {
+      addNotification('task', `Task created: ${text}`);
+    }
     return res.status(200).json({ message: 'Created' });
   }
 
