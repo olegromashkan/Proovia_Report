@@ -1,14 +1,13 @@
 import { useRouter } from 'next/router';
-import useSWR from 'swr';
+import useFetch from '../../lib/useFetch';
 import Layout from '../../components/Layout';
 import useUser from '../../lib/useUser';
 
-const fetcher = (url: string) => fetch(url).then(r => r.json());
 
 export default function Profile() {
   const router = useRouter();
   const { user } = router.query as { user: string };
-  const { data } = useSWR(user ? `/api/users` : null, fetcher);
+  const { data } = useFetch<{ users: any[] }>(user ? '/api/users' : null);
   const info = data?.users.find((u: any) => u.username === user);
   const current = useUser();
   const vars = ['--p','--a','--b1','--b2','--card-bg','--section-bg','--rounded-btn','--rounded-box','--rounded-badge','--shadow-strength'];
