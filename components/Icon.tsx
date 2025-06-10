@@ -29,6 +29,7 @@ const iconMap: Record<string, string> = {
   download: 'download',
   plus: 'plus',
   refresh: 'arrow-clockwise',
+  people: 'people',
   calendar: 'calendar',
   database: 'hdd-stack',
   truck: 'truck',

@@ -46,6 +46,22 @@ export function init() {
       password TEXT,
       photo TEXT,
       header TEXT,
+      role TEXT DEFAULT 'user',
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP
+    );
+
+    CREATE TABLE IF NOT EXISTS friends (
+      user_id INTEGER,
+      friend_id INTEGER,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP
+    );
+
+    CREATE TABLE IF NOT EXISTS tasks (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      creator TEXT,
+      assignee TEXT,
+      text TEXT,
+      completed INTEGER DEFAULT 0,
       created_at TEXT DEFAULT CURRENT_TIMESTAMP
     );
   `);
@@ -66,6 +82,11 @@ export function init() {
     } catch {
       // ignore if column already exists
     }
+  }
+  try {
+    db.exec("ALTER TABLE users ADD COLUMN role TEXT DEFAULT 'admin'");
+  } catch {
+    // ignore if exists
   }
 }
 
