@@ -155,7 +155,7 @@ export default function TripModal({ trip, onClose, allTrips }: Props) {
                 
                 <div className="card bg-base-200"><div className="card-body p-4">
                     <h3 className="text-md font-bold mb-2">Delivery</h3>
-                    <div ref={mapRef} className="h-40 w-full rounded-lg bg-base-300" />
+                    <div ref={mapRef} className="h-40 w-full rounded-system bg-base-300 shadow-system" />
                     {geoCoords && <a href={`https://www.google.com/maps?q=${geoCoords.lat},${geoCoords.lon}`} target="_blank" rel="noopener noreferrer" className="btn btn-sm btn-outline btn-primary mt-2 w-full">Open in Google Maps</a>}
                 </div></div>
             </div>

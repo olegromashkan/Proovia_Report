@@ -111,7 +111,7 @@ export default function NotificationCenter() {
                         items.map((n) => {
                             const { icon, colorClass } = getNotificationStyle(n.type);
                             return (
-                                <div key={n.id} className="p-3 rounded-lg flex items-start gap-4 bg-base-200/50 group transition-all hover:bg-base-200">
+                                <div key={n.id} className="p-3 rounded-system flex items-start gap-4 bg-base-200/50 group transition-all hover:bg-base-200 shadow-system">
                                     <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${colorClass.replace('text-', 'bg-')}/10`}>
                                         <Icon name={icon} className={`${colorClass} text-lg`} />
                                     </div>

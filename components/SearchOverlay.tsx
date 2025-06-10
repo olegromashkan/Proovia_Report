@@ -43,7 +43,7 @@ export default function SearchOverlay({ open, onClose }: { open: boolean; onClos
 
   return (
     <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-start justify-center p-4 z-20">
-      <div className="bg-white rounded-lg shadow-xl w-full max-w-xl p-6">
+      <div className="bg-white rounded-system shadow-system w-full max-w-xl p-6">
         <div className="flex justify-between mb-2">
           <input
             autoFocus

@@ -131,7 +131,7 @@ export default function Calendar() {
                     onClick={() => isClickable && router.push(`/full-report?start=${dateStr}&end=${dateStr}`)}
                     className={`
                       p-2 border border-transparent flex flex-col justify-between h-20
-                      transition-all duration-200 rounded-lg
+                      transition-all duration-200 rounded-system
                       ${day.isOtherMonth ? 'opacity-40' : ''}
                       ${isClickable ? 'cursor-pointer hover:border-primary/50' : 'cursor-default'}
                       ${day.isToday && !day.isOtherMonth ? 'border-primary' : ''}
