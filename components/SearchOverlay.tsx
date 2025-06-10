@@ -42,7 +42,7 @@ export default function SearchOverlay({ open, onClose }: { open: boolean; onClos
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-start justify-center p-4 z-20">
+    <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-start justify-center p-4 pt-24 sm:pt-32 z-[60]">
       <div className="bg-white rounded-system shadow-system w-full max-w-xl p-6">
         <div className="flex justify-between mb-2">
           <input

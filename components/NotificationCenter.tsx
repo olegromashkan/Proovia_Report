@@ -59,16 +59,13 @@ export default function NotificationCenter() {
   };
 
   const remove = async (id: number) => {
-    // Оптимистичное удаление из UI
-    setItems(currentItems => currentItems.filter((i) => i.id !== id));
-    // Запрос на сервер
     await fetch(`/api/notifications?id=${id}`, { method: 'DELETE' });
+    load();
   };
   
   const removeAll = async () => {
-    setItems([]);
-    // Можно добавить API endpoint для удаления всех уведомлений
-    // await fetch('/api/notifications/all', { method: 'DELETE' });
+    await Promise.all(items.map(i => fetch(`/api/notifications?id=${i.id}`, { method: 'DELETE' })));
+    load();
   }
 
   useEffect(() => {
