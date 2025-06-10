@@ -13,6 +13,11 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
   if (!user) {
     return res.status(401).json({ message: 'Invalid credentials' });
   }
-  res.setHeader('Set-Cookie', `user=${username}; Path=/; HttpOnly`);
+  // The frontend relies on accessing the "user" cookie via `document.cookie`.
+  // Setting the cookie as HttpOnly prevents client-side code from reading it,
+  // which causes the navbar to always show the login button even after a
+  // successful login.  We therefore omit the HttpOnly flag so the React hooks
+  // can read the cookie and display user information.
+  res.setHeader('Set-Cookie', `user=${username}; Path=/`);
   return res.status(200).json({ message: 'Logged in' });
 }
