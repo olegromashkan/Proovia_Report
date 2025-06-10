@@ -40,6 +40,14 @@ export function init() {
       message TEXT,
       created_at TEXT DEFAULT CURRENT_TIMESTAMP
     );
+    CREATE TABLE IF NOT EXISTS users (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      username TEXT UNIQUE,
+      password TEXT,
+      photo TEXT,
+      header TEXT,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP
+    );
   `);
 
   // ensure legacy databases have the created_at column
@@ -50,6 +58,7 @@ export function init() {
     'schedule_trips',
     'csv_trips',
     'van_checks',
+    'users',
   ];
   for (const table of tables) {
     try {

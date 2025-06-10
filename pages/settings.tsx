@@ -2,6 +2,7 @@ import { useState } from 'react';
 import Layout from '../components/Layout';
 import AdminPanel from '../components/AdminPanel';
 import CustomizePanel from '../components/CustomizePanel';
+import UsersPanel from '../components/UsersPanel';
 
 // Fallback Layout component if the import fails
 const FallbackLayout = ({ children, title, fullWidth }: { children: React.ReactNode; title?: string; fullWidth?: boolean }) => (
@@ -15,7 +16,7 @@ const FallbackLayout = ({ children, title, fullWidth }: { children: React.ReactN
 const ActiveLayout = typeof Layout === 'undefined' ? FallbackLayout : Layout;
 
 export default function Settings() {
-  const [tab, setTab] = useState<'admin' | 'customize'>('admin');
+  const [tab, setTab] = useState<'admin' | 'customize' | 'users'>('admin');
 
   return (
     <ActiveLayout title="Settings" fullWidth>
@@ -27,10 +28,11 @@ export default function Settings() {
         <div className="flex border-b border-gray-200 dark:border-gray-700 mb-8">
           <button
             onClick={() => setTab('admin')}
+            style={tab === 'admin' ? { background: 'var(--section-bg)' } : undefined}
             className={`
               px-6 py-3 text-sm font-medium rounded-t-lg transition-all duration-200
               ${tab === 'admin'
-                ? 'bg-white dark:bg-gray-800 text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400'
+                ? 'text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400'
                 : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
               }
             `}
@@ -41,10 +43,11 @@ export default function Settings() {
           </button>
           <button
             onClick={() => setTab('customize')}
+            style={tab === 'customize' ? { background: 'var(--section-bg)' } : undefined}
             className={`
               px-6 py-3 text-sm font-medium rounded-t-lg transition-all duration-200
               ${tab === 'customize'
-                ? 'bg-white dark:bg-gray-800 text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400'
+                ? 'text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400'
                 : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
               }
             `}
@@ -53,11 +56,28 @@ export default function Settings() {
           >
             Customize
           </button>
+          <button
+            onClick={() => setTab('users')}
+            style={tab === 'users' ? { background: 'var(--section-bg)' } : undefined}
+            className={`
+              px-6 py-3 text-sm font-medium rounded-t-lg transition-all duration-200
+              ${tab === 'users'
+                ? 'text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400'
+                : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+              }
+            `}
+            aria-selected={tab === 'users'}
+            role="tab"
+          >
+            Users
+          </button>
         </div>
 
         {/* Tab Content */}
-        <div className="bg-white dark:bg-gray-800 shadow-md rounded-lg p-6">
-          {tab === 'admin' ? <AdminPanel /> : <CustomizePanel />}
+        <div className="shadow-md rounded-lg p-6" style={{ background: 'var(--section-bg)' }}>
+          {tab === 'admin' && <AdminPanel />}
+          {tab === 'customize' && <CustomizePanel />}
+          {tab === 'users' && <UsersPanel />}
         </div>
       </div>
     </ActiveLayout>

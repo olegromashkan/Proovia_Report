@@ -9,7 +9,18 @@ export default function MyApp({ Component, pageProps }: AppProps) {
     const saved = localStorage.getItem('theme');
     const theme = saved || 'light';
     document.documentElement.setAttribute('data-theme', theme);
-    const vars = ['--p', '--rounded-btn', '--rounded-box', '--shadow-strength'];
+    const vars = [
+      '--p',
+      '--a',
+      '--b1',
+      '--b2',
+      '--card-bg',
+      '--section-bg',
+      '--rounded-btn',
+      '--rounded-box',
+      '--rounded-badge',
+      '--shadow-strength',
+    ];
     vars.forEach(v => {
       const val = localStorage.getItem('style' + v);
       if (val) document.documentElement.style.setProperty(v, val);

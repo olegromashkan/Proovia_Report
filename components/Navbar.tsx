@@ -6,12 +6,14 @@ import ThemeToggle from './ThemeToggle';
 import NotificationCenter from './NotificationCenter';
 import SearchOverlay from './SearchOverlay';
 import Icon from './Icon';
+import useUser from '../lib/useUser';
 
 export default function Navbar() {
   const [searchOpen, setSearchOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const router = useRouter();
+  const user = useUser();
 
   // Handle scroll effect for navbar shadow
   useEffect(() => {
@@ -30,7 +32,6 @@ export default function Navbar() {
   const navLinks = [
     { href: '/', icon: 'house', label: 'Home' },
     { href: '/upload', icon: 'upload', label: 'Upload' },
-    { href: '/admin', icon: 'user-cog', label: 'Admin' },
     { href: '/settings', icon: 'gear', label: 'Settings' },
     { href: '/full-report', icon: 'table-list', label: 'Full Report' },
     { href: '/van-state', icon: 'truck', label: 'Van State' },
@@ -112,6 +113,17 @@ export default function Navbar() {
 
           {/* Notification Center */}
           <NotificationCenter />
+
+          {/* User */}
+          {user ? (
+            <Link href={`/profile/${user}`} className="p-2" title="Profile">
+              <Icon name="person-circle" className="w-6 h-6" />
+            </Link>
+          ) : (
+            <Link href="/auth/login" className="p-2" title="Login">
+              <Icon name="box-arrow-in-right" className="w-6 h-6" />
+            </Link>
+          )}
 
           {/* Theme Toggle */}
           <ThemeToggle />
