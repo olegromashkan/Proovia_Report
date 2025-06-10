@@ -30,6 +30,7 @@ const iconMap: Record<string, string> = {
   plus: 'plus',
   refresh: 'arrow-clockwise',
   people: 'people',
+  chat: 'chat-dots',
   calendar: 'calendar',
   database: 'hdd-stack',
   truck: 'truck',
