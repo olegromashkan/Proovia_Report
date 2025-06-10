@@ -47,6 +47,8 @@ export function init() {
       photo TEXT,
       header TEXT,
       role TEXT DEFAULT 'user',
+      last_seen TEXT DEFAULT CURRENT_TIMESTAMP,
+      show_last_seen INTEGER DEFAULT 1,
       created_at TEXT DEFAULT CURRENT_TIMESTAMP
     );
 
@@ -70,7 +72,22 @@ export function init() {
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       sender TEXT,
       receiver TEXT,
+      group_id INTEGER,
+      reply_to INTEGER,
       text TEXT,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP
+    );
+
+    CREATE TABLE IF NOT EXISTS groups (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT,
+      owner TEXT,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP
+    );
+
+    CREATE TABLE IF NOT EXISTS group_members (
+      group_id INTEGER,
+      username TEXT,
       created_at TEXT DEFAULT CURRENT_TIMESTAMP
     );
   `);
@@ -102,6 +119,18 @@ export function init() {
   } catch {
     // ignore if exists
   }
+  try {
+    db.exec("ALTER TABLE users ADD COLUMN last_seen TEXT DEFAULT CURRENT_TIMESTAMP");
+  } catch {}
+  try {
+    db.exec("ALTER TABLE users ADD COLUMN show_last_seen INTEGER DEFAULT 1");
+  } catch {}
+  try {
+    db.exec("ALTER TABLE messages ADD COLUMN group_id INTEGER");
+  } catch {}
+  try {
+    db.exec("ALTER TABLE messages ADD COLUMN reply_to INTEGER");
+  } catch {}
 }
 
 init();
