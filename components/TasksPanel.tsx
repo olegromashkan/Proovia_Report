@@ -11,6 +11,7 @@ interface Task {
   id: number;
   text: string;
   assignee: string;
+  due_at?: string;
   completed: number;
 }
 
@@ -27,6 +28,7 @@ export default function TasksPanel({ open, onClose }: TasksPanelProps) {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [text, setText] = useState('');
   const [assignee, setAssignee] = useState('');
+  const [due, setDue] = useState('');
   const { data } = useFetch<FetchUsers>(open ? '/api/users' : null);
   const users = data?.users || [];
 
@@ -47,10 +49,11 @@ export default function TasksPanel({ open, onClose }: TasksPanelProps) {
     await fetch('/api/tasks', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ assignee, text }),
+      body: JSON.stringify({ assignee, text, dueAt: due }),
     });
     setText('');
     setAssignee('');
+    setDue('');
     load();
   };
 
@@ -116,6 +119,18 @@ export default function TasksPanel({ open, onClose }: TasksPanelProps) {
           </datalist>
         </div>
 
+        <div>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            Due Date &amp; Time
+          </label>
+          <input
+            type="datetime-local"
+            value={due}
+            onChange={(e) => setDue(e.target.value)}
+            className="input input-bordered w-full bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+          />
+        </div>
+
         <button
           onClick={create}
           disabled={!text || !assignee}
@@ -152,6 +167,9 @@ export default function TasksPanel({ open, onClose }: TasksPanelProps) {
                   </span>
                   <div className="text-xs text-gray-500 dark:text-gray-400">
                     Assigned to: {t.assignee}
+                    {t.due_at && (
+                      <> | Due: {new Date(t.due_at).toLocaleString()}</>
+                    )}
                   </div>
                 </div>
               </li>

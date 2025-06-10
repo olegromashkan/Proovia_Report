@@ -11,13 +11,16 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
   }
 
   if (req.method === 'POST') {
-    const { assignee, text } = req.body || {};
+    const { assignee, text, dueAt } = req.body || {};
     if (!assignee || !text) return res.status(400).json({ message: 'Missing fields' });
-    db.prepare('INSERT INTO tasks (creator, assignee, text) VALUES (?, ?, ?)').run(username, assignee, text);
+    db.prepare('INSERT INTO tasks (creator, assignee, text, due_at) VALUES (?, ?, ?, ?)').run(
+      username,
+      assignee,
+      text,
+      dueAt || null,
+    );
     if (assignee !== username) {
       addNotification('task', `${username} assigned you a task: ${text}`);
-    } else {
-      addNotification('task', `Task created: ${text}`);
     }
     return res.status(200).json({ message: 'Created' });
   }
@@ -25,7 +28,12 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method === 'PUT') {
     const { id, completed } = req.body || {};
     if (!id) return res.status(400).end();
+    const task = db.prepare('SELECT * FROM tasks WHERE id = ?').get(id);
+    if (!task) return res.status(404).end();
     db.prepare('UPDATE tasks SET completed = ? WHERE id = ?').run(completed ? 1 : 0, id);
+    if (!task.completed && completed && task.creator !== task.assignee) {
+      addNotification('task', `${task.assignee} completed task: ${task.text}`);
+    }
     return res.status(200).json({ message: 'Updated' });
   }
 

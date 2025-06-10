@@ -61,6 +61,7 @@ export function init() {
       creator TEXT,
       assignee TEXT,
       text TEXT,
+      due_at TEXT,
       completed INTEGER DEFAULT 0,
       created_at TEXT DEFAULT CURRENT_TIMESTAMP
     );
@@ -85,6 +86,11 @@ export function init() {
   }
   try {
     db.exec("ALTER TABLE users ADD COLUMN role TEXT DEFAULT 'admin'");
+  } catch {
+    // ignore if exists
+  }
+  try {
+    db.exec("ALTER TABLE tasks ADD COLUMN due_at TEXT");
   } catch {
     // ignore if exists
   }
