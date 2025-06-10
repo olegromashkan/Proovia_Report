@@ -45,6 +45,16 @@ export default function Chat() {
     load();
   };
 
+  const createTask = async () => {
+    if (!text) return;
+    await fetch('/api/tasks', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ assignee: user, text })
+    });
+    setText('');
+  };
+
   return (
     <Layout title={`Chat with ${user}`}>
       <div className="max-w-xl mx-auto flex flex-col gap-4" style={{height:'70vh'}}>
@@ -61,6 +71,14 @@ export default function Chat() {
             className="input input-bordered flex-1"
             placeholder="Type a message..."
           />
+          <button
+            onClick={createTask}
+            className="btn btn-secondary"
+            disabled={!text}
+            aria-label="Create task"
+          >
+            <span className="text-lg">+</span>
+          </button>
           <button onClick={send} className="btn btn-primary" disabled={!text}>Send</button>
         </div>
       </div>
