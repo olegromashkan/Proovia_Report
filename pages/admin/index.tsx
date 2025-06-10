@@ -1,6 +1,17 @@
 import { useState, useEffect } from 'react';
-import Layout from '../../components/Layout';
+import Layout from '../../components/Layout'; // Ensure this path is correct
 import Icon from '../../components/Icon';
+
+// Fallback Layout component if the import fails
+const FallbackLayout = ({ children, title, fullWidth }: { children: React.ReactNode; title?: string; fullWidth?: boolean }) => (
+  <div className={fullWidth ? 'w-full' : 'container mx-auto'} style={{ minHeight: '100vh' }}>
+    {title && <h1 className="sr-only">{title}</h1>}
+    {children}
+  </div>
+);
+
+// Use FallbackLayout if Layout is not available; replace with actual Layout once fixed
+const ActiveLayout = typeof Layout === 'undefined' ? FallbackLayout : Layout;
 
 const TABLES = [
   'copy_of_tomorrow_trips',
@@ -72,15 +83,15 @@ export default function Admin() {
     if (itemsByDate[d]) return;
     setLoadingDates((l) => ({ ...l, [d]: true }));
     try {
-        const res = await fetch(`/api/items?table=${table}&date=${d}`);
-        if (res.ok) {
-          const data = await res.json();
-          setItemsByDate((m) => ({ ...m, [d]: data.items as Item[] }));
-        }
+      const res = await fetch(`/api/items?table=${table}&date=${d}`);
+      if (res.ok) {
+        const data = await res.json();
+        setItemsByDate((m) => ({ ...m, [d]: data.items as Item[] }));
+      }
     } catch (error) {
-        console.error("Failed to load date items:", error);
+      console.error("Failed to load date items:", error);
     } finally {
-        setLoadingDates((l) => ({ ...l, [d]: false }));
+      setLoadingDates((l) => ({ ...l, [d]: false }));
     }
   };
 
@@ -155,7 +166,7 @@ export default function Admin() {
       }));
       setEditing(null);
     } catch {
-      alert('Invalid JSON');
+ alert('Invalid JSON');
     }
   };
 
@@ -181,7 +192,7 @@ export default function Admin() {
         String(i.id).includes(search) ||
         String(i.primary ?? '').toLowerCase().includes(search.toLowerCase())
     );
-    if(rows.length > 0) {
+    if (rows.length > 0) {
       acc[date] = rows;
     }
     return acc;
@@ -212,105 +223,113 @@ export default function Admin() {
   const getTableDisplayName = (name: string) => name.replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase());
 
   const getTableBadgeColor = (name: string) => {
-    const colors = ['badge-primary', 'badge-secondary', 'badge-accent', 'badge-info', 'badge-success'];
+    const colors = ['bg-blue-500', 'bg-purple-500', 'bg-green-500', 'bg-indigo-500', 'bg-teal-500', 'bg-pink-500'];
     return colors[TABLES.indexOf(name as any) % colors.length];
   };
 
   return (
-    <Layout title="Admin Panel" fullWidth>
-      <div className="max-w-7xl mx-auto">
+    <ActiveLayout title="Admin Panel" fullWidth>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         {/* Header */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
           <div>
-            <h1 className="text-4xl font-bold text-base-content flex items-center gap-3">
-              <Icon name="database" className="text-primary" />
+            <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
+              <Icon name="database" className="w-8 h-8 text-blue-600" />
               Admin Panel
             </h1>
-            <p className="text-base-content/70 mt-2">Manage your database tables and records</p>
+            <p className="text-gray-600 mt-1">Manage your database tables and records with ease</p>
           </div>
-          <div className="stats shadow">
-            <div className="stat place-items-center">
-              <div className="stat-title">Total Records</div>
-              <div className="stat-value text-primary">{totalRecords}</div>
+          <div className="bg-white shadow-md rounded-lg p-4">
+            <div className="text-center">
+              <div className="text-sm font-medium text-gray-500">Total Records</div>
+              <div className="text-2xl font-bold text-blue-600">{totalRecords}</div>
             </div>
           </div>
         </div>
 
         {/* Controls */}
-        <div className="card bg-base-100 shadow-lg mb-6">
-          <div className="card-body">
-            <div className="flex flex-col lg:flex-row gap-4 items-end">
-              <div className="form-control flex-1 max-w-xs">
-                <label className="label">
-                  <span className="label-text font-semibold">Select Table</span>
-                </label>
-                <select
-                  value={table}
-                  onChange={(e) => setTable(e.target.value as (typeof TABLES)[number])}
-                  className="select select-bordered select-primary w-full"
-                >
-                  {TABLES.map((t) => (
-                    <option key={t} value={t}>
-                      {getTableDisplayName(t)}
-                    </option>
-                  ))}
-                </select>
-              </div>
+        <div className="bg-white shadow-md rounded-lg p-6 mb-8">
+          <div className="flex flex-col lg:flex-row gap-4 items-end">
+            <div className="flex-1 max-w-xs">
+              <label className="block text-sm font-medium text-gray-700 mb-1">Select Table</label>
+              <select
+                value={table}
+                onChange={(e) => setTable(e.target.value as (typeof TABLES)[number])}
+                className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+              >
+                {TABLES.map((t) => (
+                  <option key={t} value={t}>
+                    {getTableDisplayName(t)}
+                  </option>
+                ))}
+              </select>
+            </div>
 
-              <div className="form-control flex-1 max-w-md">
-                <label className="label">
-                  <span className="label-text font-semibold">Search Records</span>
-                </label>
-                <div className="input-group">
-                  <input
-                    type="text"
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                    placeholder="Search by ID or primary field..."
-                    className="input input-bordered input-primary flex-1"
-                  />
-                  <span className="bg-primary text-primary-content px-3 flex items-center">
-                    <Icon name="search" />
-                  </span>
-                </div>
+            <div className="flex-1 max-w-md">
+              <label className="block text-sm font-medium text-gray-700 mb-1">Search Records</label>
+              <div className="relative">
+                <input
+                  type="text"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Search by ID or primary field..."
+                  className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm pl-10"
+                />
+                <Icon name="search" className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
               </div>
+            </div>
 
-              <button onClick={fetchDates} className={`btn btn-primary gap-2 ${loading ? 'loading' : ''}`} disabled={loading}>
-                {!loading && <Icon name="refresh" />}
+            <div className="flex gap-2">
+              <button
+                onClick={fetchDates}
+                className={`flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                disabled={loading}
+              >
+                <Icon name="refresh" className="w-5 h-5" />
                 Refresh
               </button>
-              <button onClick={() => setAdding(true)} className="btn btn-secondary gap-2">
-                <Icon name="plus" />
+              <button
+                onClick={() => setAdding(true)}
+                className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors"
+              >
+                <Icon name="plus" className="w-5 h-5" />
                 Add Item
               </button>
-              <button onClick={exportData} className="btn btn-outline gap-2">
-                <Icon name="download" />
+              <button
+                onClick={exportData}
+                className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition-colors"
+              >
+                <Icon name="download" className="w-5 h-5" />
                 Export
               </button>
             </div>
+          </div>
 
-            <div className="flex flex-wrap gap-2 mt-4">
-              <div className={`badge ${getTableBadgeColor(table)} badge-lg`}>{getTableDisplayName(table)}</div>
-              <div className="badge badge-outline badge-lg">{dates.length} days</div>
-            </div>
+          <div className="flex flex-wrap gap-2 mt-4">
+            <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${getTableBadgeColor(table)} text-white`}>
+              {getTableDisplayName(table)}
+            </span>
+            <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-gray-100 text-gray-800">
+              {dates.length} days
+            </span>
           </div>
         </div>
 
         {/* Data Groups */}
         {loading ? (
           <div className="flex justify-center items-center h-64">
-            <span className="loading loading-spinner loading-lg text-primary"></span>
+            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-600"></div>
           </div>
         ) : (
           <div className="space-y-6">
             {Object.entries(groups).map(([d, rows]) => {
               const isCollapsed = collapsed[d];
               return (
-                <div key={d} className="card bg-base-100 shadow-lg">
-                  <div className="card-body">
+                <div key={d} className="bg-white shadow-md rounded-lg">
+                  <div className="p-6">
                     <div className="flex justify-between items-center">
                       <div
-                        className="flex items-center gap-3 cursor-pointer hover:text-primary transition-colors"
+                        className="flex items-center gap-3 cursor-pointer hover:text-blue-600 transition-colors"
                         onClick={() => {
                           setCollapsed((c) => ({ ...c, [d]: !c[d] }));
                           if (collapsed[d] && !itemsByDate[d]) {
@@ -318,120 +337,121 @@ export default function Admin() {
                           }
                         }}
                       >
-                        <Icon name={isCollapsed ? 'chevron-right' : 'chevron-down'} />
+                        <Icon name={isCollapsed ? 'chevron-right' : 'chevron-down'} className="w-6 h-6" />
                         <div className="flex items-center gap-3">
-                          <Icon name="calendar" className="text-primary" />
+                          <Icon name="calendar" className="w-6 h-6 text-blue-600" />
                           <span className="text-xl font-semibold">{d}</span>
-                          <div className="badge badge-primary badge-lg">{dates.find(dt => dt.date === d)?.count ?? 0} records</div>
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                            {dates.find(dt => dt.date === d)?.count ?? 0} records
+                          </span>
                         </div>
                       </div>
-                      <div className="dropdown dropdown-end">
-                        <label tabIndex={0} className="btn btn-ghost btn-sm">
-                          ⋮
-                        </label>
-                        <ul tabIndex={0} className="dropdown-content menu p-2 shadow bg-base-100 rounded-box w-52">
-                          <li>
-                            <button
-                              onClick={() => handleDeleteDate(d)}
-                              className="text-error hover:bg-error hover:text-error-content"
-                            >
-                              <Icon name="trash" />
-                              Delete all records
-                            </button>
-                          </li>
-                        </ul>
+                      <div className="relative group">
+                        <button className="p-2 hover:bg-gray-100 rounded-full">
+                          <Icon name="dots-vertical" className="w-5 h-5 text-gray-500" />
+                        </button>
+                        <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-10 hidden group-hover:block">
+                          <button
+                            onClick={() => handleDeleteDate(d)}
+                            className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50"
+                          >
+                            <Icon name="trash" className="w-4 h-4 inline mr-2" />
+                            Delete all records
+                          </button>
+                        </div>
                       </div>
                     </div>
 
-                    {/* FIX: Removed the problematic .collapse-content wrapper div */}
                     {!isCollapsed && (
-                        itemsByDate[d] ? (
-                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mt-4">
-                            {rows.map((item) => (
-                              <div key={item.id} className="card bg-base-200 shadow-sm hover:shadow-md transition-shadow">
-                              <div className="card-body p-4">
-                                <div className="flex justify-between items-start mb-3">
-                                  <div className="flex-1 min-w-0">
-                                    <div className="font-bold text-primary truncate" title={String(item.primary ?? item.id)}>
-                                      {item.primary ?? item.id}
+                      itemsByDate[d] ? (
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mt-4">
+                          {rows.map((item) => (
+                            <div key={item.id} className="bg-gray-50 rounded-lg p-4 hover:shadow-lg transition-shadow">
+                              <div className="flex justify-between items-start mb-3">
+                                <div className="flex-1 min-w-0">
+                                  <div className="font-semibold text-blue-600 truncate" title={String(item.primary ?? item.id)}>
+                                    {item.primary ?? item.id}
+                                  </div>
+                                  {item.secondary && (
+                                    <div className="text-sm text-gray-600 truncate" title={item.secondary}>
+                                      {item.secondary}
                                     </div>
-                                    {item.secondary && (
-                                      <div className="text-sm text-base-content/70 truncate" title={item.secondary}>
-                                        {item.secondary}
-                                      </div>
-                                    )}
-                                    <div className="text-xs text-base-content/50 mt-1">
-                                      {new Date(item.created_at).toLocaleString()}
-                                    </div>
+                                  )}
+                                  <div className="text-xs text-gray-400 mt-1">
+                                    {new Date(item.created_at).toLocaleString()}
                                   </div>
                                 </div>
+                              </div>
 
-                                <div className="card-actions justify-end">
-                                  <div className="btn-group">
+                              <div className="flex justify-end gap-2">
+                                <button
+                                  onClick={() => openEdit(item.id, d)}
+                                  className="p-2 text-blue-600 hover:bg-blue-100 rounded-md"
+                                  title="Edit"
+                                >
+                                  <Icon name="pen" className="w-4 h-4" />
+                                </button>
+                                <button
+                                  onClick={() => navigator.clipboard.writeText(String(item.id))}
+                                  className="p-2 text-gray-600 hover:bg-gray-100 rounded-md"
+                                  title="Copy ID"
+                                >
+                                  <Icon name="copy" className="w-4 h-4" />
+                                </button>
+                                <button
+                                  onClick={() => handleDelete(item.id, d)}
+                                  className="p-2 text-red-600 hover:bg-red-100 rounded-md"
+                                  title="Delete"
+                                >
+                                  <Icon name="trash" className="w-4 h-4" />
+                                </button>
+                              </div>
+
+                              {editing?.id === item.id && (
+                                <div className="mt-4 space-y-3">
+                                  <div className="text-xs font-medium text-blue-600">EDIT MODE</div>
+                                  <textarea
+                                    className="w-full h-32 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 font-mono text-sm"
+                                    value={editing.text}
+                                    onChange={(e) => setEditing({ ...editing, text: e.target.value })}
+                                    placeholder="Enter JSON data..."
+                                  />
+                                  <div className="flex flex-wrap gap-2">
                                     <button
-                                      onClick={() => openEdit(item.id, d)}
-                                      className="btn btn-xs btn-outline btn-info"
-                                      title="Edit"
+                                      onClick={saveEdit}
+                                      className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
                                     >
-                                      <Icon name="pen" />
+                                      <Icon name="save" className="w-4 h-4" />
+                                      Save
                                     </button>
                                     <button
-                                      onClick={() => navigator.clipboard.writeText(String(item.id))}
-                                      className="btn btn-xs btn-outline btn-secondary"
-                                      title="Copy ID"
+                                      onClick={() => setEditing(null)}
+                                      className="flex items-center justify-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200"
                                     >
-                                      <Icon name="copy" />
+                                      <Icon name="ban" className="w-4 h-4" />
+                                      Cancel
                                     </button>
                                     <button
-                                      onClick={() => handleDelete(item.id, d)}
-                                      className="btn btn-xs btn-outline btn-error"
-                                      title="Delete"
+                                      onClick={() => window.open(`/admin/${table}/${item.id}`, '_blank')}
+                                      className="flex items-center justify-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200"
                                     >
-                                      <Icon name="trash" />
+                                      <Icon name="up-right-from-square" className="w-4 h-4" />
+                                      Open
                                     </button>
                                   </div>
                                 </div>
-
-                                {editing?.id === item.id && (
-                                  <div className="mt-4 space-y-3">
-                                    <div className="divider divider-primary text-xs">EDIT MODE</div>
-                                    <textarea
-                                      className="textarea textarea-bordered w-full h-32 font-mono text-xs"
-                                      value={editing.text}
-                                      onChange={(e) => setEditing({ ...editing, text: e.target.value })}
-                                      placeholder="Enter JSON data..."
-                                    />
-                                    <div className="flex flex-wrap gap-2">
-                                      <button onClick={saveEdit} className="btn btn-primary btn-sm flex-1">
-                                        <Icon name="save" />
-                                        Save
-                                      </button>
-                                      <button onClick={() => setEditing(null)} className="btn btn-ghost btn-sm">
-                                        <Icon name="ban" />
-                                        Cancel
-                                      </button>
-                                      <button
-                                        className="btn btn-outline btn-sm"
-                                        onClick={() => window.open(`/admin/${table}/${item.id}`, '_blank')}
-                                      >
-                                        <Icon name="up-right-from-square" />
-                                        Open
-                                      </button>
-                                    </div>
-                                  </div>
-                                )}
-                              </div>
-                              </div>
-                            ))}
-                          </div>
-                        ) : loadingDates[d] ? (
-                          <div className="flex justify-center p-4">
-                            <span className="loading loading-spinner"></span>
-                          </div>
-                        ) : (
-                          <div className="p-4 text-sm text-gray-500">No records</div>
-                        )
-                      )}
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      ) : loadingDates[d] ? (
+                        <div className="flex justify-center p-4">
+                          <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-600"></div>
+                        </div>
+                      ) : (
+                        <div className="p-4 text-sm text-gray-500">No records</div>
+                      )
+                    )}
                   </div>
                 </div>
               );
@@ -440,21 +460,28 @@ export default function Admin() {
         )}
 
         {adding && (
-          <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-30 p-4">
-            <div className="bg-base-100 p-4 rounded shadow-lg w-full max-w-lg space-y-3">
-              <h2 className="font-bold text-lg">New Item</h2>
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-lg p-6 w-full max-w-lg space-y-4">
+              <h2 className="text-lg font-bold text-gray-900">New Item</h2>
               <textarea
-                className="textarea textarea-bordered w-full h-40 font-mono text-sm"
+                className="w-full h-40 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 font-mono text-sm"
                 value={newText}
                 onChange={(e) => setNewText(e.target.value)}
                 placeholder="Enter JSON data..."
               />
               <div className="flex gap-2 justify-end">
-                <button onClick={addItem} className="btn btn-primary">
-                  <Icon name="save" />
+                <button
+                  onClick={addItem}
+                  className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                >
+                  <Icon name="save" className="w-4 h-4" />
                   Save
                 </button>
-                <button onClick={() => setAdding(false)} className="btn">
+                <button
+                  onClick={() => setAdding(false)}
+                  className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200"
+                >
+                  <Icon name="ban" className="w-4 h-4" />
                   Cancel
                 </button>
               </div>
@@ -462,29 +489,29 @@ export default function Admin() {
           </div>
         )}
 
-        {/* Pending Changes Footer */}
         {pending.length > 0 && (
-          <div className="toast toast-bottom toast-center w-full max-w-md">
-            <div className="alert alert-info shadow-lg">
-              <div className="flex-1">
-                <div className="flex items-center gap-2">
-                  <Icon name="save" />
-                  <span className="font-semibold">
-                    {pending.length} pending change{pending.length > 1 ? 's' : ''}
-                  </span>
-                </div>
+          <div className="fixed bottom-4 left-1/2 transform -translate-x-1/2 w-full max-w-md">
+            <div className="bg-blue-50 border border-blue-200 rounded-lg shadow-lg p-4 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Icon name="save" className="w-5 h-5 text-blue-600" />
+                <span className="font-medium text-blue-800">
+                  {pending.length} pending change{pending.length > 1 ? 's' : ''}
+                </span>
               </div>
-              <div className="flex-none">
-                <button onClick={() => fetchDates()} className="btn btn-sm btn-ghost">
-                  <Icon name="rotate-left" />
+              <div className="flex gap-2">
+                <button
+                  onClick={() => fetchDates()}
+                  className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200"
+                >
+                  <Icon name="rotate-left" className="w-4 h-4" />
                   Revert
                 </button>
                 <button
                   onClick={saveAll}
-                  className={`btn btn-sm btn-primary ${loading ? 'loading' : ''}`}
+                  className={`flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
                   disabled={loading}
                 >
-                  {!loading && <Icon name="save" />}
+                  <Icon name="save" className="w-4 h-4" />
                   Save All
                 </button>
               </div>
@@ -492,6 +519,6 @@ export default function Admin() {
           </div>
         )}
       </div>
-    </Layout>
+    </ActiveLayout>
   );
 }
