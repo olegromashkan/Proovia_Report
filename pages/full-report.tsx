@@ -378,7 +378,7 @@ export default function FullReport() {
                     </button>
                 </div>
                 <div className="overflow-auto h-[75vh]">
-                    <div className="overflow-x-auto">
+                    <div className="table-responsive">
                     <table className="table table-xs table-pin-rows table-zebra w-full">
                         <thead>
                             <tr>
