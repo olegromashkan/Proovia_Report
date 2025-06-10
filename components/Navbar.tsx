@@ -41,6 +41,7 @@ export default function Navbar() {
     { href: '/upload', icon: 'upload', label: 'Upload' },
     { href: '/full-report', icon: 'table-list', label: 'Full Report' },
     { href: '/van-state', icon: 'truck', label: 'Van State' },
+    { href: '/users', icon: 'people', label: 'Users' },
   ];
 
   const isActiveLink = (href: string) => router.pathname === href;
