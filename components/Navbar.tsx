@@ -9,6 +9,12 @@ import Icon from './Icon';
 import UserMenu from './UserMenu';
 import TasksPanel from './TasksPanel';
 
+interface NavLink {
+  href: string;
+  icon: string;
+  label: string;
+}
+
 export default function Navbar() {
   const [searchOpen, setSearchOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -30,32 +36,30 @@ export default function Navbar() {
     setMobileMenuOpen(false);
   }, [router.pathname]);
 
-  const navLinks = [
+  const navLinks: NavLink[] = [
     { href: '/', icon: 'house', label: 'Home' },
     { href: '/upload', icon: 'upload', label: 'Upload' },
     { href: '/full-report', icon: 'table-list', label: 'Full Report' },
     { href: '/van-state', icon: 'truck', label: 'Van State' },
   ];
 
-  const isActiveLink = (href: string) => {
-    return router.pathname === href;
-  };
+  const isActiveLink = (href: string) => router.pathname === href;
 
   return (
     <>
       <nav
         className={`
-          bg-white/90 dark:bg-gray-900/90 
-          border-b border-gray-200/50 dark:border-gray-700/50
-          px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between 
+          bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm
+          border-b border-gray-200/20 dark:border-gray-700/20
+          px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between
           sticky top-0 z-50 transition-all duration-300
-          ${scrolled ? 'shadow-md' : 'shadow-sm'}
+          ${scrolled ? 'shadow-lg' : 'shadow-sm'}
         `}
       >
         {/* Logo Section */}
         <div className="flex items-center">
           <Link href="/" className="flex items-center gap-2 group">
-            <div className="relative rounded-lg p-1 bg-gradient-to-br from-blue-100 to-indigo-100 dark:from-blue-900/30 dark:to-indigo-900/30 group-hover:scale-105 transition-transform duration-200">
+            <div className="relative p-1.5 bg-gradient-to-br from-blue-100/50 to-indigo-100/50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-lg group-hover:scale-105 transition-transform duration-200">
               <Image
                 src="https://cdn.proovia.uk/pd/images/logo/logo-default.svg"
                 alt="Proovia Logo"
@@ -69,7 +73,7 @@ export default function Navbar() {
         </div>
 
         {/* Desktop Navigation */}
-        <div className="hidden lg:flex items-center space-x-2">
+        <div className="hidden lg:flex items-center space-x-3">
           {navLinks.map(({ href, icon, label }) => (
             <Link
               key={href}
@@ -78,23 +82,23 @@ export default function Navbar() {
               className={`
                 relative flex items-center gap-2 px-4 py-2 rounded-lg
                 text-sm font-medium transition-all duration-200
-                hover:bg-gray-100 dark:hover:bg-gray-800
+                hover:bg-blue-50/50 dark:hover:bg-blue-900/20
                 ${isActiveLink(href)
                   ? 'text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30'
-                  : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white'
+                  : 'text-gray-700 dark:text-gray-200 hover:text-blue-600 dark:hover:text-blue-400'
                 }
               `}
             >
               <Icon
                 name={icon}
                 className={`
-                  w-5 h-5 transition-transform duration-200
-                  ${isActiveLink(href) ? 'text-blue-600 dark:text-blue-400' : ''}
+                  w-5 h-5
+                  ${isActiveLink(href) ? 'text-blue-600 dark:text-blue-400' : 'text-gray-500 dark:text-gray-400'}
                 `}
               />
               <span>{label}</span>
               {isActiveLink(href) && (
-                <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-8 h-0.5 bg-blue-600 dark:bg-blue-400 rounded-full" />
+                <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-6 h-0.5 bg-blue-600 dark:bg-blue-400 rounded-full" />
               )}
             </Link>
           ))}
@@ -105,7 +109,7 @@ export default function Navbar() {
           {/* Search Button */}
           <button
             onClick={() => setSearchOpen(true)}
-            className="p-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg"
+            className="p-2 text-gray-600 dark:text-gray-300 hover:bg-blue-50/50 dark:hover:bg-blue-900/20 rounded-lg transition-all duration-200"
             aria-label="Open search"
           >
             <Icon name="search" className="w-5 h-5" />
@@ -117,7 +121,7 @@ export default function Navbar() {
           {/* Tasks Button */}
           <button
             onClick={() => setTasksOpen(true)}
-            className="p-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg"
+            className="p-2 text-gray-600 dark:text-gray-300 hover:bg-blue-50/50 dark:hover:bg-blue-900/20 rounded-lg transition-all duration-200"
             aria-label="Open tasks"
           >
             <Icon name="check" className="w-5 h-5" />
@@ -132,23 +136,23 @@ export default function Navbar() {
           {/* Mobile Menu Button */}
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="lg:hidden p-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg"
+            className="lg:hidden p-2 text-gray-600 dark:text-gray-300 hover:bg-blue-50/50 dark:hover:bg-blue-900/20 rounded-lg transition-all duration-200"
             aria-label="Toggle mobile menu"
             aria-expanded={mobileMenuOpen}
           >
             <div className="relative flex flex-col space-y-1.5 w-5 h-5">
               <span
-                className={`block h-0.5 w-full bg-current transition-all duration-300 ${
+                className={`block h-0.5 w-full bg-current rounded transition-all duration-300 ${
                   mobileMenuOpen ? 'rotate-45 translate-y-2' : ''
                 }`}
               />
               <span
-                className={`block h-0.5 w-full bg-current transition-all duration-300 ${
+                className={`block h-0.5 w-full bg-current rounded transition-all duration-300 ${
                   mobileMenuOpen ? 'opacity-0' : ''
                 }`}
               />
               <span
-                className={`block h-0.5 w-full bg-current transition-all duration-300 ${
+                className={`block h-0.5 w-full bg-current rounded transition-all duration-300 ${
                   mobileMenuOpen ? '-rotate-45 -translate-y-2' : ''
                 }`}
               />
@@ -160,20 +164,20 @@ export default function Navbar() {
       {/* Mobile Menu Overlay */}
       <div
         className={`
-          lg:hidden fixed inset-0 z-40 transition-opacity duration-300
+          lg:hidden fixed inset-0 z-40 transition-all duration-300
           ${mobileMenuOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}
         `}
       >
         <div
-          className="absolute inset-0 bg-black/30"
+          className="absolute inset-0 bg-black/40"
           onClick={() => setMobileMenuOpen(false)}
         />
         <div
           className={`
-            absolute top-16 left-4 right-4 bg-white dark:bg-gray-900
-            rounded-xl border border-gray-200/50 dark:border-gray-700/50
-            shadow-lg p-4 space-y-2 transform transition-all duration-300
-            ${mobileMenuOpen ? 'translate-y-0 opacity-100' : 'translate-y-2 opacity-0'}
+            absolute top-16 left-4 right-4 bg-white dark:bg-gray-800
+            rounded-2xl border border-gray-200/20 dark:border-gray-700/20
+            shadow-xl p-4 space-y-2 transform transition-all duration-300
+            ${mobileMenuOpen ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'}
           `}
         >
           {navLinks.map(({ href, icon, label }) => (
@@ -187,7 +191,7 @@ export default function Navbar() {
                 text-sm font-medium transition-all duration-200
                 ${isActiveLink(href)
                   ? 'text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30'
-                  : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
+                  : 'text-gray-700 dark:text-gray-200 hover:bg-blue-50/50 dark:hover:bg-blue-900/20 hover:text-blue-600 dark:hover:text-blue-400'
                 }
               `}
             >
@@ -195,7 +199,7 @@ export default function Navbar() {
                 name={icon}
                 className={`
                   w-5 h-5
-                  ${isActiveLink(href) ? 'text-blue-600 dark:text-blue-400' : ''}
+                  ${isActiveLink(href) ? 'text-blue-600 dark:text-blue-400' : 'text-gray-500 dark:text-gray-400'}
                 `}
               />
               <span>{label}</span>
@@ -209,6 +213,7 @@ export default function Navbar() {
 
       {/* Search Overlay */}
       <SearchOverlay open={searchOpen} onClose={() => setSearchOpen(false)} />
+
       {/* Tasks Panel */}
       <TasksPanel open={tasksOpen} onClose={() => setTasksOpen(false)} />
     </>
