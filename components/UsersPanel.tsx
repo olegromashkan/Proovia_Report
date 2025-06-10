@@ -1,10 +1,8 @@
-import useSWR from 'swr';
 import Link from 'next/link';
-
-const fetcher = (url: string) => fetch(url).then(r => r.json());
+import useFetch from '../lib/useFetch';
 
 export default function UsersPanel() {
-  const { data } = useSWR('/api/users', fetcher);
+  const { data } = useFetch<{ users: any[] }>('/api/users');
   const users = data?.users || [];
   return (
     <div className="space-y-4">

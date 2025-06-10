@@ -47,6 +47,36 @@ export default function Register() {
     reader.readAsDataURL(file);
   };
 
+  const handleHeader = (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (typeof reader.result !== 'string') return;
+      const img = new Image();
+      img.onload = () => {
+        let w = img.width;
+        let h = img.height;
+        const ratio = w / h;
+        if (w > 1280) {
+          w = 1280;
+          h = Math.round(w / ratio);
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = w;
+        canvas.height = h;
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          ctx.drawImage(img, 0, 0, w, h);
+          const data = canvas.toDataURL('image/jpeg', 0.8);
+          setHeader(data);
+        }
+      };
+      img.src = reader.result as string;
+    };
+    reader.readAsDataURL(file);
+  };
+
   const submit = async () => {
     const res = await fetch('/api/register', {
       method: 'POST',
@@ -90,12 +120,14 @@ export default function Register() {
           <img src={photo} alt="preview" className="w-24 h-24 object-cover rounded-full" />
         )}
         <input
-          type="text"
-          placeholder="Header URL"
-          value={header}
-          onChange={e => setHeader(e.target.value)}
-          className="input input-bordered w-full"
+          type="file"
+          accept="image/*"
+          onChange={handleHeader}
+          className="file-input file-input-bordered w-full"
         />
+        {header && (
+          <img src={header} alt="header preview" className="w-full h-32 object-cover rounded-system" />
+        )}
         <button onClick={submit} className="btn btn-primary w-full">Register</button>
       </div>
     </Layout>
