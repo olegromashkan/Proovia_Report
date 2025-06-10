@@ -1,5 +1,6 @@
 import { useRouter } from 'next/router';
 import { useState, ChangeEvent } from 'react';
+import ChatPanel from '../../components/ChatPanel';
 import useFetch from '../../lib/useFetch';
 import Layout from '../../components/Layout';
 import useUser from '../../lib/useUser';
@@ -12,11 +13,12 @@ export default function Profile() {
   const current = useUser();
   const { data: me } = useFetch<{ user: any }>(current ? '/api/user' : null);
   const canEdit = current === user || me?.user?.role === 'admin';
-  
+
   const [editing, setEditing] = useState(false);
   const [photo, setPhoto] = useState('');
   const [header, setHeader] = useState('');
   const [password, setPassword] = useState('');
+  const [chatOpen, setChatOpen] = useState(false);
 
   const handleImage = (e: ChangeEvent<HTMLInputElement>, set: (v:string)=>void) => {
     const file = e.target.files?.[0];
@@ -127,6 +129,14 @@ export default function Profile() {
                 })}
               </div>
             </div>
+            <div>
+              <button
+                className="btn btn-primary"
+                onClick={() => setChatOpen(true)}
+              >
+                Chat
+              </button>
+            </div>
           </div>
 
           {/* Edit Form */}
@@ -223,6 +233,7 @@ export default function Profile() {
           )}
         </div>
       </div>
+      <ChatPanel open={chatOpen} user={info.username} onClose={() => setChatOpen(false)} />
     </Layout>
   );
 }

@@ -1,10 +1,14 @@
 import Link from 'next/link';
 import Layout from '../components/Layout';
 import useFetch from '../lib/useFetch';
+import { useState } from 'react';
+import ChatPanel from '../components/ChatPanel';
 
 export default function Users() {
   const { data } = useFetch<{ users: any[] }>('/api/users');
   const users = data?.users || [];
+  const [chatUser, setChatUser] = useState('');
+  const [chatOpen, setChatOpen] = useState(false);
 
   return (
     <Layout title="Users">
@@ -19,13 +23,17 @@ export default function Users() {
               <Link href={`/profile/${u.username}`} className="link flex-1">
                 {u.username}
               </Link>
-              <Link href={`/messages/${u.username}`} className="btn btn-xs">
+              <button
+                className="btn btn-xs"
+                onClick={() => { setChatUser(u.username); setChatOpen(true); }}
+              >
                 Chat
-              </Link>
+              </button>
             </li>
           ))}
         </ul>
       </div>
+      <ChatPanel open={chatOpen} user={chatUser} onClose={() => setChatOpen(false)} />
     </Layout>
   );
 }
