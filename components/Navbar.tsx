@@ -7,11 +7,13 @@ import NotificationCenter from './NotificationCenter';
 import SearchOverlay from './SearchOverlay';
 import Icon from './Icon';
 import UserMenu from './UserMenu';
+import TasksPanel from './TasksPanel';
 
 export default function Navbar() {
   const [searchOpen, setSearchOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const [tasksOpen, setTasksOpen] = useState(false);
   const router = useRouter();
 
   // Handle scroll effect for navbar shadow
@@ -31,9 +33,6 @@ export default function Navbar() {
   const navLinks = [
     { href: '/', icon: 'house', label: 'Home' },
     { href: '/upload', icon: 'upload', label: 'Upload' },
-    { href: '/friends', icon: 'people', label: 'Friends' },
-    { href: '/tasks', icon: 'check', label: 'Tasks' },
-    { href: '/settings', icon: 'gear', label: 'Settings' },
     { href: '/full-report', icon: 'table-list', label: 'Full Report' },
     { href: '/van-state', icon: 'truck', label: 'Van State' },
   ];
@@ -114,6 +113,15 @@ export default function Navbar() {
 
           {/* Notification Center */}
           <NotificationCenter />
+
+          {/* Tasks Button */}
+          <button
+            onClick={() => setTasksOpen(true)}
+            className="p-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg"
+            aria-label="Tasks"
+          >
+            <Icon name="check" className="w-5 h-5" />
+          </button>
 
           {/* User */}
           <UserMenu />
@@ -201,6 +209,7 @@ export default function Navbar() {
 
       {/* Search Overlay */}
       <SearchOverlay open={searchOpen} onClose={() => setSearchOpen(false)} />
+      <TasksPanel open={tasksOpen} onClose={() => setTasksOpen(false)} />
     </>
   );
 }
