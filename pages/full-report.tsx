@@ -378,6 +378,7 @@ export default function FullReport() {
                     </button>
                 </div>
                 <div className="overflow-auto h-[75vh]">
+                    <div className="overflow-x-auto">
                     <table className="table table-xs table-pin-rows table-zebra w-full">
                         <thead>
                             <tr>
@@ -407,12 +408,13 @@ export default function FullReport() {
                                         <td>{diffLoad}</td>
                                         <td>{r.Start_Time}</td>
                                         <td>{r.Last_Mention_Time}</td>
-                                        <td>{diffStart}</td>
-                                    </tr>
-                                );
+                                <td>{diffStart}</td>
+                            </tr>
+                        );
                             })}
                         </tbody>
                     </table>
+                    </div>
                 </div>
             </div></div>
 
