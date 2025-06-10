@@ -42,6 +42,9 @@ export default function Login() {
           className="input input-bordered w-full"
         />
         <button onClick={submit} className="btn btn-primary w-full">Login</button>
+        <p className="text-center text-sm">
+          <a href="/auth/register" className="link">Register</a>
+        </p>
       </div>
     </Layout>
   );
