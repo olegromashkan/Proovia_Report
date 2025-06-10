@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, ChangeEvent } from 'react';
 import { useRouter } from 'next/router';
 import Layout from '../../components/Layout';
 
@@ -9,6 +9,43 @@ export default function Register() {
   const [header, setHeader] = useState('');
   const [error, setError] = useState('');
   const router = useRouter();
+
+  const handlePhoto = (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (typeof reader.result !== 'string') return;
+      const img = new Image();
+      img.onload = () => {
+        let w = img.width;
+        let h = img.height;
+        const ratio = w / h;
+        if (w > h) {
+          if (w > 1280) {
+            w = 1280;
+            h = Math.round(w / ratio);
+          }
+        } else {
+          if (h > 720) {
+            h = 720;
+            w = Math.round(h * ratio);
+          }
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = w;
+        canvas.height = h;
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          ctx.drawImage(img, 0, 0, w, h);
+          const data = canvas.toDataURL('image/jpeg', 0.8);
+          setPhoto(data);
+        }
+      };
+      img.src = reader.result;
+    };
+    reader.readAsDataURL(file);
+  };
 
   const submit = async () => {
     const res = await fetch('/api/register', {
@@ -44,12 +81,14 @@ export default function Register() {
           className="input input-bordered w-full"
         />
         <input
-          type="text"
-          placeholder="Photo URL"
-          value={photo}
-          onChange={e => setPhoto(e.target.value)}
-          className="input input-bordered w-full"
+          type="file"
+          accept="image/*"
+          onChange={handlePhoto}
+          className="file-input file-input-bordered w-full"
         />
+        {photo && (
+          <img src={photo} alt="preview" className="w-24 h-24 object-cover rounded-full" />
+        )}
         <input
           type="text"
           placeholder="Header URL"
