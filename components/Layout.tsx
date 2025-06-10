@@ -1,6 +1,7 @@
 import { ReactNode } from 'react';
 import Head from 'next/head';
 import Navbar from './Navbar';
+import ToastNotifications from './ToastNotifications';
 
 interface LayoutProps {
   children: ReactNode;
@@ -17,6 +18,7 @@ export default function Layout({ children, title, fullWidth }: LayoutProps) {
       </Head>
       <div className="min-h-screen bg-base-200 text-base-content">
         <Navbar />
+        <ToastNotifications />
         <main
           className={
             fullWidth ? 'p-4 space-y-4' : 'max-w-screen-xl mx-auto p-4 space-y-4'
