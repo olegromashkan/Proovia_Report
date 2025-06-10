@@ -12,7 +12,7 @@ export default function ToastNotifications() {
   const [items, setItems] = useState<Notification[]>([]);
 
   const load = async () => {
-    const res = await fetch('/api/notifications');
+    const res = await fetch('/api/notifications?type=task');
     if (res.ok) {
       const data = await res.json();
       setItems(data.items as Notification[]);
