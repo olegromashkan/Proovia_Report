@@ -38,6 +38,8 @@ const getNotificationStyle = (type: string) => {
             return { icon: 'trash', colorClass: 'text-warning' };
         case 'error':
             return { icon: 'ban', colorClass: 'text-error' };
+        case 'message':
+            return { icon: 'chat', colorClass: 'text-info' };
         default:
             return { icon: 'bell', colorClass: 'text-base-content' };
     }
