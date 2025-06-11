@@ -1,5 +1,5 @@
 import { useRouter } from 'next/router';
-import { useState, ChangeEvent } from 'react';
+import { useState, ChangeEvent, useEffect } from 'react';
 import { useChat } from '../../contexts/ChatContext';
 import useFetch from '../../lib/useFetch';
 import Layout from '../../components/Layout';
@@ -18,7 +18,12 @@ export default function Profile() {
   const [photo, setPhoto] = useState('');
   const [header, setHeader] = useState('');
   const [password, setPassword] = useState('');
+  const [showLast, setShowLast] = useState(true);
   const { openChat } = useChat();
+
+  useEffect(() => {
+    if (info) setShowLast(!!info.show_last_seen);
+  }, [info]);
 
   const handleImage = (e: ChangeEvent<HTMLInputElement>, set: (v:string)=>void) => {
     const file = e.target.files?.[0];
@@ -32,7 +37,7 @@ export default function Profile() {
     await fetch('/api/profile', {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ photo, header, password })
+      body: JSON.stringify({ photo, header, password, showLastSeen: showLast })
     });
     setEditing(false);
     location.reload();
@@ -128,6 +133,7 @@ export default function Profile() {
                   day: 'numeric'
                 })}
               </div>
+<<<<<<< HEAD
               <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
                 <span className={`w-2.5 h-2.5 rounded-full ${info.status === 'online' ? 'bg-green-500' : info.status === 'away' ? 'bg-orange-500' : info.status === 'dnd' ? 'bg-red-500' : 'bg-gray-400'}`}></span>
                 <span>
@@ -143,6 +149,9 @@ export default function Profile() {
               {info.status_message && info.status !== 'online' && (
                 <div className="text-sm text-gray-500 dark:text-gray-400">{info.status_message}</div>
               )}
+=======
+              <div className="text-sm text-gray-500">Last seen: {info.show_last_seen ? new Date(info.last_seen).toLocaleString() : 'last seen recently'}</div>
+>>>>>>> parent of 8d3c5a3 (Revert "feat: add user status and group chats")
             </div>
             <div>
               <button
@@ -191,13 +200,20 @@ export default function Profile() {
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                   New Password
                 </label>
-                <input 
-                  type="password" 
-                  placeholder="Enter new password" 
-                  value={password} 
-                  onChange={e => setPassword(e.target.value)} 
-                  className="input input-bordered w-full bg-white dark:bg-gray-700" 
+                <input
+                  type="password"
+                  placeholder="Enter new password"
+                  value={password}
+                  onChange={e => setPassword(e.target.value)}
+                  className="input input-bordered w-full bg-white dark:bg-gray-700"
                 />
+              </div>
+
+              <div className="form-control">
+                <label className="label cursor-pointer">
+                  <span className="label-text">Show last seen</span>
+                  <input type="checkbox" className="toggle" checked={showLast} onChange={e => setShowLast(e.target.checked)} />
+                </label>
               </div>
               
               <div className="flex gap-3 pt-2">

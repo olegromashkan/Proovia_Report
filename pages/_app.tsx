@@ -28,9 +28,14 @@ export default function MyApp({ Component, pageProps }: AppProps) {
     });
 
     const interval = setInterval(() => {
+<<<<<<< HEAD
       fetch('/api/status', { method: 'POST' });
     }, 30000);
     fetch('/api/status', { method: 'POST' });
+=======
+      fetch('/api/ping');
+    }, 30000);
+>>>>>>> parent of 8d3c5a3 (Revert "feat: add user status and group chats")
     return () => clearInterval(interval);
   }, []);
 

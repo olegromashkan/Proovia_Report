@@ -73,7 +73,22 @@ export function init() {
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       sender TEXT,
       receiver TEXT,
+      group_id INTEGER,
+      reply_to INTEGER,
       text TEXT,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP
+    );
+
+    CREATE TABLE IF NOT EXISTS groups (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT,
+      owner TEXT,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP
+    );
+
+    CREATE TABLE IF NOT EXISTS group_members (
+      group_id INTEGER,
+      username TEXT,
       created_at TEXT DEFAULT CURRENT_TIMESTAMP
     );
   `);
@@ -95,18 +110,16 @@ export function init() {
       // ignore if column already exists
     }
   }
-  function addColumnIfMissing(table: string, column: string, definition: string) {
-    const info = db.prepare(`PRAGMA table_info(${table})`).all() as Array<{ name: string }>;
-    if (!info.find((c) => c.name === column)) {
-      db.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${definition}`);
-    }
+  try {
+    db.exec("ALTER TABLE users ADD COLUMN role TEXT DEFAULT 'admin'");
+  } catch {
+    // ignore if exists
   }
-
-  addColumnIfMissing('users', 'role', "TEXT DEFAULT 'admin'");
-  addColumnIfMissing('users', 'status', "TEXT DEFAULT 'offline'");
-  addColumnIfMissing('users', 'status_message', 'TEXT');
-  addColumnIfMissing('users', 'last_seen', 'TEXT DEFAULT CURRENT_TIMESTAMP');
-  addColumnIfMissing('tasks', 'due_at', 'TEXT');
+  try {
+    db.exec("ALTER TABLE tasks ADD COLUMN due_at TEXT");
+  } catch {
+    // ignore if exists
+  }
 }
 
 init();
