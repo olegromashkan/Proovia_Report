@@ -1,5 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import db, { addNotification } from '../../lib/db';
+import { generateSummaryPosts } from '../../lib/summaryPosts';
 
 export const config = {
   api: {
@@ -84,6 +85,7 @@ export default function handler(
       addNotification('upload', `Uploaded ${payload.csvTrips.length} csv trips`);
     }
 
+    generateSummaryPosts();
     res.status(200).json({ message: 'Uploaded' });
   } catch (err) {
     console.error(err);

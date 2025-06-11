@@ -9,7 +9,7 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method === 'GET') {
     const { user } = req.query as { user?: string };
     const base = `
-      SELECT p.id, p.username, p.content, p.image, p.created_at, p.updated_at, u.photo,
+      SELECT p.id, p.username, p.content, p.image, p.created_at, p.updated_at, p.type, u.photo,
         (SELECT COUNT(*) FROM post_likes WHERE post_id = p.id) as likes,
         (SELECT COUNT(*) FROM post_comments WHERE post_id = p.id) as comments,
         (SELECT 1 FROM post_likes WHERE post_id = p.id AND username = ?) as liked
@@ -37,9 +37,14 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
     if (!current) return res.status(401).end();
     const { id, content, image } = req.body || {};
     if (!id) return res.status(400).end();
-    const post = db.prepare('SELECT username FROM posts WHERE id = ?').get(id);
+    const post = db.prepare('SELECT username, type FROM posts WHERE id = ?').get(id);
     if (!post) return res.status(404).end();
-    if (post.username !== current) return res.status(403).end();
+    if (post.type === 'summary') {
+      const info = db.prepare('SELECT role FROM users WHERE username = ?').get(current);
+      if (!info || info.role !== 'admin') return res.status(403).end();
+    } else if (post.username !== current) {
+      return res.status(403).end();
+    }
     const updates: string[] = [];
     const params: any[] = [];
     if (content !== undefined) {
@@ -61,9 +66,14 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method === 'DELETE') {
     const { id } = req.query as { id?: string };
     if (!id) return res.status(400).end();
-    const post = db.prepare('SELECT username FROM posts WHERE id = ?').get(id);
+    const post = db.prepare('SELECT username, type FROM posts WHERE id = ?').get(id);
     if (!post) return res.status(404).end();
-    if (post.username !== current) return res.status(403).end();
+    if (post.type === 'summary') {
+      const info = db.prepare('SELECT role FROM users WHERE username = ?').get(current);
+      if (!info || info.role !== 'admin') return res.status(403).end();
+    } else if (post.username !== current) {
+      return res.status(403).end();
+    }
     db.prepare('DELETE FROM post_likes WHERE post_id = ?').run(id);
     db.prepare('DELETE FROM post_comments WHERE post_id = ?').run(id);
     db.prepare('DELETE FROM posts WHERE id = ?').run(id);
