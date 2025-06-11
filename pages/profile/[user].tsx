@@ -1,6 +1,11 @@
 import { useRouter } from 'next/router';
+<<<<<<< HEAD
 import { useState, ChangeEvent, useEffect } from 'react';
 import { useChat } from '../../contexts/ChatContext';
+=======
+import { useState, ChangeEvent } from 'react';
+import ChatPanel from '../../components/ChatPanel';
+>>>>>>> parent of 49cbc74 (Merge pull request #113 from olegromashkan/codex/обновить-функциональность-чатов-и-уведомлений)
 import useFetch from '../../lib/useFetch';
 import Layout from '../../components/Layout';
 import useUser from '../../lib/useUser';
@@ -18,8 +23,12 @@ export default function Profile() {
   const [photo, setPhoto] = useState('');
   const [header, setHeader] = useState('');
   const [password, setPassword] = useState('');
+<<<<<<< HEAD
   const [showLast, setShowLast] = useState(true);
   const { openChat } = useChat();
+=======
+  const [chatOpen, setChatOpen] = useState(false);
+>>>>>>> parent of 49cbc74 (Merge pull request #113 from olegromashkan/codex/обновить-функциональность-чатов-и-уведомлений)
 
   useEffect(() => {
     if (info) setShowLast(!!info.show_last_seen);
@@ -138,7 +147,7 @@ export default function Profile() {
             <div>
               <button
                 className="btn btn-primary"
-                onClick={() => openChat(info.username)}
+                onClick={() => setChatOpen(true)}
               >
                 Chat
               </button>
@@ -246,6 +255,7 @@ export default function Profile() {
           )}
         </div>
       </div>
+      <ChatPanel open={chatOpen} user={info.username} onClose={() => setChatOpen(false)} />
     </Layout>
   );
 }

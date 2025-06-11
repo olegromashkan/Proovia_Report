@@ -14,15 +14,6 @@ interface Message {
   created_at: string;
 }
 
-interface Task {
-  id: number;
-  text: string;
-  creator: string;
-  assignee: string;
-  due_at?: string;
-  completed: number;
-}
-
 interface ChatPanelProps {
   open: boolean;
   user: string;
@@ -34,14 +25,12 @@ export default function ChatPanel({ open, user, onClose }: ChatPanelProps) {
   const isGroup = user.startsWith('g:');
   const groupId = isGroup ? user.slice(2) : '';
   const [messages, setMessages] = useState<Message[]>([]);
-  const [tasks, setTasks] = useState<Task[]>([]);
   const [text, setText] = useState('');
   const [reply, setReply] = useState<Message | null>(null);
   const [status, setStatus] = useState('');
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
-  const [due, setDue] = useState('');
   const endRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -74,19 +63,6 @@ export default function ChatPanel({ open, user, onClose }: ChatPanelProps) {
     }
   }, [user]);
 
-  const loadTasks = useCallback(async () => {
-    if (!user) return;
-    try {
-      const res = await fetch(`/api/tasks?with=${user}`);
-      if (res.ok) {
-        const d = await res.json();
-        setTasks(d.tasks);
-      }
-    } catch (error) {
-      console.error('Failed to load tasks:', error);
-    }
-  }, [user]);
-
   const scrollToBottom = useCallback(() => {
     endRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, []);
@@ -94,13 +70,9 @@ export default function ChatPanel({ open, user, onClose }: ChatPanelProps) {
   // Load messages and set up polling
   useEffect(() => {
     if (!open || !user) return;
-
+    
     load();
-    loadTasks();
-    intervalRef.current = setInterval(() => {
-      load();
-      loadTasks();
-    }, 1000);
+    intervalRef.current = setInterval(load, 3000);
     
     return () => {
       if (intervalRef.current) {
@@ -160,34 +132,19 @@ export default function ChatPanel({ open, user, onClose }: ChatPanelProps) {
     }
   };
 
-  const toggleTask = async (id: number, completed: number) => {
-    try {
-      await fetch('/api/tasks', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id, completed: !completed }),
-      });
-      loadTasks();
-    } catch (error) {
-      console.error('Failed to update task:', error);
-    }
-  };
-
   const createTask = async () => {
     if (!text.trim() || isLoading) return;
-
+    
     setIsLoading(true);
     const taskText = text.trim();
     setText('');
-
+    
     try {
       await fetch('/api/tasks', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ assignee: user, text: taskText, dueAt: due || undefined }),
+        body: JSON.stringify({ assignee: user, text: taskText }),
       });
-      setDue('');
-      loadTasks();
     } catch (error) {
       console.error('Failed to create task:', error);
       setText(taskText); // Restore text on error
@@ -303,22 +260,6 @@ export default function ChatPanel({ open, user, onClose }: ChatPanelProps) {
           </div>
         ) : (
           <>
-            {tasks.map(t => (
-              <div key={`task-${t.id}`} className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  checked={!!t.completed}
-                  onChange={() => toggleTask(t.id, t.completed)}
-                  className="checkbox checkbox-primary"
-                />
-                <div className="bg-yellow-50 dark:bg-yellow-900 rounded-xl p-2 text-sm flex-1">
-                  <div>{t.text}</div>
-                  {t.due_at && (
-                    <div className="text-xs text-gray-500">Due: {new Date(t.due_at).toLocaleString()}</div>
-                  )}
-                </div>
-              </div>
-            ))}
             {messages.map((m, index) => {
               const isMe = m.sender === me;
               const showAvatar = index === 0 || messages[index - 1].sender !== m.sender;
@@ -412,6 +353,7 @@ export default function ChatPanel({ open, user, onClose }: ChatPanelProps) {
       </AnimatePresence>
 
       {/* Input Area */}
+<<<<<<< HEAD
       <div className="p-4 border-t border-gray-200/30 dark:border-gray-700/30 bg-white/80 dark:bg-gray-800/80 space-y-2">
         {reply && (
           <div className="text-xs flex justify-between items-center bg-gray-200 dark:bg-gray-700 p-2 rounded">
@@ -425,6 +367,9 @@ export default function ChatPanel({ open, user, onClose }: ChatPanelProps) {
           onChange={e => setDue(e.target.value)}
           className="input input-sm input-bordered w-full"
         />
+=======
+      <div className="p-4 border-t border-gray-200/30 dark:border-gray-700/30 bg-white/80 dark:bg-gray-800/80">
+>>>>>>> parent of 49cbc74 (Merge pull request #113 from olegromashkan/codex/обновить-функциональность-чатов-и-уведомлений)
         <div className="flex items-end gap-2">
           <button
             onClick={() => setShowEmojiPicker(!showEmojiPicker)}

@@ -1,5 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
-import db, { addNotification } from '../../lib/db';
+import db from '../../lib/db';
 
 export default function handler(req: NextApiRequest, res: NextApiResponse) {
   const username = req.cookies.user;
@@ -25,6 +25,7 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
   }
 
   if (req.method === 'POST') {
+<<<<<<< HEAD
     const { to, text, group: groupBody, replyTo } = req.body || {};
     if ((!to && !groupBody) || !text) return res.status(400).json({ message: 'Missing fields' });
     if (groupBody) {
@@ -45,6 +46,15 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
         addNotification('message', `${username} -> ${to}: ${text}`);
       }
     }
+=======
+    const { to, text } = req.body || {};
+    if (!to || !text) return res.status(400).json({ message: 'Missing fields' });
+    db.prepare('INSERT INTO messages (sender, receiver, text) VALUES (?, ?, ?)').run(
+      username,
+      to,
+      text
+    );
+>>>>>>> parent of 49cbc74 (Merge pull request #113 from olegromashkan/codex/обновить-функциональность-чатов-и-уведомлений)
     return res.status(200).json({ message: 'Sent' });
   }
 
