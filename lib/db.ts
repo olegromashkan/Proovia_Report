@@ -82,7 +82,8 @@ export function init() {
       content TEXT,
       image TEXT,
       created_at TEXT DEFAULT CURRENT_TIMESTAMP,
-      updated_at TEXT
+      updated_at TEXT,
+      type TEXT DEFAULT 'user'
     );
     CREATE TABLE IF NOT EXISTS post_likes (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -139,6 +140,7 @@ export function init() {
   addColumnIfMissing('users', 'last_seen', 'TEXT DEFAULT CURRENT_TIMESTAMP');
   addColumnIfMissing('tasks', 'due_at', 'TEXT');
   addColumnIfMissing('posts', 'updated_at', 'TEXT');
+  addColumnIfMissing('posts', 'type', "TEXT DEFAULT 'user'");
 }
 
 init();
