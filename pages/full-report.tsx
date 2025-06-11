@@ -328,12 +328,10 @@ export default function FullReport() {
     const [h1, m1] = t1.split(':').map(Number);
     const [h2, m2] = t2.split(':').map(Number);
     if ([h1, m1, h2, m2].some((n) => isNaN(n))) return 'N/A';
-    const d1 = new Date();
-    d1.setHours(h1, m1, 0, 0);
-    const d2 = new Date();
-    d2.setHours(h2, m2, 0, 0);
-    let diff = Math.round((d1.getTime() - d2.getTime()) / 60000);
-    if (diff < 0) diff += 24 * 60;
+    const minutes1 = h1 * 60 + m1;
+    const minutes2 = h2 * 60 + m2;
+    let diff = Math.abs(minutes1 - minutes2);
+    if (diff > 12 * 60) diff = 24 * 60 - diff;
     return diff.toString();
   }
 
@@ -380,6 +378,7 @@ export default function FullReport() {
                     </button>
                 </div>
                 <div className="overflow-auto h-[75vh]">
+                    <div className="table-responsive">
                     <table className="table table-xs table-pin-rows table-zebra w-full">
                         <thead>
                             <tr>
@@ -409,12 +408,13 @@ export default function FullReport() {
                                         <td>{diffLoad}</td>
                                         <td>{r.Start_Time}</td>
                                         <td>{r.Last_Mention_Time}</td>
-                                        <td>{diffStart}</td>
-                                    </tr>
-                                );
+                                <td>{diffStart}</td>
+                            </tr>
+                        );
                             })}
                         </tbody>
                     </table>
+                    </div>
                 </div>
             </div></div>
 

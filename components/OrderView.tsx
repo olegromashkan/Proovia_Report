@@ -42,7 +42,8 @@ export default function OrderView({ data }: { data: Data }) {
       {Object.keys(categories).map((cat) => (
         <div key={cat} className="border rounded">
           <h2 className="font-semibold bg-gray-100 p-2">{cat}</h2>
-          <table className="w-full text-sm">
+          <div className="table-responsive">
+            <table className="w-full text-sm">
             <tbody>
               {categories[cat].map(([k, v]) => (
                 <tr key={k} className="odd:bg-gray-50">
@@ -55,7 +56,8 @@ export default function OrderView({ data }: { data: Data }) {
                 </tr>
               ))}
             </tbody>
-          </table>
+            </table>
+          </div>
         </div>
       ))}
     </div>

@@ -40,6 +40,42 @@ export function init() {
       message TEXT,
       created_at TEXT DEFAULT CURRENT_TIMESTAMP
     );
+    CREATE TABLE IF NOT EXISTS users (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      username TEXT UNIQUE,
+      password TEXT,
+      photo TEXT,
+      header TEXT,
+      role TEXT DEFAULT 'user',
+      status TEXT DEFAULT 'offline',
+      status_message TEXT,
+      last_seen TEXT DEFAULT CURRENT_TIMESTAMP,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP
+    );
+
+    CREATE TABLE IF NOT EXISTS friends (
+      user_id INTEGER,
+      friend_id INTEGER,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP
+    );
+
+    CREATE TABLE IF NOT EXISTS tasks (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      creator TEXT,
+      assignee TEXT,
+      text TEXT,
+      due_at TEXT,
+      completed INTEGER DEFAULT 0,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP
+    );
+
+    CREATE TABLE IF NOT EXISTS messages (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      sender TEXT,
+      receiver TEXT,
+      text TEXT,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP
+    );
   `);
 
   // ensure legacy databases have the created_at column
@@ -50,6 +86,7 @@ export function init() {
     'schedule_trips',
     'csv_trips',
     'van_checks',
+    'users',
   ];
   for (const table of tables) {
     try {
@@ -58,6 +95,18 @@ export function init() {
       // ignore if column already exists
     }
   }
+  function addColumnIfMissing(table: string, column: string, definition: string) {
+    const info = db.prepare(`PRAGMA table_info(${table})`).all() as Array<{ name: string }>;
+    if (!info.find((c) => c.name === column)) {
+      db.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${definition}`);
+    }
+  }
+
+  addColumnIfMissing('users', 'role', "TEXT DEFAULT 'admin'");
+  addColumnIfMissing('users', 'status', "TEXT DEFAULT 'offline'");
+  addColumnIfMissing('users', 'status_message', 'TEXT');
+  addColumnIfMissing('users', 'last_seen', 'TEXT DEFAULT CURRENT_TIMESTAMP');
+  addColumnIfMissing('tasks', 'due_at', 'TEXT');
 }
 
 init();

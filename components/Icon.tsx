@@ -29,8 +29,22 @@ const iconMap: Record<string, string> = {
   download: 'download',
   plus: 'plus',
   refresh: 'arrow-clockwise',
+  people: 'people',
+  chat: 'chat-dots',
   calendar: 'calendar',
   database: 'hdd-stack',
+  truck: 'truck',
+  'light-bulb': 'lightbulb',
+  beaker: 'beaker',
+  droplet: 'droplet',
+  'shield-exclamation': 'shield-exclamation',
+  thermometer: 'thermometer',
+  'fuel-pump': 'fuel-pump',
+  snowflake: 'snow',
+  'check-circle': 'check-circle',
+  'exclamation-triangle': 'exclamation-triangle',
+  'x-circle': 'x-circle',
+  'question-mark-circle': 'question-circle',
 };
 
 export default function Icon({ name, className }: IconProps) {

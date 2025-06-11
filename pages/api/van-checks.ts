@@ -33,14 +33,25 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
         payload = e.Payload;
       }
 
-      const vanId = pick(e, ['van_id', 'Vans', 'Van', 'vanID', 'VanID']) || pick(payload, ['van_id', 'Vans', 'Van', 'vanID', 'VanID']);
-      const driverId = pick(e, ['driver_id', 'Driver', 'driver']) || pick(payload, ['driver_id', 'Driver', 'driver']);
+      const vanId =
+        pick(e, ['van_id', 'Vans', 'Van', 'vanID', 'VanID']) ||
+        pick(payload, ['van_id', 'Vans', 'Van', 'vanID', 'VanID']);
+      const driverId =
+        pick(e, ['driver_id', 'Driver', 'driver']) ||
+        pick(payload, ['driver_id', 'Driver', 'driver']);
       const tools = pick(e, ['tools', 'Tools']) || pick(payload, ['tools', 'Tools']);
-      const parameters = pick(e, ['parameters', 'Parameters']) || pick(payload, ['parameters', 'Parameters']);
-      const date = pick(e, ['date', 'Date', 'created_at', 'timestamp']) || pick(payload, ['date', 'Date', 'created_at', 'timestamp']);
+      const parameters =
+        pick(e, ['parameters', 'Parameters', 'params', 'Params']) ||
+        pick(payload, ['parameters', 'Parameters', 'params', 'Params']);
+      const checks =
+        pick(e, ['checks', 'Checks']) ||
+        pick(payload, ['checks', 'Checks']);
+      const date =
+        pick(e, ['date', 'Date', 'created_at', 'timestamp']) ||
+        pick(payload, ['date', 'Date', 'created_at', 'timestamp']);
 
-      if (vanId || tools || parameters || driverId) {
-        items.push({ van_id: vanId, driver_id: driverId, date, tools, parameters });
+      if (vanId || tools || parameters || checks || driverId) {
+        items.push({ van_id: vanId, driver_id: driverId, date, tools, parameters, checks });
       }
     } catch {
       // ignore invalid rows

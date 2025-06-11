@@ -3,7 +3,21 @@ import db from '../../lib/db';
 
 export default function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method === 'GET') {
-    const rows = db.prepare('SELECT id, type, message, created_at FROM notifications ORDER BY created_at DESC').all();
+    const { type } = req.query as { type?: string };
+    let rows;
+    if (type) {
+      rows = db
+        .prepare(
+          'SELECT id, type, message, created_at FROM notifications WHERE type = ? ORDER BY created_at DESC'
+        )
+        .all(type);
+    } else {
+      rows = db
+        .prepare(
+          'SELECT id, type, message, created_at FROM notifications ORDER BY created_at DESC'
+        )
+        .all();
+    }
     return res.status(200).json({ items: rows });
   }
 

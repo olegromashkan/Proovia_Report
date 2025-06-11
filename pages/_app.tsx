@@ -3,12 +3,35 @@ import Head from 'next/head';
 import Script from 'next/script';
 import '../uno.css';
 import { useEffect } from 'react';
+import { ChatProvider } from '../contexts/ChatContext';
 
 export default function MyApp({ Component, pageProps }: AppProps) {
   useEffect(() => {
     const saved = localStorage.getItem('theme');
     const theme = saved || 'light';
     document.documentElement.setAttribute('data-theme', theme);
+    const vars = [
+      '--p',
+      '--a',
+      '--b1',
+      '--b2',
+      '--card-bg',
+      '--section-bg',
+      '--rounded-btn',
+      '--rounded-box',
+      '--rounded-badge',
+      '--shadow-strength',
+    ];
+    vars.forEach(v => {
+      const val = localStorage.getItem('style' + v);
+      if (val) document.documentElement.style.setProperty(v, val);
+    });
+
+    const interval = setInterval(() => {
+      fetch('/api/status', { method: 'POST' });
+    }, 30000);
+    fetch('/api/status', { method: 'POST' });
+    return () => clearInterval(interval);
   }, []);
 
   return (
@@ -29,7 +52,9 @@ export default function MyApp({ Component, pageProps }: AppProps) {
       </Head>
       <Script src="https://cdn.jsdelivr.net/npm/chart.js"></Script>
       <Script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></Script>
-      <Component {...pageProps} />
+      <ChatProvider>
+        <Component {...pageProps} />
+      </ChatProvider>
     </>
   );
 }

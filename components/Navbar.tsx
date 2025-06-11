@@ -1,19 +1,30 @@
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import ThemeToggle from './ThemeToggle';
 import NotificationCenter from './NotificationCenter';
 import SearchOverlay from './SearchOverlay';
 import Icon from './Icon';
+import UserMenu from './UserMenu';
+import TasksPanel from './TasksPanel';
+import ChatList from './ChatList';
+
+interface NavLink {
+  href: string;
+  icon: string;
+  label: string;
+}
 
 export default function Navbar() {
   const [searchOpen, setSearchOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const [tasksOpen, setTasksOpen] = useState(false);
+  const [chatsOpen, setChatsOpen] = useState(false);
   const router = useRouter();
 
-  // Handle scroll effect
+  // Handle scroll effect for navbar shadow
   useEffect(() => {
     const handleScroll = () => {
       setScrolled(window.scrollY > 20);
@@ -27,72 +38,70 @@ export default function Navbar() {
     setMobileMenuOpen(false);
   }, [router.pathname]);
 
-  const navLinks = [
+  const navLinks: NavLink[] = [
     { href: '/', icon: 'house', label: 'Home' },
     { href: '/upload', icon: 'upload', label: 'Upload' },
-    { href: '/admin', icon: 'user-cog', label: 'Admin' },
     { href: '/full-report', icon: 'table-list', label: 'Full Report' },
     { href: '/van-state', icon: 'truck', label: 'Van State' },
+    { href: '/users', icon: 'people', label: 'Users' },
   ];
 
-  const isActiveLink = (href) => {
-    return router.pathname === href;
-  };
+  const isActiveLink = (href: string) => router.pathname === href;
 
   return (
     <>
-      <nav className={`
-        backdrop-blur-xl bg-white/80 dark:bg-gray-900/80 
-        border-b border-gray-200/50 dark:border-gray-700/50
-        px-4 lg:px-6 py-3 flex items-center justify-between 
-        sticky top-0 z-50 transition-all duration-300
-        ${scrolled ? 'shadow-lg shadow-black/5' : 'shadow-sm'}
-      `}>
+      <nav
+        className={`
+          bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm
+          border-b border-gray-200/20 dark:border-gray-700/20
+          px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between
+          sticky top-0 z-50 transition-all duration-300
+          ${scrolled ? 'shadow-lg' : 'shadow-sm'}
+        `}
+      >
         {/* Logo Section */}
         <div className="flex items-center">
-          <Link href="/" className="flex items-center gap-3 group">
-            <div className="relative overflow-hidden rounded-xl p-1 bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 group-hover:scale-105 transition-transform duration-200">
-              <Image 
-                src="https://cdn.proovia.uk/pd/images/logo/logo-default.svg" 
-                alt="Proovia" 
-                width={120} 
+          <Link href="/" className="flex items-center gap-2 group">
+            <div className="relative p-1.5 bg-gradient-to-br from-blue-100/50 to-indigo-100/50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-lg group-hover:scale-105 transition-transform duration-200">
+              <Image
+                src="https://cdn.proovia.uk/pd/images/logo/logo-default.svg"
+                alt="Proovia Logo"
+                width={120}
                 height={32}
                 className="h-8 w-auto"
+                onError={(e) => (e.currentTarget.src = '/fallback-logo.png')}
               />
             </div>
           </Link>
         </div>
 
         {/* Desktop Navigation */}
-        <div className="hidden lg:flex items-center space-x-1">
+        <div className="hidden lg:flex items-center space-x-3">
           {navLinks.map(({ href, icon, label }) => (
             <Link
               key={href}
               href={href}
+              aria-current={isActiveLink(href) ? 'page' : undefined}
               className={`
-                relative flex items-center gap-2 px-4 py-2.5 rounded-xl
-                font-medium text-sm transition-all duration-200
-                hover:bg-gray-100/80 dark:hover:bg-gray-800/80
-                group overflow-hidden
-                ${isActiveLink(href) 
-                  ? 'text-blue-600 dark:text-blue-400 bg-blue-50/80 dark:bg-blue-900/20' 
-                  : 'text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white'
+                relative flex items-center gap-2 px-4 py-2 rounded-lg
+                text-sm font-medium transition-all duration-200
+                hover:bg-blue-50/50 dark:hover:bg-blue-900/20
+                ${isActiveLink(href)
+                  ? 'text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30'
+                  : 'text-gray-700 dark:text-gray-200 hover:text-blue-600 dark:hover:text-blue-400'
                 }
               `}
             >
-              {isActiveLink(href) && (
-                <div className="absolute inset-0 bg-gradient-to-r from-blue-500/10 to-indigo-500/10 rounded-xl" />
-              )}
-              <Icon 
-                name={icon} 
+              <Icon
+                name={icon}
                 className={`
-                  w-4 h-4 transition-transform duration-200 group-hover:scale-110
-                  ${isActiveLink(href) ? 'text-blue-600 dark:text-blue-400' : ''}
-                `} 
+                  w-5 h-5
+                  ${isActiveLink(href) ? 'text-blue-600 dark:text-blue-400' : 'text-gray-500 dark:text-gray-400'}
+                `}
               />
-              <span className="relative z-10">{label}</span>
+              <span>{label}</span>
               {isActiveLink(href) && (
-                <div className="absolute -bottom-0.5 left-1/2 transform -translate-x-1/2 w-1/2 h-0.5 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full" />
+                <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-6 h-0.5 bg-blue-600 dark:bg-blue-400 rounded-full" />
               )}
             </Link>
           ))}
@@ -101,83 +110,113 @@ export default function Navbar() {
         {/* Right Section */}
         <div className="flex items-center gap-2">
           {/* Search Button */}
-          <button 
-            onClick={() => setSearchOpen(true)} 
-            className="p-2.5 hover:bg-gray-100/80 dark:hover:bg-gray-800/80 rounded-xl transition-all duration-200 group relative overflow-hidden"
-            aria-label="Search"
+          <button
+            onClick={() => setSearchOpen(true)}
+            className="p-2 text-gray-600 dark:text-gray-300 hover:bg-blue-50/50 dark:hover:bg-blue-900/20 rounded-lg transition-all duration-200"
+            aria-label="Open search"
           >
-            <div className="absolute inset-0 bg-gradient-to-r from-blue-500/10 to-indigo-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-200 rounded-xl" />
-            <Icon name="search" className="w-5 h-5 text-gray-600 dark:text-gray-400 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors duration-200 relative z-10" />
+            <Icon name="search" className="w-5 h-5" />
           </button>
 
           {/* Notification Center */}
-          <div className="relative">
-            <NotificationCenter />
-          </div>
+          <NotificationCenter />
+
+          {/* Chats Button */}
+          <button
+            onClick={() => setChatsOpen(true)}
+            className="p-2 text-gray-600 dark:text-gray-300 hover:bg-blue-50/50 dark:hover:bg-blue-900/20 rounded-lg transition-all duration-200"
+            aria-label="Open chats"
+          >
+            <Icon name="chat" className="w-5 h-5" />
+          </button>
+
+          {/* Tasks Button */}
+          <button
+            onClick={() => setTasksOpen(true)}
+            className="p-2 text-gray-600 dark:text-gray-300 hover:bg-blue-50/50 dark:hover:bg-blue-900/20 rounded-lg transition-all duration-200"
+            aria-label="Open tasks"
+          >
+            <Icon name="check" className="w-5 h-5" />
+          </button>
+
+          {/* User Menu */}
+          <UserMenu />
 
           {/* Theme Toggle */}
-          <div className="relative">
-            <ThemeToggle />
-          </div>
+          <ThemeToggle />
 
           {/* Mobile Menu Button */}
-          <button 
+          <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="lg:hidden p-2.5 hover:bg-gray-100/80 dark:hover:bg-gray-800/80 rounded-xl transition-all duration-200 group relative overflow-hidden"
-            aria-label="Toggle menu"
+            className="lg:hidden p-2 text-gray-600 dark:text-gray-300 hover:bg-blue-50/50 dark:hover:bg-blue-900/20 rounded-lg transition-all duration-200"
+            aria-label="Toggle mobile menu"
+            aria-expanded={mobileMenuOpen}
           >
-            <div className="absolute inset-0 bg-gradient-to-r from-blue-500/10 to-indigo-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-200 rounded-xl" />
-            <div className="relative z-10 flex flex-col space-y-1">
-              <span className={`block h-0.5 w-5 bg-gray-600 dark:bg-gray-400 transition-all duration-200 ${mobileMenuOpen ? 'rotate-45 translate-y-1.5' : ''}`} />
-              <span className={`block h-0.5 w-5 bg-gray-600 dark:bg-gray-400 transition-all duration-200 ${mobileMenuOpen ? 'opacity-0' : ''}`} />
-              <span className={`block h-0.5 w-5 bg-gray-600 dark:bg-gray-400 transition-all duration-200 ${mobileMenuOpen ? '-rotate-45 -translate-y-1.5' : ''}`} />
+            <div className="relative flex flex-col space-y-1.5 w-5 h-5">
+              <span
+                className={`block h-0.5 w-full bg-current rounded transition-all duration-300 ${
+                  mobileMenuOpen ? 'rotate-45 translate-y-2' : ''
+                }`}
+              />
+              <span
+                className={`block h-0.5 w-full bg-current rounded transition-all duration-300 ${
+                  mobileMenuOpen ? 'opacity-0' : ''
+                }`}
+              />
+              <span
+                className={`block h-0.5 w-full bg-current rounded transition-all duration-300 ${
+                  mobileMenuOpen ? '-rotate-45 -translate-y-2' : ''
+                }`}
+              />
             </div>
           </button>
         </div>
       </nav>
 
       {/* Mobile Menu Overlay */}
-      <div className={`
-        lg:hidden fixed inset-0 z-40 transition-all duration-300
-        ${mobileMenuOpen ? 'opacity-100 visible' : 'opacity-0 invisible'}
-      `}>
-        <div 
-          className="absolute inset-0 bg-black/20 backdrop-blur-sm"
+      <div
+        className={`
+          lg:hidden fixed inset-0 z-40 transition-all duration-300
+          ${mobileMenuOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}
+        `}
+      >
+        <div
+          className="absolute inset-0 bg-black/40"
           onClick={() => setMobileMenuOpen(false)}
         />
-        <div className={`
-          absolute top-16 left-4 right-4 bg-white/95 dark:bg-gray-900/95 
-          backdrop-blur-xl rounded-2xl border border-gray-200/50 dark:border-gray-700/50
-          shadow-xl shadow-black/10 p-4 space-y-2 transform transition-all duration-300
-          ${mobileMenuOpen ? 'translate-y-0 scale-100' : '-translate-y-4 scale-95'}
-        `}>
+        <div
+          className={`
+            absolute top-16 left-4 right-4 bg-white dark:bg-gray-800
+            rounded-2xl border border-gray-200/20 dark:border-gray-700/20
+            shadow-xl p-4 space-y-2 transform transition-all duration-300
+            ${mobileMenuOpen ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'}
+          `}
+        >
           {navLinks.map(({ href, icon, label }) => (
             <Link
               key={href}
               href={href}
               onClick={() => setMobileMenuOpen(false)}
+              aria-current={isActiveLink(href) ? 'page' : undefined}
               className={`
-                flex items-center gap-3 px-4 py-3 rounded-xl
-                font-medium transition-all duration-200 relative overflow-hidden
-                ${isActiveLink(href) 
-                  ? 'text-blue-600 dark:text-blue-400 bg-blue-50/80 dark:bg-blue-900/20' 
-                  : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100/80 dark:hover:bg-gray-800/80'
+                flex items-center gap-3 px-4 py-3 rounded-lg
+                text-sm font-medium transition-all duration-200
+                ${isActiveLink(href)
+                  ? 'text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30'
+                  : 'text-gray-700 dark:text-gray-200 hover:bg-blue-50/50 dark:hover:bg-blue-900/20 hover:text-blue-600 dark:hover:text-blue-400'
                 }
               `}
             >
-              {isActiveLink(href) && (
-                <div className="absolute inset-0 bg-gradient-to-r from-blue-500/10 to-indigo-500/10 rounded-xl" />
-              )}
-              <Icon 
-                name={icon} 
+              <Icon
+                name={icon}
                 className={`
-                  w-5 h-5 relative z-10
-                  ${isActiveLink(href) ? 'text-blue-600 dark:text-blue-400' : ''}
-                `} 
+                  w-5 h-5
+                  ${isActiveLink(href) ? 'text-blue-600 dark:text-blue-400' : 'text-gray-500 dark:text-gray-400'}
+                `}
               />
-              <span className="relative z-10">{label}</span>
+              <span>{label}</span>
               {isActiveLink(href) && (
-                <div className="ml-auto w-2 h-2 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full relative z-10" />
+                <div className="ml-auto w-2 h-2 bg-blue-600 dark:bg-blue-400 rounded-full" />
               )}
             </Link>
           ))}
@@ -186,6 +225,12 @@ export default function Navbar() {
 
       {/* Search Overlay */}
       <SearchOverlay open={searchOpen} onClose={() => setSearchOpen(false)} />
+
+      {/* Chat List */}
+      <ChatList open={chatsOpen} onClose={() => setChatsOpen(false)} />
+
+      {/* Tasks Panel */}
+      <TasksPanel open={tasksOpen} onClose={() => setTasksOpen(false)} />
     </>
   );
 }
