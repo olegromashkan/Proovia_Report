@@ -38,6 +38,7 @@ export default function Navbar() {
 
   const navLinks: NavLink[] = [
     { href: '/', icon: 'house', label: 'Home' },
+    { href: '/feed', icon: 'chat', label: 'Feed' },
     { href: '/upload', icon: 'upload', label: 'Upload' },
     { href: '/full-report', icon: 'table-list', label: 'Full Report' },
     { href: '/van-state', icon: 'truck', label: 'Van State' },
