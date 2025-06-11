@@ -57,14 +57,14 @@ export default function Login() {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 0.6 }}
                 exit={{ opacity: 0 }}
-                transition={{ duration: 1.5, ease: 'easeInOut' }}
+                transition={{ duration: 0.7, ease: 'easeInOut' }}
               />
               <motion.div
-                className="fixed inset-0 bg-black bg-opacity-50"
+                className="fixed inset-0 bg-black"
                 initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
+                animate={{ opacity: 0.7 }}
                 exit={{ opacity: 0 }}
-                transition={{ duration: 1.5, ease: 'easeInOut' }}
+                transition={{ duration: 0.7, ease: 'easeInOut' }}
               />
             </>
           )}
@@ -74,37 +74,35 @@ export default function Login() {
         <AnimatePresence>
           {isLoading && userData?.photo && (
             <motion.div
-              className="fixed inset-0 flex items-center justify-center z-20"
+              className="fixed inset-0 flex flex-col items-center justify-center z-20"
               initial={{ opacity: 1 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              transition={{ duration: 1 }}
+              transition={{ duration: 0.7 }}
             >
-              <div className="relative flex flex-col items-center space-y-6">
-                <div className="relative">
-                  <motion.img
-                    src={userData.photo}
-                    alt="User avatar"
-                    className="w-40 h-40 object-cover rounded-full border-4 border-white shadow-xl"
-                    initial={{ scale: 0.8 }}
-                    animate={{ scale: 1 }}
-                    transition={{ type: 'spring', stiffness: 200, damping: 20 }}
-                  />
-                  <motion.div
-                    className="absolute inset-0 border-4 border-transparent border-t-blue-500 border-r-purple-500 rounded-full"
-                    animate={{ rotate: 360 }}
-                    transition={{ duration: 1.5, repeat: Infinity, ease: 'linear' }}
-                  />
-                </div>
+              <div className="relative">
+                <motion.img
+                  src={userData.photo}
+                  alt="User avatar"
+                  className="w-48 h-48 object-cover rounded-full border-4 border-white shadow-2xl"
+                  initial={{ scale: 0.8 }}
+                  animate={{ scale: 1 }}
+                  transition={{ type: 'spring', stiffness: 200, damping: 20 }}
+                />
                 <motion.div
-                  className="text-white text-3xl font-semibold"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ duration: 0.8, delay: 0.3 }}
-                >
-                  Welcome back!
-                </motion.div>
+                  className="absolute inset-0 border-4 border-transparent border-t-[#b53133] border-r-[#b53133] rounded-full"
+                  animate={{ rotate: 360 }}
+                  transition={{ duration: 1.5, repeat: Infinity, ease: 'linear' }}
+                />
               </div>
+              <motion.div
+                className="text-white text-4xl font-extrabold mt-6"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.8, delay: 0.3 }}
+              >
+                Welcome back!
+              </motion.div>
             </motion.div>
           )}
         </AnimatePresence>
@@ -126,28 +124,28 @@ export default function Login() {
                 transition={{ type: 'spring', stiffness: 120, damping: 20 }}
                 className="space-y-6"
               >
-                <h2 className="text-4xl font-extrabold bg-gradient-to-r from-blue-600 to-purple-500 bg-clip-text text-transparent">
+                <h2 className="text-4xl font-extrabold bg-gradient-to-r from-[#b53133] to-[#b53133] bg-clip-text text-transparent">
                   Welcome Back!
                 </h2>
-                <p className="text-gray-500 text-lg">Log in to shine!</p>
+                <p className="text-gray-500 text-lg">Log in to start your journey!</p>
                 <input
                   type="text"
                   placeholder="Your username"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
-                  className="w-full p-4 rounded-2xl bg-white bg-opacity-70 backdrop-blur-md text-gray-800 border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-400 shadow-lg"
+                  className="w-full p-4 rounded-2xl bg-white bg-opacity-70 backdrop-blur-md text-gray-800 border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#b53133] shadow-lg"
                 />
                 <input
                   type="password"
                   placeholder="Your password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full p-4 rounded-2xl bg-white bg-opacity-70 backdrop-blur-md text-gray-800 border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-400 shadow-lg"
+                  className="w-full p-4 rounded-2xl bg-white bg-opacity-70 backdrop-blur-md text-gray-800 border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#b53133] shadow-lg"
                 />
                 <motion.button
                   onClick={submit}
-                  className="w-full py-4 rounded-2xl bg-gradient-to-r from-blue-500 to-purple-500 text-white font-semibold text-lg shadow-xl hover:from-blue-600 hover:to-purple-600 transition"
-                  whileHover={{ scale: 1.05, boxShadow: '0 8px 32px rgba(0, 0, 255, 0.3)' }}
+                  className="w-full py-4 rounded-2xl bg-[#b53133] text-white font-semibold text-lg shadow-xl hover:bg-[#a12b2e] transition"
+                  whileHover={{ scale: 1.05, boxShadow: '0 8px 32px rgba(181, 49, 51, 0.3)' }}
                   whileTap={{ scale: 0.95 }}
                 >
                   Log In
@@ -156,7 +154,7 @@ export default function Login() {
                   New here?{' '}
                   <a
                     href="/auth/register"
-                    className="text-blue-500 hover:text-blue-600 font-semibold"
+                    className="text-[#b53133] hover:text-[#a12b2e] font-semibold"
                   >
                     Sign up now!
                   </a>
