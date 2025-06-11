@@ -2,6 +2,7 @@ import Link from 'next/link';
 import Layout from '../components/Layout';
 import useFetch from '../lib/useFetch';
 <<<<<<< HEAD
+<<<<<<< HEAD
 import { useChat } from '../contexts/ChatContext';
 import { useState } from 'react';
 
@@ -13,6 +14,8 @@ export default function Users() {
     u.username.toLowerCase().includes(query.toLowerCase())
   );
 =======
+=======
+>>>>>>> parent of 49cbc74 (Merge pull request #113 from olegromashkan/codex/обновить-функциональность-чатов-и-уведомлений)
 import { useState } from 'react';
 import ChatPanel from '../components/ChatPanel';
 
@@ -21,6 +24,9 @@ export default function Users() {
   const users = data?.users || [];
   const [chatUser, setChatUser] = useState('');
   const [chatOpen, setChatOpen] = useState(false);
+<<<<<<< HEAD
+>>>>>>> parent of 49cbc74 (Merge pull request #113 from olegromashkan/codex/обновить-функциональность-чатов-и-уведомлений)
+=======
 >>>>>>> parent of 49cbc74 (Merge pull request #113 from olegromashkan/codex/обновить-функциональность-чатов-и-уведомлений)
 
   return (
