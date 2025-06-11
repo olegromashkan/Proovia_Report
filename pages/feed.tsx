@@ -1,5 +1,6 @@
 import { useEffect, useState, ChangeEvent } from 'react';
 import Link from 'next/link';
+import { motion, AnimatePresence } from 'framer-motion';
 import Layout from '../components/Layout';
 import Icon from '../components/Icon';
 import useUser from '../lib/useUser';
@@ -8,7 +9,6 @@ import UserHoverCard from '../components/UserHoverCard';
 export default function Feed() {
   const me = useUser();
   const [posts, setPosts] = useState<any[]>([]);
-  const [creatingPost, setCreatingPost] = useState(false);
   const [postText, setPostText] = useState('');
   const [postImage, setPostImage] = useState('');
   const [comments, setComments] = useState<Record<number, any[]>>({});
@@ -22,6 +22,20 @@ export default function Feed() {
     reader.readAsDataURL(file);
   };
 
+  const handlePaste = (e: React.ClipboardEvent) => {
+    const items = e.clipboardData.items;
+    for (const item of items) {
+      if (item.type.startsWith('image/')) {
+        const file = item.getAsFile();
+        if (file) {
+          const reader = new FileReader();
+          reader.onload = () => setPostImage(reader.result as string);
+          reader.readAsDataURL(file);
+        }
+      }
+    }
+  };
+
   const loadPosts = async () => {
     const res = await fetch('/api/posts');
     if (res.ok) {
@@ -31,14 +45,14 @@ export default function Feed() {
   };
 
   const createPost = async () => {
+    if (!postText.trim() && !postImage) return;
     await fetch('/api/posts', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ content: postText, image: postImage })
+      body: JSON.stringify({ content: postText, image: postImage }),
     });
     setPostText('');
     setPostImage('');
-    setCreatingPost(false);
     loadPosts();
   };
 
@@ -51,119 +65,239 @@ export default function Feed() {
     const res = await fetch('/api/comments?post=' + id);
     if (res.ok) {
       const d = await res.json();
-      setComments(prev => ({ ...prev, [id]: d.comments }));
+      setComments((prev) => ({ ...prev, [id]: d.comments }));
     }
   };
 
   const addComment = async (id: number) => {
+    if (!commentText[id]?.trim()) return;
     await fetch('/api/comments', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ post: id, text: commentText[id] || '' })
+      body: JSON.stringify({ post: id, text: commentText[id] || '' }),
     });
-    setCommentText(prev => ({ ...prev, [id]: '' }));
+    setCommentText((prev) => ({ ...prev, [id]: '' }));
     loadComments(id);
     loadPosts();
   };
 
-  useEffect(() => { loadPosts(); }, []);
+  useEffect(() => {
+    loadPosts();
+  }, []);
 
   return (
     <Layout title="Feed" fullWidth>
-      <div className="max-w-2xl mx-auto space-y-4">
-        {me && (
-          creatingPost ? (
-            <div className="bg-white dark:bg-gray-800 p-4 rounded-2xl border border-gray-200 dark:border-gray-700 space-y-3">
-              <textarea
-                className="textarea textarea-bordered w-full"
-                rows={3}
-                placeholder="What's on your mind?"
-                value={postText}
-                onChange={e => setPostText(e.target.value)}
-              />
-              <input
-                type="file"
-                accept="image/*"
-                onChange={handleImage}
-                className="file-input file-input-bordered w-full bg-white dark:bg-gray-700"
-              />
-              {postImage && (
-                <img src={postImage} alt="preview" className="max-h-60 rounded-lg" />
+      <div className="max-w-2xl mx-auto space-y-4 py-6">
+        {me ? (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ type: 'spring', stiffness: 120, damping: 20 }}
+            className="bg-white bg-opacity-90 p-4 rounded-2xl shadow-md border border-gray-100"
+          >
+            <div className="flex items-start gap-3">
+              {me.photo ? (
+                <img
+                  src={me.photo}
+                  alt="User avatar"
+                  className="w-10 h-10 rounded-full object-cover border border-[#b53133]"
+                />
+              ) : (
+                <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center text-sm font-bold text-gray-600 border border-[#b53133]">
+                  {me.username ? me.username[0]?.toUpperCase() : '?'}
+                </div>
               )}
-              <div className="flex gap-2">
-                <button className="btn btn-primary" onClick={createPost}>Post</button>
-                <button className="btn btn-ghost" onClick={() => { setCreatingPost(false); setPostText(''); setPostImage(''); }}>Cancel</button>
+              <div className="flex-1 space-y-3">
+                <textarea
+                  className="w-full p-3 rounded-xl bg-gray-50 text-gray-800 border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#b53133] resize-none"
+                  rows={2}
+                  placeholder="What's happening?"
+                  value={postText}
+                  onChange={(e) => setPostText(e.target.value)}
+                  onPaste={handlePaste}
+                />
+                {postImage && (
+                  <motion.div
+                    className="relative"
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ duration: 0.3 }}
+                  >
+                    <img
+                      src={postImage}
+                      alt="preview"
+                      className="max-h-64 w-full object-contain rounded-xl"
+                    />
+                    <button
+                      className="absolute top-2 right-2 bg-gray-800 bg-opacity-50 text-white rounded-full p-1"
+                      onClick={() => setPostImage('')}
+                    >
+                      <Icon name="x" className="w-4 h-4" />
+                    </button>
+                  </motion.div>
+                )}
+                <div className="flex items-center justify-between">
+                  <label className="cursor-pointer">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleImage}
+                      className="hidden"
+                    />
+                    <Icon name="image" className="w-6 h-6 text-[#b53133] hover:text-[#a12b2e]" />
+                  </label>
+                  <motion.button
+                    className="px-4 py-2 rounded-xl bg-[#b53133] text-white font-semibold hover:bg-[#a12b2e] transition disabled:opacity-50"
+                    onClick={createPost}
+                    disabled={!postText.trim() && !postImage}
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                  >
+                    Post
+                  </motion.button>
+                </div>
               </div>
             </div>
-          ) : (
-            <button className="btn btn-primary" onClick={() => setCreatingPost(true)}>Create Post</button>
-          )
+          </motion.div>
+        ) : (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ type: 'spring', stiffness: 120, damping: 20 }}
+            className="bg-white bg-opacity-90 p-4 rounded-2xl shadow-md border border-gray-100 text-center"
+          >
+            <p className="text-gray-800 text-base">
+              <Link href="/auth/login" className="text-[#b53133] hover:text-[#a12b2e] font-semibold">
+                Log in
+              </Link>{' '}
+              or{' '}
+              <Link href="/auth/register" className="text-[#b53133] hover:text-[#a12b2e] font-semibold">
+                sign up
+              </Link>{' '}
+              to share your thoughts!
+            </p>
+          </motion.div>
         )}
-        {posts.map(p => (
-          <div key={p.id} className="bg-white dark:bg-gray-800 p-4 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700">
-            <div className="flex items-center gap-2 mb-2">
+        {posts.map((p) => (
+          <motion.div
+            key={p.id}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ type: 'spring', stiffness: 120, damping: 20 }}
+            className="bg-white bg-opacity-90 p-4 rounded-2xl shadow-md border border-gray-100"
+          >
+            <div className="flex items-center justify-between mb-3">
               <UserHoverCard username={p.username}>
                 <Link href={`/profile/${p.username}`} className="flex items-center gap-2">
                   {p.photo ? (
-                    <img src={p.photo} alt={p.username} className="w-8 h-8 rounded-full object-cover" />
+                    <img
+                      src={p.photo}
+                      alt={p.username}
+                      className="w-8 h-8 rounded-full object-cover border border-[#b53133]"
+                    />
                   ) : (
-                    <div className="w-8 h-8 rounded-full bg-gray-300 flex items-center justify-center text-sm font-bold text-gray-600">
+                    <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center text-xs font-bold text-gray-600 border border-[#b53133]">
                       {p.username[0]?.toUpperCase()}
                     </div>
                   )}
-                  <div className="text-sm font-semibold text-gray-800 dark:text-gray-100">{p.username}</div>
+                  <div className="text-sm font-semibold text-gray-800">{p.username}</div>
                 </Link>
               </UserHoverCard>
-              <div className="text-xs text-gray-500 ml-auto">{new Date(p.created_at).toLocaleString()}</div>
+              <div className="text-xs text-gray-500">{new Date(p.created_at).toLocaleString()}</div>
             </div>
-            <div className="whitespace-pre-wrap text-gray-700 dark:text-gray-200">{p.content}</div>
+            <div className="text-gray-800 text-base whitespace-pre-wrap">{p.content}</div>
             {p.image && (
-              <img src={p.image} alt="post" className="mt-3 rounded-lg max-h-96 w-full object-contain" />
+              <motion.img
+                src={p.image}
+                alt="post"
+                className="mt-3 rounded-xl max-h-96 w-full object-contain"
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.3 }}
+              />
             )}
-            <div className="flex items-center gap-4 mt-3 text-sm text-gray-600 dark:text-gray-400">
-              <button onClick={() => toggleLike(p.id, p.liked)} className="flex items-center gap-1">
-                <Icon name={p.liked ? 'hand-thumbs-up-fill' : 'hand-thumbs-up'} className="w-4 h-4" />
+            <div className="flex items-center gap-4 mt-3 text-sm text-gray-600">
+              <motion.button
+                onClick={() => toggleLike(p.id, p.liked)}
+                className="flex items-center gap-1"
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.9 }}
+              >
+                <Icon
+                  name={p.liked ? 'hand-thumbs-up-fill' : 'hand-thumbs-up'}
+                  className={`w-4 h-4 ${p.liked ? 'text-[#b53133]' : 'text-gray-500'}`}
+                />
                 <span>{p.likes}</span>
-              </button>
-              <button onClick={() => comments[p.id] ? setComments(prev => ({ ...prev, [p.id]: undefined })) : loadComments(p.id)} className="flex items-center gap-1">
-                <Icon name="chat-left" className="w-4 h-4" />
+              </motion.button>
+              <motion.button
+                onClick={() =>
+                  comments[p.id]
+                    ? setComments((prev) => ({ ...prev, [p.id]: undefined }))
+                    : loadComments(p.id)
+                }
+                className="flex items-center gap-1"
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.9 }}
+              >
+                <Icon name="chat-left" className="w-4 h-4 text-gray-500" />
                 <span>{p.comments}</span>
-              </button>
+              </motion.button>
             </div>
             {comments[p.id] && (
               <div className="mt-3 space-y-2">
-                {comments[p.id].map(c => (
-                  <div key={c.id} className="flex items-start gap-2 text-sm">
+                {comments[p.id].map((c) => (
+                  <motion.div
+                    key={c.id}
+                    initial={{ opacity: 0, x: -10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ duration: 0.2 }}
+                    className="flex items-start gap-2 text-sm"
+                  >
                     <UserHoverCard username={c.username}>
-                      <Link href={`/profile/${c.username}`} className="flex items-start gap-2">
+                      <Link href={`/profile/${c.username}`} className="flex items-start gap-1">
                         {c.photo ? (
-                          <img src={c.photo} alt={c.username} className="w-6 h-6 rounded-full object-cover" />
+                          <img
+                            src={c.photo}
+                            alt={c.username}
+                            className="w-6 h-6 rounded-full object-cover border border-[#b53133]"
+                          />
                         ) : (
-                          <div className="w-6 h-6 rounded-full bg-gray-300 flex items-center justify-center text-xs font-bold text-gray-600">
+                          <div className="w-6 h-6 rounded-full bg-gray-200 flex items-center justify-center text-xs font-bold text-gray-600 border border-[#b53133]">
                             {c.username[0]?.toUpperCase()}
-                          </div>
+                        </div>
                         )}
-                        <div className="font-semibold text-gray-800 dark:text-gray-100">{c.username}</div>
+                        <div className="font-semibold text-gray-800">{c.username}</div>
                       </Link>
                     </UserHoverCard>
-                    <div>
-                      <div className="text-gray-700 dark:text-gray-200 whitespace-pre-wrap">{c.text}</div>
-                      <div className="text-xs text-gray-500">{new Date(c.created_at).toLocaleString()}</div>
+                    <div className="flex-1">
+                      <div className="text-gray-800 p-2 rounded-xl bg-gray-50">{c.text}</div>
+                      <div className="text-xs text-gray-500 mt-1">
+                        {new Date(c.created_at).toLocaleString()}
+                      </div>
                     </div>
-                  </div>
+                  </motion.div>
                 ))}
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 mt-2">
                   <input
-                    className="input input-bordered flex-1"
-                    placeholder="Add a comment"
+                    className="flex-1 p-2 rounded-xl bg-gray-50 text-gray-800 border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#b53133]"
+                    placeholder="Comment..."
                     value={commentText[p.id] || ''}
-                    onChange={e => setCommentText(prev => ({ ...prev, [p.id]: e.target.value }))}
+                    onChange={(e) =>
+                      setCommentText((prev) => ({ ...prev, [p.id]: e.target.value }))
+                    }
                   />
-                  <button className="btn btn-primary" onClick={() => addComment(p.id)}>Send</button>
+                  <motion.button
+                    className="px-3 py-1 rounded-xl bg-[#b53133] text-white font-semibold hover:bg-[#a12b2e] transition"
+                    onClick={() => addComment(p.id)}
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                  >
+                    Send
+                  </motion.button>
                 </div>
               </div>
             )}
-          </div>
+          </motion.div>
         ))}
       </div>
     </Layout>
