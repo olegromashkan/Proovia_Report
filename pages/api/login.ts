@@ -19,6 +19,9 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
   // which causes the navbar to always show the login button even after a
   // successful login.  We therefore omit the HttpOnly flag so the React hooks
   // can read the cookie and display user information.
-  res.setHeader('Set-Cookie', `user=${username}; Path=/`);
+  // Encode the username to ensure the cookie only contains ASCII characters
+  // Browsers expect cookie values to be ASCII-only, otherwise setting the
+  // cookie may fail with a runtime error.
+  res.setHeader('Set-Cookie', `user=${encodeURIComponent(username)}; Path=/`);
   return res.status(200).json({ message: 'Logged in' });
 }
