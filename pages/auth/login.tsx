@@ -18,11 +18,11 @@ export default function Login() {
       router.push('/');
     } else {
       let message = 'Login failed';
+      const text = await res.text();
       try {
-        const data = await res.json();
+        const data = JSON.parse(text);
         message = data.message || message;
       } catch {
-        const text = await res.text();
         if (text) message = text;
       }
       setError(message);
