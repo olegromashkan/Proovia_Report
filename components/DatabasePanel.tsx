@@ -1,9 +1,9 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import Icon from './Icon';
+import React, { useEffect, useMemo, useState, useCallback } from 'react';
+import { Database, Search, RefreshCw, Plus, Download, Save, X, Trash2, Edit, ExternalLink, RotateCcw, AlertCircle } from 'lucide-react';
 
 const TABLES = [
   'copy_of_tomorrow_trips',
-  'event_stream',
+  'event_stream', 
   'drivers_report',
   'schedule_trips',
   'csv_trips',
@@ -48,36 +48,43 @@ export default function DatabasePanel() {
   const [newText, setNewText] = useState('{}');
   const [pending, setPending] = useState<PendingChange[]>([]);
 
-  const loadItems = async () => {
+  const loadItems = useCallback(async () => {
     setLoading(true);
-    const res = await fetch(`/api/items?table=${table}&limit=${PAGE_LIMIT}&offset=${page * PAGE_LIMIT}`);
-    if (res.ok) {
-      const data = await res.json();
-      setItems(data.items || []);
-      setTotal(data.total || 0);
+    try {
+      const res = await fetch(`/api/items?table=${table}&limit=${PAGE_LIMIT}&offset=${page * PAGE_LIMIT}`);
+      if (res.ok) {
+        const data = await res.json();
+        setItems(data.items || []);
+        setTotal(data.total || 0);
+      }
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
-  };
+  }, [table, page]);
 
   useEffect(() => {
     loadItems();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [table, page]);
+  }, [loadItems]);
 
   useEffect(() => {
     setPage(0);
   }, [table]);
 
   const filtered = useMemo(() => {
+    if (!search) return items;
+    const searchLower = search.toLowerCase();
     return items.filter(i =>
-      String(i.id).toLowerCase().includes(search.toLowerCase())
+      String(i.id).toLowerCase().includes(searchLower) ||
+      Object.values(i.data || {}).some(val => 
+        String(val).toLowerCase().includes(searchLower)
+      )
     );
   }, [items, search]);
 
   const columns = useMemo(() => {
     const set = new Set<string>();
     filtered.forEach(it => Object.keys(it.data || {}).forEach(k => set.add(k)));
-    return Array.from(set);
+    return Array.from(set).sort();
   }, [filtered]);
 
   const openEdit = async (id: string | number) => {
@@ -85,10 +92,14 @@ export default function DatabasePanel() {
       setEditing(null);
       return;
     }
-    const res = await fetch(`/api/items?table=${table}&id=${id}`);
-    if (res.ok) {
-      const data = await res.json();
-      setEditing({ id, text: JSON.stringify(data.item.data, null, 2) });
+    try {
+      const res = await fetch(`/api/items?table=${table}&id=${id}`);
+      if (res.ok) {
+        const data = await res.json();
+        setEditing({ id, text: JSON.stringify(data.item.data, null, 2) });
+      }
+    } catch (error) {
+      console.error('Failed to load item:', error);
     }
   };
 
@@ -107,11 +118,11 @@ export default function DatabasePanel() {
       );
       setEditing(null);
     } catch {
-      alert('Invalid JSON');
+      alert('Invalid JSON format');
     }
   };
 
-  const saveCellEdit = () => {
+  const saveCellEdit = useCallback(() => {
     if (!cellEdit) return;
     const item = items.find(it => it.id === cellEdit.id);
     if (!item) {
@@ -129,44 +140,52 @@ export default function DatabasePanel() {
       { id: cellEdit.id, action: 'update', data: updatedData },
     ]);
     setCellEdit(null);
-  };
+  }, [cellEdit, items]);
 
   const handleDelete = (id: string | number) => {
-    setPending(p => [...p.filter(ch => ch.id !== id), { id, action: 'delete' }]);
-    setItems(items => items.filter(it => it.id !== id));
+    if (confirm('Are you sure you want to delete this item?')) {
+      setPending(p => [...p.filter(ch => ch.id !== id), { id, action: 'delete' }]);
+      setItems(items => items.filter(it => it.id !== id));
+    }
   };
 
   const addItem = async () => {
     try {
       const payload = JSON.parse(newText);
-      await fetch(`/api/items?table=${table}`, {
+      const res = await fetch(`/api/items?table=${table}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
-      setAdding(false);
-      setNewText('{}');
-      loadItems();
+      if (res.ok) {
+        setAdding(false);
+        setNewText('{}');
+        loadItems();
+      }
     } catch {
-      alert('Invalid JSON');
+      alert('Invalid JSON format');
     }
   };
 
   const saveAll = async () => {
     setLoading(true);
-    for (const ch of pending) {
-      if (ch.action === 'update') {
-        await fetch(`/api/items?table=${table}&id=${ch.id}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(ch.data),
-        });
-      } else if (ch.action === 'delete') {
-        await fetch(`/api/items?table=${table}&id=${ch.id}`, { method: 'DELETE' });
+    try {
+      for (const ch of pending) {
+        if (ch.action === 'update') {
+          await fetch(`/api/items?table=${table}&id=${ch.id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(ch.data),
+          });
+        } else if (ch.action === 'delete') {
+          await fetch(`/api/items?table=${table}&id=${ch.id}`, { method: 'DELETE' });
+        }
       }
+      setPending([]);
+      await loadItems();
+    } finally {
+      setLoading(false);
     }
-    setPending([]);
-    await loadItems();
   };
 
   const exportData = () => {
@@ -178,217 +197,272 @@ export default function DatabasePanel() {
   const getTableDisplayName = (name: string) =>
     name.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
 
+  const formatCellValue = (value: any) => {
+    if (value === null || value === undefined) return '';
+    if (typeof value === 'object') return JSON.stringify(value);
+    return String(value);
+  };
+
   return (
-    <div className="w-full px-4 sm:px-6 lg:px-8 py-6">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
-            <Icon name="database" className="w-8 h-8 text-blue-600" />
-            Database
-          </h1>
-        </div>
-        <div className="bg-white shadow-md rounded-lg p-4">
-          <div className="text-center">
-            <div className="text-sm font-medium text-gray-500">Total Records</div>
-            <div className="text-2xl font-bold text-blue-600">{total}</div>
+    <div className="min-h-screen bg-gray-50 p-4">
+      {/* Header */}
+      <div className="mb-6">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <Database className="w-7 h-7 text-blue-600" />
+            <h1 className="text-2xl font-bold text-gray-900">Database Panel</h1>
+          </div>
+          <div className="bg-white px-4 py-2 rounded-lg shadow-sm border">
+            <div className="text-xs text-gray-500">Total Records</div>
+            <div className="text-xl font-bold text-blue-600">{total.toLocaleString()}</div>
           </div>
         </div>
       </div>
 
-      <div className="bg-white shadow-md rounded-lg p-6 mb-8">
-        <div className="flex flex-col lg:flex-row gap-4 items-end">
-          <div className="flex-1 max-w-xs">
-            <label className="block text-sm font-medium text-gray-700 mb-1">Select Table</label>
+      {/* Controls */}
+      <div className="bg-white rounded-lg shadow-sm border p-4 mb-4">
+        <div className="flex flex-wrap gap-3 items-end">
+          <div className="min-w-[180px]">
+            <label className="block text-xs font-medium text-gray-700 mb-1">Table</label>
             <select
               value={table}
               onChange={e => setTable(e.target.value as (typeof TABLES)[number])}
-              className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+              className="w-full h-9 rounded-md border-gray-300 text-sm focus:border-blue-500 focus:ring-blue-500"
             >
               {TABLES.map(t => (
-                <option key={t} value={t}>
-                  {getTableDisplayName(t)}
-                </option>
+                <option key={t} value={t}>{getTableDisplayName(t)}</option>
               ))}
             </select>
           </div>
 
-          <div className="flex-1 max-w-md">
-            <label className="block text-sm font-medium text-gray-700 mb-1">Search Records</label>
+          <div className="flex-1 min-w-[200px]">
+            <label className="block text-xs font-medium text-gray-700 mb-1">Search</label>
             <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
               <input
                 type="text"
                 value={search}
                 onChange={e => setSearch(e.target.value)}
-                placeholder="Search by ID..."
-                className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm pl-10"
+                placeholder="Search records..."
+                className="w-full h-9 pl-10 pr-4 rounded-md border-gray-300 text-sm focus:border-blue-500 focus:ring-blue-500"
               />
-              <Icon name="search" className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
             </div>
           </div>
 
           <div className="flex gap-2">
             <button
               onClick={loadItems}
-              className={`btn btn-primary gap-2 ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
               disabled={loading}
+              className="h-9 px-3 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 flex items-center gap-2 text-sm"
             >
-              <Icon name="refresh" className="w-5 h-5" />
+              <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
               Refresh
             </button>
-            <button onClick={() => setAdding(true)} className="btn btn-success gap-2">
-              <Icon name="plus" className="w-5 h-5" />
-              Add Item
+            <button
+              onClick={() => setAdding(true)}
+              className="h-9 px-3 bg-green-600 text-white rounded-md hover:bg-green-700 flex items-center gap-2 text-sm"
+            >
+              <Plus className="w-4 h-4" />
+              Add
             </button>
-            <button onClick={exportData} className="btn btn-secondary gap-2">
-              <Icon name="download" className="w-5 h-5" />
+            <button
+              onClick={exportData}
+              className="h-9 px-3 bg-gray-600 text-white rounded-md hover:bg-gray-700 flex items-center gap-2 text-sm"
+            >
+              <Download className="w-4 h-4" />
               Export
             </button>
           </div>
         </div>
       </div>
 
-      {loading ? (
-        <div className="flex justify-center items-center h-64">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-600" />
-        </div>
-      ) : (
-        <div className="overflow-auto max-h-[60vh] bg-white shadow-md rounded-lg">
-          <table className="min-w-full divide-y divide-gray-200 text-sm">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-4 py-2 text-left">ID</th>
-                {columns.map(col => (
-                  <th key={col} className="px-4 py-2 text-left">
-                    {col}
-                  </th>
-                ))}
-                <th className="px-4 py-2 text-left">Created</th>
-                <th className="px-4 py-2"></th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {filtered.map(item => (
-                <React.Fragment key={item.id}>
-                  <tr onDoubleClick={() => openEdit(item.id)} className="cursor-pointer">
-                    <td className="px-4 py-2 whitespace-nowrap">{item.id}</td>
-                    {columns.map(col => (
-                      <td
-                        key={col}
-                        className="px-4 py-2 whitespace-nowrap"
-                        onClick={() =>
-                          setCellEdit({
-                            id: item.id,
-                            key: col,
-                            value: String(item.data[col] ?? '')
-                          })
-                        }
-                      >
-                        {cellEdit?.id === item.id && cellEdit.key === col ? (
-                          <input
-                            autoFocus
-                            className="w-full border rounded px-1 text-sm"
-                            value={cellEdit.value}
-                            onChange={e =>
-                              setCellEdit({ ...cellEdit, value: e.target.value })
-                            }
-                            onBlur={() => saveCellEdit()}
-                            onKeyDown={e => {
-                              if (e.key === 'Enter') saveCellEdit();
-                            }}
-                          />
-                        ) : (
-                          String(item.data[col] ?? '')
-                        )}
+      {/* Table */}
+      <div className="bg-white rounded-lg shadow-sm border overflow-hidden">
+        {loading ? (
+          <div className="flex justify-center items-center h-64">
+            <RefreshCw className="w-8 h-8 animate-spin text-blue-600" />
+          </div>
+        ) : (
+          <div className="overflow-auto" style={{ maxHeight: '70vh' }}>
+            <table className="w-full text-sm">
+              <thead className="bg-gray-50 sticky top-0 z-10">
+                <tr>
+                  <th className="px-3 py-2 text-left font-medium text-gray-900 border-b">ID</th>
+                  {columns.map(col => (
+                    <th key={col} className="px-3 py-2 text-left font-medium text-gray-900 border-b min-w-[120px]">
+                      {col}
+                    </th>
+                  ))}
+                  <th className="px-3 py-2 text-left font-medium text-gray-900 border-b">Created</th>
+                  <th className="px-3 py-2 text-center font-medium text-gray-900 border-b w-20">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {filtered.map(item => (
+                  <React.Fragment key={item.id}>
+                    <tr 
+                      onDoubleClick={() => openEdit(item.id)} 
+                      className="hover:bg-gray-50 cursor-pointer transition-colors"
+                    >
+                      <td className="px-3 py-1.5 font-mono text-xs text-gray-600">{item.id}</td>
+                      {columns.map(col => (
+                        <td
+                          key={col}
+                          className="px-3 py-1.5 text-gray-900 hover:bg-blue-50 cursor-text transition-colors"
+                          onClick={() =>
+                            setCellEdit({
+                              id: item.id,
+                              key: col,
+                              value: formatCellValue(item.data[col])
+                            })
+                          }
+                        >
+                          {cellEdit?.id === item.id && cellEdit.key === col ? (
+                            <input
+                              autoFocus
+                              className="w-full bg-transparent border-b border-blue-500 outline-none text-sm py-0.5"
+                              value={cellEdit.value}
+                              onChange={e =>
+                                setCellEdit({ ...cellEdit, value: e.target.value })
+                              }
+                              onBlur={saveCellEdit}
+                              onKeyDown={e => {
+                                if (e.key === 'Enter') saveCellEdit();
+                                if (e.key === 'Escape') setCellEdit(null);
+                              }}
+                            />
+                          ) : (
+                            <div className="truncate max-w-[200px]" title={formatCellValue(item.data[col])}>
+                              {formatCellValue(item.data[col]) || <span className="text-gray-400">—</span>}
+                            </div>
+                          )}
+                        </td>
+                      ))}
+                      <td className="px-3 py-1.5 text-xs text-gray-500">
+                        {new Date(item.created_at).toLocaleDateString()} {new Date(item.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                       </td>
-                    ))}
-                    <td className="px-4 py-2 whitespace-nowrap">
-                      {new Date(item.created_at).toLocaleString()}
-                    </td>
-                    <td className="px-4 py-2 text-right space-x-2">
-                      <button
-                        onClick={() => handleDelete(item.id)}
-                        className="btn btn-ghost btn-sm text-red-600 hover:bg-red-100"
-                        title="Delete"
-                      >
-                        <Icon name="trash" className="w-4 h-4" />
-                      </button>
-                    </td>
-                  </tr>
-                  {editing?.id === item.id && (
-                    <tr className="bg-gray-50">
-                      <td colSpan={columns.length + 3} className="p-3">
-                        <div className="space-y-3">
-                          <div className="text-xs font-medium text-blue-600">EDIT MODE</div>
-                          <textarea
-                            className="w-full h-32 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 font-mono text-sm"
-                            value={editing.text}
-                            onChange={e => setEditing({ ...editing, text: e.target.value })}
-                          />
-                          <div className="flex flex-wrap gap-2">
-                            <button onClick={saveEdit} className="btn btn-primary flex-1 gap-2">
-                              <Icon name="save" className="w-4 h-4" />
-                              Save
-                            </button>
-                            <button onClick={() => setEditing(null)} className="btn btn-secondary gap-2">
-                              <Icon name="ban" className="w-4 h-4" />
-                              Cancel
-                            </button>
-                            <button
-                              onClick={() => window.open(`/database/${table}/${item.id}`, '_blank')}
-                              className="btn btn-secondary gap-2"
-                            >
-                              <Icon name="up-right-from-square" className="w-4 h-4" />
-                              Open
-                            </button>
-                          </div>
+                      <td className="px-3 py-1.5 text-center">
+                        <div className="flex items-center justify-center gap-1">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              openEdit(item.id);
+                            }}
+                            className="p-1 text-blue-600 hover:bg-blue-100 rounded transition-colors"
+                            title="Edit JSON"
+                          >
+                            <Edit className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDelete(item.id);
+                            }}
+                            className="p-1 text-red-600 hover:bg-red-100 rounded transition-colors"
+                            title="Delete"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
                         </div>
                       </td>
                     </tr>
-                  )}
-                </React.Fragment>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
+                    {editing?.id === item.id && (
+                      <tr className="bg-blue-50">
+                        <td colSpan={columns.length + 3} className="p-4">
+                          <div className="space-y-3">
+                            <div className="flex items-center gap-2">
+                              <Edit className="w-4 h-4 text-blue-600" />
+                              <span className="text-sm font-medium text-blue-900">JSON Editor</span>
+                            </div>
+                            <textarea
+                              className="w-full h-32 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 font-mono text-xs leading-relaxed"
+                              value={editing.text}
+                              onChange={e => setEditing({ ...editing, text: e.target.value })}
+                            />
+                            <div className="flex gap-2">
+                              <button 
+                                onClick={saveEdit} 
+                                className="px-3 py-1.5 bg-blue-600 text-white rounded-md hover:bg-blue-700 flex items-center gap-2 text-sm"
+                              >
+                                <Save className="w-4 h-4" />
+                                Save
+                              </button>
+                              <button 
+                                onClick={() => setEditing(null)} 
+                                className="px-3 py-1.5 bg-gray-600 text-white rounded-md hover:bg-gray-700 flex items-center gap-2 text-sm"
+                              >
+                                <X className="w-4 h-4" />
+                                Cancel
+                              </button>
+                              <button
+                                onClick={() => window.open(`/database/${table}/${item.id}`, '_blank')}
+                                className="px-3 py-1.5 bg-purple-600 text-white rounded-md hover:bg-purple-700 flex items-center gap-2 text-sm"
+                              >
+                                <ExternalLink className="w-4 h-4" />
+                                Open
+                              </button>
+                            </div>
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                  </React.Fragment>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
 
-      <div className="flex justify-between items-center mt-4">
+      {/* Pagination */}
+      <div className="flex items-center justify-between mt-4 bg-white px-4 py-2 rounded-lg shadow-sm border">
         <button
-          className="btn btn-sm"
+          className="px-3 py-1.5 text-sm text-gray-600 hover:text-gray-900 disabled:opacity-50"
           onClick={() => setPage(p => Math.max(0, p - 1))}
           disabled={page === 0}
         >
-          Previous
+          ← Previous
         </button>
-        <div className="text-sm">
-          Page {page + 1} of {pageCount || 1}
+        <div className="flex items-center gap-4 text-sm text-gray-600">
+          <span>Page {page + 1} of {pageCount || 1}</span>
+          <span>({filtered.length} of {total} records)</span>
         </div>
         <button
-          className="btn btn-sm"
+          className="px-3 py-1.5 text-sm text-gray-600 hover:text-gray-900 disabled:opacity-50"
           onClick={() => setPage(p => (p + 1 < pageCount ? p + 1 : p))}
           disabled={page + 1 >= pageCount}
         >
-          Next
+          Next →
         </button>
       </div>
 
+      {/* Add Item Modal */}
       {adding && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg p-6 w-full max-w-lg space-y-4">
-            <h2 className="text-lg font-bold text-gray-900">New Item</h2>
+          <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-2xl">
+            <div className="flex items-center gap-2 mb-4">
+              <Plus className="w-5 h-5 text-green-600" />
+              <h2 className="text-lg font-semibold text-gray-900">Add New Item</h2>
+            </div>
             <textarea
-              className="w-full h-40 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 font-mono text-sm"
+              className="w-full h-48 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 font-mono text-sm"
               value={newText}
               onChange={e => setNewText(e.target.value)}
-              placeholder="Enter JSON data..."
+              placeholder='{"key": "value"}'
             />
-            <div className="flex gap-2 justify-end">
-              <button onClick={addItem} className="btn btn-primary gap-2">
-                <Icon name="save" className="w-4 h-4" />
+            <div className="flex gap-2 justify-end mt-4">
+              <button 
+                onClick={addItem} 
+                className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 flex items-center gap-2"
+              >
+                <Save className="w-4 h-4" />
                 Save
               </button>
-              <button onClick={() => setAdding(false)} className="btn btn-secondary gap-2">
-                <Icon name="ban" className="w-4 h-4" />
+              <button 
+                onClick={() => setAdding(false)} 
+                className="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 flex items-center gap-2"
+              >
+                <X className="w-4 h-4" />
                 Cancel
               </button>
             </div>
@@ -396,28 +470,34 @@ export default function DatabasePanel() {
         </div>
       )}
 
+      {/* Pending Changes */}
       {pending.length > 0 && (
-        <div className="fixed bottom-4 left-1/2 transform -translate-x-1/2 w-full max-w-md">
-          <div className="bg-blue-50 border border-blue-200 rounded-lg shadow-lg p-4 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Icon name="save" className="w-5 h-5 text-blue-600" />
-              <span className="font-medium text-blue-800">
-                {pending.length} pending change{pending.length > 1 ? 's' : ''}
-              </span>
-            </div>
-            <div className="flex gap-2">
-              <button onClick={loadItems} className="btn btn-secondary gap-2">
-                <Icon name="rotate-left" className="w-4 h-4" />
-                Revert
-              </button>
-              <button
-                onClick={saveAll}
-                className={`btn btn-primary gap-2 ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
-                disabled={loading}
-              >
-                <Icon name="save" className="w-4 h-4" />
-                Save All
-              </button>
+        <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 w-full max-w-md px-4">
+          <div className="bg-amber-50 border border-amber-200 rounded-lg shadow-lg p-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <AlertCircle className="w-5 h-5 text-amber-600" />
+                <span className="font-medium text-amber-800">
+                  {pending.length} unsaved change{pending.length > 1 ? 's' : ''}
+                </span>
+              </div>
+              <div className="flex gap-2">
+                <button 
+                  onClick={loadItems} 
+                  className="px-3 py-1.5 bg-gray-600 text-white rounded-md hover:bg-gray-700 flex items-center gap-1 text-sm"
+                >
+                  <RotateCcw className="w-4 h-4" />
+                  Revert
+                </button>
+                <button
+                  onClick={saveAll}
+                  disabled={loading}
+                  className="px-3 py-1.5 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 flex items-center gap-1 text-sm"
+                >
+                  <Save className="w-4 h-4" />
+                  Save All
+                </button>
+              </div>
             </div>
           </div>
         </div>

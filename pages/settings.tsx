@@ -20,64 +20,88 @@ export default function Settings() {
 
   return (
     <ActiveLayout title="Settings" fullWidth>
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Header */}
-        <h1 className="text-3xl font-bold text-gray-900 mb-6">Settings</h1>
-
-        {/* Tab Navigation */}
-        <div className="flex border-b border-gray-200 dark:border-gray-700 mb-8">
-          <button
-            onClick={() => setTab('database')}
-            style={tab === 'database' ? { background: 'var(--section-bg)' } : undefined}
-            className={`
-              px-6 py-3 text-sm font-medium rounded-t-lg transition-all duration-200
-              ${tab === 'database'
-                ? 'text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400'
-                : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
-              }
-            `}
-            aria-selected={tab === 'database'}
-            role="tab"
-          >
-            Database
-          </button>
-          <button
-            onClick={() => setTab('customize')}
-            style={tab === 'customize' ? { background: 'var(--section-bg)' } : undefined}
-            className={`
-              px-6 py-3 text-sm font-medium rounded-t-lg transition-all duration-200
-              ${tab === 'customize'
-                ? 'text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400'
-                : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
-              }
-            `}
-            aria-selected={tab === 'customize'}
-            role="tab"
-          >
-            Customize
-          </button>
-          <button
-            onClick={() => setTab('users')}
-            style={tab === 'users' ? { background: 'var(--section-bg)' } : undefined}
-            className={`
-              px-6 py-3 text-sm font-medium rounded-t-lg transition-all duration-200
-              ${tab === 'users'
-                ? 'text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400'
-                : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
-              }
-            `}
-            aria-selected={tab === 'users'}
-            role="tab"
-          >
-            Users
-          </button>
+      <div className="h-screen w-full flex flex-col overflow-hidden">
+        {/* Header - Fixed height */}
+        <div className="flex-shrink-0 px-4 sm:px-6 lg:px-8 py-6 border-b border-gray-200 dark:border-gray-700" style={{ background: 'var(--section-bg)' }}>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Settings</h1>
         </div>
 
-        {/* Tab Content */}
-        <div className="shadow-md rounded-lg p-6" style={{ background: 'var(--section-bg)' }}>
-          {tab === 'database' && <DatabasePanel />}
-          {tab === 'customize' && <CustomizePanel />}
-          {tab === 'users' && <UsersPanel />}
+        {/* Tab Navigation - Fixed height */}
+        <div className="flex-shrink-0 px-4 sm:px-6 lg:px-8 border-b border-gray-200 dark:border-gray-700" style={{ background: 'var(--section-bg)' }}>
+          <div className="flex">
+            <button
+              onClick={() => setTab('database')}
+              className={`
+                px-6 py-4 text-sm font-medium transition-all duration-200 relative
+                ${tab === 'database'
+                  ? 'text-blue-600 dark:text-blue-400'
+                  : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white'
+                }
+              `}
+              aria-selected={tab === 'database'}
+              role="tab"
+            >
+              Database
+              {tab === 'database' && (
+                <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600 dark:bg-blue-400"></div>
+              )}
+            </button>
+            <button
+              onClick={() => setTab('customize')}
+              className={`
+                px-6 py-4 text-sm font-medium transition-all duration-200 relative
+                ${tab === 'customize'
+                  ? 'text-blue-600 dark:text-blue-400'
+                  : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white'
+                }
+              `}
+              aria-selected={tab === 'customize'}
+              role="tab"
+            >
+              Customize
+              {tab === 'customize' && (
+                <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600 dark:bg-blue-400"></div>
+              )}
+            </button>
+            <button
+              onClick={() => setTab('users')}
+              className={`
+                px-6 py-4 text-sm font-medium transition-all duration-200 relative
+                ${tab === 'users'
+                  ? 'text-blue-600 dark:text-blue-400'
+                  : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white'
+                }
+              `}
+              aria-selected={tab === 'users'}
+              role="tab"
+            >
+              Users
+              {tab === 'users' && (
+                <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600 dark:bg-blue-400"></div>
+              )}
+            </button>
+          </div>
+        </div>
+
+        {/* Tab Content - Flexible height with scroll */}
+        <div className="flex-1 overflow-hidden">
+          <div className="h-full overflow-auto px-4 sm:px-6 lg:px-8 py-6" style={{ background: 'var(--section-bg)' }}>
+            {tab === 'database' && (
+              <div className="h-full">
+                <DatabasePanel />
+              </div>
+            )}
+            {tab === 'customize' && (
+              <div className="h-full">
+                <CustomizePanel />
+              </div>
+            )}
+            {tab === 'users' && (
+              <div className="h-full">
+                <UsersPanel />
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </ActiveLayout>
