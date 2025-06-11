@@ -13,7 +13,7 @@ export default function OrderCard({ data }: Props) {
   const auction = data['Auction'] || data['Order.Account_Name'];
   const postcode = data['Address.Postcode'] || '';
   return (
-    <div className="border rounded-system p-4 space-y-2 ordercard delivered shadow-system">
+    <div className="border rounded-2xl p-4 space-y-2 bg-white dark:bg-gray-800 shadow">
       <div className="card-content">
         <div className="card-content__header flex justify-between items-center">
           <div className="card-info-wrapper">

@@ -132,11 +132,11 @@ export default function VanCheck({ data, contractor }: Props) {
   const getItem = (item?: CheckItem): CheckItem => item || { value: 'N/A', status: 'OK' };
 
   return (
-    <div className="card bg-base-200 shadow-lg transition-all duration-300 hover:shadow-xl w-full">
-      <div className="card-body p-4">
+    <div className="bg-white dark:bg-gray-800 shadow-lg rounded-2xl transition-all duration-300 hover:shadow-xl w-full">
+      <div className="p-4">
         <div className="flex justify-between items-start">
           <div>
-            <h2 className="card-title text-primary text-xl font-bold">{van_id}</h2>
+            <h2 className="text-primary text-xl font-bold">{van_id}</h2>
             <p className="text-sm text-base-content/60">{driver_id} ({contractor || 'N/A'})</p>
           </div>
           <div className="text-right">

@@ -92,22 +92,33 @@ export default function Calendar() {
   };
 
   return (
-    <div className="card bg-base-100 shadow-xl border border-base-content/10">
-      <div className="card-body p-4">
+    <div className="rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
+      <div className="p-4">
         {/* Header */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 mb-4">
-          <h2 className="card-title text-xl font-bold">
+          <h2 className="text-xl font-bold">
             Calendar Overview
           </h2>
           <div className="flex items-center gap-1">
-            <button onClick={() => changeMonth(-1)} className="btn btn-ghost btn-sm btn-circle">
+            <button
+              onClick={() => changeMonth(-1)}
+              className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 dark:hover:bg-gray-700"
+            >
               <Icon name="chevron-left" />
             </button>
             <span className="font-semibold text-md w-32 text-center">{months[month - 1]} {year}</span>
-            <button onClick={() => changeMonth(1)} className="btn btn-ghost btn-sm btn-circle">
+            <button
+              onClick={() => changeMonth(1)}
+              className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 dark:hover:bg-gray-700"
+            >
               <Icon name="chevron-right" />
             </button>
-             <button onClick={goToToday} className="btn btn-ghost btn-sm ml-2">Today</button>
+            <button
+              onClick={goToToday}
+              className="ml-2 px-3 py-1 text-sm rounded-md hover:bg-gray-100 dark:hover:bg-gray-700"
+            >
+              Today
+            </button>
           </div>
         </div>
 
@@ -131,7 +142,7 @@ export default function Calendar() {
                     onClick={() => isClickable && router.push(`/full-report?start=${dateStr}&end=${dateStr}`)}
                     className={`
                       p-2 border border-transparent flex flex-col justify-between h-20
-                      transition-all duration-200 rounded-system
+                      transition-all duration-200 rounded-lg
                       ${day.isOtherMonth ? 'opacity-40' : ''}
                       ${isClickable ? 'cursor-pointer hover:border-primary/50' : 'cursor-default'}
                       ${day.isToday && !day.isOtherMonth ? 'border-primary' : ''}

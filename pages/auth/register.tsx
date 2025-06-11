@@ -126,9 +126,9 @@ export default function Register() {
           className="file-input file-input-bordered w-full"
         />
         {header && (
-          <img src={header} alt="header preview" className="w-full h-32 object-cover rounded-system" />
+          <img src={header} alt="header preview" className="w-full h-32 object-cover rounded-2xl" />
         )}
-        <button onClick={submit} className="btn btn-primary w-full">Register</button>
+        <button onClick={submit} className="w-full mt-2 px-4 py-2 rounded-md bg-blue-600 text-white hover:bg-blue-700">Register</button>
       </div>
     </Layout>
   );

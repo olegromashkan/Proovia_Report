@@ -178,7 +178,7 @@ export default function ChatPanel({ open, user, onClose }: ChatPanelProps) {
           <button
             onClick={createTask}
             disabled={!text.trim()}
-            className="btn btn-secondary w-12 h-12 flex items-center justify-center rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
+            className="w-12 h-12 flex items-center justify-center rounded-lg bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-300 dark:hover:bg-gray-600 transition-all"
             aria-label="Create task"
           >
             <Icon name="plus" className="w-5 h-5" />
@@ -186,7 +186,7 @@ export default function ChatPanel({ open, user, onClose }: ChatPanelProps) {
           <button
             onClick={send}
             disabled={!text.trim()}
-            className="btn btn-primary w-12 h-12 flex items-center justify-center rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
+            className="w-12 h-12 flex items-center justify-center rounded-lg bg-blue-600 text-white disabled:opacity-50 disabled:cursor-not-allowed hover:bg-blue-700 transition-all"
             aria-label="Send message"
           >
             <Icon name="paper-plane" className="w-5 h-5" />

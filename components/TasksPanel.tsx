@@ -79,7 +79,7 @@ export default function TasksPanel({ open, onClose }: TasksPanelProps) {
         </h3>
         <button
           onClick={onClose}
-          className="btn btn-sm btn-ghost text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full"
+          className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 dark:text-gray-400"
         >
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
@@ -134,7 +134,7 @@ export default function TasksPanel({ open, onClose }: TasksPanelProps) {
         <button
           onClick={create}
           disabled={!text || !assignee}
-          className="btn btn-primary w-full flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="w-full flex items-center justify-center gap-2 bg-blue-600 text-white rounded-md py-2 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-blue-700"
         >
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
