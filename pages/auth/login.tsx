@@ -17,8 +17,15 @@ export default function Login() {
     if (res.ok) {
       router.push('/');
     } else {
-      const data = await res.json();
-      setError(data.message || 'Login failed');
+      let message = 'Login failed';
+      try {
+        const data = await res.json();
+        message = data.message || message;
+      } catch {
+        const text = await res.text();
+        if (text) message = text;
+      }
+      setError(message);
     }
   };
 

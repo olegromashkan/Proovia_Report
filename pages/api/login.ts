@@ -3,7 +3,9 @@ import db from '../../lib/db';
 import { createHash } from 'crypto';
 
 export default function handler(req: NextApiRequest, res: NextApiResponse) {
-  if (req.method !== 'POST') return res.status(405).end();
+  if (req.method !== 'POST') {
+    return res.status(405).json({ message: 'Method not allowed' });
+  }
   const { username, password } = req.body || {};
   if (!username || !password) {
     return res.status(400).json({ message: 'Missing username or password' });
