@@ -133,9 +133,18 @@ export default function Profile() {
                   day: 'numeric'
                 })}
               </div>
-<<<<<<< HEAD
               <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-                <span className={`w-2.5 h-2.5 rounded-full ${info.status === 'online' ? 'bg-green-500' : info.status === 'away' ? 'bg-orange-500' : info.status === 'dnd' ? 'bg-red-500' : 'bg-gray-400'}`}></span>
+                <span
+                  className={`w-2.5 h-2.5 rounded-full ${
+                    info.status === 'online'
+                      ? 'bg-green-500'
+                      : info.status === 'away'
+                      ? 'bg-orange-500'
+                      : info.status === 'dnd'
+                      ? 'bg-red-500'
+                      : 'bg-gray-400'
+                  }`}
+                ></span>
                 <span>
                   {info.status === 'online'
                     ? info.status_message || 'Online'
@@ -147,11 +156,10 @@ export default function Profile() {
                 </span>
               </div>
               {info.status_message && info.status !== 'online' && (
-                <div className="text-sm text-gray-500 dark:text-gray-400">{info.status_message}</div>
+                <div className="text-sm text-gray-500 dark:text-gray-400">
+                  {info.status_message}
+                </div>
               )}
-=======
-              <div className="text-sm text-gray-500">Last seen: {info.show_last_seen ? new Date(info.last_seen).toLocaleString() : 'last seen recently'}</div>
->>>>>>> parent of 8d3c5a3 (Revert "feat: add user status and group chats")
             </div>
             <div>
               <button

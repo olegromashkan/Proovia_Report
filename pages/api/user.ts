@@ -10,11 +10,11 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
   const target = (req.query.username as string) || current;
 
   if (req.method === 'GET') {
-<<<<<<< HEAD
-    const user = db.prepare('SELECT id, username, photo, header, role, status, status_message, last_seen FROM users WHERE username = ?').get(target);
-=======
-    const user = db.prepare('SELECT id, username, photo, header, role, last_seen, show_last_seen FROM users WHERE username = ?').get(target);
->>>>>>> parent of 8d3c5a3 (Revert "feat: add user status and group chats")
+    const user = db
+      .prepare(
+        'SELECT id, username, photo, header, role, status, status_message, last_seen FROM users WHERE username = ?'
+      )
+      .get(target);
     if (!user) return res.status(404).end();
     return res.status(200).json({ user });
   }
