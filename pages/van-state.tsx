@@ -167,7 +167,6 @@ export default function VanState() {
           </div>
           <div>
             <h3 className="font-semibold mb-1">Most Problematic Vans</h3>
-            <div className="overflow-x-auto">
             <table className="table table-xs">
               <thead>
                 <tr>
@@ -186,11 +185,9 @@ export default function VanState() {
                 ))}
               </tbody>
             </table>
-            </div>
           </div>
           <div>
             <h3 className="font-semibold mb-1 mt-4">Drivers with Most Issues</h3>
-            <div className="overflow-x-auto">
             <table className="table table-xs">
               <thead>
                 <tr>
@@ -209,7 +206,6 @@ export default function VanState() {
                 ))}
               </tbody>
             </table>
-            </div>
           </div>
         </div>
       </div>
