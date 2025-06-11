@@ -1,5 +1,5 @@
 import { useRouter } from 'next/router';
-import { useState, ChangeEvent } from 'react';
+import { useState, ChangeEvent, useEffect } from 'react';
 import ChatPanel from '../../components/ChatPanel';
 import useFetch from '../../lib/useFetch';
 import Layout from '../../components/Layout';
@@ -20,6 +20,11 @@ export default function Profile() {
   const [password, setPassword] = useState('');
   const [chatOpen, setChatOpen] = useState(false);
 
+  const [posts, setPosts] = useState<any[]>([]);
+  const [creatingPost, setCreatingPost] = useState(false);
+  const [postText, setPostText] = useState('');
+  const [postImage, setPostImage] = useState('');
+
   const handleImage = (e: ChangeEvent<HTMLInputElement>, set: (v:string)=>void) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -37,6 +42,29 @@ export default function Profile() {
     setEditing(false);
     location.reload();
   };
+
+  const loadPosts = async () => {
+    if (!user) return;
+    const res = await fetch('/api/posts?user=' + user);
+    if (res.ok) {
+      const d = await res.json();
+      setPosts(d.posts);
+    }
+  };
+
+  const createPost = async () => {
+    await fetch('/api/posts', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ content: postText, image: postImage })
+    });
+    setPostText('');
+    setPostImage('');
+    setCreatingPost(false);
+    loadPosts();
+  };
+
+  useEffect(() => { loadPosts(); }, [user]);
 
   const vars = ['--p','--a','--b1','--b2','--card-bg','--section-bg','--rounded-btn','--rounded-box','--rounded-badge','--shadow-strength'];
   const custom = typeof window !== 'undefined' && current === user
@@ -246,6 +274,60 @@ export default function Profile() {
               </div>
             </div>
           )}
+        </div>
+
+        {/* Feed Section */}
+        <div className="mt-8 space-y-4">
+          <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Feed</h2>
+          {canEdit && (
+            creatingPost ? (
+              <div className="bg-white dark:bg-gray-800 p-4 rounded-2xl border border-gray-200 dark:border-gray-700 space-y-3">
+                <textarea
+                  className="textarea textarea-bordered w-full"
+                  rows={3}
+                  placeholder="What's on your mind?"
+                  value={postText}
+                  onChange={e => setPostText(e.target.value)}
+                />
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={e => handleImage(e, setPostImage)}
+                  className="file-input file-input-bordered w-full bg-white dark:bg-gray-700"
+                />
+                {postImage && (
+                  <img src={postImage} alt="preview" className="max-h-60 rounded-lg" />
+                )}
+                <div className="flex gap-2">
+                  <button className="btn btn-primary" onClick={createPost}>Post</button>
+                  <button className="btn btn-ghost" onClick={() => { setCreatingPost(false); setPostText(''); setPostImage(''); }}>Cancel</button>
+                </div>
+              </div>
+            ) : (
+              <button className="btn btn-primary" onClick={() => setCreatingPost(true)}>Create Post</button>
+            )
+          )}
+          <div className="space-y-4">
+            {posts.map(p => (
+              <div key={p.id} className="bg-white dark:bg-gray-800 p-4 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700">
+                <div className="flex items-center gap-2 mb-2">
+                  {p.photo ? (
+                    <img src={p.photo} alt={p.username} className="w-8 h-8 rounded-full object-cover" />
+                  ) : (
+                    <div className="w-8 h-8 rounded-full bg-gray-300 flex items-center justify-center text-sm font-bold text-gray-600">
+                      {p.username[0]?.toUpperCase()}
+                    </div>
+                  )}
+                  <div className="text-sm font-semibold text-gray-800 dark:text-gray-100">{p.username}</div>
+                  <div className="text-xs text-gray-500 ml-auto">{new Date(p.created_at).toLocaleString()}</div>
+                </div>
+                <div className="whitespace-pre-wrap text-gray-700 dark:text-gray-200">{p.content}</div>
+                {p.image && (
+                  <img src={p.image} alt="post" className="mt-3 rounded-lg max-h-96 w-full object-contain" />
+                )}
+              </div>
+            ))}
+          </div>
         </div>
       </div>
       <ChatPanel open={chatOpen} user={info.username} onClose={() => setChatOpen(false)} />
