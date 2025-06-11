@@ -23,17 +23,11 @@ export default function ChatPanel({ open, user, onClose }: ChatPanelProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [text, setText] = useState('');
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
-<<<<<<< HEAD
-=======
-  const [isLoading, setIsLoading] = useState(false);
-  const [isTyping, setIsTyping] = useState(false);
->>>>>>> parent of 49cbc74 (Merge pull request #113 from olegromashkan/codex/обновить-функциональность-чатов-и-уведомлений)
   const endRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const load = async () => {
     if (!user) return;
-<<<<<<< HEAD
     const res = await fetch(`/api/messages?user=${user}`);
     if (res.ok) {
       const d = await res.json();
@@ -73,105 +67,6 @@ export default function ChatPanel({ open, user, onClose }: ChatPanelProps) {
     });
     setText('');
     inputRef.current?.focus();
-=======
-    try {
-      const res = await fetch(`/api/messages?user=${user}`);
-      if (res.ok) {
-        const d = await res.json();
-        setMessages(d.messages);
-      }
-    } catch (error) {
-      console.error('Failed to load messages:', error);
-    }
-  }, [user]);
-
-  const scrollToBottom = useCallback(() => {
-    endRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, []);
-
-  // Load messages and set up polling
-  useEffect(() => {
-    if (!open || !user) return;
-    
-    load();
-    intervalRef.current = setInterval(load, 3000);
-    
-    return () => {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-      }
-    };
-  }, [open, user, load]);
-
-  // Auto-scroll to bottom when messages change
-  useEffect(() => {
-    const timer = setTimeout(scrollToBottom, 100);
-    return () => clearTimeout(timer);
-  }, [messages, scrollToBottom]);
-
-  // Focus input when opened
-  useEffect(() => {
-    if (open) {
-      setTimeout(() => inputRef.current?.focus(), 200);
-    }
-  }, [open]);
-
-  const send = async () => {
-    if (!text.trim() || isLoading) return;
-    
-    setIsLoading(true);
-    const messageText = text.trim();
-    setText('');
-    
-    try {
-      await fetch('/api/messages', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ to: user, text: messageText }),
-      });
-      
-      // Optimistically add message to UI
-      const tempMessage: Message = {
-        id: Date.now(),
-        sender: me,
-        receiver: user,
-        text: messageText,
-        created_at: new Date().toISOString(),
-      };
-      setMessages(prev => [...prev, tempMessage]);
-      
-      // Reload to get actual message from server
-      setTimeout(load, 500);
-    } catch (error) {
-      console.error('Failed to send message:', error);
-      setText(messageText); // Restore text on error
-    } finally {
-      setIsLoading(false);
-      inputRef.current?.focus();
-    }
-  };
-
-  const createTask = async () => {
-    if (!text.trim() || isLoading) return;
-    
-    setIsLoading(true);
-    const taskText = text.trim();
-    setText('');
-    
-    try {
-      await fetch('/api/tasks', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ assignee: user, text: taskText }),
-      });
-    } catch (error) {
-      console.error('Failed to create task:', error);
-      setText(taskText); // Restore text on error
-    } finally {
-      setIsLoading(false);
-      inputRef.current?.focus();
-    }
->>>>>>> parent of 49cbc74 (Merge pull request #113 from olegromashkan/codex/обновить-функциональность-чатов-и-уведомлений)
   };
 
   const onEmojiClick = (emojiObject: { emoji: string }) => {
@@ -215,7 +110,6 @@ export default function ChatPanel({ open, user, onClose }: ChatPanelProps) {
             No messages yet
           </div>
         ) : (
-<<<<<<< HEAD
           messages.map((m) => (
             <motion.div
               key={m.id}
@@ -239,78 +133,11 @@ export default function ChatPanel({ open, user, onClose }: ChatPanelProps) {
               </div>
             </motion.div>
           ))
-=======
-          <>
-            {messages.map((m, index) => {
-              const isMe = m.sender === me;
-              const showAvatar = index === 0 || messages[index - 1].sender !== m.sender;
-              
-              return (
-                <motion.div
-                  key={m.id}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.2 }}
-                  className={`flex gap-2 ${isMe ? 'justify-end' : 'justify-start'}`}
-                >
-                  {!isMe && (
-                    <div className="w-6 h-6 flex-shrink-0">
-                      {showAvatar && (
-                        <div className="w-6 h-6 rounded-full bg-gradient-to-br from-gray-400 to-gray-600 flex items-center justify-center">
-                          <span className="text-xs font-medium text-white">
-                            {getUserInitials(m.sender)}
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                  <div className={`flex flex-col ${isMe ? 'items-end' : 'items-start'} max-w-[75%]`}>
-                    <div
-                      className={`
-                        px-4 py-2 rounded-2xl text-sm relative
-                        ${isMe
-                          ? 'bg-blue-500 text-white rounded-br-md shadow-lg'
-                          : 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-bl-md shadow-md border border-gray-200/50 dark:border-gray-600/50'
-                        }
-                      `}
-                    >
-                      <div className="break-words leading-relaxed">{m.text}</div>
-                    </div>
-                    <div className={`text-xs text-gray-500 dark:text-gray-400 mt-1 px-1 ${isMe ? 'text-right' : 'text-left'}`}>
-                      {formatTime(m.created_at)}
-                    </div>
-                  </div>
-                </motion.div>
-              );
-            })}
-            {isTyping && (
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                className="flex items-center gap-2"
-              >
-                <div className="w-6 h-6 rounded-full bg-gray-300 dark:bg-gray-600 flex items-center justify-center">
-                  <span className="text-xs font-medium text-gray-600 dark:text-gray-300">
-                    {getUserInitials(user)}
-                  </span>
-                </div>
-                <div className="bg-gray-200 dark:bg-gray-700 rounded-2xl px-4 py-2 flex items-center gap-1">
-                  <div className="flex space-x-1">
-                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
-                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{animationDelay: '0.1s'}}></div>
-                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
-                  </div>
-                </div>
-              </motion.div>
-            )}
-          </>
->>>>>>> parent of 49cbc74 (Merge pull request #113 from olegromashkan/codex/обновить-функциональность-чатов-и-уведомлений)
         )}
         <div ref={endRef} />
       </div>
 
       {/* Input Area */}
-<<<<<<< HEAD
       <div className="p-3 border-t border-gray-200/50 dark:border-gray-700/50 bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm">
         <AnimatePresence>
           {showEmojiPicker && (
@@ -325,10 +152,6 @@ export default function ChatPanel({ open, user, onClose }: ChatPanelProps) {
           )}
         </AnimatePresence>
         <div className="flex items-center gap-2">
-=======
-      <div className="p-4 border-t border-gray-200/30 dark:border-gray-700/30 bg-white/80 dark:bg-gray-800/80">
-        <div className="flex items-end gap-2">
->>>>>>> parent of 49cbc74 (Merge pull request #113 from olegromashkan/codex/обновить-функциональность-чатов-и-уведомлений)
           <button
             onClick={() => setShowEmojiPicker(!showEmojiPicker)}
             className="p-2 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-all duration-200"
