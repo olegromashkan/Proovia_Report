@@ -29,12 +29,23 @@ export default function Profile() {
   const [postImage, setPostImage] = useState('');
   const [comments, setComments] = useState<Record<number, any[]>>({});
   const [commentText, setCommentText] = useState<Record<number, string>>({});
+  const [editingPost, setEditingPost] = useState<number | null>(null);
+  const [editText, setEditText] = useState('');
+  const [editImage, setEditImage] = useState('');
 
   const handleImage = (e: ChangeEvent<HTMLInputElement>, set: (v:string)=>void) => {
     const file = e.target.files?.[0];
     if (!file) return;
     const reader = new FileReader();
     reader.onload = () => set(reader.result as string);
+    reader.readAsDataURL(file);
+  };
+
+  const handleEditImage = (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => setEditImage(reader.result as string);
     reader.readAsDataURL(file);
   };
 
@@ -90,6 +101,30 @@ export default function Profile() {
     });
     setCommentText(prev => ({ ...prev, [id]: '' }));
     loadComments(id);
+    loadPosts();
+  };
+
+  const startEditPost = (p: any) => {
+    setEditingPost(p.id);
+    setEditText(p.content);
+    setEditImage(p.image || '');
+  };
+
+  const saveEditPost = async () => {
+    if (editingPost === null) return;
+    await fetch('/api/posts', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: editingPost, content: editText, image: editImage }),
+    });
+    setEditingPost(null);
+    setEditText('');
+    setEditImage('');
+    loadPosts();
+  };
+
+  const deletePost = async (id: number) => {
+    await fetch('/api/posts?id=' + id, { method: 'DELETE' });
     loadPosts();
   };
 
@@ -352,11 +387,47 @@ export default function Profile() {
                       <div className="text-sm font-semibold text-gray-800 dark:text-gray-100">{p.username}</div>
                     </Link>
                   </UserHoverCard>
-                  <div className="text-xs text-gray-500 ml-auto">{new Date(p.created_at).toLocaleString()}</div>
+                  <div className="text-xs text-gray-500 ml-auto">
+                    {new Date(p.created_at).toLocaleString()}
+                    {p.updated_at && (
+                      <span className="italic ml-2">(edited)</span>
+                    )}
+                  </div>
                 </div>
-                <div className="whitespace-pre-wrap text-gray-700 dark:text-gray-200">{p.content}</div>
-                {p.image && (
-                  <img src={p.image} alt="post" className="mt-3 rounded-lg max-h-96 w-full object-contain" />
+                {editingPost === p.id ? (
+                  <div className="space-y-3">
+                    <textarea
+                      className="w-full p-3 rounded-xl bg-gray-50 text-gray-800 border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#b53133] resize-none"
+                      rows={3}
+                      value={editText}
+                      onChange={e => setEditText(e.target.value)}
+                    />
+                    {editImage && (
+                      <div className="relative">
+                        <img src={editImage} className="max-h-64 w-full object-contain rounded-xl" />
+                        <button className="absolute top-2 right-2 bg-gray-800 bg-opacity-50 text-white rounded-full p-1" onClick={() => setEditImage('')}>
+                          <Icon name="x" className="w-4 h-4" />
+                        </button>
+                      </div>
+                    )}
+                    <div className="flex items-center justify-between">
+                      <label className="cursor-pointer">
+                        <input type="file" accept="image/*" onChange={handleEditImage} className="hidden" />
+                        <Icon name="image" className="w-6 h-6 text-[#b53133] hover:text-[#a12b2e]" />
+                      </label>
+                      <div className="space-x-2">
+                        <button className="btn btn-primary" onClick={saveEditPost}>Save</button>
+                        <button className="btn" onClick={() => setEditingPost(null)}>Cancel</button>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    <div className="whitespace-pre-wrap text-gray-700 dark:text-gray-200">{p.content}</div>
+                    {p.image && (
+                      <img src={p.image} alt="post" className="mt-3 rounded-lg max-h-96 w-full object-contain" />
+                    )}
+                  </>
                 )}
                 <div className="flex items-center gap-4 mt-3 text-sm text-gray-600 dark:text-gray-400">
                   <button onClick={() => toggleLike(p.id, p.liked)} className="flex items-center gap-1">
@@ -367,6 +438,16 @@ export default function Profile() {
                     <Icon name="chat-left" className="w-4 h-4" />
                     <span>{p.comments}</span>
                   </button>
+                  {current === p.username && (
+                    <>
+                      <button onClick={() => startEditPost(p)} className="flex items-center gap-1">
+                        <Icon name="pen" className="w-4 h-4" />
+                      </button>
+                      <button onClick={() => deletePost(p.id)} className="flex items-center gap-1">
+                        <Icon name="trash" className="w-4 h-4" />
+                      </button>
+                    </>
+                  )}
                 </div>
                 {comments[p.id] && (
                   <div className="mt-3 space-y-2">

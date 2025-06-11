@@ -1,5 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
-import db from '../../lib/db';
+import db, { addNotification } from '../../lib/db';
 
 export default function handler(req: NextApiRequest, res: NextApiResponse) {
   const current = req.cookies.user || '';
@@ -21,6 +21,10 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
     const { post: postId, text } = req.body || {};
     if (!postId || !text) return res.status(400).json({ message: 'Missing fields' });
     db.prepare('INSERT INTO post_comments (post_id, username, text) VALUES (?, ?, ?)').run(postId, current, text);
+    const owner = db.prepare('SELECT username FROM posts WHERE id = ?').get(postId) as { username?: string };
+    if (owner?.username && owner.username !== current) {
+      addNotification('comment', `${current} commented on ${owner.username}'s post`);
+    }
     return res.status(200).json({ message: 'Created' });
   }
 
