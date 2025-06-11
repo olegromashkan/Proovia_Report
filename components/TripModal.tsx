@@ -141,7 +141,7 @@ export default function TripModal({ trip, onClose, allTrips }: Props) {
                         <a href={`https://crm.proovia.uk/event-stream/order?search=${orderNumber}`} target="_blank" rel="noopener noreferrer" className="px-2 py-1 text-xs rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-1"><Icon name="upload"/> Photos</a>
                         <a href={`https://creatorapp.zoho.eu/dragrusu/copy-of-steeltrans-new/#Report:Copy_of_Tomorrow_trips?Order.OrderNumber=${orderNumber}`} target="_blank" rel="noopener noreferrer" className="px-2 py-1 text-xs rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-1"><Icon name="database"/> Zoho</a>
                     </div>
-                </div></div>
+                </div>
 
                 <div className="bg-white dark:bg-gray-800 rounded-2xl shadow p-4">
                     <h3 className="text-md font-bold mb-2">Key Info</h3>
@@ -151,13 +151,13 @@ export default function TripModal({ trip, onClose, allTrips }: Props) {
                         <InfoItem icon="clock" label="Punctuality" value={punctuality !== null ? `${punctuality} min` : 'N/A'} />
                         <InfoItem icon="up-right-from-square" label="Auction" value={trip['Order.Auction']} />
                     </div>
-                </div></div>
+                </div>
                 
                 <div className="bg-white dark:bg-gray-800 rounded-2xl shadow p-4">
                     <h3 className="text-md font-bold mb-2">Delivery</h3>
                     <div ref={mapRef} className="h-40 w-full rounded-2xl bg-gray-200 dark:bg-gray-700 shadow" />
                     {geoCoords && <a href={`https://www.google.com/maps?q=${geoCoords.lat},${geoCoords.lon}`} target="_blank" rel="noopener noreferrer" className="mt-2 w-full inline-block text-center px-4 py-2 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700">Open in Google Maps</a>}
-                </div></div>
+                </div>
             </div>
             
             <div className="lg:col-span-2 space-y-4">
@@ -169,7 +169,7 @@ export default function TripModal({ trip, onClose, allTrips }: Props) {
                         <InfoItem icon="up-right-from-square" label="End Location" value={trip['Trip.End_Location']} />
                         <InfoItem icon="calendar" label="Arrival Time" value={trip.Arrival_Time} />
                     </div>
-                </div></div>
+                </div>
 
                 <div className="bg-white dark:bg-gray-800 rounded-2xl shadow p-4">
                      <h3 className="text-md font-bold mb-2">Customer & Payment</h3>
@@ -179,12 +179,12 @@ export default function TripModal({ trip, onClose, allTrips }: Props) {
                         <InfoItem icon="up-right-from-square" label="Payment Type" value={trip['Payment.Type']} />
                         <InfoItem icon="up-right-from-square" label="Price" value={trip['Order.Price'] ? `£${trip['Order.Price']}`: 'N/A'} />
                     </div>
-                </div></div>
+                </div>
                 
                  <div className="bg-white dark:bg-gray-800 rounded-2xl shadow p-4">
                     <h3 className="text-md font-bold mb-2">Driver Performance Chart</h3>
                     <div className="h-48 relative"><canvas ref={chartRef} /></div>
-                </div></div>
+                </div>
             </div>
         </div>
     </Modal>
