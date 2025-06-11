@@ -60,9 +60,9 @@ export default function Login() {
                 transition={{ duration: 1.5, ease: 'easeInOut' }}
               />
               <motion.div
-                className="fixed inset-0 bg-black bg-opacity-10"
+                className="fixed inset-0 bg-black bg-opacity-50"
                 initial={{ opacity: 0 }}
-                animate={{ opacity: 0.3 }}
+                animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 transition={{ duration: 1.5, ease: 'easeInOut' }}
               />
@@ -80,20 +80,30 @@ export default function Login() {
               exit={{ opacity: 0 }}
               transition={{ duration: 1 }}
             >
-              <div className="relative">
-                <motion.img
-                  src={userData.photo}
-                  alt="User avatar"
-                  className="w-40 h-40 object-cover rounded-full border-4 border-white shadow-xl"
-                  initial={{ scale: 0.8 }}
-                  animate={{ scale: 1 }}
-                  transition={{ type: 'spring', stiffness: 200, damping: 20 }}
-                />
+              <div className="relative flex flex-col items-center space-y-6">
+                <div className="relative">
+                  <motion.img
+                    src={userData.photo}
+                    alt="User avatar"
+                    className="w-40 h-40 object-cover rounded-full border-4 border-white shadow-xl"
+                    initial={{ scale: 0.8 }}
+                    animate={{ scale: 1 }}
+                    transition={{ type: 'spring', stiffness: 200, damping: 20 }}
+                  />
+                  <motion.div
+                    className="absolute inset-0 border-4 border-transparent border-t-blue-500 border-r-purple-500 rounded-full"
+                    animate={{ rotate: 360 }}
+                    transition={{ duration: 1.5, repeat: Infinity, ease: 'linear' }}
+                  />
+                </div>
                 <motion.div
-                  className="absolute inset-0 border-4 border-transparent border-t-blue-500 border-r-purple-500 rounded-full"
-                  animate={{ rotate: 360 }}
-                  transition={{ duration: 1.5, repeat: Infinity, ease: 'linear' }}
-                />
+                  className="text-white text-3xl font-semibold"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ duration: 0.8, delay: 0.3 }}
+                >
+                  Welcome back!
+                </motion.div>
               </div>
             </motion.div>
           )}

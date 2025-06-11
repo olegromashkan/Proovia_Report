@@ -11,7 +11,9 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
     return res.status(400).json({ message: 'Missing username or password' });
   }
   const hashed = createHash('sha256').update(password).digest('hex');
-  const user = db.prepare('SELECT id FROM users WHERE username = ? AND password = ?').get(username, hashed);
+  const user = db.prepare(
+    'SELECT id, username, photo, header FROM users WHERE username = ? AND password = ?'
+  ).get(username, hashed);
   if (!user) {
     return res.status(401).json({ message: 'Invalid credentials' });
   }
@@ -25,5 +27,5 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
   // Browsers expect cookie values to be ASCII-only, otherwise setting the
   // cookie may fail with a runtime error.
   res.setHeader('Set-Cookie', `user=${encodeURIComponent(username)}; Path=/`);
-  return res.status(200).json({ message: 'Logged in' });
+  return res.status(200).json({ message: 'Logged in', user });
 }
