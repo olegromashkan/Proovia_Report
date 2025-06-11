@@ -11,7 +11,7 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
   if (!username) return res.status(401).end();
 
   if (req.method === 'GET') {
-    const user = db.prepare('SELECT id, username, photo, header, role FROM users WHERE username = ?').get(username);
+    const user = db.prepare('SELECT id, username, photo, header, role, status, status_message, last_seen FROM users WHERE username = ?').get(username);
     if (!user) return res.status(404).end();
     return res.status(200).json({ user });
   }

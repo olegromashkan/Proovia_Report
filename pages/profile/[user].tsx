@@ -79,8 +79,8 @@ export default function Profile() {
                   </span>
                 </div>
               )}
-              {/* Online indicator (optional) */}
-              <div className="absolute bottom-2 right-2 w-6 h-6 bg-green-500 border-2 border-white rounded-full"></div>
+              {/* Online indicator */}
+              <div className={`absolute bottom-2 right-2 w-6 h-6 rounded-full border-2 border-white ${info.status === 'online' ? 'bg-green-500' : info.status === 'away' ? 'bg-orange-500' : info.status === 'dnd' ? 'bg-red-500' : 'bg-gray-400'}`}></div>
             </div>
           </div>
 
@@ -122,12 +122,27 @@ export default function Profile() {
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                 </svg>
-                Joined {new Date(info.created_at).toLocaleDateString('en-US', { 
-                  year: 'numeric', 
-                  month: 'long', 
-                  day: 'numeric' 
+                Joined {new Date(info.created_at).toLocaleDateString('en-US', {
+                  year: 'numeric',
+                  month: 'long',
+                  day: 'numeric'
                 })}
               </div>
+              <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+                <span className={`w-2.5 h-2.5 rounded-full ${info.status === 'online' ? 'bg-green-500' : info.status === 'away' ? 'bg-orange-500' : info.status === 'dnd' ? 'bg-red-500' : 'bg-gray-400'}`}></span>
+                <span>
+                  {info.status === 'online'
+                    ? info.status_message || 'Online'
+                    : info.status === 'away'
+                    ? 'Away'
+                    : info.status === 'dnd'
+                    ? 'Do not disturb'
+                    : 'last seen ' + new Date(info.last_seen).toLocaleString()}
+                </span>
+              </div>
+              {info.status_message && info.status !== 'online' && (
+                <div className="text-sm text-gray-500 dark:text-gray-400">{info.status_message}</div>
+              )}
             </div>
             <div>
               <button

@@ -37,7 +37,10 @@ export default function ChatList({ open, onClose }: ChatListProps) {
               {u.photo && (
                 <img src={u.photo} alt="avatar" className="w-8 h-8 rounded-full" />
               )}
-              <span>{u.username}</span>
+              <span className="relative flex items-center">
+                {u.username}
+                <span className={`ml-2 w-2.5 h-2.5 rounded-full ${u.status === 'online' ? 'bg-green-500' : u.status === 'away' ? 'bg-orange-500' : u.status === 'dnd' ? 'bg-red-500' : 'bg-gray-400'}`}></span>
+              </span>
             </button>
           </li>
         ))}

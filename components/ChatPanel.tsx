@@ -36,6 +36,7 @@ export default function ChatPanel({ open, user, onClose }: ChatPanelProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
   const [due, setDue] = useState('');
+  const [statusInfo, setStatusInfo] = useState<{status:string; message:string; last_seen:string}>({status:'offline', message:'', last_seen:''});
   const endRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -70,15 +71,30 @@ export default function ChatPanel({ open, user, onClose }: ChatPanelProps) {
     endRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, []);
 
+  const loadStatus = useCallback(async () => {
+    if (!user) return;
+    try {
+      const res = await fetch(`/api/status?username=${user}`);
+      if (res.ok) {
+        const d = await res.json();
+        setStatusInfo({ status: d.status, message: d.status_message || '', last_seen: d.last_seen });
+      }
+    } catch (err) {
+      console.error('Failed to load status', err);
+    }
+  }, [user]);
+
   // Load messages and set up polling
   useEffect(() => {
     if (!open || !user) return;
 
     load();
     loadTasks();
+    loadStatus();
     intervalRef.current = setInterval(() => {
       load();
       loadTasks();
+      loadStatus();
     }, 1000);
     
     return () => {
@@ -86,7 +102,7 @@ export default function ChatPanel({ open, user, onClose }: ChatPanelProps) {
         clearInterval(intervalRef.current);
       }
     };
-  }, [open, user, load]);
+  }, [open, user, load, loadTasks, loadStatus]);
 
   // Auto-scroll to bottom when messages change
   useEffect(() => {
@@ -238,14 +254,20 @@ export default function ChatPanel({ open, user, onClose }: ChatPanelProps) {
                 {getUserInitials(user)}
               </span>
             </div>
-            <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-green-500 rounded-full border-2 border-white dark:border-gray-800" />
+            <div className={`absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full border-2 border-white dark:border-gray-800 ${statusInfo.status === 'online' ? 'bg-green-500' : statusInfo.status === 'away' ? 'bg-orange-500' : statusInfo.status === 'dnd' ? 'bg-red-500' : 'bg-gray-400'}`} />
           </div>
           <div className="flex-1 min-w-0">
             <h3 className="font-semibold text-gray-900 dark:text-white truncate">
               {user}
             </h3>
             <p className="text-xs text-gray-500 dark:text-gray-400">
-              {messages.length > 0 ? 'Active now' : 'Start conversation'}
+              {statusInfo.status === 'online'
+                ? statusInfo.message || 'Online'
+                : statusInfo.status === 'away'
+                ? 'Away'
+                : statusInfo.status === 'dnd'
+                ? 'Do not disturb'
+                : 'last seen ' + new Date(statusInfo.last_seen).toLocaleString()}
             </p>
           </div>
         </div>

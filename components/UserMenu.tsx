@@ -10,12 +10,21 @@ export default function UserMenu() {
   const menuRef = useRef<HTMLDivElement>(null);
   const [open, setOpen] = useState(false);
   const [imageError, setImageError] = useState(false);
+  const [status, setStatus] = useState('online');
+  const [statusText, setStatusText] = useState('');
   
   const username = useUser();
   // Check that username is not empty string and not null/undefined
   const isAuthenticated = username && username.trim() !== '';
   
   const { data, error } = useFetch<{ users: any[] }>(isAuthenticated ? '/api/users' : null);
+  const { data: statusData, mutate: refreshStatus } = useFetch<{ status: string; status_message: string; last_seen: string }>(isAuthenticated ? '/api/status' : null);
+  useEffect(() => {
+    if (statusData) {
+      setStatus(statusData.status);
+      setStatusText(statusData.status_message || '');
+    }
+  }, [statusData]);
   const userInfo = data?.users?.find((u: any) => u?.username === username);
 
   // Close menu when clicking outside
@@ -51,6 +60,16 @@ export default function UserMenu() {
 
   const handleImageError = () => {
     setImageError(true);
+  };
+
+  const saveStatus = async (newStatus: string, message = statusText) => {
+    setStatus(newStatus);
+    await fetch('/api/status', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status: newStatus, message }),
+    });
+    refreshStatus();
   };
 
   // If user is not authenticated - show login button
@@ -110,7 +129,7 @@ export default function UserMenu() {
     <div className="relative" ref={menuRef}>
       <button
         onClick={() => setOpen(!open)}
-        className="p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+        className="relative p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
         aria-label="User menu"
         aria-expanded={open}
         type="button"
@@ -125,6 +144,7 @@ export default function UserMenu() {
         ) : (
           <Icon name="person-circle" className="w-8 h-8 text-gray-600 dark:text-gray-400" />
         )}
+        <span className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-white dark:border-gray-800 ${status === 'online' ? 'bg-green-500' : status === 'away' ? 'bg-orange-500' : status === 'dnd' ? 'bg-red-500' : 'bg-gray-400'}`}></span>
       </button>
 
       {/* Dropdown menu */}
@@ -151,7 +171,30 @@ export default function UserMenu() {
                 <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
                   @{username}
                 </p>
+                {statusText && (
+                  <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{statusText}</p>
+                )}
               </div>
+            </div>
+            <div className="mt-3 space-y-2">
+              <select
+                className="select select-sm w-full"
+                value={status}
+                onChange={e => saveStatus(e.target.value)}
+              >
+                <option value="online">Online</option>
+                <option value="away">Away</option>
+                <option value="dnd">Do Not Disturb</option>
+                <option value="offline">Offline</option>
+              </select>
+              <input
+                type="text"
+                className="input input-sm w-full"
+                placeholder="Set a status message"
+                value={statusText}
+                onChange={e => setStatusText(e.target.value)}
+                onBlur={() => saveStatus(status, statusText)}
+              />
             </div>
           </div>
 
