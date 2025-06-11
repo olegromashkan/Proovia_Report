@@ -49,30 +49,35 @@ export default function Users() {
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.95 }}
                 transition={{ type: 'spring', stiffness: 120, damping: 20 }}
-                className="bg-white bg-opacity-90 backdrop-blur-sm p-4 rounded-2xl shadow-md border border-gray-100 hover:shadow-lg transition-shadow"
+                className="bg-white dark:bg-gray-800 rounded-2xl shadow-md border border-gray-100 dark:border-gray-700 overflow-hidden hover:shadow-lg transition-shadow"
               >
-                <div className="flex items-center gap-3">
-                  {u.photo ? (
-                    <img
-                      src={u.photo}
-                      alt={u.username}
-                      className="w-12 h-12 rounded-full object-cover border-2 border-[#b53133]"
-                    />
-                  ) : (
-                    <div className="w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center text-base font-bold text-gray-600 border-2 border-[#b53133]">
-                      {u.username[0]?.toUpperCase()}
-                    </div>
+                <div className="relative h-24 bg-gradient-to-br from-blue-400 via-purple-500 to-pink-500">
+                  {u.header && (
+                    <img src={u.header} alt="header" className="w-full h-full object-cover" />
                   )}
-                  <div className="flex-1">
-                    <Link
-                      href={`/profile/${u.username}`}
-                      className="text-base font-semibold text-gray-800 hover:text-[#b53133] transition"
-                    >
-                      {u.username}
-                    </Link>
+                  <div className="absolute -bottom-8 left-4">
+                    {u.photo ? (
+                      <img
+                        src={u.photo}
+                        alt={u.username}
+                        className="w-16 h-16 rounded-full border-2 border-white object-cover"
+                      />
+                    ) : (
+                      <div className="w-16 h-16 rounded-full bg-gray-200 flex items-center justify-center text-lg font-bold text-gray-600 border-2 border-white">
+                        {u.username[0]?.toUpperCase()}
+                      </div>
+                    )}
                   </div>
+                </div>
+                <div className="pt-10 pb-4 px-4 text-center">
+                  <Link
+                    href={`/profile/${u.username}`}
+                    className="block font-semibold text-gray-800 dark:text-gray-100 hover:text-[#b53133] transition"
+                  >
+                    {u.username}
+                  </Link>
                   <motion.button
-                    className="px-3 py-1 rounded-xl bg-[#b53133] text-white text-sm font-semibold hover:bg-[#a12b2e] transition"
+                    className="mt-3 w-full px-3 py-1 rounded-xl bg-[#b53133] text-white text-sm font-semibold hover:bg-[#a12b2e] transition"
                     onClick={() => {
                       setChatUser(u.username);
                       setChatOpen(true);

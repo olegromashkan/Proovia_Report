@@ -43,6 +43,7 @@ export default function Navbar() {
     { href: '/full-report', icon: 'table-list', label: 'Full Report' },
     { href: '/van-state', icon: 'truck', label: 'Van State' },
     { href: '/users', icon: 'people', label: 'Users' },
+    { href: '/messages', icon: 'chat-left', label: 'Messages' },
   ];
 
   const isActiveLink = (href: string) => router.pathname === href;
