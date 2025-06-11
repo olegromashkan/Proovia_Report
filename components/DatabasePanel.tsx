@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import Icon from './Icon';
 
 const TABLES = [
@@ -54,7 +54,7 @@ function summarize(table: (typeof TABLES)[number], data: any, id: string | numbe
   return { primary, secondary };
 }
 
-export default function AdminPanel() {
+export default function DatabasePanel() {
   const [table, setTable] = useState<(typeof TABLES)[number]>(TABLES[0]);
   const [dates, setDates] = useState<{ date: string; count: number }[]>([]);
   const [itemsByDate, setItemsByDate] = useState<Record<string, Item[]>>({});
@@ -222,7 +222,7 @@ export default function AdminPanel() {
           <div>
             <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
               <Icon name="database" className="w-8 h-8 text-blue-600" />
-              Admin Panel
+              Database
             </h1>
             <p className="text-gray-600 mt-1">Manage your database tables and records with ease</p>
           </div>
@@ -351,85 +351,85 @@ export default function AdminPanel() {
 
                     {!isCollapsed && (
                       itemsByDate[d] ? (
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mt-4">
-                          {rows.map((item) => (
-                            <div key={item.id} className="bg-gray-50 rounded-lg p-4 hover:shadow-lg transition-shadow">
-                              <div className="flex justify-between items-start mb-3">
-                                <div className="flex-1 min-w-0">
-                                  <div className="font-semibold text-blue-600 truncate" title={String(item.primary ?? item.id)}>
-                                    {item.primary ?? item.id}
-                                  </div>
-                                  {item.secondary && (
-                                    <div className="text-sm text-gray-600 truncate" title={item.secondary}>
-                                      {item.secondary}
-                                    </div>
+                        <div className="mt-4 overflow-x-auto">
+                          <table className="min-w-full divide-y divide-gray-200">
+                            <thead className="bg-gray-50">
+                              <tr>
+                                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
+                                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Primary</th>
+                                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Secondary</th>
+                                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created</th>
+                                <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                              </tr>
+                            </thead>
+                            <tbody className="bg-white divide-y divide-gray-200">
+                              {rows.map((item) => (
+                                <React.Fragment key={item.id}>
+                                  <tr>
+                                    <td className="px-4 py-2">{item.id}</td>
+                                    <td className="px-4 py-2">{item.primary ?? item.id}</td>
+                                    <td className="px-4 py-2">{item.secondary ?? ''}</td>
+                                    <td className="px-4 py-2">{new Date(item.created_at).toLocaleString()}</td>
+                                    <td className="px-4 py-2 text-right space-x-2">
+                                      <button
+                                        onClick={() => openEdit(item.id, d)}
+                                        className="btn btn-ghost btn-sm text-blue-600 hover:bg-blue-100"
+                                        title="Edit"
+                                      >
+                                        <Icon name="pen" className="w-4 h-4" />
+                                      </button>
+                                      <button
+                                        onClick={() => navigator.clipboard.writeText(String(item.id))}
+                                        className="btn btn-ghost btn-sm text-gray-600 hover:bg-gray-100"
+                                        title="Copy ID"
+                                      >
+                                        <Icon name="copy" className="w-4 h-4" />
+                                      </button>
+                                      <button
+                                        onClick={() => handleDelete(item.id, d)}
+                                        className="btn btn-ghost btn-sm text-red-600 hover:bg-red-100"
+                                        title="Delete"
+                                      >
+                                        <Icon name="trash" className="w-4 h-4" />
+                                      </button>
+                                    </td>
+                                  </tr>
+                                  {editing?.id === item.id && (
+                                    <tr className="bg-gray-50">
+                                      <td colSpan={5} className="p-3">
+                                        <div className="space-y-3">
+                                          <div className="text-xs font-medium text-blue-600">EDIT MODE</div>
+                                          <textarea
+                                            className="w-full h-32 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 font-mono text-sm"
+                                            value={editing.text}
+                                            onChange={(e) => setEditing({ ...editing, text: e.target.value })}
+                                            placeholder="Enter JSON data..."
+                                          />
+                                          <div className="flex flex-wrap gap-2">
+                                            <button onClick={saveEdit} className="btn btn-primary flex-1 gap-2">
+                                              <Icon name="save" className="w-4 h-4" />
+                                              Save
+                                            </button>
+                                            <button onClick={() => setEditing(null)} className="btn btn-secondary gap-2">
+                                              <Icon name="ban" className="w-4 h-4" />
+                                              Cancel
+                                            </button>
+                                            <button
+                                              onClick={() => window.open(`/database/${table}/${item.id}`, '_blank')}
+                                              className="btn btn-secondary gap-2"
+                                            >
+                                              <Icon name="up-right-from-square" className="w-4 h-4" />
+                                              Open
+                                            </button>
+                                          </div>
+                                        </div>
+                                      </td>
+                                    </tr>
                                   )}
-                                  <div className="text-xs text-gray-400 mt-1">
-                                    {new Date(item.created_at).toLocaleString()}
-                                  </div>
-                                </div>
-                              </div>
-
-                              <div className="flex justify-end gap-2">
-                                <button
-                                  onClick={() => openEdit(item.id, d)}
-                                  className="btn btn-ghost btn-sm text-blue-600 hover:bg-blue-100"
-                                  title="Edit"
-                                >
-                                  <Icon name="pen" className="w-4 h-4" />
-                                </button>
-                                <button
-                                  onClick={() => navigator.clipboard.writeText(String(item.id))}
-                                  className="btn btn-ghost btn-sm text-gray-600 hover:bg-gray-100"
-                                  title="Copy ID"
-                                >
-                                  <Icon name="copy" className="w-4 h-4" />
-                                </button>
-                                <button
-                                  onClick={() => handleDelete(item.id, d)}
-                                  className="btn btn-ghost btn-sm text-red-600 hover:bg-red-100"
-                                  title="Delete"
-                                >
-                                  <Icon name="trash" className="w-4 h-4" />
-                                </button>
-                              </div>
-
-                              {editing?.id === item.id && (
-                                <div className="mt-4 space-y-3">
-                                  <div className="text-xs font-medium text-blue-600">EDIT MODE</div>
-                                  <textarea
-                                    className="w-full h-32 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 font-mono text-sm"
-                                    value={editing.text}
-                                    onChange={(e) => setEditing({ ...editing, text: e.target.value })}
-                                    placeholder="Enter JSON data..."
-                                  />
-                                  <div className="flex flex-wrap gap-2">
-                                    <button
-                                      onClick={saveEdit}
-                                      className="btn btn-primary flex-1 gap-2"
-                                    >
-                                      <Icon name="save" className="w-4 h-4" />
-                                      Save
-                                    </button>
-                                    <button
-                                      onClick={() => setEditing(null)}
-                                      className="btn btn-secondary gap-2"
-                                    >
-                                      <Icon name="ban" className="w-4 h-4" />
-                                      Cancel
-                                    </button>
-                                    <button
-                                      onClick={() => window.open(`/admin/${table}/${item.id}`, '_blank')}
-                                      className="btn btn-secondary gap-2"
-                                    >
-                                      <Icon name="up-right-from-square" className="w-4 h-4" />
-                                      Open
-                                    </button>
-                                  </div>
-                                </div>
-                              )}
-                            </div>
-                          ))}
+                                </React.Fragment>
+                              ))}
+                            </tbody>
+                          </table>
                         </div>
                       ) : loadingDates[d] ? (
                         <div className="flex justify-center p-4">

@@ -1,4 +1,4 @@
-export default function Admin() {
+export default function Database() {
   if (typeof window !== 'undefined') {
     window.location.href = '/settings';
   }

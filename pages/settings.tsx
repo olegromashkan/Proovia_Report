@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import Layout from '../components/Layout';
-import AdminPanel from '../components/AdminPanel';
+import DatabasePanel from '../components/DatabasePanel';
 import CustomizePanel from '../components/CustomizePanel';
 import UsersPanel from '../components/UsersPanel';
 
@@ -16,7 +16,7 @@ const FallbackLayout = ({ children, title, fullWidth }: { children: React.ReactN
 const ActiveLayout = typeof Layout === 'undefined' ? FallbackLayout : Layout;
 
 export default function Settings() {
-  const [tab, setTab] = useState<'admin' | 'customize' | 'users'>('admin');
+  const [tab, setTab] = useState<'database' | 'customize' | 'users'>('database');
 
   return (
     <ActiveLayout title="Settings" fullWidth>
@@ -27,19 +27,19 @@ export default function Settings() {
         {/* Tab Navigation */}
         <div className="flex border-b border-gray-200 dark:border-gray-700 mb-8">
           <button
-            onClick={() => setTab('admin')}
-            style={tab === 'admin' ? { background: 'var(--section-bg)' } : undefined}
+            onClick={() => setTab('database')}
+            style={tab === 'database' ? { background: 'var(--section-bg)' } : undefined}
             className={`
               px-6 py-3 text-sm font-medium rounded-t-lg transition-all duration-200
-              ${tab === 'admin'
+              ${tab === 'database'
                 ? 'text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400'
                 : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
               }
             `}
-            aria-selected={tab === 'admin'}
+            aria-selected={tab === 'database'}
             role="tab"
           >
-            Admin Panel
+            Database
           </button>
           <button
             onClick={() => setTab('customize')}
@@ -75,7 +75,7 @@ export default function Settings() {
 
         {/* Tab Content */}
         <div className="shadow-md rounded-lg p-6" style={{ background: 'var(--section-bg)' }}>
-          {tab === 'admin' && <AdminPanel />}
+          {tab === 'database' && <DatabasePanel />}
           {tab === 'customize' && <CustomizePanel />}
           {tab === 'users' && <UsersPanel />}
         </div>
