@@ -76,6 +76,13 @@ export function init() {
       text TEXT,
       created_at TEXT DEFAULT CURRENT_TIMESTAMP
     );
+    CREATE TABLE IF NOT EXISTS posts (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      username TEXT,
+      content TEXT,
+      image TEXT,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP
+    );
   `);
 
   // ensure legacy databases have the created_at column
@@ -87,6 +94,7 @@ export function init() {
     'csv_trips',
     'van_checks',
     'users',
+    'posts',
   ];
   for (const table of tables) {
     try {
