@@ -98,7 +98,13 @@ export function init() {
   function addColumnIfMissing(table: string, column: string, definition: string) {
     const info = db.prepare(`PRAGMA table_info(${table})`).all() as Array<{ name: string }>;
     if (!info.find((c) => c.name === column)) {
-      db.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${definition}`);
+      if (/current_timestamp/i.test(definition)) {
+        // SQLite cannot add a column with a non-constant default, so create the
+        // column without the default in this case.
+        db.exec(`ALTER TABLE ${table} ADD COLUMN ${column} TEXT`);
+      } else {
+        db.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${definition}`);
+      }
     }
   }
 
