@@ -10,11 +10,13 @@ export default function Card({ title, value, onClick }: CardProps) {
   return (
     <div
       onClick={onClick}
-      className="border rounded-system p-4 shadow-system cursor-pointer hover:shadow-lg text-center"
+      className="p-6 rounded-2xl shadow-lg cursor-pointer hover:shadow-xl transition-all text-center"
       style={{ background: 'var(--card-bg)' }}
     >
-      <h2 className="text-sm font-medium mb-1">{title}</h2>
-      <div className="text-4xl font-bold">{value}</div>
+      <h2 className="text-sm font-semibold mb-1 text-gray-700 dark:text-gray-200">
+        {title}
+      </h2>
+      <div className="text-4xl font-bold text-gray-900 dark:text-white">{value}</div>
     </div>
   );
 }
