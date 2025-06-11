@@ -34,20 +34,20 @@ export default function ToastNotifications() {
 
   return (
     <div className="fixed top-4 right-4 z-50 space-y-2">
-      {items.map(n => (
+      {items.map((n) => (
         <div
           key={n.id}
-          className="bg-base-100 text-base-content rounded-system shadow-system p-3 w-80 flex items-start gap-2"
+          className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-3 w-80 flex items-start gap-2"
         >
           <div className="flex-grow">
             <p className="font-semibold text-sm leading-tight">{n.message}</p>
-            <p className="text-xs text-base-content/60 mt-1">
+            <p className="text-xs text-gray-500 mt-1">
               {new Date(n.created_at).toLocaleString()}
             </p>
           </div>
           <button
             onClick={() => remove(n.id)}
-            className="btn btn-xs btn-circle btn-ghost"
+            className="p-1 rounded-full text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
           >
             <Icon name="xmark" />
           </button>

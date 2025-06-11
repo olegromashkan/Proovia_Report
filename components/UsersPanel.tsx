@@ -24,7 +24,12 @@ export default function UsersPanel() {
               {u.username}
             </Link>
             {isAdmin && (
-              <button className="btn btn-xs btn-ghost text-red-600" onClick={() => remove(u.username)}>Delete</button>
+              <button
+                className="text-xs text-red-600 hover:underline"
+                onClick={() => remove(u.username)}
+              >
+                Delete
+              </button>
             )}
           </li>
         ))}
