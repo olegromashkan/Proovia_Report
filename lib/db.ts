@@ -47,6 +47,9 @@ export function init() {
       photo TEXT,
       header TEXT,
       role TEXT DEFAULT 'user',
+      status TEXT DEFAULT 'offline',
+      status_message TEXT,
+      last_seen TEXT DEFAULT CURRENT_TIMESTAMP,
       created_at TEXT DEFAULT CURRENT_TIMESTAMP
     );
 
@@ -97,6 +100,15 @@ export function init() {
   } catch {
     // ignore if exists
   }
+  try {
+    db.exec("ALTER TABLE users ADD COLUMN status TEXT DEFAULT 'offline'");
+  } catch {}
+  try {
+    db.exec("ALTER TABLE users ADD COLUMN status_message TEXT");
+  } catch {}
+  try {
+    db.exec("ALTER TABLE users ADD COLUMN last_seen TEXT DEFAULT CURRENT_TIMESTAMP");
+  } catch {}
   try {
     db.exec("ALTER TABLE tasks ADD COLUMN due_at TEXT");
   } catch {

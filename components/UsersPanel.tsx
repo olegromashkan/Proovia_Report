@@ -20,8 +20,9 @@ export default function UsersPanel() {
         {users.map((u: any) => (
           <li key={u.id} className="flex items-center gap-3">
             {u.photo && <img src={u.photo} alt="avatar" className="w-8 h-8 rounded-full" />}
-            <Link href={`/profile/${u.username}`} className="text-blue-600 hover:underline flex-1">
+            <Link href={`/profile/${u.username}`} className="text-blue-600 hover:underline flex-1 flex items-center gap-2">
               {u.username}
+              <span className={`w-2.5 h-2.5 rounded-full ${u.status === 'online' ? 'bg-green-500' : u.status === 'away' ? 'bg-orange-500' : u.status === 'dnd' ? 'bg-red-500' : 'bg-gray-400'}`}></span>
             </Link>
             {isAdmin && (
               <button className="btn btn-xs btn-ghost text-red-600" onClick={() => remove(u.username)}>Delete</button>

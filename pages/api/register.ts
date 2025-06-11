@@ -18,12 +18,13 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
   }
   const hashed = createHash('sha256').update(password).digest('hex');
   try {
-    db.prepare('INSERT INTO users (username, password, photo, header, role) VALUES (?, ?, ?, ?, ?)').run(
+    db.prepare('INSERT INTO users (username, password, photo, header, role, status) VALUES (?, ?, ?, ?, ?, ?)').run(
       username,
       hashed,
       photo || '',
       header || '',
-      'user'
+      'user',
+      'online'
     );
     return res.status(200).json({ message: 'Registered' });
   } catch (err: any) {
