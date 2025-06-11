@@ -73,7 +73,7 @@ const StatusIndicator = ({ label, item }: { label: string; item: CheckItem }) =>
 const TireStatus = ({ item }: { item: CheckItem }) => {
   if (typeof item.value !== 'object' || item.value === null) return null;
   const tires = item.value as Record<string, string>;
-  const positions: { key: string; label: string; gridClass: string }[] = [
+  const positions = [
     { key: 'front_left', label: 'FL', gridClass: 'col-start-1 row-start-1' },
     { key: 'front_right', label: 'FR', gridClass: 'col-start-2 row-start-1' },
     { key: 'rear_left', label: 'RL', gridClass: 'col-start-1 row-start-2' },
