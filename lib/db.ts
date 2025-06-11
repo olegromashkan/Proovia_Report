@@ -95,25 +95,18 @@ export function init() {
       // ignore if column already exists
     }
   }
-  try {
-    db.exec("ALTER TABLE users ADD COLUMN role TEXT DEFAULT 'admin'");
-  } catch {
-    // ignore if exists
+  function addColumnIfMissing(table: string, column: string, definition: string) {
+    const info = db.prepare(`PRAGMA table_info(${table})`).all() as Array<{ name: string }>;
+    if (!info.find((c) => c.name === column)) {
+      db.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${definition}`);
+    }
   }
-  try {
-    db.exec("ALTER TABLE users ADD COLUMN status TEXT DEFAULT 'offline'");
-  } catch {}
-  try {
-    db.exec("ALTER TABLE users ADD COLUMN status_message TEXT");
-  } catch {}
-  try {
-    db.exec("ALTER TABLE users ADD COLUMN last_seen TEXT DEFAULT CURRENT_TIMESTAMP");
-  } catch {}
-  try {
-    db.exec("ALTER TABLE tasks ADD COLUMN due_at TEXT");
-  } catch {
-    // ignore if exists
-  }
+
+  addColumnIfMissing('users', 'role', "TEXT DEFAULT 'admin'");
+  addColumnIfMissing('users', 'status', "TEXT DEFAULT 'offline'");
+  addColumnIfMissing('users', 'status_message', 'TEXT');
+  addColumnIfMissing('users', 'last_seen', 'TEXT DEFAULT CURRENT_TIMESTAMP');
+  addColumnIfMissing('tasks', 'due_at', 'TEXT');
 }
 
 init();
