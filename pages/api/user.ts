@@ -11,7 +11,11 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
 
   if (req.method === 'GET') {
 <<<<<<< HEAD
+<<<<<<< HEAD
     const user = db.prepare('SELECT id, username, photo, header, role, status, status_message, last_seen FROM users WHERE username = ?').get(target);
+=======
+    const user = db.prepare('SELECT id, username, photo, header, role FROM users WHERE username = ?').get(target);
+>>>>>>> parent of 1722741 (feat: add user status and group chats)
 =======
     const user = db.prepare('SELECT id, username, photo, header, role FROM users WHERE username = ?').get(target);
 >>>>>>> parent of 1722741 (feat: add user status and group chats)

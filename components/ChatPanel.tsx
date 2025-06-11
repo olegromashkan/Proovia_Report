@@ -262,6 +262,7 @@ export default function ChatPanel({ open, user, onClose }: ChatPanelProps) {
             </h3>
             <p className="text-xs text-gray-500 dark:text-gray-400">
 <<<<<<< HEAD
+<<<<<<< HEAD
               {statusInfo.status === 'online'
                 ? statusInfo.message || 'Online'
                 : statusInfo.status === 'away'
@@ -269,6 +270,9 @@ export default function ChatPanel({ open, user, onClose }: ChatPanelProps) {
                 : statusInfo.status === 'dnd'
                 ? 'Do not disturb'
                 : 'last seen ' + new Date(statusInfo.last_seen).toLocaleString()}
+=======
+              {messages.length > 0 ? 'Active now' : 'Start conversation'}
+>>>>>>> parent of 1722741 (feat: add user status and group chats)
 =======
               {messages.length > 0 ? 'Active now' : 'Start conversation'}
 >>>>>>> parent of 1722741 (feat: add user status and group chats)

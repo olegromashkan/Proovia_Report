@@ -44,6 +44,9 @@ export default function ChatList({ open, onClose }: ChatListProps) {
               </span>
 =======
               <span>{u.username}</span>
+<<<<<<< HEAD
+>>>>>>> parent of 1722741 (feat: add user status and group chats)
+=======
 >>>>>>> parent of 1722741 (feat: add user status and group chats)
             </button>
           </li>

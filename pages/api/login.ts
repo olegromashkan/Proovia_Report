@@ -16,7 +16,10 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
     return res.status(401).json({ message: 'Invalid credentials' });
   }
 <<<<<<< HEAD
+<<<<<<< HEAD
   db.prepare('UPDATE users SET status = ?, last_seen = CURRENT_TIMESTAMP WHERE username = ?').run('online', username);
+=======
+>>>>>>> parent of 1722741 (feat: add user status and group chats)
 =======
 >>>>>>> parent of 1722741 (feat: add user status and group chats)
   // The frontend relies on accessing the "user" cookie via `document.cookie`.

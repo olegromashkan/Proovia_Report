@@ -129,6 +129,7 @@ export default function Profile() {
                 })}
               </div>
 <<<<<<< HEAD
+<<<<<<< HEAD
               <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
                 <span className={`w-2.5 h-2.5 rounded-full ${info.status === 'online' ? 'bg-green-500' : info.status === 'away' ? 'bg-orange-500' : info.status === 'dnd' ? 'bg-red-500' : 'bg-gray-400'}`}></span>
                 <span>
@@ -144,6 +145,8 @@ export default function Profile() {
               {info.status_message && info.status !== 'online' && (
                 <div className="text-sm text-gray-500 dark:text-gray-400">{info.status_message}</div>
               )}
+=======
+>>>>>>> parent of 1722741 (feat: add user status and group chats)
 =======
 >>>>>>> parent of 1722741 (feat: add user status and group chats)
             </div>

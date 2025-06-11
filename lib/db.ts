@@ -48,9 +48,12 @@ export function init() {
       header TEXT,
       role TEXT DEFAULT 'user',
 <<<<<<< HEAD
+<<<<<<< HEAD
       status TEXT DEFAULT 'offline',
       status_message TEXT,
       last_seen TEXT DEFAULT CURRENT_TIMESTAMP,
+=======
+>>>>>>> parent of 1722741 (feat: add user status and group chats)
 =======
 >>>>>>> parent of 1722741 (feat: add user status and group chats)
       created_at TEXT DEFAULT CURRENT_TIMESTAMP
@@ -117,6 +120,9 @@ export function init() {
   } catch {
     // ignore if exists
   }
+<<<<<<< HEAD
+>>>>>>> parent of 1722741 (feat: add user status and group chats)
+=======
 >>>>>>> parent of 1722741 (feat: add user status and group chats)
 }
 
