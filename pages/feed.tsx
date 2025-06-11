@@ -13,12 +13,23 @@ export default function Feed() {
   const [postImage, setPostImage] = useState('');
   const [comments, setComments] = useState<Record<number, any[]>>({});
   const [commentText, setCommentText] = useState<Record<number, string>>({});
+  const [editing, setEditing] = useState<number | null>(null);
+  const [editText, setEditText] = useState('');
+  const [editImage, setEditImage] = useState('');
 
   const handleImage = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     const reader = new FileReader();
     reader.onload = () => setPostImage(reader.result as string);
+    reader.readAsDataURL(file);
+  };
+
+  const handleEditImage = (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => setEditImage(reader.result as string);
     reader.readAsDataURL(file);
   };
 
@@ -78,6 +89,30 @@ export default function Feed() {
     });
     setCommentText((prev) => ({ ...prev, [id]: '' }));
     loadComments(id);
+    loadPosts();
+  };
+
+  const startEdit = (p: any) => {
+    setEditing(p.id);
+    setEditText(p.content);
+    setEditImage(p.image || '');
+  };
+
+  const saveEdit = async () => {
+    if (editing === null) return;
+    await fetch('/api/posts', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: editing, content: editText, image: editImage }),
+    });
+    setEditing(null);
+    setEditText('');
+    setEditImage('');
+    loadPosts();
+  };
+
+  const deletePost = async (id: number) => {
+    await fetch('/api/posts?id=' + id, { method: 'DELETE' });
     loadPosts();
   };
 
@@ -203,18 +238,68 @@ export default function Feed() {
                   <div className="text-sm font-semibold text-gray-800">{p.username}</div>
                 </Link>
               </UserHoverCard>
-              <div className="text-xs text-gray-500">{new Date(p.created_at).toLocaleString()}</div>
+              <div className="text-xs text-gray-500">
+                {new Date(p.created_at).toLocaleString()}
+                {p.updated_at && (
+                  <span className="italic ml-2">(edited)</span>
+                )}
+              </div>
             </div>
-            <div className="text-gray-800 text-base whitespace-pre-wrap">{p.content}</div>
-            {p.image && (
-              <motion.img
-                src={p.image}
-                alt="post"
-                className="mt-3 rounded-xl max-h-96 w-full object-contain"
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ duration: 0.3 }}
-              />
+            {editing === p.id ? (
+              <div className="space-y-3">
+                <textarea
+                  className="w-full p-3 rounded-xl bg-gray-50 text-gray-800 border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#b53133] resize-none"
+                  rows={3}
+                  value={editText}
+                  onChange={(e) => setEditText(e.target.value)}
+                />
+                {editImage && (
+                  <div className="relative">
+                    <img src={editImage} className="max-h-64 w-full object-contain rounded-xl" />
+                    <button className="absolute top-2 right-2 bg-gray-800 bg-opacity-50 text-white rounded-full p-1" onClick={() => setEditImage('')}>
+                      <Icon name="x" className="w-4 h-4" />
+                    </button>
+                  </div>
+                )}
+                <div className="flex items-center justify-between">
+                  <label className="cursor-pointer">
+                    <input type="file" accept="image/*" onChange={handleEditImage} className="hidden" />
+                    <Icon name="image" className="w-6 h-6 text-[#b53133] hover:text-[#a12b2e]" />
+                  </label>
+                  <div className="space-x-2">
+                    <motion.button
+                      className="px-3 py-1 rounded-xl bg-[#b53133] text-white font-semibold"
+                      onClick={saveEdit}
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                    >
+                      Save
+                    </motion.button>
+                    <motion.button
+                      className="px-3 py-1 rounded-xl bg-gray-200 text-gray-800"
+                      onClick={() => setEditing(null)}
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                    >
+                      Cancel
+                    </motion.button>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <>
+                <div className="text-gray-800 text-base whitespace-pre-wrap">{p.content}</div>
+                {p.image && (
+                  <motion.img
+                    src={p.image}
+                    alt="post"
+                    className="mt-3 rounded-xl max-h-96 w-full object-contain"
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ duration: 0.3 }}
+                  />
+                )}
+              </>
             )}
             <div className="flex items-center gap-4 mt-3 text-sm text-gray-600">
               <motion.button
@@ -242,6 +327,26 @@ export default function Feed() {
                 <Icon name="chat-left" className="w-4 h-4 text-gray-500" />
                 <span>{p.comments}</span>
               </motion.button>
+              {me === p.username && (
+                <>
+                  <motion.button
+                    onClick={() => startEdit(p)}
+                    className="flex items-center gap-1"
+                    whileHover={{ scale: 1.1 }}
+                    whileTap={{ scale: 0.9 }}
+                  >
+                    <Icon name="pen" className="w-4 h-4 text-gray-500" />
+                  </motion.button>
+                  <motion.button
+                    onClick={() => deletePost(p.id)}
+                    className="flex items-center gap-1"
+                    whileHover={{ scale: 1.1 }}
+                    whileTap={{ scale: 0.9 }}
+                  >
+                    <Icon name="trash" className="w-4 h-4 text-gray-500" />
+                  </motion.button>
+                </>
+              )}
             </div>
             {comments[p.id] && (
               <div className="mt-3 space-y-2">
