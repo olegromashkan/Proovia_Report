@@ -1,5 +1,5 @@
 import { useRouter } from 'next/router';
-import { useState, ChangeEvent, useEffect } from 'react';
+import { useState, ChangeEvent } from 'react';
 import { useChat } from '../../contexts/ChatContext';
 import useFetch from '../../lib/useFetch';
 import Layout from '../../components/Layout';
@@ -18,12 +18,7 @@ export default function Profile() {
   const [photo, setPhoto] = useState('');
   const [header, setHeader] = useState('');
   const [password, setPassword] = useState('');
-  const [showLast, setShowLast] = useState(true);
   const { openChat } = useChat();
-
-  useEffect(() => {
-    if (info) setShowLast(!!info.show_last_seen);
-  }, [info]);
 
   const handleImage = (e: ChangeEvent<HTMLInputElement>, set: (v:string)=>void) => {
     const file = e.target.files?.[0];
@@ -37,7 +32,7 @@ export default function Profile() {
     await fetch('/api/profile', {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ photo, header, password, showLastSeen: showLast })
+      body: JSON.stringify({ photo, header, password })
     });
     setEditing(false);
     location.reload();
@@ -127,13 +122,12 @@ export default function Profile() {
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                 </svg>
-                Joined {new Date(info.created_at).toLocaleDateString('en-US', {
-                  year: 'numeric',
-                  month: 'long',
-                  day: 'numeric'
+                Joined {new Date(info.created_at).toLocaleDateString('en-US', { 
+                  year: 'numeric', 
+                  month: 'long', 
+                  day: 'numeric' 
                 })}
               </div>
-              <div className="text-sm text-gray-500">Last seen: {info.show_last_seen ? new Date(info.last_seen).toLocaleString() : 'last seen recently'}</div>
             </div>
             <div>
               <button
@@ -182,20 +176,13 @@ export default function Profile() {
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                   New Password
                 </label>
-                <input
-                  type="password"
-                  placeholder="Enter new password"
-                  value={password}
-                  onChange={e => setPassword(e.target.value)}
-                  className="input input-bordered w-full bg-white dark:bg-gray-700"
+                <input 
+                  type="password" 
+                  placeholder="Enter new password" 
+                  value={password} 
+                  onChange={e => setPassword(e.target.value)} 
+                  className="input input-bordered w-full bg-white dark:bg-gray-700" 
                 />
-              </div>
-
-              <div className="form-control">
-                <label className="label cursor-pointer">
-                  <span className="label-text">Show last seen</span>
-                  <input type="checkbox" className="toggle" checked={showLast} onChange={e => setShowLast(e.target.checked)} />
-                </label>
               </div>
               
               <div className="flex gap-3 pt-2">
