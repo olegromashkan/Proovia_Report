@@ -1,10 +1,12 @@
 import { useRouter } from 'next/router';
 import { useState, ChangeEvent, useEffect } from 'react';
+import Link from 'next/link';
 import ChatPanel from '../../components/ChatPanel';
 import useFetch from '../../lib/useFetch';
 import Layout from '../../components/Layout';
 import Icon from '../../components/Icon';
 import useUser from '../../lib/useUser';
+import UserHoverCard from '../../components/UserHoverCard';
 
 export default function Profile() {
   const router = useRouter();
@@ -338,14 +340,18 @@ export default function Profile() {
             {posts.map(p => (
               <div key={p.id} className="bg-white dark:bg-gray-800 p-4 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700">
                 <div className="flex items-center gap-2 mb-2">
-                  {p.photo ? (
-                    <img src={p.photo} alt={p.username} className="w-8 h-8 rounded-full object-cover" />
-                  ) : (
-                    <div className="w-8 h-8 rounded-full bg-gray-300 flex items-center justify-center text-sm font-bold text-gray-600">
-                      {p.username[0]?.toUpperCase()}
-                    </div>
-                  )}
-                  <div className="text-sm font-semibold text-gray-800 dark:text-gray-100">{p.username}</div>
+                  <UserHoverCard username={p.username}>
+                    <Link href={`/profile/${p.username}`} className="flex items-center gap-2">
+                      {p.photo ? (
+                        <img src={p.photo} alt={p.username} className="w-8 h-8 rounded-full object-cover" />
+                      ) : (
+                        <div className="w-8 h-8 rounded-full bg-gray-300 flex items-center justify-center text-sm font-bold text-gray-600">
+                          {p.username[0]?.toUpperCase()}
+                        </div>
+                      )}
+                      <div className="text-sm font-semibold text-gray-800 dark:text-gray-100">{p.username}</div>
+                    </Link>
+                  </UserHoverCard>
                   <div className="text-xs text-gray-500 ml-auto">{new Date(p.created_at).toLocaleString()}</div>
                 </div>
                 <div className="whitespace-pre-wrap text-gray-700 dark:text-gray-200">{p.content}</div>
@@ -366,15 +372,19 @@ export default function Profile() {
                   <div className="mt-3 space-y-2">
                     {comments[p.id].map(c => (
                       <div key={c.id} className="flex items-start gap-2 text-sm">
-                        {c.photo ? (
-                          <img src={c.photo} alt={c.username} className="w-6 h-6 rounded-full object-cover" />
-                        ) : (
-                          <div className="w-6 h-6 rounded-full bg-gray-300 flex items-center justify-center text-xs font-bold text-gray-600">
-                            {c.username[0]?.toUpperCase()}
-                          </div>
-                        )}
+                        <UserHoverCard username={c.username}>
+                          <Link href={`/profile/${c.username}`} className="flex items-start gap-2">
+                            {c.photo ? (
+                              <img src={c.photo} alt={c.username} className="w-6 h-6 rounded-full object-cover" />
+                            ) : (
+                              <div className="w-6 h-6 rounded-full bg-gray-300 flex items-center justify-center text-xs font-bold text-gray-600">
+                                {c.username[0]?.toUpperCase()}
+                              </div>
+                            )}
+                            <div className="font-semibold text-gray-800 dark:text-gray-100">{c.username}</div>
+                          </Link>
+                        </UserHoverCard>
                         <div>
-                          <div className="font-semibold text-gray-800 dark:text-gray-100">{c.username}</div>
                           <div className="text-gray-700 dark:text-gray-200 whitespace-pre-wrap">{c.text}</div>
                           <div className="text-xs text-gray-500">{new Date(c.created_at).toLocaleString()}</div>
                         </div>
