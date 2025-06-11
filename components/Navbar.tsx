@@ -8,7 +8,6 @@ import SearchOverlay from './SearchOverlay';
 import Icon from './Icon';
 import UserMenu from './UserMenu';
 import TasksPanel from './TasksPanel';
-import ChatList from './ChatList';
 
 interface NavLink {
   href: string;
@@ -21,7 +20,6 @@ export default function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [tasksOpen, setTasksOpen] = useState(false);
-  const [chatsOpen, setChatsOpen] = useState(false);
   const router = useRouter();
 
   // Handle scroll effect for navbar shadow
@@ -121,15 +119,6 @@ export default function Navbar() {
           {/* Notification Center */}
           <NotificationCenter />
 
-          {/* Chats Button */}
-          <button
-            onClick={() => setChatsOpen(true)}
-            className="p-2 text-gray-600 dark:text-gray-300 hover:bg-blue-50/50 dark:hover:bg-blue-900/20 rounded-lg transition-all duration-200"
-            aria-label="Open chats"
-          >
-            <Icon name="chat" className="w-5 h-5" />
-          </button>
-
           {/* Tasks Button */}
           <button
             onClick={() => setTasksOpen(true)}
@@ -225,9 +214,6 @@ export default function Navbar() {
 
       {/* Search Overlay */}
       <SearchOverlay open={searchOpen} onClose={() => setSearchOpen(false)} />
-
-      {/* Chat List */}
-      <ChatList open={chatsOpen} onClose={() => setChatsOpen(false)} />
 
       {/* Tasks Panel */}
       <TasksPanel open={tasksOpen} onClose={() => setTasksOpen(false)} />

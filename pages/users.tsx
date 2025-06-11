@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import Layout from '../components/Layout';
 import useFetch from '../lib/useFetch';
+<<<<<<< HEAD
 import { useChat } from '../contexts/ChatContext';
 import { useState } from 'react';
 
@@ -11,6 +12,16 @@ export default function Users() {
   const users = (data?.users || []).filter(u =>
     u.username.toLowerCase().includes(query.toLowerCase())
   );
+=======
+import { useState } from 'react';
+import ChatPanel from '../components/ChatPanel';
+
+export default function Users() {
+  const { data } = useFetch<{ users: any[] }>('/api/users');
+  const users = data?.users || [];
+  const [chatUser, setChatUser] = useState('');
+  const [chatOpen, setChatOpen] = useState(false);
+>>>>>>> parent of 49cbc74 (Merge pull request #113 from olegromashkan/codex/обновить-функциональность-чатов-и-уведомлений)
 
   return (
     <Layout title="Users">
@@ -25,6 +36,7 @@ export default function Users() {
         />
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
           {users.map(u => (
+<<<<<<< HEAD
             <div key={u.id} className="card bg-base-100 shadow-system">
               <div className="p-4 flex flex-col items-center gap-2">
                 {u.photo && (
@@ -50,9 +62,26 @@ export default function Users() {
                 </button>
               </div>
             </div>
+=======
+            <li key={u.id} className="flex items-center gap-3">
+              {u.photo && (
+                <img src={u.photo} alt="avatar" className="w-8 h-8 rounded-full" />
+              )}
+              <Link href={`/profile/${u.username}`} className="link flex-1">
+                {u.username}
+              </Link>
+              <button
+                className="btn btn-xs"
+                onClick={() => { setChatUser(u.username); setChatOpen(true); }}
+              >
+                Chat
+              </button>
+            </li>
+>>>>>>> parent of 49cbc74 (Merge pull request #113 from olegromashkan/codex/обновить-функциональность-чатов-и-уведомлений)
           ))}
         </div>
       </div>
+      <ChatPanel open={chatOpen} user={chatUser} onClose={() => setChatOpen(false)} />
     </Layout>
   );
 }

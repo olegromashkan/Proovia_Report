@@ -1,5 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
-import db, { addNotification } from '../../lib/db';
+import db from '../../lib/db';
 
 export default function handler(req: NextApiRequest, res: NextApiResponse) {
   const username = req.cookies.user;
@@ -24,9 +24,6 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
       to,
       text
     );
-    if (to !== username) {
-      addNotification('message', `${username} -> ${to}: ${text}`);
-    }
     return res.status(200).json({ message: 'Sent' });
   }
 

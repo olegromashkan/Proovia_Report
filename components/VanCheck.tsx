@@ -73,7 +73,7 @@ const StatusIndicator = ({ label, item }: { label: string; item: CheckItem }) =>
 const TireStatus = ({ item }: { item: CheckItem }) => {
   if (typeof item.value !== 'object' || item.value === null) return null;
   const tires = item.value as Record<string, string>;
-  const positions = [
+  const positions: { key: string; label: string; gridClass: string }[] = [
     { key: 'front_left', label: 'FL', gridClass: 'col-start-1 row-start-1' },
     { key: 'front_right', label: 'FR', gridClass: 'col-start-2 row-start-1' },
     { key: 'rear_left', label: 'RL', gridClass: 'col-start-1 row-start-2' },
@@ -149,7 +149,7 @@ export default function VanCheck({ data, contractor }: Props) {
 
         <div className="divider my-2"></div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="grid grid-cols-2 gap-4">
           <div className="grid grid-cols-3 gap-y-4 gap-x-2 place-items-center">
             <StatusIndicator label="Lights" item={getItem(checks.lights)} />
             <StatusIndicator label="Fuel" item={getItem(checks.fuel)} />

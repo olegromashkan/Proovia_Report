@@ -3,7 +3,6 @@ import Head from 'next/head';
 import Script from 'next/script';
 import '../uno.css';
 import { useEffect } from 'react';
-import { ChatProvider } from '../contexts/ChatContext';
 
 export default function MyApp({ Component, pageProps }: AppProps) {
   useEffect(() => {
@@ -52,9 +51,7 @@ export default function MyApp({ Component, pageProps }: AppProps) {
       </Head>
       <Script src="https://cdn.jsdelivr.net/npm/chart.js"></Script>
       <Script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></Script>
-      <ChatProvider>
-        <Component {...pageProps} />
-      </ChatProvider>
+      <Component {...pageProps} />
     </>
   );
 }
