@@ -18,12 +18,15 @@ function isValidTable(name: string | string[] | undefined): name is Table {
 }
 
 export default function handler(req: NextApiRequest, res: NextApiResponse) {
-  const { table, id, date } = req.query;
+  const { table, id, date, limit, offset } = req.query;
   if (!isValidTable(table)) {
     return res.status(400).json({ message: 'Invalid table' });
   }
 
   if (req.method === 'GET') {
+    const lim = parseInt(String(limit ?? '200'), 10);
+    const off = parseInt(String(offset ?? '0'), 10);
+
     if (typeof id === 'string') {
       const row = db
         .prepare(`SELECT id, created_at, data FROM ${table} WHERE id = ?`)
@@ -34,51 +37,27 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
       return res.status(200).json({ item: { ...row, data: JSON.parse(row.data) } });
     }
 
-    let rows;
+    let query = `SELECT id, created_at, data FROM ${table}`;
+    const params: any[] = [];
     if (typeof date === 'string') {
-      rows = db
-        .prepare(
-          `SELECT id, created_at, data FROM ${table} WHERE date(created_at) = date(?) ORDER BY created_at DESC`
-        )
-        .all(date);
-    } else {
-      rows = db
-        .prepare(`SELECT id, created_at, data FROM ${table} ORDER BY created_at DESC`)
-        .all();
+      query += ' WHERE date(created_at) = date(?)';
+      params.push(date);
     }
+    query += ' ORDER BY created_at DESC LIMIT ? OFFSET ?';
+    params.push(lim, off);
 
-    const items = rows.map((row: any) => {
-      let primary: string | number = row.id;
-      let secondary = '';
-      try {
-        const data = JSON.parse(row.data);
-        switch (table) {
-          case 'copy_of_tomorrow_trips':
-            primary = data['Order.OrderNumber'] || row.id;
-            break;
-          case 'event_stream':
-            primary = data['Vans'] || row.id;
-            break;
-          case 'drivers_report':
-            primary = data['Full_Name'] || row.id;
-            secondary = data['Contractor_Name'] || '';
-            break;
-          case 'schedule_trips':
-            primary = data['Calendar_Name'] || row.id;
-            break;
-          case 'csv_trips':
-            primary = `${data['Start At'] || ''} - ${data['End At'] || ''}`.trim();
-            secondary = data['Asset'] || '';
-            break;
-          case 'van_checks':
-            primary = data['van_id'] || row.id;
-            secondary = data['driver_id'] || '';
-            break;
-        }
-      } catch {}
-      return { id: row.id, created_at: row.created_at, primary, secondary };
-    });
-    return res.status(200).json({ items });
+    const rows = db.prepare(query).all(...params);
+    const totalRow = typeof date === 'string'
+      ? db.prepare(`SELECT COUNT(*) as c FROM ${table} WHERE date(created_at) = date(?)`).get(date)
+      : db.prepare(`SELECT COUNT(*) as c FROM ${table}`).get();
+
+    const items = rows.map((row: any) => ({
+      id: row.id,
+      created_at: row.created_at,
+      data: JSON.parse(row.data),
+    }));
+
+    return res.status(200).json({ items, total: totalRow.c });
   }
 
   if (req.method === 'POST') {
