@@ -28,6 +28,12 @@ and saves it into an SQLite database (`database.db`). If the server is running
 on a machine connected to your local network or via Tailscale, the API will be
 reachable on that network as well.
 
+Daily summary posts are generated automatically from the uploaded data. A post
+for a specific day is created only when all four sources—`event_stream`,
+`schedule_trips`, `csv_trips` and `copy_of_tomorrow_trips`—have been uploaded
+for that day. Missing posts for previous days are created once all required data
+becomes available.
+
 ## Uploading data
 
 Navigate to `/upload` in the browser and select a `.json` file with the

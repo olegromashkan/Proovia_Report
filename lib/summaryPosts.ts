@@ -22,6 +22,16 @@ export function generateSummaryPosts(): number {
   const rows = db.prepare('SELECT data FROM copy_of_tomorrow_trips').all();
   const items = rows.map((r: any) => JSON.parse(r.data));
 
+  const getDates = (table: string) =>
+    db
+      .prepare(`SELECT DISTINCT date(created_at) d FROM ${table}`)
+      .all()
+      .map((r: any) => r.d as string);
+
+  const eventDates = new Set(getDates('event_stream'));
+  const scheduleDates = new Set(getDates('schedule_trips'));
+  const csvDates = new Set(getDates('csv_trips'));
+
   const groups: Record<string, { total: number; complete: number; failed: number }> = {};
 
   items.forEach((item: any) => {
@@ -43,10 +53,19 @@ export function generateSummaryPosts(): number {
 
   let created = 0;
   for (const [date, stats] of Object.entries(groups)) {
+    if (
+      !eventDates.has(date) ||
+      !scheduleDates.has(date) ||
+      !csvDates.has(date)
+    ) {
+      continue;
+    }
     const tsDate = new Date(date);
     tsDate.setDate(tsDate.getDate() + 1);
     const ts = tsDate.toISOString().slice(0, 10) + ' 00:00:00';
-    const existing = db.prepare("SELECT id FROM posts WHERE type = 'summary' AND date(created_at) = date(?)").get(ts);
+    const existing = db
+      .prepare("SELECT id FROM posts WHERE type = 'summary' AND date(created_at) = date(?)")
+      .get(ts);
     if (existing) continue;
     const content = `Summary for ${date}: ${stats.complete} completed of ${stats.total}, ${stats.failed} failed.`;
     db.prepare('INSERT INTO posts (username, content, created_at, type) VALUES (?, ?, ?, ?)').run('summary_bot', content, ts, 'summary');
