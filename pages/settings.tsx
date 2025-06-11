@@ -3,6 +3,7 @@ import Layout from '../components/Layout';
 import DatabasePanel from '../components/DatabasePanel';
 import CustomizePanel from '../components/CustomizePanel';
 import UsersPanel from '../components/UsersPanel';
+import UploadSettingsPanel from '../components/UploadSettingsPanel';
 
 // Fallback Layout component if the import fails
 const FallbackLayout = ({ children, title, fullWidth }: { children: React.ReactNode; title?: string; fullWidth?: boolean }) => (
@@ -16,7 +17,7 @@ const FallbackLayout = ({ children, title, fullWidth }: { children: React.ReactN
 const ActiveLayout = typeof Layout === 'undefined' ? FallbackLayout : Layout;
 
 export default function Settings() {
-  const [tab, setTab] = useState<'database' | 'customize' | 'users'>('database');
+  const [tab, setTab] = useState<'database' | 'customize' | 'users' | 'upload'>('database');
 
   return (
     <ActiveLayout title="Settings" fullWidth>
@@ -80,6 +81,23 @@ export default function Settings() {
                 <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600 dark:bg-blue-400"></div>
               )}
             </button>
+            <button
+              onClick={() => setTab('upload')}
+              className={`
+                px-6 py-4 text-sm font-medium transition-all duration-200 relative
+                ${tab === 'upload'
+                  ? 'text-blue-600 dark:text-blue-400'
+                  : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white'
+                }
+              `}
+              aria-selected={tab === 'upload'}
+              role="tab"
+            >
+              Upload Settings
+              {tab === 'upload' && (
+                <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600 dark:bg-blue-400"></div>
+              )}
+            </button>
           </div>
         </div>
 
@@ -99,6 +117,11 @@ export default function Settings() {
             {tab === 'users' && (
               <div className="h-full">
                 <UsersPanel />
+              </div>
+            )}
+            {tab === 'upload' && (
+              <div className="h-full">
+                <UploadSettingsPanel />
               </div>
             )}
           </div>

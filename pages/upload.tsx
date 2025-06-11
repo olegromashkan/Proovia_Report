@@ -1,117 +1,161 @@
-import { useState, ChangeEvent } from 'react';
+import { useState, useEffect, DragEvent, ChangeEvent } from 'react';
 import Layout from '../components/Layout';
 import Icon from '../components/Icon';
+import UploadHistory from '../components/UploadHistory';
 
 export default function Upload() {
-  const [message, setMessage] = useState('');
+  const [files, setFiles] = useState<File[]>([]);
   const [progress, setProgress] = useState(0);
   const [logs, setLogs] = useState<string[]>([]);
+  const [message, setMessage] = useState('');
 
-  const handleFile = async (e: ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  const limit =
+    (typeof window !== 'undefined'
+      ? parseInt(localStorage.getItem('uploadLimit') || '10', 10)
+      : 10) * 1024 * 1024;
+  const allowed: string[] =
+    typeof window !== 'undefined'
+      ? JSON.parse(localStorage.getItem('uploadTypes') || '["json","csv"]')
+      : ['json', 'csv'];
 
+  const accept = allowed.map((t) => '.' + t).join(',');
+
+  const addFiles = (list: FileList) => {
+    const arr = Array.from(list).filter(
+      (f) =>
+        allowed.some((t) => f.name.toLowerCase().endsWith('.' + t)) &&
+        f.size <= limit,
+    );
+    if (arr.length) setFiles((cur) => [...cur, ...arr]);
+  };
+
+  const handleInput = (e: ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) addFiles(e.target.files);
+    e.target.value = '';
+  };
+
+  const handleDrop = (e: DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    if (e.dataTransfer.files) addFiles(e.dataTransfer.files);
+  };
+
+  const handleDrag = (e: DragEvent<HTMLDivElement>) => e.preventDefault();
+
+  const startUpload = async () => {
+    if (files.length === 0) return;
     setProgress(0);
     setLogs([]);
     setMessage('');
-
-    const text = await file.text();
-    let payload: any = null;
-    try {
-      payload = JSON.parse(text);
-      setLogs((l) => [...l, 'File parsed as JSON, starting upload...']);
-    
-      const xhr = new XMLHttpRequest();
-      xhr.open('POST', '/api/upload');
-      xhr.setRequestHeader('Content-Type', 'application/json');
-
-      xhr.upload.onprogress = (event) => {
-        if (event.lengthComputable) {
-          setProgress(Math.round((event.loaded / event.total) * 100));
-        }
-      };
-
-      xhr.onload = () => {
-        if (xhr.status >= 200 && xhr.status < 300) {
-          setMessage('Upload successful');
-          setLogs((l) => [...l, 'Server responded with success']);
-        } else {
-          setMessage('Upload failed');
-          setLogs((l) => [...l, `Server error: ${xhr.statusText}`]);
-        }
-      };
-
-      xhr.onerror = () => {
-        setMessage('Upload failed');
-        setLogs((l) => [...l, 'Network error during upload']);
-      };
-
-      xhr.send(JSON.stringify(payload));
-    } catch {
-      // try CSV parsing
+    let loaded = 0;
+    const total = files.reduce((a, f) => a + f.size, 0);
+    for (const file of files) {
+      setLogs((l) => [...l, `Uploading ${file.name}`]);
+      const text = await file.text();
+      let payload: any;
       try {
-        const lines = text.trim().split(/\r?\n/);
-        const headers = lines[0]
-          .split(/,(?=(?:[^"]*"[^"]*")*[^"]*$)/)
-          .map((h) => h.replace(/^"|"$/g, ''));
-        const items = lines.slice(1).map((line) => {
-          const values = line
+        payload = JSON.parse(text);
+      } catch {
+        try {
+          const lines = text.trim().split(/\r?\n/);
+          const headers = lines[0]
             .split(/,(?=(?:[^"]*"[^"]*")*[^"]*$)/)
-            .map((v) => v.replace(/^"|"$/g, ''));
-          const obj: any = {};
-          headers.forEach((h, i) => {
-            obj[h] = values[i];
+            .map((h) => h.replace(/^"|"$/g, ''));
+          const items = lines.slice(1).map((line) => {
+            const values = line
+              .split(/,(?=(?:[^"]*"[^"]*")*[^"]*$)/)
+              .map((v) => v.replace(/^"|"$/g, ''));
+            const obj: any = {};
+            headers.forEach((h, i) => {
+              obj[h] = values[i];
+            });
+            return obj;
           });
-          return obj;
-        });
-        payload = { csvTrips: items };
-        setLogs((l) => [...l, 'CSV parsed, starting upload...']);
-
+          payload = { csvTrips: items };
+        } catch {
+          setLogs((l) => [...l, `Failed to parse ${file.name}`]);
+          loaded += file.size;
+          setProgress(Math.round((loaded / total) * 100));
+          continue;
+        }
+      }
+      await new Promise<void>((resolve) => {
         const xhr = new XMLHttpRequest();
         xhr.open('POST', '/api/upload');
         xhr.setRequestHeader('Content-Type', 'application/json');
-
-        xhr.upload.onprogress = (event) => {
-          if (event.lengthComputable) {
-            setProgress(Math.round((event.loaded / event.total) * 100));
+        xhr.upload.onprogress = (ev) => {
+          if (ev.lengthComputable) {
+            setProgress(Math.round(((loaded + ev.loaded) / total) * 100));
           }
         };
-
         xhr.onload = () => {
+          loaded += file.size;
           if (xhr.status >= 200 && xhr.status < 300) {
-            setMessage('Upload successful');
-            setLogs((l) => [...l, 'Server responded with success']);
+            setLogs((l) => [...l, `${file.name} uploaded`]);
           } else {
-            setMessage('Upload failed');
-            setLogs((l) => [...l, `Server error: ${xhr.statusText}`]);
+            setLogs((l) => [...l, `${file.name} failed: ${xhr.statusText}`]);
           }
+          setProgress(Math.round((loaded / total) * 100));
+          resolve();
         };
-
         xhr.onerror = () => {
-          setMessage('Upload failed');
-          setLogs((l) => [...l, 'Network error during upload']);
+          loaded += file.size;
+          setLogs((l) => [...l, `${file.name} network error`]);
+          setProgress(Math.round((loaded / total) * 100));
+          resolve();
         };
-
         xhr.send(JSON.stringify(payload));
-      } catch {
-        setMessage('Invalid file');
-        setLogs((l) => [...l, 'Failed to parse file']);
-      }
+      });
     }
+    setMessage('Done');
+    setFiles([]);
   };
 
   return (
-    <Layout title="Upload JSON">
-      <h1 className="text-2xl font-bold">Upload JSON</h1>
-      <input id="file" type="file" accept=".json,.csv" onChange={handleFile} className="hidden" />
-      <label htmlFor="file" className="btn mb-2 cursor-pointer bg-indigo-600">
-        <Icon name="file-arrow-up" className="icon" />
-        <span>Select File</span>
-      </label>
-      <progress className="w-full h-2 rounded bg-gray-200" value={progress} max={100}></progress>
-      {message && <p>{message}</p>}
+    <Layout title="Upload Files">
+      <h1 className="text-2xl font-bold mb-4">Upload Files</h1>
+      <div
+        className="border-2 border-dashed rounded-lg p-6 text-center bg-white cursor-pointer"
+        onDrop={handleDrop}
+        onDragOver={handleDrag}
+      >
+        <input
+          id="file"
+          type="file"
+          multiple
+          accept={accept}
+          onChange={handleInput}
+          className="hidden"
+        />
+        <label htmlFor="file" className="text-gray-500 flex flex-col items-center gap-2">
+          <Icon name="file-arrow-up" className="text-3xl" />
+          <span>Drag files here or click to select</span>
+        </label>
+      </div>
+      {files.length > 0 && (
+        <div className="mt-4">
+          <h2 className="font-medium mb-1">Files to upload</h2>
+          <ul className="list-disc list-inside text-sm space-y-1">
+            {files.map((f) => (
+              <li key={f.name}>{f.name}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+      <button
+        className="btn mt-4 bg-indigo-600"
+        onClick={startUpload}
+        disabled={files.length === 0}
+      >
+        Upload
+      </button>
+      <progress
+        className="w-full h-2 rounded bg-gray-200 mt-4"
+        value={progress}
+        max={100}
+      ></progress>
+      {message && <p className="mt-2">{message}</p>}
       {logs.length > 0 && (
-        <div className="bg-gray-100 p-2 rounded">
+        <div className="bg-gray-100 p-2 rounded mt-4">
           <h2 className="font-semibold">Logs</h2>
           <ul className="list-disc list-inside text-sm">
             {logs.map((log, idx) => (
@@ -120,6 +164,9 @@ export default function Upload() {
           </ul>
         </div>
       )}
+      <div className="mt-6">
+        <UploadHistory />
+      </div>
     </Layout>
   );
 }
