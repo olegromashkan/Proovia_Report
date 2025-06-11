@@ -1,5 +1,6 @@
-import { useEffect, useState, CSSProperties } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { motion } from 'framer-motion';
 import Layout from '../components/Layout';
 import Card from '../components/Card';
 import Modal from '../components/Modal';
@@ -18,13 +19,13 @@ export default function Home() {
 
   useEffect(() => {
     fetch('/api/summary')
-      .then(res => (res.ok ? res.json() : Promise.reject()))
+      .then((res) => (res.ok ? res.json() : Promise.reject()))
       .then(setSummary)
       .catch(() => {});
   }, []);
 
   const cards = [
-    { id: 'total', title: 'Total Trips', value: summary?.total ?? 0 },
+    { id: 'total', title: 'Total Tasks', value: summary?.total ?? 0 },
     { id: 'complete', title: 'Completed', value: summary?.complete ?? 0 },
     { id: 'failed', title: 'Failed', value: summary?.failed ?? 0 },
     { id: 'avg', title: 'Avg Punctuality (m)', value: summary?.avgPunctuality ?? 0 },
@@ -32,7 +33,12 @@ export default function Home() {
 
   return (
     <Layout title="Home" fullWidth>
-      <div className="relative rounded-2xl overflow-hidden shadow-lg mb-6">
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ type: 'spring', stiffness: 120, damping: 20 }}
+        className="relative rounded-2xl overflow-hidden shadow-xl mb-8"
+      >
         {user?.header ? (
           <img
             src={user.header}
@@ -40,48 +46,62 @@ export default function Home() {
             className="absolute inset-0 w-full h-full object-cover"
           />
         ) : (
-          <div className="absolute inset-0 bg-gradient-to-br from-blue-400 via-purple-500 to-pink-500" />
+          <div className="absolute inset-0 bg-gradient-to-br from-[#b53133] via-gray-800 to-gray-900" />
         )}
-        <div className="absolute inset-0 bg-black/40" />
-        <div className="relative flex flex-col sm:flex-row items-center">
-          <div className="flex items-center gap-4 p-6 flex-1">
+        <div className="absolute inset-0 bg-black/60" />
+        <div className="relative flex flex-col sm:flex-row items-center p-8 gap-6">
+          <motion.div
+            className="flex items-center gap-4 flex-1"
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.2, type: 'spring', stiffness: 120, damping: 20 }}
+          >
             {user?.photo ? (
               <img
                 src={user.photo}
                 alt="avatar"
-                className="w-24 h-24 rounded-full object-cover border-4 border-white shadow-lg brightness-90"
+                className="w-28 h-28 rounded-full object-cover border-4 border-white shadow-xl"
               />
             ) : (
-              <div className="w-24 h-24 rounded-full bg-white/30 flex items-center justify-center text-4xl font-bold text-white border-4 border-white shadow-lg">
+              <div className="w-28 h-28 rounded-full bg-white/30 flex items-center justify-center text-5xl font-extrabold text-white border-4 border-white shadow-xl">
                 {(user?.username || 'G').charAt(0).toUpperCase()}
               </div>
             )}
             <div className="text-white">
-              <h2 className="text-2xl font-bold">
+              <h2 className="text-3xl font-extrabold">
                 {user?.username || 'Guest'}
               </h2>
               {!user && (
-                <Link href="/auth/login" className="underline text-sm text-blue-200">
+                <Link
+                  href="/auth/login"
+                  className="text-sm text-white hover:text-[#b53133] transition"
+                >
                   Sign in to your account
                 </Link>
               )}
             </div>
-          </div>
-          <div
-            className="grid grid-cols-2 sm:grid-cols-4 gap-4 p-6"
-            style={{ '--card-bg': 'rgba(0,0,0,0.4)' } as CSSProperties}
+          </motion.div>
+          <motion.div
+            className="grid grid-cols-2 sm:grid-cols-4 gap-4 w-full sm:w-auto"
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.4, type: 'spring', stiffness: 120, damping: 20 }}
           >
             {cards.map((c) => (
-              <Card
+              <motion.div
                 key={c.id}
-                title={c.title}
-                value={c.value}
+                className="bg-white/20 backdrop-blur-sm rounded-xl p-4 text-center border border-white/10 hover:bg-white/30 transition cursor-pointer"
+                whileHover={{ scale: 1.05, boxShadow: '0 4px 16px rgba(0, 0, 0, 0.2)' }}
+                whileTap={{ scale: 0.95 }}
                 onClick={() => setOpen(c.id)}
-              />
+              >
+                <h3 className="text-sm font-semibold text-white">{c.title}</h3>
+                <p className="text-2xl font-bold text-white">{c.value}</p>
+              </motion.div>
             ))}
-          </div>
+          </motion.div>
         </div>
-      </div>
+      </motion.div>
 
       <Calendar />
 
