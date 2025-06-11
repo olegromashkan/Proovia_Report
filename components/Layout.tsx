@@ -16,12 +16,14 @@ export default function Layout({ children, title, fullWidth }: LayoutProps) {
         <title>{title ? `${title} | Proovia Report` : 'Proovia Report'}</title>
         <meta name="viewport" content="width=device-width, initial-scale=1" />
       </Head>
-      <div className="min-h-screen bg-base-200 text-base-content">
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 text-base-content">
         <Navbar />
         <ToastNotifications />
         <main
           className={
-            fullWidth ? 'p-4 space-y-4' : 'max-w-screen-xl mx-auto p-4 space-y-4'
+            fullWidth
+              ? 'p-6 space-y-6'
+              : 'max-w-6xl mx-auto p-6 space-y-6'
           }
         >
           {children}
