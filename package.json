@@ -16,6 +16,7 @@
     "better-sqlite3": "^9.0.0",
     "emoji-picker-react": "^4.12.2",
     "framer-motion": "^12.16.0",
+    "lucide-react": "^0.514.0",
     "next": "latest",
     "react": "latest",
     "react-dom": "latest",
