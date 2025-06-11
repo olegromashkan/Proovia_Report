@@ -70,7 +70,3 @@ h6 {
 .section-system {
   background: var(--section-bg);
 }
-
-.table-responsive {
-  overflow-x: auto;
-}

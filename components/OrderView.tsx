@@ -42,7 +42,7 @@ export default function OrderView({ data }: { data: Data }) {
       {Object.keys(categories).map((cat) => (
         <div key={cat} className="border rounded">
           <h2 className="font-semibold bg-gray-100 p-2">{cat}</h2>
-          <div className="table-responsive">
+          <div className="overflow-x-auto">
             <table className="w-full text-sm">
             <tbody>
               {categories[cat].map(([k, v]) => (
