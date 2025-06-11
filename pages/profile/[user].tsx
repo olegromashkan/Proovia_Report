@@ -122,12 +122,13 @@ export default function Profile() {
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                 </svg>
-                Joined {new Date(info.created_at).toLocaleDateString('en-US', {
-                  year: 'numeric',
-                  month: 'long',
-                  day: 'numeric'
+                Joined {new Date(info.created_at).toLocaleDateString('en-US', { 
+                  year: 'numeric', 
+                  month: 'long', 
+                  day: 'numeric' 
                 })}
               </div>
+<<<<<<< HEAD
               <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
                 <span className={`w-2.5 h-2.5 rounded-full ${info.status === 'online' ? 'bg-green-500' : info.status === 'away' ? 'bg-orange-500' : info.status === 'dnd' ? 'bg-red-500' : 'bg-gray-400'}`}></span>
                 <span>
@@ -143,6 +144,8 @@ export default function Profile() {
               {info.status_message && info.status !== 'online' && (
                 <div className="text-sm text-gray-500 dark:text-gray-400">{info.status_message}</div>
               )}
+=======
+>>>>>>> parent of 1722741 (feat: add user status and group chats)
             </div>
             <div>
               <button

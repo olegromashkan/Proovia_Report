@@ -47,9 +47,12 @@ export function init() {
       photo TEXT,
       header TEXT,
       role TEXT DEFAULT 'user',
+<<<<<<< HEAD
       status TEXT DEFAULT 'offline',
       status_message TEXT,
       last_seen TEXT DEFAULT CURRENT_TIMESTAMP,
+=======
+>>>>>>> parent of 1722741 (feat: add user status and group chats)
       created_at TEXT DEFAULT CURRENT_TIMESTAMP
     );
 
@@ -101,12 +104,20 @@ export function init() {
       db.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${definition}`);
     }
   }
+<<<<<<< HEAD
 
   addColumnIfMissing('users', 'role', "TEXT DEFAULT 'admin'");
   addColumnIfMissing('users', 'status', "TEXT DEFAULT 'offline'");
   addColumnIfMissing('users', 'status_message', 'TEXT');
   addColumnIfMissing('users', 'last_seen', 'TEXT DEFAULT CURRENT_TIMESTAMP');
   addColumnIfMissing('tasks', 'due_at', 'TEXT');
+=======
+  try {
+    db.exec("ALTER TABLE tasks ADD COLUMN due_at TEXT");
+  } catch {
+    // ignore if exists
+  }
+>>>>>>> parent of 1722741 (feat: add user status and group chats)
 }
 
 init();

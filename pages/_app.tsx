@@ -26,12 +26,15 @@ export default function MyApp({ Component, pageProps }: AppProps) {
       const val = localStorage.getItem('style' + v);
       if (val) document.documentElement.style.setProperty(v, val);
     });
+<<<<<<< HEAD
 
     const interval = setInterval(() => {
       fetch('/api/status', { method: 'POST' });
     }, 30000);
     fetch('/api/status', { method: 'POST' });
     return () => clearInterval(interval);
+=======
+>>>>>>> parent of 1722741 (feat: add user status and group chats)
   }, []);
 
   return (
