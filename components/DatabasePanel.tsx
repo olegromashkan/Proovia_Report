@@ -23,6 +23,12 @@ interface EditState {
   text: string;
 }
 
+interface CellEditState {
+  id: string | number;
+  key: string;
+  value: string;
+}
+
 interface PendingChange {
   id: string | number;
   action: 'update' | 'delete';
@@ -37,6 +43,7 @@ export default function DatabasePanel() {
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState('');
   const [editing, setEditing] = useState<EditState | null>(null);
+  const [cellEdit, setCellEdit] = useState<CellEditState | null>(null);
   const [adding, setAdding] = useState(false);
   const [newText, setNewText] = useState('{}');
   const [pending, setPending] = useState<PendingChange[]>([]);
@@ -104,6 +111,26 @@ export default function DatabasePanel() {
     }
   };
 
+  const saveCellEdit = () => {
+    if (!cellEdit) return;
+    const item = items.find(it => it.id === cellEdit.id);
+    if (!item) {
+      setCellEdit(null);
+      return;
+    }
+    const updatedData = { ...item.data, [cellEdit.key]: cellEdit.value };
+    setItems(items =>
+      items.map(it =>
+        it.id === cellEdit.id ? { ...it, data: updatedData } : it
+      )
+    );
+    setPending(p => [
+      ...p.filter(ch => !(ch.id === cellEdit.id && ch.action === 'update')),
+      { id: cellEdit.id, action: 'update', data: updatedData },
+    ]);
+    setCellEdit(null);
+  };
+
   const handleDelete = (id: string | number) => {
     setPending(p => [...p.filter(ch => ch.id !== id), { id, action: 'delete' }]);
     setItems(items => items.filter(it => it.id !== id));
@@ -152,7 +179,7 @@ export default function DatabasePanel() {
     name.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+    <div className="w-full px-4 sm:px-6 lg:px-8 py-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
         <div>
           <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
@@ -225,7 +252,7 @@ export default function DatabasePanel() {
           <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-600" />
         </div>
       ) : (
-        <div className="overflow-x-auto bg-white shadow-md rounded-lg">
+        <div className="overflow-auto max-h-[60vh] bg-white shadow-md rounded-lg">
           <table className="min-w-full divide-y divide-gray-200 text-sm">
             <thead className="bg-gray-50">
               <tr>
@@ -245,8 +272,33 @@ export default function DatabasePanel() {
                   <tr onDoubleClick={() => openEdit(item.id)} className="cursor-pointer">
                     <td className="px-4 py-2 whitespace-nowrap">{item.id}</td>
                     {columns.map(col => (
-                      <td key={col} className="px-4 py-2 whitespace-nowrap">
-                        {String(item.data[col] ?? '')}
+                      <td
+                        key={col}
+                        className="px-4 py-2 whitespace-nowrap"
+                        onClick={() =>
+                          setCellEdit({
+                            id: item.id,
+                            key: col,
+                            value: String(item.data[col] ?? '')
+                          })
+                        }
+                      >
+                        {cellEdit?.id === item.id && cellEdit.key === col ? (
+                          <input
+                            autoFocus
+                            className="w-full border rounded px-1 text-sm"
+                            value={cellEdit.value}
+                            onChange={e =>
+                              setCellEdit({ ...cellEdit, value: e.target.value })
+                            }
+                            onBlur={() => saveCellEdit()}
+                            onKeyDown={e => {
+                              if (e.key === 'Enter') saveCellEdit();
+                            }}
+                          />
+                        ) : (
+                          String(item.data[col] ?? '')
+                        )}
                       </td>
                     ))}
                     <td className="px-4 py-2 whitespace-nowrap">
