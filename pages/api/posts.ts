@@ -8,15 +8,17 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
 
   if (req.method === 'GET') {
     const { user } = req.query as { user?: string };
+    const base = `
+      SELECT p.id, p.username, p.content, p.image, p.created_at, u.photo,
+        (SELECT COUNT(*) FROM post_likes WHERE post_id = p.id) as likes,
+        (SELECT COUNT(*) FROM post_comments WHERE post_id = p.id) as comments,
+        (SELECT 1 FROM post_likes WHERE post_id = p.id AND username = ?) as liked
+      FROM posts p JOIN users u ON p.username = u.username`;
     let rows;
     if (user) {
-      rows = db.prepare(
-        'SELECT p.id, p.username, p.content, p.image, p.created_at, u.photo FROM posts p JOIN users u ON p.username = u.username WHERE p.username = ? ORDER BY p.created_at DESC'
-      ).all(user);
+      rows = db.prepare(`${base} WHERE p.username = ? ORDER BY p.created_at DESC`).all(current, user);
     } else {
-      rows = db.prepare(
-        'SELECT p.id, p.username, p.content, p.image, p.created_at, u.photo FROM posts p JOIN users u ON p.username = u.username ORDER BY p.created_at DESC'
-      ).all();
+      rows = db.prepare(`${base} ORDER BY p.created_at DESC`).all(current);
     }
     return res.status(200).json({ posts: rows });
   }
@@ -35,6 +37,8 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
     const post = db.prepare('SELECT username FROM posts WHERE id = ?').get(id);
     if (!post) return res.status(404).end();
     if (post.username !== current) return res.status(403).end();
+    db.prepare('DELETE FROM post_likes WHERE post_id = ?').run(id);
+    db.prepare('DELETE FROM post_comments WHERE post_id = ?').run(id);
     db.prepare('DELETE FROM posts WHERE id = ?').run(id);
     return res.status(200).json({ message: 'Deleted' });
   }

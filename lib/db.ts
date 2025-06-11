@@ -83,6 +83,20 @@ export function init() {
       image TEXT,
       created_at TEXT DEFAULT CURRENT_TIMESTAMP
     );
+    CREATE TABLE IF NOT EXISTS post_likes (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      post_id INTEGER,
+      username TEXT,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      UNIQUE(post_id, username)
+    );
+    CREATE TABLE IF NOT EXISTS post_comments (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      post_id INTEGER,
+      username TEXT,
+      text TEXT,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP
+    );
   `);
 
   // ensure legacy databases have the created_at column
@@ -95,6 +109,8 @@ export function init() {
     'van_checks',
     'users',
     'posts',
+    'post_likes',
+    'post_comments',
   ];
   for (const table of tables) {
     try {
