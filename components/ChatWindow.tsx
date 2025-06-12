@@ -3,6 +3,7 @@ import Icon from './Icon';
 import useUser from '../lib/useUser';
 import Picker from 'emoji-picker-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import CreateGroupModal from './CreateGroupModal';
 
 interface Message {
   id: number;
@@ -27,6 +28,7 @@ export default function ChatWindow({ user, chatId, name }: ChatWindowProps) {
   const [text, setText] = useState('');
   const [replyTo, setReplyTo] = useState<Message | null>(null);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [createOpen, setCreateOpen] = useState(false);
   const endRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -96,7 +98,12 @@ export default function ChatWindow({ user, chatId, name }: ChatWindowProps) {
     return (
       <div className="flex-1 flex flex-col items-center justify-center text-gray-500 dark:text-gray-400 gap-4">
         <div>Select a chat to start messaging</div>
-        <button onClick={() => alert('Create group feature not implemented')} className="btn btn-primary btn-sm">New group</button>
+        <button onClick={() => setCreateOpen(true)} className="btn btn-primary btn-sm">New group</button>
+        <CreateGroupModal
+          open={createOpen}
+          onClose={() => setCreateOpen(false)}
+          onCreated={() => window.location.reload()}
+        />
       </div>
     );
   }
@@ -158,7 +165,7 @@ export default function ChatWindow({ user, chatId, name }: ChatWindowProps) {
               >
                 {m.reply_to && (
                   <div className="text-xs opacity-70 mb-1 border-l-2 border-gray-400 pl-2">
-                    Reply to #{m.reply_to}
+                    Reply to: {messages.find((r) => r.id === m.reply_to)?.text || `#${m.reply_to}`}
                   </div>
                 )}
                 <div className="break-words">{m.text}</div>
