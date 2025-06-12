@@ -7,7 +7,7 @@ import CreateGroupModal from '../../components/CreateGroupModal';
 import EditGroupModal from '../../components/EditGroupModal';
 
 export default function MessagesPage() {
-  const { data } = useFetch<{ users: any[] }>('/api/users');
+  const { data } = useFetch<{ users: any[] }>('/api/users?last=1');
   const { data: chatData } = useFetch<{ chats: any[] }>('/api/chats');
   const users = data?.users || [];
   const chats = chatData?.chats || [];
@@ -65,7 +65,14 @@ export default function MessagesPage() {
                   <div className="flex-1">
                     <div className="flex justify-between">
                       <span className="font-semibold text-gray-900 dark:text-gray-100 truncate">{c.name}</span>
-                      <span className="text-xs text-gray-500 dark:text-gray-400">12:34 PM</span>
+                      <span className="text-xs text-gray-500 dark:text-gray-400">
+                        {c.lastTime
+                          ? new Date(c.lastTime).toLocaleTimeString([], {
+                              hour: '2-digit',
+                              minute: '2-digit',
+                            })
+                          : ''}
+                      </span>
                     </div>
                     <div className="text-sm text-gray-500 dark:text-gray-400 truncate">
                       {c.lastMessage || 'No messages yet'}
@@ -81,6 +88,16 @@ export default function MessagesPage() {
                     className="p-1 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-full"
                   >
                     <Icon name="pen" className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+                  </button>
+                  <button
+                    onClick={async () => {
+                      if (!confirm('Delete this chat?')) return;
+                      await fetch(`/api/chats?id=${c.id}`, { method: 'DELETE' });
+                      window.location.reload();
+                    }}
+                    className="p-1 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-full"
+                  >
+                    <Icon name="trash" className="w-4 h-4 text-red-500" />
                   </button>
                   <button
                     onClick={async () => {
@@ -119,7 +136,14 @@ export default function MessagesPage() {
                 <div className="flex-1">
                   <div className="flex justify-between">
                     <span className="font-semibold text-gray-900 dark:text-gray-100 truncate">{u.username}</span>
-                    <span className="text-xs text-gray-500 dark:text-gray-400">12:34 PM</span>
+                    <span className="text-xs text-gray-500 dark:text-gray-400">
+                      {u.lastTime
+                        ? new Date(u.lastTime).toLocaleTimeString([], {
+                            hour: '2-digit',
+                            minute: '2-digit',
+                          })
+                        : ''}
+                    </span>
                   </div>
                   <div className="text-sm text-gray-500 dark:text-gray-400 truncate">
                     {u.lastMessage || 'No messages yet'}
