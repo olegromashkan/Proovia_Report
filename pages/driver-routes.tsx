@@ -53,7 +53,7 @@ export default function DriverRoutes() {
   });
 
   return (
-    <Layout title="Driver Routes">
+    <Layout title="Driver Routes" fullWidth>
       <h1 className="text-2xl font-bold mb-4">Driver Routes</h1>
       <div className="flex flex-wrap gap-2 mb-4">
         <input
@@ -70,7 +70,7 @@ export default function DriverRoutes() {
         />
       </div>
       <div className="overflow-x-auto">
-        <table className="table table-sm min-w-full text-center">
+        <table className="table table-sm w-full text-center">
           <thead>
             <tr>
               <th>Driver</th>

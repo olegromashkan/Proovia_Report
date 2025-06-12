@@ -53,14 +53,21 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
       const rawDate = item.Start_Time || item['Start_Time'] || item['Trip.Start_Time'];
       const date = parseDate(String(rawDate).split(' ')[0]) || 'Unknown';
 
-      const arrival = item.Arrival_Time || item['Arrival_Time'];
-      const done = item.Time_Completed || item['Time_Completed'];
+      const arrival =
+        item.Arrival_Time ||
+        item['Arrival_Time'] ||
+        item['Trip.Arrival_Time'];
+      const done =
+        item.Time_Completed ||
+        item['Time_Completed'] ||
+        item['Trip.Time_Completed'];
       let punctuality: number | null = null;
       if (arrival && done) {
         const parseMinutes = (str: string) => {
           const time = str.split(' ')[1] || str;
           const [h = '0', m = '0', s = '0'] = time.split(':');
-          return Number(h) * 60 + Number(m) + Number(s) / 60;
+          const result = Number(h) * 60 + Number(m) + Number(s) / 60;
+          return isFinite(result) ? result : 0;
         };
         punctuality = Math.round(parseMinutes(done) - parseMinutes(arrival));
       }
