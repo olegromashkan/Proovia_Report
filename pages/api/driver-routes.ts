@@ -63,6 +63,12 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
         item['Trip.Time_Completed'];
       let punctuality: number | null = null;
 
+      const price =
+        item.Order_Value ||
+        item['Order_Value'] ||
+        item.OrderValue ||
+        item['OrderValue'];
+
       const rawPunc =
         item.Punctuality ||
         item['Punctuality'] ||
@@ -82,7 +88,7 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
         punctuality = Math.round(parseMinutes(done) - parseMinutes(arrival));
       }
 
-      return { driver, route, calendar, date, punctuality };
+      return { driver, route, calendar, date, punctuality, price };
     });
 
   res.status(200).json({ items });
