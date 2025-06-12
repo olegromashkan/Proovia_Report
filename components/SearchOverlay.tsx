@@ -12,6 +12,7 @@ export default function SearchOverlay({ open, onClose }: { open: boolean; onClos
   const [q, setQ] = useState('');
   const [results, setResults] = useState<Result[]>([]);
   const [suggest, setSuggest] = useState<string[]>([]);
+  const [hint, setHint] = useState('');
   const [selected, setSelected] = useState<any | null>(null);
   const [selectedIndex, setSelectedIndex] = useState(-1);
   const [report, setReport] = useState<any | null>(null);
@@ -48,6 +49,34 @@ export default function SearchOverlay({ open, onClose }: { open: boolean; onClos
     }
     return () => controller.abort();
   }, [q]);
+
+  // Update inline hint based on results/suggestions
+  useEffect(() => {
+    if (!q) {
+      setHint('');
+      return;
+    }
+    const lower = q.toLowerCase();
+    if (suggest.length > 0 && suggest[0].toLowerCase().startsWith(lower)) {
+      setHint(suggest[0].slice(q.length));
+      return;
+    }
+    const match = results.find(r =>
+      r.order.toLowerCase().startsWith(lower) ||
+      (r.postcode || '').toLowerCase().startsWith(lower)
+    );
+    if (match) {
+      let candidate = '';
+      if (match.order.toLowerCase().startsWith(lower)) {
+        candidate = match.order;
+      } else if ((match.postcode || '').toLowerCase().startsWith(lower)) {
+        candidate = match.postcode || '';
+      }
+      setHint(candidate.slice(q.length));
+    } else {
+      setHint('');
+    }
+  }, [q, results, suggest]);
 
   const selectResult = async (id: string) => {
     const res = await fetch(`/api/items?table=copy_of_tomorrow_trips&id=${id}`);
@@ -86,6 +115,7 @@ export default function SearchOverlay({ open, onClose }: { open: boolean; onClos
       setQ('');
       setResults([]);
       setSuggest([]);
+      setHint('');
       setSelected(null);
       setSelectedIndex(-1);
       setReport(null);
@@ -123,15 +153,23 @@ export default function SearchOverlay({ open, onClose }: { open: boolean; onClos
               <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" />
             </svg>
           </div>
-          <input
-            autoFocus
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-            placeholder="Spotlight Search"
-            className="flex-1 bg-transparent text-gray-900 placeholder-gray-500 outline-none text-lg font-medium"
+          <div className="relative flex-1">
+            <input
+              autoFocus
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+              placeholder="Spotlight Search"
+              className="relative z-10 w-full bg-transparent text-gray-900 placeholder-gray-500 outline-none text-lg font-medium"
 
-          />
-          <button 
+            />
+            {hint && (
+              <div className="absolute inset-0 pointer-events-none flex items-center text-lg font-medium text-gray-400">
+                <span className="invisible">{q}</span>
+                <span>{hint}</span>
+              </div>
+            )}
+          </div>
+          <button
             onClick={onClose}
             className="ml-3 w-6 h-6 text-gray-400 hover:text-gray-600 transition-colors"
           >
