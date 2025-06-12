@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, ChangeEvent } from 'react';
 import Icon from './Icon';
 import useUser from '../lib/useUser';
 import Picker from 'emoji-picker-react';
@@ -12,8 +12,11 @@ interface Message {
   sender: string;
   receiver: string;
   text: string;
+  image?: string;
   reply_to?: number;
   pinned?: number;
+  edited_at?: string;
+  deleted?: number;
   created_at: string;
 }
 
@@ -29,7 +32,9 @@ export default function ChatWindow({ user, chatId, name, photo }: ChatWindowProp
   const [messages, setMessages] = useState<Message[]>([]);
   const [pinnedMessages, setPinnedMessages] = useState<Message[]>([]);
   const [text, setText] = useState('');
+  const [image, setImage] = useState('');
   const [replyTo, setReplyTo] = useState<Message | null>(null);
+  const [editing, setEditing] = useState<Message | null>(null);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
@@ -89,13 +94,23 @@ export default function ChatWindow({ user, chatId, name, photo }: ChatWindowProp
   }, []);
 
   const send = async () => {
-    if (!text.trim() || (!user && !chatId)) return;
-    await fetch('/api/messages', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ to: user, chatId, text, replyTo: replyTo?.id }),
-    });
+    if ((!text.trim() && !image) || (!user && !chatId)) return;
+    if (editing) {
+      await fetch('/api/messages', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: editing.id, text, image }),
+      });
+      setEditing(null);
+    } else {
+      await fetch('/api/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ to: user, chatId, text, image, replyTo: replyTo?.id }),
+      });
+    }
     setText('');
+    setImage('');
     setReplyTo(null);
     setShowEmojiPicker(false);
     load();
@@ -122,6 +137,14 @@ export default function ChatWindow({ user, chatId, name, photo }: ChatWindowProp
     inputRef.current?.focus();
   };
 
+  const handleImage = (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => setImage(reader.result as string);
+    reader.readAsDataURL(file);
+  };
+
   const onEmojiClick = (emojiObject: { emoji: string }) => {
     setText((prev) => prev + emojiObject.emoji);
     inputRef.current?.focus();
@@ -129,6 +152,29 @@ export default function ChatWindow({ user, chatId, name, photo }: ChatWindowProp
 
   const startReply = (m: Message) => setReplyTo(m);
   const cancelReply = () => setReplyTo(null);
+
+  const startEdit = (m: Message) => {
+    setEditing(m);
+    setText(m.text);
+    setImage(m.image || '');
+    inputRef.current?.focus();
+  };
+
+  const cancelEdit = () => {
+    setEditing(null);
+    setText('');
+    setImage('');
+  };
+
+  const deleteMessage = async (id: number) => {
+    if (!confirm('Delete this message?')) return;
+    await fetch('/api/messages', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id, deleted: 1 }),
+    });
+    load();
+  };
 
   if (!user && !chatId) {
     return (
@@ -313,12 +359,22 @@ export default function ChatWindow({ user, chatId, name, photo }: ChatWindowProp
                       </div>
                     )}
                     
-                    <div className="break-words leading-relaxed">{m.text}</div>
-                    
+                    {m.deleted ? (
+                      <div className="italic text-gray-500">This message was deleted</div>
+                    ) : (
+                      <>
+                        {m.image && (
+                          <img src={m.image} className="max-h-40 rounded-xl mb-2" />
+                        )}
+                        <div className="break-words leading-relaxed">{m.text}</div>
+                      </>
+                    )}
+
                     <div className="text-xs mt-1 text-right text-black">
                       {new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      {m.edited_at && !m.deleted && <span className="ml-1 italic">(edited)</span>}
                     </div>
-                    
+
                     <div className="absolute hidden group-hover:flex gap-1 -top-2 right-2">
                       <button
                         onClick={() => startReply(m)}
@@ -334,6 +390,24 @@ export default function ChatWindow({ user, chatId, name, photo }: ChatWindowProp
                       >
                         <Icon name="star" className="w-3 h-3 text-gray-600 dark:text-gray-300" />
                       </button>
+                      {isMe && (
+                        <>
+                          <button
+                            onClick={() => startEdit(m)}
+                            className="bg-white dark:bg-gray-700 p-1.5 rounded-full hover:bg-gray-50 dark:hover:bg-gray-600 transition-all shadow-lg border border-gray-200 dark:border-gray-600"
+                            aria-label="Edit message"
+                          >
+                            <Icon name="pen" className="w-3 h-3 text-gray-600 dark:text-gray-300" />
+                          </button>
+                          <button
+                            onClick={() => deleteMessage(m.id)}
+                            className="bg-white dark:bg-gray-700 p-1.5 rounded-full hover:bg-gray-50 dark:hover:bg-gray-600 transition-all shadow-lg border border-gray-200 dark:border-gray-600"
+                            aria-label="Delete message"
+                          >
+                            <Icon name="trash" className="w-3 h-3 text-gray-600 dark:text-gray-300" />
+                          </button>
+                        </>
+                      )}
                     </div>
                   </div>
                 </motion.div>
@@ -367,6 +441,41 @@ export default function ChatWindow({ user, chatId, name, photo }: ChatWindowProp
               </motion.div>
             )}
           </AnimatePresence>
+
+          {editing && (
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              className="flex items-center justify-between mb-3 bg-primary/10 dark:bg-primary/20 rounded-2xl px-4 py-3 border border-primary/30 dark:border-primary/40"
+            >
+              <div className="flex items-center gap-3">
+                <Icon name="pen" className="w-4 h-4 text-primary" />
+                <span className="text-sm text-black truncate max-w-[250px]">
+                  Editing message
+                </span>
+              </div>
+              <button
+                onClick={cancelEdit}
+                className="p-1 text-primary hover:bg-primary/10 rounded-full transition-all"
+                aria-label="Cancel edit"
+              >
+                <Icon name="xmark" className="w-4 h-4" />
+              </button>
+            </motion.div>
+          )}
+
+          {image && (
+            <div className="relative mb-3">
+              <img src={image} className="max-h-40 rounded-xl" />
+              <button
+                onClick={() => setImage('')}
+                className="absolute top-2 right-2 bg-gray-800 bg-opacity-50 text-white rounded-full p-1"
+              >
+                <Icon name="x" className="w-4 h-4" />
+              </button>
+            </div>
+          )}
           
           <div className="flex items-end gap-3">
             <button
@@ -380,7 +489,12 @@ export default function ChatWindow({ user, chatId, name, photo }: ChatWindowProp
             >
               <Icon name="emoji-happy" className="w-5 h-5" />
             </button>
-            
+
+            <label className="p-3 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700 transition-all cursor-pointer">
+              <input type="file" accept="image/*" onChange={handleImage} className="hidden" />
+              <Icon name="image" className="w-5 h-5" />
+            </label>
+
             <div className="flex-1 relative">
               <input
                 ref={inputRef}
@@ -394,31 +508,31 @@ export default function ChatWindow({ user, chatId, name, photo }: ChatWindowProp
                 }}
                 className="w-full px-4 py-3 bg-gray-100 dark:bg-gray-800 border-0 rounded-3xl text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:bg-white dark:focus:bg-gray-700 focus:ring-2 focus:ring-[#b53133] transition-all duration-200 resize-none"
                 placeholder="Type a message..."
-                aria-label="Message input"
-              />
-            </div>
-            
-            <button
-              onClick={createTask}
-              disabled={!text.trim()}
+              aria-label="Message input"
+            />
+          </div>
+
+          <button
+            onClick={createTask}
+            disabled={!text.trim()}
               className="p-3 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-gray-200 dark:hover:bg-gray-700 transition-all duration-200"
               aria-label="Create task"
             >
               <Icon name="plus" className="w-5 h-5" />
-            </button>
-            
-            <button
-              onClick={send}
-              disabled={!text.trim()}
-              className={`p-3 rounded-full transition-all duration-200 transform ${
-                text.trim()
+          </button>
+
+          <button
+            onClick={send}
+            disabled={!text.trim() && !image}
+            className={`p-3 rounded-full transition-all duration-200 transform ${
+                text.trim() || image
                   ? 'bg-primary hover:bg-primary/90 text-primary-content shadow-lg hover:shadow-xl hover:scale-105'
                   : 'bg-gray-200 dark:bg-gray-700 text-gray-400 dark:text-gray-500 cursor-not-allowed'
               }`}
-              aria-label="Send message"
-            >
-              <Icon name="paper-plane" className="w-5 h-5" />
-            </button>
+            aria-label="Send message"
+          >
+            <Icon name="paper-plane" className="w-5 h-5" />
+          </button>
           </div>
         </div>
       </div>
