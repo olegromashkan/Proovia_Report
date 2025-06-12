@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, ChangeEvent } from 'react';
 import Modal from './Modal';
 import useFetch from '../lib/useFetch';
 import useUser from '../lib/useUser';
@@ -16,6 +16,14 @@ export default function CreateGroupModal({ open, onClose, onCreated }: Props) {
   const [name, setName] = useState('');
   const [members, setMembers] = useState<string[]>([]);
   const [photo, setPhoto] = useState('');
+
+  const handlePhoto = (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => setPhoto(reader.result as string);
+    reader.readAsDataURL(file);
+  };
 
   const toggle = (u: string) => {
     setMembers((prev) =>
@@ -49,12 +57,14 @@ export default function CreateGroupModal({ open, onClose, onCreated }: Props) {
         onChange={(e) => setName(e.target.value)}
       />
       <input
-        type="text"
-        placeholder="Avatar URL (optional)"
-        className="input input-bordered w-full mb-4"
-        value={photo}
-        onChange={(e) => setPhoto(e.target.value)}
+        type="file"
+        accept="image/*"
+        onChange={handlePhoto}
+        className="file-input file-input-bordered w-full mb-4"
       />
+      {photo && (
+        <img src={photo} alt="Preview" className="w-16 h-16 rounded-full mb-4 object-cover" />
+      )}
       <div className="max-h-60 overflow-y-auto space-y-1">
         {users
           .filter((u) => u.username !== me)

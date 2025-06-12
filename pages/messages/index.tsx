@@ -3,6 +3,8 @@ import Icon from '../../components/Icon';
 import Layout from '../../components/Layout';
 import useFetch from '../../lib/useFetch';
 import ChatWindow from '../../components/ChatWindow';
+import CreateGroupModal from '../../components/CreateGroupModal';
+import EditGroupModal from '../../components/EditGroupModal';
 
 export default function MessagesPage() {
   const { data } = useFetch<{ users: any[] }>('/api/users');
@@ -11,6 +13,8 @@ export default function MessagesPage() {
   const chats = chatData?.chats || [];
   const [active, setActive] = useState<{type:'user'|'chat';id:string|number;name?:string;photo?:string}|null>(null);
   const [query, setQuery] = useState('');
+  const [createOpen, setCreateOpen] = useState(false);
+  const [editGroup, setEditGroup] = useState<any|null>(null);
 
   const filtered = users.filter((u) =>
     u.username.toLowerCase().includes(query.toLowerCase())
@@ -29,7 +33,13 @@ export default function MessagesPage() {
               onChange={(e) => setQuery(e.target.value)}
             />
           </div>
-          <div className="overflow-y-auto max-h-full pr-2 space-y-2">
+          <div className="overflow-y-auto max-h-full pr-2 space-y-4">
+            <div className="flex items-center justify-between">
+              <span className="font-semibold text-sm text-gray-500">Groups</span>
+              <button onClick={() => setCreateOpen(true)} className="btn btn-xs" aria-label="New group">
+                <Icon name="plus" className="w-3 h-3" />
+              </button>
+            </div>
             {chats.map((c) => (
               <div key={`c-${c.id}`} className="relative group">
                 <button
@@ -48,6 +58,12 @@ export default function MessagesPage() {
                   <span className="flex-1 truncate">{c.name}</span>
                 </button>
                 <button
+                  onClick={() => setEditGroup(c)}
+                  className="absolute top-1 right-7 p-1 text-xs hidden group-hover:block"
+                >
+                  <Icon name="pen" className="w-4 h-4" />
+                </button>
+                <button
                   onClick={async () => {
                     await fetch('/api/chats', {
                       method: 'PUT',
@@ -62,6 +78,7 @@ export default function MessagesPage() {
                 </button>
               </div>
             ))}
+            <div className="mt-4 font-semibold text-sm text-gray-500">Chats</div>
             {filtered.map((u) => (
               <button
                 key={u.id}
@@ -93,6 +110,17 @@ export default function MessagesPage() {
           />
         </div>
       </div>
+      <CreateGroupModal
+        open={createOpen}
+        onClose={() => setCreateOpen(false)}
+        onCreated={() => window.location.reload()}
+      />
+      <EditGroupModal
+        open={!!editGroup}
+        chat={editGroup}
+        onClose={() => setEditGroup(null)}
+        onSaved={() => window.location.reload()}
+      />
     </Layout>
   );
 }
