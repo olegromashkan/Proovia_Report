@@ -134,7 +134,8 @@ export default function ChatWindow({ user, chatId, name, photo }: ChatWindowProp
   }
 
   return (
-    <div className="flex flex-col h-full bg-white dark:bg-gray-900 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+    <>
+      <div className="flex flex-col h-full bg-white dark:bg-gray-900 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
       <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200/50 dark:border-gray-700/50 bg-white dark:bg-gray-800 shadow-sm">
         <div className="flex items-center gap-3">
           {photo ? (
@@ -351,5 +352,6 @@ export default function ChatWindow({ user, chatId, name, photo }: ChatWindowProp
       onClose={() => setEditOpen(false)}
       onSaved={() => window.location.reload()}
     />
+    </>
   );
 }
