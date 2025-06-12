@@ -51,7 +51,7 @@ export default function Users() {
                 transition={{ type: 'spring', stiffness: 120, damping: 20 }}
                 className="bg-white dark:bg-gray-800 rounded-2xl shadow-md border border-gray-100 dark:border-gray-700 overflow-hidden hover:shadow-lg transition-shadow"
               >
-                <div className="relative h-24 bg-gradient-to-br from-blue-400 via-purple-500 to-pink-500">
+                <div className="relative h-24 bg-[#b53133]">
                   {u.header && (
                     <img src={u.header} alt="header" className="w-full h-full object-cover" />
                   )}

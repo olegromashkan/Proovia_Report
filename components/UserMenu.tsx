@@ -100,7 +100,7 @@ export default function UserMenu() {
   if (!data) {
     return (
       <div className="p-2 rounded-full" title="Loading user data...">
-        <div className="w-6 h-6 animate-spin rounded-full border-2 border-gray-300 border-t-blue-500 dark:border-gray-600 dark:border-t-blue-400"></div>
+        <div className="w-6 h-6 animate-spin rounded-full border-2 border-gray-300 border-t-[#b53133] dark:border-gray-600"></div>
       </div>
     );
   }
@@ -110,7 +110,7 @@ export default function UserMenu() {
     <div className="relative" ref={menuRef}>
       <button
         onClick={() => setOpen(!open)}
-        className="p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+        className="p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-[#b53133] focus:ring-offset-2"
         aria-label="User menu"
         aria-expanded={open}
         type="button"

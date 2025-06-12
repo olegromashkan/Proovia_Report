@@ -20,7 +20,7 @@ export default function UsersPanel() {
         {users.map((u: any) => (
           <li key={u.id} className="flex items-center gap-3">
             {u.photo && <img src={u.photo} alt="avatar" className="w-8 h-8 rounded-full" />}
-            <Link href={`/profile/${u.username}`} className="text-blue-600 hover:underline flex-1">
+            <Link href={`/profile/${u.username}`} className="text-[#b53133] hover:underline flex-1">
               {u.username}
             </Link>
             {isAdmin && (

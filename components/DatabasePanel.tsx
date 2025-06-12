@@ -209,12 +209,12 @@ export default function DatabasePanel() {
       <div className="mb-6">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <Database className="w-7 h-7 text-blue-600" />
+            <Database className="w-7 h-7 text-[#b53133]" />
             <h1 className="text-2xl font-bold text-gray-900">Database Panel</h1>
           </div>
           <div className="bg-white px-4 py-2 rounded-lg shadow-sm border">
             <div className="text-xs text-gray-500">Total Records</div>
-            <div className="text-xl font-bold text-blue-600">{total.toLocaleString()}</div>
+            <div className="text-xl font-bold text-[#b53133]">{total.toLocaleString()}</div>
           </div>
         </div>
       </div>
@@ -227,7 +227,7 @@ export default function DatabasePanel() {
             <select
               value={table}
               onChange={e => setTable(e.target.value as (typeof TABLES)[number])}
-              className="w-full h-9 rounded-md border-gray-300 text-sm focus:border-blue-500 focus:ring-blue-500"
+              className="w-full h-9 rounded-md border-gray-300 text-sm focus:border-[#b53133] focus:ring-[#b53133]"
             >
               {TABLES.map(t => (
                 <option key={t} value={t}>{getTableDisplayName(t)}</option>
@@ -244,7 +244,7 @@ export default function DatabasePanel() {
                 value={search}
                 onChange={e => setSearch(e.target.value)}
                 placeholder="Search records..."
-                className="w-full h-9 pl-10 pr-4 rounded-md border-gray-300 text-sm focus:border-blue-500 focus:ring-blue-500"
+                className="w-full h-9 pl-10 pr-4 rounded-md border-gray-300 text-sm focus:border-[#b53133] focus:ring-[#b53133]"
               />
             </div>
           </div>
@@ -253,7 +253,7 @@ export default function DatabasePanel() {
             <button
               onClick={loadItems}
               disabled={loading}
-              className="h-9 px-3 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 flex items-center gap-2 text-sm"
+              className="h-9 px-3 bg-[#b53133] text-white rounded-md hover:bg-[#a12b2e] disabled:opacity-50 flex items-center gap-2 text-sm"
             >
               <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
               Refresh
@@ -280,7 +280,7 @@ export default function DatabasePanel() {
       <div className="bg-white rounded-lg shadow-sm border overflow-hidden">
         {loading ? (
           <div className="flex justify-center items-center h-64">
-            <RefreshCw className="w-8 h-8 animate-spin text-blue-600" />
+            <RefreshCw className="w-8 h-8 animate-spin text-[#b53133]" />
           </div>
         ) : (
           <div className="overflow-auto" style={{ maxHeight: '70vh' }}>
@@ -308,7 +308,7 @@ export default function DatabasePanel() {
                       {columns.map(col => (
                         <td
                           key={col}
-                          className="px-3 py-1.5 text-gray-900 hover:bg-blue-50 cursor-text transition-colors"
+                          className="px-3 py-1.5 text-gray-900 hover:bg-[#b53133]/10 cursor-text transition-colors"
                           onClick={() =>
                             setCellEdit({
                               id: item.id,
@@ -320,7 +320,7 @@ export default function DatabasePanel() {
                           {cellEdit?.id === item.id && cellEdit.key === col ? (
                             <input
                               autoFocus
-                              className="w-full bg-transparent border-b border-blue-500 outline-none text-sm py-0.5"
+                              className="w-full bg-transparent border-b border-[#b53133] outline-none text-sm py-0.5"
                               value={cellEdit.value}
                               onChange={e =>
                                 setCellEdit({ ...cellEdit, value: e.target.value })
@@ -348,7 +348,7 @@ export default function DatabasePanel() {
                               e.stopPropagation();
                               openEdit(item.id);
                             }}
-                            className="p-1 text-blue-600 hover:bg-blue-100 rounded transition-colors"
+                            className="p-1 text-[#b53133] hover:bg-[#b53133]/10 rounded transition-colors"
                             title="Edit JSON"
                           >
                             <Edit className="w-3.5 h-3.5" />
@@ -367,22 +367,22 @@ export default function DatabasePanel() {
                       </td>
                     </tr>
                     {editing?.id === item.id && (
-                      <tr className="bg-blue-50">
+                      <tr className="bg-[#b53133]/10">
                         <td colSpan={columns.length + 3} className="p-4">
                           <div className="space-y-3">
                             <div className="flex items-center gap-2">
-                              <Edit className="w-4 h-4 text-blue-600" />
-                              <span className="text-sm font-medium text-blue-900">JSON Editor</span>
+                              <Edit className="w-4 h-4 text-[#b53133]" />
+                              <span className="text-sm font-medium text-[#b53133]">JSON Editor</span>
                             </div>
                             <textarea
-                              className="w-full h-32 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 font-mono text-xs leading-relaxed"
+                              className="w-full h-32 rounded-md border-gray-300 shadow-sm focus:border-[#b53133] focus:ring-[#b53133] font-mono text-xs leading-relaxed"
                               value={editing.text}
                               onChange={e => setEditing({ ...editing, text: e.target.value })}
                             />
                             <div className="flex gap-2">
                               <button 
                                 onClick={saveEdit} 
-                                className="px-3 py-1.5 bg-blue-600 text-white rounded-md hover:bg-blue-700 flex items-center gap-2 text-sm"
+                                className="px-3 py-1.5 bg-[#b53133] text-white rounded-md hover:bg-[#a12b2e] flex items-center gap-2 text-sm"
                               >
                                 <Save className="w-4 h-4" />
                                 Save
@@ -396,7 +396,7 @@ export default function DatabasePanel() {
                               </button>
                               <button
                                 onClick={() => window.open(`/database/${table}/${item.id}`, '_blank')}
-                                className="px-3 py-1.5 bg-purple-600 text-white rounded-md hover:bg-purple-700 flex items-center gap-2 text-sm"
+                                className="px-3 py-1.5 bg-[#b53133] text-white rounded-md hover:bg-[#a12b2e] flex items-center gap-2 text-sm"
                               >
                                 <ExternalLink className="w-4 h-4" />
                                 Open
@@ -445,7 +445,7 @@ export default function DatabasePanel() {
               <h2 className="text-lg font-semibold text-gray-900">Add New Item</h2>
             </div>
             <textarea
-              className="w-full h-48 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 font-mono text-sm"
+              className="w-full h-48 rounded-md border-gray-300 shadow-sm focus:border-[#b53133] focus:ring-[#b53133] font-mono text-sm"
               value={newText}
               onChange={e => setNewText(e.target.value)}
               placeholder='{"key": "value"}'
@@ -492,7 +492,7 @@ export default function DatabasePanel() {
                 <button
                   onClick={saveAll}
                   disabled={loading}
-                  className="px-3 py-1.5 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 flex items-center gap-1 text-sm"
+                  className="px-3 py-1.5 bg-[#b53133] text-white rounded-md hover:bg-[#a12b2e] disabled:opacity-50 flex items-center gap-1 text-sm"
                 >
                   <Save className="w-4 h-4" />
                   Save All

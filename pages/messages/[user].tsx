@@ -60,7 +60,16 @@ export default function Chat() {
       <div className="max-w-xl mx-auto flex flex-col gap-4" style={{height:'70vh'}}>
         <div className="flex-1 overflow-y-auto space-y-2 p-2 border rounded" style={{background:'var(--section-bg)'}}>
           {messages.map(m => (
-            <div key={m.id} className={`p-2 rounded-lg max-w-xs ${m.sender===me?'bg-blue-500 text-white ml-auto':'bg-gray-200 dark:bg-gray-700'}`}>{m.text}</div>
+            <div
+              key={m.id}
+              className={`p-2 rounded-lg max-w-xs ${
+                m.sender===me
+                  ? 'bg-[#b53133] ml-auto text-black'
+                  : 'bg-gray-200 dark:bg-gray-700 text-black'
+              }`}
+            >
+              {m.text}
+            </div>
           ))}
           <div ref={endRef}></div>
         </div>

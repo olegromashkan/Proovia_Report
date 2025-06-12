@@ -62,7 +62,7 @@ export default function Navbar() {
         {/* Logo Section */}
         <div className="flex items-center">
           <Link href="/" className="flex items-center gap-2 group">
-            <div className="relative p-1.5 bg-gradient-to-br from-blue-100/50 to-indigo-100/50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-lg group-hover:scale-105 transition-transform duration-200">
+            <div className="relative p-1.5 bg-gradient-to-br from-[#b53133]/20 to-[#b53133]/40 rounded-lg group-hover:scale-105 transition-transform duration-200">
               <Image
                 src="https://cdn.proovia.uk/pd/images/logo/logo-default.svg"
                 alt="Proovia Logo"
@@ -85,10 +85,10 @@ export default function Navbar() {
               className={`
                 relative flex items-center gap-2 px-4 py-2 rounded-lg
                 text-sm font-medium transition-all duration-200
-                hover:bg-blue-50/50 dark:hover:bg-blue-900/20
+                hover:bg-[#b53133]/10 dark:hover:bg-[#b53133]/20
                 ${isActiveLink(href)
-                  ? 'text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30'
-                  : 'text-gray-700 dark:text-gray-200 hover:text-blue-600 dark:hover:text-blue-400'
+                  ? 'text-[#b53133] bg-[#b53133]/10'
+                  : 'text-gray-700 dark:text-gray-200 hover:text-[#b53133]'
                 }
               `}
             >
@@ -96,12 +96,12 @@ export default function Navbar() {
                 name={icon}
                 className={`
                   w-5 h-5
-                  ${isActiveLink(href) ? 'text-blue-600 dark:text-blue-400' : 'text-gray-500 dark:text-gray-400'}
+                  ${isActiveLink(href) ? 'text-[#b53133]' : 'text-gray-500 dark:text-gray-400'}
                 `}
               />
               <span>{label}</span>
               {isActiveLink(href) && (
-                <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-6 h-0.5 bg-blue-600 dark:bg-blue-400 rounded-full" />
+                <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-6 h-0.5 bg-[#b53133] rounded-full" />
               )}
             </Link>
           ))}
@@ -112,7 +112,7 @@ export default function Navbar() {
           {/* Search Button */}
           <button
             onClick={() => setSearchOpen(true)}
-            className="p-2 text-gray-600 dark:text-gray-300 hover:bg-blue-50/50 dark:hover:bg-blue-900/20 rounded-lg transition-all duration-200"
+            className="p-2 text-gray-600 dark:text-gray-300 hover:bg-[#b53133]/10 dark:hover:bg-[#b53133]/20 rounded-lg transition-all duration-200"
             aria-label="Open search"
           >
             <Icon name="search" className="w-5 h-5" />
@@ -124,7 +124,7 @@ export default function Navbar() {
           {/* Tasks Button */}
           <button
             onClick={() => setTasksOpen(true)}
-            className="p-2 text-gray-600 dark:text-gray-300 hover:bg-blue-50/50 dark:hover:bg-blue-900/20 rounded-lg transition-all duration-200"
+            className="p-2 text-gray-600 dark:text-gray-300 hover:bg-[#b53133]/10 dark:hover:bg-[#b53133]/20 rounded-lg transition-all duration-200"
             aria-label="Open tasks"
           >
             <Icon name="check" className="w-5 h-5" />
@@ -139,7 +139,7 @@ export default function Navbar() {
           {/* Mobile Menu Button */}
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="lg:hidden p-2 text-gray-600 dark:text-gray-300 hover:bg-blue-50/50 dark:hover:bg-blue-900/20 rounded-lg transition-all duration-200"
+            className="lg:hidden p-2 text-gray-600 dark:text-gray-300 hover:bg-[#b53133]/10 dark:hover:bg-[#b53133]/20 rounded-lg transition-all duration-200"
             aria-label="Toggle mobile menu"
             aria-expanded={mobileMenuOpen}
           >
@@ -193,8 +193,8 @@ export default function Navbar() {
                 flex items-center gap-3 px-4 py-3 rounded-lg
                 text-sm font-medium transition-all duration-200
                 ${isActiveLink(href)
-                  ? 'text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30'
-                  : 'text-gray-700 dark:text-gray-200 hover:bg-blue-50/50 dark:hover:bg-blue-900/20 hover:text-blue-600 dark:hover:text-blue-400'
+                  ? 'text-[#b53133] bg-[#b53133]/10'
+                  : 'text-gray-700 dark:text-gray-200 hover:bg-[#b53133]/10 dark:hover:bg-[#b53133]/20 hover:text-[#b53133]'
                 }
               `}
             >
@@ -202,12 +202,12 @@ export default function Navbar() {
                 name={icon}
                 className={`
                   w-5 h-5
-                  ${isActiveLink(href) ? 'text-blue-600 dark:text-blue-400' : 'text-gray-500 dark:text-gray-400'}
+                  ${isActiveLink(href) ? 'text-[#b53133]' : 'text-gray-500 dark:text-gray-400'}
                 `}
               />
               <span>{label}</span>
               {isActiveLink(href) && (
-                <div className="ml-auto w-2 h-2 bg-blue-600 dark:bg-blue-400 rounded-full" />
+                <div className="ml-auto w-2 h-2 bg-[#b53133] rounded-full" />
               )}
             </Link>
           ))}

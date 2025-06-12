@@ -172,7 +172,7 @@ export default function ChatPanel({ open, user, onClose }: ChatPanelProps) {
                 send();
               }
             }}
-            className="input input-bordered flex-1 bg-gray-100/50 dark:bg-gray-700/50 border-gray-200/50 dark:border-gray-600/50 rounded-lg text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 transition-all duration-200"
+            className="input input-bordered flex-1 bg-gray-100/50 dark:bg-gray-700/50 border-gray-200/50 dark:border-gray-600/50 rounded-lg text-gray-900 dark:text-white focus:ring-2 focus:ring-[#b53133] transition-all duration-200"
             placeholder="Type a message..."
           />
           <button

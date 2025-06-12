@@ -29,7 +29,7 @@ export default function MessagesPage() {
             <input
               type="text"
               placeholder="Search messages..."
-              className="input input-bordered w-full bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 rounded-full py-2 px-4 focus:ring-2 focus:ring-blue-500"
+              className="input input-bordered w-full bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 rounded-full py-2 px-4 focus:ring-2 focus:ring-[#b53133]"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
             />
@@ -51,7 +51,7 @@ export default function MessagesPage() {
                   onClick={() => setActive({ type: 'chat', id: c.id, name: c.name, photo: c.photo })}
                   className={`w-full flex items-center gap-3 p-3 rounded-xl text-left transition-all ${
                     active?.type === 'chat' && active.id === c.id
-                      ? 'bg-blue-100 dark:bg-blue-900/50'
+                      ? 'bg-[#b53133]/10'
                       : 'hover:bg-gray-100 dark:hover:bg-gray-700'
                   }`}
                 >
@@ -79,7 +79,7 @@ export default function MessagesPage() {
                     </div>
                   </div>
                   {c.unread && (
-                    <div className="w-2 h-2 rounded-full bg-blue-500 absolute right-3 top-5" />
+                    <div className="w-2 h-2 rounded-full bg-[#b53133] absolute right-3 top-5" />
                   )}
                 </button>
                 <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -122,7 +122,7 @@ export default function MessagesPage() {
                 onClick={() => setActive({ type: 'user', id: u.username, name: u.username, photo: u.photo })}
                 className={`w-full flex items-center gap-3 p-3 rounded-xl text-left transition-all ${
                   active?.type === 'user' && active.id === u.username
-                    ? 'bg-blue-100 dark:bg-blue-900/50'
+                    ? 'bg-[#b53133]/10'
                     : 'hover:bg-gray-100 dark:hover:bg-gray-700'
                 }`}
               >
@@ -150,7 +150,7 @@ export default function MessagesPage() {
                   </div>
                 </div>
                 {u.unread && (
-                  <div className="w-2 h-2 rounded-full bg-blue-500 absolute right-3 top-5" />
+                  <div className="w-2 h-2 rounded-full bg-[#b53133] absolute right-3 top-5" />
                 )}
               </button>
             ))}

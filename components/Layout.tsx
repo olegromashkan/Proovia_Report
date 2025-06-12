@@ -16,7 +16,7 @@ export default function Layout({ children, title, fullWidth }: LayoutProps) {
         <title>{title ? `${title} | Proovia Report` : 'Proovia Report'}</title>
         <meta name="viewport" content="width=device-width, initial-scale=1" />
       </Head>
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 text-base-content">
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 text-base-content">
         <Navbar />
         <ToastNotifications />
         <main

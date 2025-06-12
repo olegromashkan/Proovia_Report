@@ -106,7 +106,7 @@ export default function NotificationCenter() {
           <div className="flex justify-between items-center mb-2">
             <h3 className="text-lg font-semibold">Notifications</h3>
             {items.length > 0 && (
-              <button onClick={removeAll} className="text-sm text-blue-600 hover:underline">Clear all</button>
+              <button onClick={removeAll} className="text-sm text-[#b53133] hover:underline">Clear all</button>
             )}
           </div>
           <div className="space-y-2 max-h-96 overflow-y-auto">
