@@ -97,7 +97,7 @@ export default function TasksPanel({ open, onClose }: TasksPanelProps) {
             onChange={(e) => setText(e.target.value)}
             placeholder="Enter task description"
             rows={3}
-            className="textarea textarea-bordered w-full bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            className="textarea textarea-bordered w-full bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-[#b53133] focus:border-[#b53133]"
           />
         </div>
 
@@ -110,7 +110,7 @@ export default function TasksPanel({ open, onClose }: TasksPanelProps) {
             value={assignee}
             onChange={(e) => setAssignee(e.target.value)}
             placeholder="@username"
-            className="input input-bordered w-full bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            className="input input-bordered w-full bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-[#b53133] focus:border-[#b53133]"
           />
           <datalist id="task-users">
             {users.map((u) => (
@@ -127,14 +127,14 @@ export default function TasksPanel({ open, onClose }: TasksPanelProps) {
             type="datetime-local"
             value={due}
             onChange={(e) => setDue(e.target.value)}
-            className="input input-bordered w-full bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            className="input input-bordered w-full bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-[#b53133] focus:border-[#b53133]"
           />
         </div>
 
         <button
           onClick={create}
           disabled={!text || !assignee}
-          className="w-full flex items-center justify-center gap-2 bg-blue-600 text-white rounded-md py-2 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-blue-700"
+          className="w-full flex items-center justify-center gap-2 bg-[#b53133] text-white rounded-md py-2 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[#a12b2e]"
         >
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />

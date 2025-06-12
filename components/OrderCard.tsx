@@ -45,7 +45,7 @@ export default function OrderCard({ data }: Props) {
             href={`https://creatorapp.zoho.eu/dragrusu/copy-of-steeltrans-new/#Report:Copy_of_Tomorrow_trips?Order.OrderNumber=${order}`}
             target="_blank"
             rel="noopener noreferrer"
-            className="body-link text-blue-600 hover:underline"
+            className="body-link text-[#b53133] hover:underline"
           >
             View Order
           </a>
@@ -54,7 +54,7 @@ export default function OrderCard({ data }: Props) {
               href={`https://api.proovia.co.uk/order-track/${id}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="body-link text-blue-600 hover:underline"
+              className="body-link text-[#b53133] hover:underline"
             >
               Tracking link
             </a>
@@ -63,7 +63,7 @@ export default function OrderCard({ data }: Props) {
             href={`https://crm.proovia.uk/event-stream/order?search=${order}`}
             target="_blank"
             rel="noopener noreferrer"
-            className="body-link text-blue-600 hover:underline"
+            className="body-link text-[#b53133] hover:underline"
           >
             Order images
           </a>

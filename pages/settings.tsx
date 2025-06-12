@@ -35,7 +35,7 @@ export default function Settings() {
               className={`
                 px-6 py-4 text-sm font-medium transition-all duration-200 relative
                 ${tab === 'database'
-                  ? 'text-blue-600 dark:text-blue-400'
+                  ? 'text-[#b53133]'
                   : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white'
                 }
               `}
@@ -44,7 +44,7 @@ export default function Settings() {
             >
               Database
               {tab === 'database' && (
-                <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600 dark:bg-blue-400"></div>
+                <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#b53133]"></div>
               )}
             </button>
             <button
@@ -52,7 +52,7 @@ export default function Settings() {
               className={`
                 px-6 py-4 text-sm font-medium transition-all duration-200 relative
                 ${tab === 'customize'
-                  ? 'text-blue-600 dark:text-blue-400'
+                  ? 'text-[#b53133]'
                   : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white'
                 }
               `}
@@ -61,7 +61,7 @@ export default function Settings() {
             >
               Customize
               {tab === 'customize' && (
-                <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600 dark:bg-blue-400"></div>
+                <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#b53133]"></div>
               )}
             </button>
             <button
@@ -69,7 +69,7 @@ export default function Settings() {
               className={`
                 px-6 py-4 text-sm font-medium transition-all duration-200 relative
                 ${tab === 'users'
-                  ? 'text-blue-600 dark:text-blue-400'
+                  ? 'text-[#b53133]'
                   : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white'
                 }
               `}
@@ -78,7 +78,7 @@ export default function Settings() {
             >
               Users
               {tab === 'users' && (
-                <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600 dark:bg-blue-400"></div>
+                <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#b53133]"></div>
               )}
             </button>
             <button
@@ -86,7 +86,7 @@ export default function Settings() {
               className={`
                 px-6 py-4 text-sm font-medium transition-all duration-200 relative
                 ${tab === 'upload'
-                  ? 'text-blue-600 dark:text-blue-400'
+                  ? 'text-[#b53133]'
                   : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white'
                 }
               `}
@@ -95,7 +95,7 @@ export default function Settings() {
             >
               Upload Settings
               {tab === 'upload' && (
-                <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600 dark:bg-blue-400"></div>
+                <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#b53133]"></div>
               )}
             </button>
           </div>

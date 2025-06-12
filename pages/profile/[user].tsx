@@ -143,7 +143,7 @@ export default function Profile() {
         {/* Header Section with Profile Overlay */}
         <div className="relative">
           {/* Header Image */}
-          <div className="relative h-64 bg-gradient-to-br from-blue-400 via-purple-500 to-pink-500 rounded-2xl overflow-hidden shadow-xl">
+          <div className="relative h-64 bg-[#b53133] rounded-2xl overflow-hidden shadow-xl">
             {info.header && (
               <img 
                 src={info.header} 

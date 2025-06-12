@@ -134,8 +134,8 @@ export default function ChatWindow({ user, chatId, name, photo }: ChatWindowProp
     return (
       <div className="flex-1 flex flex-col items-center justify-center text-gray-500 dark:text-gray-400 gap-6 bg-white dark:bg-gray-900">
         <div className="text-center space-y-4">
-          <div className="w-20 h-20 mx-auto bg-gradient-to-br from-blue-100 to-blue-200 dark:from-blue-900 dark:to-blue-800 rounded-full flex items-center justify-center">
-            <Icon name="chat" className="w-8 h-8 text-blue-600 dark:text-blue-400" />
+          <div className="w-20 h-20 mx-auto bg-gradient-to-br from-[#b53133]/20 to-[#b53133]/40 rounded-full flex items-center justify-center">
+            <Icon name="chat" className="w-8 h-8 text-[#b53133]" />
           </div>
           <div className="text-xl font-medium">No conversation selected</div>
           <div className="text-sm text-gray-400 dark:text-gray-500">Pick a conversation from the sidebar to start messaging</div>
@@ -171,7 +171,7 @@ export default function ChatWindow({ user, chatId, name, photo }: ChatWindowProp
                 loading="lazy"
               />
             ) : (
-              <div className="relative w-10 h-10 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center shadow-sm">
+              <div className="relative w-10 h-10 rounded-full bg-[#b53133] flex items-center justify-center shadow-sm">
                 <span className="text-sm font-semibold text-white">
                   {(name || user || '')[0]?.toUpperCase()}
                 </span>
@@ -220,7 +220,7 @@ export default function ChatWindow({ user, chatId, name, photo }: ChatWindowProp
             >
               <div className="flex items-center gap-3">
                 <Icon name="reply" className="w-4 h-4 text-primary" />
-                <span className="text-sm text-blue-800 dark:text-blue-300 truncate max-w-[250px]">
+                <span className="text-sm text-black truncate max-w-[250px]">
                   Replying to: {replyTo.text.length > 40 ? replyTo.text.slice(0, 40) + '…' : replyTo.text}
                 </span>
               </div>
@@ -298,16 +298,16 @@ export default function ChatWindow({ user, chatId, name, photo }: ChatWindowProp
                   
                   <div
                     className={`relative px-4 py-2.5 max-w-[75%] sm:max-w-[65%] text-sm group transition-all duration-200 ${
-                      isMe
-                        ? 'bg-primary text-primary-content rounded-3xl rounded-br-lg shadow-md'
-                        : 'bg-white dark:bg-gray-800 text-gray-900 dark:text-white rounded-3xl rounded-bl-lg shadow-md border border-gray-200 dark:border-gray-700'
+                  isMe
+                        ? 'bg-primary text-black rounded-3xl rounded-br-lg shadow-md'
+                        : 'bg-white dark:bg-gray-800 text-black rounded-3xl rounded-bl-lg shadow-md border border-gray-200 dark:border-gray-700'
                     }`}
                   >
                     {m.reply_to && replyText && (
                       <div className={`text-xs mb-2 p-2 rounded-xl border-l-3 ${
                         isMe
-                          ? 'bg-primary/30 border-primary text-primary-content'
-                          : 'bg-gray-100 dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-400'
+                          ? 'bg-primary/30 border-primary text-black'
+                          : 'bg-gray-100 dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-black'
                       }`}>
                         {replyText.length > 50 ? replyText.slice(0, 50) + '…' : replyText}
                       </div>
@@ -315,9 +315,7 @@ export default function ChatWindow({ user, chatId, name, photo }: ChatWindowProp
                     
                     <div className="break-words leading-relaxed">{m.text}</div>
                     
-                    <div className={`text-xs mt-1 text-right ${
-                      isMe ? 'text-primary-content' : 'text-gray-500 dark:text-gray-400'
-                    }`}>
+                    <div className="text-xs mt-1 text-right text-black">
                       {new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                     </div>
                     
@@ -394,7 +392,7 @@ export default function ChatWindow({ user, chatId, name, photo }: ChatWindowProp
                     send();
                   }
                 }}
-                className="w-full px-4 py-3 bg-gray-100 dark:bg-gray-800 border-0 rounded-3xl text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:bg-white dark:focus:bg-gray-700 focus:ring-2 focus:ring-blue-500 transition-all duration-200 resize-none"
+                className="w-full px-4 py-3 bg-gray-100 dark:bg-gray-800 border-0 rounded-3xl text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:bg-white dark:focus:bg-gray-700 focus:ring-2 focus:ring-[#b53133] transition-all duration-200 resize-none"
                 placeholder="Type a message..."
                 aria-label="Message input"
               />

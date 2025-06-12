@@ -122,7 +122,7 @@ export default function Register() {
             transition={{ type: 'spring', stiffness: 120, damping: 20 }}
             className="space-y-6"
           >
-            <h2 className="text-4xl font-extrabold bg-gradient-to-r from-blue-600 to-purple-500 bg-clip-text text-transparent">
+            <h2 className="text-4xl font-extrabold bg-gradient-to-r from-[#b53133] to-[#b53133] bg-clip-text text-transparent">
               Pick Your Username
             </h2>
             <p className="text-gray-500 text-lg">Choose a name that sparkles!</p>
@@ -131,7 +131,7 @@ export default function Register() {
               placeholder="Your unique username"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
-              className="w-full p-4 rounded-2xl bg-white bg-opacity-70 backdrop-blur-md text-gray-800 border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-400 shadow-lg"
+              className="w-full p-4 rounded-2xl bg-white bg-opacity-70 backdrop-blur-md text-gray-800 border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#b53133] shadow-lg"
             />
           </motion.div>
         );
@@ -144,7 +144,7 @@ export default function Register() {
             transition={{ type: 'spring', stiffness: 120, damping: 20 }}
             className="space-y-6"
           >
-            <h2 className="text-4xl font-extrabold bg-gradient-to-r from-blue-600 to-purple-500 bg-clip-text text-transparent">
+            <h2 className="text-4xl font-extrabold bg-gradient-to-r from-[#b53133] to-[#b53133] bg-clip-text text-transparent">
               Set a Password
             </h2>
             <p className="text-gray-500 text-lg">Make it strong and secure!</p>
@@ -153,7 +153,7 @@ export default function Register() {
               placeholder="Your secret password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full p-4 rounded-2xl bg-white bg-opacity-70 backdrop-blur-md text-gray-800 border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-400 shadow-lg"
+              className="w-full p-4 rounded-2xl bg-white bg-opacity-70 backdrop-blur-md text-gray-800 border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#b53133] shadow-lg"
             />
           </motion.div>
         );
@@ -166,7 +166,7 @@ export default function Register() {
             transition={{ type: 'spring', stiffness: 120, damping: 20 }}
             className="space-y-6"
           >
-            <h2 className="text-4xl font-extrabold bg-gradient-to-r from-blue-600 to-purple-500 bg-clip-text text-transparent">
+            <h2 className="text-4xl font-extrabold bg-gradient-to-r from-[#b53133] to-[#b53133] bg-clip-text text-transparent">
               Add a Profile Photo
             </h2>
             <p className="text-gray-500 text-lg">Show off your style!</p>
@@ -174,7 +174,7 @@ export default function Register() {
               type="file"
               accept="image/*"
               onChange={handlePhoto}
-              className="w-full p-4 rounded-2xl bg-white bg-opacity-70 backdrop-blur-md text-gray-800 border border-gray-200 file:mr-4 file:py-3 file:px-5 file:rounded-xl file:border-0 file:bg-gradient-to-r file:from-blue-500 file:to-purple-500 file:text-white hover:file:from-blue-600 hover:file:to-purple-600 shadow-lg"
+              className="w-full p-4 rounded-2xl bg-white bg-opacity-70 backdrop-blur-md text-gray-800 border border-gray-200 file:mr-4 file:py-3 file:px-5 file:rounded-xl file:border-0 file:bg-[#b53133] file:text-white hover:file:bg-[#a12b2e] shadow-lg"
             />
             {photo && (
               <motion.img
@@ -197,7 +197,7 @@ export default function Register() {
             transition={{ type: 'spring', stiffness: 120, damping: 20 }}
             className="space-y-6"
           >
-            <h2 className="text-4xl font-extrabold bg-gradient-to-r from-blue-600 to-purple-500 bg-clip-text text-transparent">
+            <h2 className="text-4xl font-extrabold bg-gradient-to-r from-[#b53133] to-[#b53133] bg-clip-text text-transparent">
               Choose a Header Image
             </h2>
             <p className="text-gray-500 text-lg">Set the mood for your profile!</p>
@@ -205,7 +205,7 @@ export default function Register() {
               type="file"
               accept="image/*"
               onChange={handleHeader}
-              className="w-full p-4 rounded-2xl bg-white bg-opacity-70 backdrop-blur-md text-gray-800 border border-gray-200 file:mr-4 file:py-3 file:px-5 file:rounded-xl file:border-0 file:bg-gradient-to-r file:from-blue-500 file:to-purple-500 file:text-white hover:file:from-blue-600 hover:file:to-purple-600 shadow-lg"
+              className="w-full p-4 rounded-2xl bg-white bg-opacity-70 backdrop-blur-md text-gray-800 border border-gray-200 file:mr-4 file:py-3 file:px-5 file:rounded-xl file:border-0 file:bg-[#b53133] file:text-white hover:file:bg-[#a12b2e] shadow-lg"
             />
             {header && (
               <motion.img
@@ -228,13 +228,13 @@ export default function Register() {
             transition={{ type: 'spring', stiffness: 120, damping: 20 }}
             className="space-y-6 text-center"
           >
-            <h2 className="text-4xl font-extrabold bg-gradient-to-r from-blue-600 to-purple-500 bg-clip-text text-transparent">
+            <h2 className="text-4xl font-extrabold bg-gradient-to-r from-[#b53133] to-[#b53133] bg-clip-text text-transparent">
               Let’s Get Started!
             </h2>
             <p className="text-gray-500 text-lg">Your profile is ready to dazzle. Let’s go!</p>
             <motion.button
               onClick={submit}
-              className="w-full py-4 rounded-2xl bg-gradient-to-r from-blue-500 to-purple-500 text-white font-semibold text-lg shadow-xl hover:from-blue-600 hover:to-purple-600 transition"
+              className="w-full py-4 rounded-2xl bg-[#b53133] text-white font-semibold text-lg shadow-xl hover:bg-[#a12b2e] transition"
               whileHover={{ scale: 1.05, boxShadow: '0 8px 32px rgba(0, 0, 255, 0.3)' }}
               whileTap={{ scale: 0.95 }}
             >
@@ -293,7 +293,7 @@ export default function Register() {
             {step < 5 && (
               <motion.button
                 onClick={nextStep}
-                className="px-6 py-3 rounded-xl bg-gradient-to-r from-blue-500 to-purple-500 text-white font-semibold hover:from-blue-600 hover:to-purple-600 transition ml-auto shadow-md"
+                className="px-6 py-3 rounded-xl bg-[#b53133] text-white font-semibold hover:bg-[#a12b2e] transition ml-auto shadow-md"
                 whileHover={{ scale: 1.05, boxShadow: '0 4px 16px rgba(0, 0, 255, 0.3)' }}
                 whileTap={{ scale: 0.95 }}
               >
@@ -306,7 +306,7 @@ export default function Register() {
               <motion.div
                 key={s}
                 className={`w-4 h-4 rounded-full ${
-                  step === s ? 'bg-gradient-to-r from-blue-500 to-purple-500' : 'bg-gray-300'
+                  step === s ? 'bg-[#b53133]' : 'bg-gray-300'
                 }`}
                 initial={{ scale: 0.8 }}
                 animate={{ scale: step === s ? 1.3 : 1 }}
