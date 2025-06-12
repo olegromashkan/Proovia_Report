@@ -1,12 +1,15 @@
 import { useState } from 'react';
+import Icon from '../../components/Icon';
 import Layout from '../../components/Layout';
 import useFetch from '../../lib/useFetch';
 import ChatWindow from '../../components/ChatWindow';
 
 export default function MessagesPage() {
   const { data } = useFetch<{ users: any[] }>('/api/users');
+  const { data: chatData } = useFetch<{ chats: any[] }>('/api/chats');
   const users = data?.users || [];
-  const [active, setActive] = useState<string | null>(null);
+  const chats = chatData?.chats || [];
+  const [active, setActive] = useState<{type:'user'|'chat';id:string|number;name?:string}|null>(null);
   const [query, setQuery] = useState('');
 
   const filtered = users.filter((u) =>
@@ -27,12 +30,40 @@ export default function MessagesPage() {
             />
           </div>
           <div className="overflow-y-auto max-h-full pr-2 space-y-2">
+            {chats.map((c) => (
+              <div key={`c-${c.id}`} className="relative group">
+                <button
+                  onClick={() => setActive({ type: 'chat', id: c.id, name: c.name })}
+                  className={`w-full flex items-center gap-2 p-2 rounded-lg border text-left transition-all ${
+                    active?.type === 'chat' && active.id === c.id
+                      ? 'bg-blue-100 dark:bg-gray-700 border-blue-200 dark:border-gray-600'
+                      : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700'
+                  }`}
+                >
+                  <Icon name="users" className="w-5 h-5" />
+                  <span className="flex-1 truncate">{c.name}</span>
+                </button>
+                <button
+                  onClick={async () => {
+                    await fetch('/api/chats', {
+                      method: 'PUT',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ id: c.id, pinned: c.pinned ? 0 : 1 })
+                    });
+                    window.location.reload();
+                  }}
+                  className="absolute top-1 right-1 p-1 text-xs hidden group-hover:block"
+                >
+                  <Icon name="star" className={`w-4 h-4 ${c.pinned ? 'text-yellow-500' : ''}`} />
+                </button>
+              </div>
+            ))}
             {filtered.map((u) => (
               <button
                 key={u.id}
-                onClick={() => setActive(u.username)}
+                onClick={() => setActive({ type: 'user', id: u.username, name: u.username })}
                 className={`w-full flex items-center gap-2 p-2 rounded-lg border text-left transition-all ${
-                  active === u.username
+                  active?.type === 'user' && active.id === u.username
                     ? 'bg-blue-100 dark:bg-gray-700 border-blue-200 dark:border-gray-600'
                     : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700'
                 }`}
@@ -50,7 +81,11 @@ export default function MessagesPage() {
           </div>
         </div>
         <div className="flex-1 min-w-0">
-          <ChatWindow user={active} />
+          <ChatWindow
+            user={active?.type === 'user' ? (active.id as string) : undefined}
+            chatId={active?.type === 'chat' ? (active.id as number) : undefined}
+            name={active?.name}
+          />
         </div>
       </div>
     </Layout>
