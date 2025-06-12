@@ -166,7 +166,7 @@ export default function CustomizePanel() {
               <RotateCcw className="w-4 h-4" />
               Reset
             </button>
-            <button onClick={exportTheme} className="px-4 py-2 rounded-full bg-blue-400 text-white hover:bg-blue-500 flex items-center gap-2">
+            <button onClick={exportTheme} className="px-4 py-2 rounded-full bg-primary text-primary-content hover:bg-primary/90 flex items-center gap-2">
               <Download className="w-4 h-4" />
               Export
             </button>

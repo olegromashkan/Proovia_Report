@@ -121,7 +121,7 @@ export default function ChatPanel({ open, user, onClose }: ChatPanelProps) {
                 className={`
                   p-3 rounded-2xl max-w-[80%] text-sm
                   ${m.sender === me
-                    ? 'bg-blue-500 text-white rounded-br-sm'
+                    ? 'bg-primary text-primary-content rounded-br-sm'
                     : 'bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-white rounded-bl-sm'
                   }
                 `}
@@ -186,7 +186,7 @@ export default function ChatPanel({ open, user, onClose }: ChatPanelProps) {
           <button
             onClick={send}
             disabled={!text.trim()}
-            className="w-12 h-12 flex items-center justify-center rounded-lg bg-blue-600 text-white disabled:opacity-50 disabled:cursor-not-allowed hover:bg-blue-700 transition-all"
+            className="w-12 h-12 flex items-center justify-center rounded-lg bg-primary text-primary-content disabled:opacity-50 disabled:cursor-not-allowed hover:bg-primary/90 transition-all"
             aria-label="Send message"
           >
             <Icon name="paper-plane" className="w-5 h-5" />

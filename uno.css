@@ -49,7 +49,7 @@ h6 {
   box-shadow: 0 2px 4px rgba(0, 0, 0, var(--shadow-strength));
 }
 .nav-link {
-  @apply text-gray-700 font-semibold hover:text-indigo-600 transition-colors;
+  @apply text-gray-700 font-semibold hover:text-primary transition-colors;
 }
 .icon {
   @apply inline-block mr-1;

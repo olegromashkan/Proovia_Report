@@ -142,7 +142,7 @@ export default function ChatWindow({ user, chatId, name, photo }: ChatWindowProp
         </div>
         <button
           onClick={() => setCreateOpen(true)}
-          className="inline-flex items-center gap-2 px-6 py-3 bg-blue-500 hover:bg-blue-600 text-white rounded-full font-medium transition-all duration-200 transform hover:scale-105 shadow-lg hover:shadow-xl"
+          className="inline-flex items-center gap-2 px-6 py-3 bg-primary text-primary-content rounded-full font-medium transition-all duration-200 transform hover:scale-105 shadow-lg hover:bg-primary/90 hover:shadow-xl"
           aria-label="Create new group"
         >
           <Icon name="plus" className="w-5 h-5" />
@@ -216,17 +216,17 @@ export default function ChatWindow({ user, chatId, name, photo }: ChatWindowProp
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
-              className="flex items-center justify-between mb-3 bg-blue-50 dark:bg-blue-900/20 rounded-2xl px-4 py-3 border border-blue-200 dark:border-blue-800"
+              className="flex items-center justify-between mb-3 bg-primary/10 dark:bg-primary/20 rounded-2xl px-4 py-3 border border-primary/30 dark:border-primary/40"
             >
               <div className="flex items-center gap-3">
-                <Icon name="reply" className="w-4 h-4 text-blue-600 dark:text-blue-500" />
+                <Icon name="reply" className="w-4 h-4 text-primary" />
                 <span className="text-sm text-blue-800 dark:text-blue-300 truncate max-w-[250px]">
                   Replying to: {replyTo.text.length > 40 ? replyTo.text.slice(0, 40) + '…' : replyTo.text}
                 </span>
               </div>
               <button
                 onClick={cancelReply}
-                className="p-1 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-800/30 rounded-full transition-all"
+                className="p-1 text-primary hover:bg-primary/10 rounded-full transition-all"
                 aria-label="Cancel reply"
               >
                 <Icon name="xmark" className="w-4 h-4" />
@@ -299,14 +299,14 @@ export default function ChatWindow({ user, chatId, name, photo }: ChatWindowProp
                   <div
                     className={`relative px-4 py-2.5 max-w-[75%] sm:max-w-[65%] text-sm group transition-all duration-200 ${
                       isMe
-                        ? 'bg-blue-500 text-white rounded-3xl rounded-br-lg shadow-md'
+                        ? 'bg-primary text-primary-content rounded-3xl rounded-br-lg shadow-md'
                         : 'bg-white dark:bg-gray-800 text-gray-900 dark:text-white rounded-3xl rounded-bl-lg shadow-md border border-gray-200 dark:border-gray-700'
                     }`}
                   >
                     {m.reply_to && replyText && (
                       <div className={`text-xs mb-2 p-2 rounded-xl border-l-3 ${
-                        isMe 
-                          ? 'bg-blue-400/30 border-blue-200 text-blue-100' 
+                        isMe
+                          ? 'bg-primary/30 border-primary text-primary-content'
                           : 'bg-gray-100 dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-400'
                       }`}>
                         {replyText.length > 50 ? replyText.slice(0, 50) + '…' : replyText}
@@ -316,7 +316,7 @@ export default function ChatWindow({ user, chatId, name, photo }: ChatWindowProp
                     <div className="break-words leading-relaxed">{m.text}</div>
                     
                     <div className={`text-xs mt-1 text-right ${
-                      isMe ? 'text-blue-100' : 'text-gray-500 dark:text-gray-400'
+                      isMe ? 'text-primary-content' : 'text-gray-500 dark:text-gray-400'
                     }`}>
                       {new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                     </div>
@@ -374,8 +374,8 @@ export default function ChatWindow({ user, chatId, name, photo }: ChatWindowProp
             <button
               onClick={() => setShowEmojiPicker(!showEmojiPicker)}
               className={`p-3 rounded-full transition-all duration-200 ${
-                showEmojiPicker 
-                  ? 'bg-blue-500 text-white shadow-lg' 
+                showEmojiPicker
+                  ? 'bg-primary text-primary-content shadow-lg'
                   : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
               }`}
               aria-label="Toggle emoji picker"
@@ -413,8 +413,8 @@ export default function ChatWindow({ user, chatId, name, photo }: ChatWindowProp
               onClick={send}
               disabled={!text.trim()}
               className={`p-3 rounded-full transition-all duration-200 transform ${
-                text.trim() 
-                  ? 'bg-blue-500 hover:bg-blue-600 text-white shadow-lg hover:shadow-xl hover:scale-105' 
+                text.trim()
+                  ? 'bg-primary hover:bg-primary/90 text-primary-content shadow-lg hover:shadow-xl hover:scale-105'
                   : 'bg-gray-200 dark:bg-gray-700 text-gray-400 dark:text-gray-500 cursor-not-allowed'
               }`}
               aria-label="Send message"
