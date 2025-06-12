@@ -12,6 +12,13 @@ interface Item {
   punctuality?: number | null;
 }
 
+function stylePunctuality(val: number | null) {
+  if (val === null) return '-';
+  if (val <= 45) return <span className="text-success">{val}</span>;
+  if (val <= 90) return <span className="text-warning">{val}</span>;
+  return <span className="text-error">{val}</span>;
+}
+
 export default function DriverRoutes() {
   const today = formatDate(new Date());
   const sevenAgoDate = new Date();
@@ -63,7 +70,7 @@ export default function DriverRoutes() {
         />
       </div>
       <div className="overflow-x-auto">
-        <table className="table table-sm">
+        <table className="table table-sm min-w-full text-center">
           <thead>
             <tr>
               <th>Driver</th>
@@ -94,12 +101,12 @@ export default function DriverRoutes() {
                   {dates.map(d => {
                     const data = map[driver]?.[d];
                     return [
-                      <td key={`${driver}-${d}-r`}>{data?.route || '-'}</td>,
-                      <td key={`${driver}-${d}-t`}>{data?.tasks || '-'}</td>,
-                      <td key={`${driver}-${d}-p`}>{data?.punctuality ?? '-'}</td>
-                    ];
-                  })}
-                </tr>
+                    <td key={`${driver}-${d}-r`}>{data?.route || '-'}</td>,
+                    <td key={`${driver}-${d}-t`}>{data?.tasks || '-'}</td>,
+                    <td key={`${driver}-${d}-p`}>{stylePunctuality(data?.punctuality ?? null)}</td>
+                  ];
+                })}
+              </tr>
               ))
             )}
             {!loading && drivers.length === 0 && (
