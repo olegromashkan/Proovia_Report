@@ -62,7 +62,17 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
         item['Time_Completed'] ||
         item['Trip.Time_Completed'];
       let punctuality: number | null = null;
-      if (arrival && done) {
+
+      const rawPunc =
+        item.Punctuality ||
+        item['Punctuality'] ||
+        item['Trip.Punctuality'];
+      if (rawPunc !== undefined && rawPunc !== null && rawPunc !== '') {
+        const n = Number(rawPunc);
+        if (!isNaN(n)) punctuality = n;
+      }
+
+      if (punctuality === null && arrival && done) {
         const parseMinutes = (str: string) => {
           const time = str.split(' ')[1] || str;
           const [h = '0', m = '0', s = '0'] = time.split(':');
