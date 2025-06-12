@@ -53,7 +53,7 @@ function getDriverMap(): Record<string, string> {
 export default function handler(req: NextApiRequest, res: NextApiResponse) {
   // Validate query
   const q = String(req.query.q || '').toLowerCase().trim();
-  if (!q || q.length > 100 || !q.includes('report')) {
+  if (!q || q.length > 100) {
     return res.status(400).json({ message: 'Invalid or unrecognized query' });
   }
 
