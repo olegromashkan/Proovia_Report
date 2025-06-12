@@ -1,8 +1,22 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback, useRef, DragEvent, ChangeEvent } from 'react';
 import Layout from '../components/Layout';
+import Modal from '../components/Modal';
+import Icon from '../components/Icon';
 
 function formatDate(d: Date) {
   return d.toISOString().slice(0,10);
+}
+
+const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+function parseDate(value: string | undefined): string | null {
+  if (!value) return null;
+  const [d, mon, rest] = value.split('-');
+  if (!d || !mon || !rest) return null;
+  const [y] = rest.split(' ');
+  const mIndex = MONTHS.indexOf(mon);
+  if (mIndex === -1) return null;
+  return `${y}-${String(mIndex + 1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
 }
 
 interface Item {
@@ -28,8 +42,10 @@ export default function DriverRoutes() {
   const [end, setEnd] = useState(today);
   const [items, setItems] = useState<Item[]>([]);
   const [loading, setLoading] = useState(false);
+  const [modalDate, setModalDate] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => {
+  const load = useCallback(() => {
     const params = new URLSearchParams({ start, end }).toString();
     setLoading(true);
     fetch(`/api/driver-routes?${params}`)
@@ -38,6 +54,10 @@ export default function DriverRoutes() {
       .catch(() => setItems([]))
       .finally(() => setLoading(false));
   }, [start, end]);
+
+  useEffect(() => {
+    load();
+  }, [load]);
 
   const dates = Array.from(new Set(items.map(it => it.date))).sort();
   const drivers = Array.from(new Set(items.map(it => it.driver))).sort();
@@ -51,6 +71,51 @@ export default function DriverRoutes() {
     if (!map[it.driver]) map[it.driver] = {};
     map[it.driver][it.date] = { route, tasks, punctuality: it.punctuality ?? null };
   });
+
+  const handleFile = async (dateStr: string, file: File) => {
+    try {
+      const text = await file.text();
+      const data = JSON.parse(text);
+      let trips: any[] = [];
+      if (Array.isArray(data)) trips = data;
+      else if (Array.isArray(data.Schedule_Trips)) trips = data.Schedule_Trips;
+      else if (Array.isArray(data.schedule_trips)) trips = data.schedule_trips;
+      else if (Array.isArray(data.scheduleTrips)) trips = data.scheduleTrips;
+      if (!Array.isArray(trips)) {
+        alert('No schedule trips found');
+        return;
+      }
+      const filtered = trips.filter(it => {
+        const raw = it.Start_Time || it['Start_Time'] || it['Trip.Start_Time'];
+        const iso = parseDate(String(raw).split(' ')[0]);
+        return iso === dateStr;
+      });
+      await fetch('/api/update-schedule-trips', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ date: dateStr, trips: filtered })
+      });
+      setModalDate(null);
+      load();
+    } catch (err) {
+      alert('Failed to process file');
+      console.error(err);
+    }
+  };
+
+  const handleInput = (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file && modalDate) handleFile(modalDate, file);
+    e.target.value = '';
+  };
+
+  const handleDrop = (e: DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    const file = e.dataTransfer.files?.[0];
+    if (file && modalDate) handleFile(modalDate, file);
+  };
+
+  const handleDrag = (e: DragEvent<HTMLDivElement>) => e.preventDefault();
 
   return (
     <Layout title="Driver Routes" fullWidth>
@@ -75,7 +140,15 @@ export default function DriverRoutes() {
             <tr>
               <th>Driver</th>
               {dates.map(d => (
-                <th key={d} colSpan={3}>{d}</th>
+                <th key={d} colSpan={3} className="relative">
+                  {d}
+                  <button
+                    className="absolute right-1 top-1 btn btn-xs btn-ghost"
+                    onClick={() => setModalDate(d)}
+                  >
+                    <Icon name="refresh" />
+                  </button>
+                </th>
               ))}
             </tr>
             <tr>
@@ -119,6 +192,26 @@ export default function DriverRoutes() {
           </tbody>
         </table>
       </div>
+      <Modal open={modalDate !== null} onClose={() => setModalDate(null)}>
+        <h2 className="text-lg font-semibold mb-4">Update {modalDate}</h2>
+        <div
+          className="border-2 border-dashed rounded-lg p-6 text-center"
+          onDrop={handleDrop}
+          onDragOver={handleDrag}
+        >
+          <input
+            type="file"
+            accept=".json"
+            ref={fileInputRef}
+            onChange={handleInput}
+            className="hidden"
+          />
+          <label htmlFor="file" className="flex flex-col items-center gap-2 cursor-pointer" onClick={() => fileInputRef.current?.click()}>
+            <Icon name="file-arrow-up" className="text-3xl" />
+            <span>Drag file here or click to select</span>
+          </label>
+        </div>
+      </Modal>
     </Layout>
   );
 }
