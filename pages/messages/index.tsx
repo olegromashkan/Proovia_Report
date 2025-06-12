@@ -38,7 +38,7 @@ export default function MessagesPage() {
             <span className="font-semibold text-lg text-gray-900 dark:text-gray-100">Messages</span>
             <button
               onClick={() => setCreateOpen(true)}
-              className="btn btn-sm btn-circle bg-blue-500 text-white hover:bg-blue-600"
+              className="btn btn-sm btn-circle btn-primary"
               aria-label="New group"
             >
               <Icon name="plus" className="w-4 h-4" />

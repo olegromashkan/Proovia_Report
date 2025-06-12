@@ -137,8 +137,8 @@ export default function SearchOverlay({ open, onClose }: { open: boolean; onClos
             <div
               key={r.id}
               className={`px-4 py-3 cursor-pointer transition-all duration-150 ${
-                selectedIndex === index 
-                  ? 'bg-blue-500 text-white' 
+                selectedIndex === index
+                  ? 'bg-primary text-primary-content'
                   : 'hover:bg-gray-100/70 text-gray-900'
               }`}
               onClick={() => selectResult(r.id)}
@@ -147,7 +147,7 @@ export default function SearchOverlay({ open, onClose }: { open: boolean; onClos
                 <div className="flex-1">
                 <div className="font-medium">{r.order}</div>
                 {r.postcode && (
-                  <div className={`text-sm ${selectedIndex === index ? 'text-blue-100' : 'text-gray-500'}`}>
+                  <div className={`text-sm ${selectedIndex === index ? 'text-primary-content' : 'text-gray-500'}`}>
                     {r.postcode}
                   </div>
                 )}
@@ -172,7 +172,7 @@ export default function SearchOverlay({ open, onClose }: { open: boolean; onClos
                 <button
                   key={i}
                   onClick={() => setQ(s)}
-                  className="block text-left text-blue-600 hover:text-blue-700 text-sm"
+                  className="block text-left text-primary hover:text-primary/80 text-sm"
                 >
                   {s}
                 </button>

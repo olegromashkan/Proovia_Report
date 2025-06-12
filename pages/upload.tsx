@@ -142,7 +142,7 @@ export default function Upload() {
         </div>
       )}
       <button
-        className="btn mt-4 bg-indigo-600"
+        className="btn btn-primary mt-4"
         onClick={startUpload}
         disabled={files.length === 0}
       >
