@@ -164,6 +164,9 @@ export function init() {
   addColumnIfMissing('messages', 'chat_id', 'INTEGER');
   addColumnIfMissing('messages', 'reply_to', 'INTEGER');
   addColumnIfMissing('messages', 'pinned', 'INTEGER DEFAULT 0');
+  addColumnIfMissing('messages', 'image', 'TEXT');
+  addColumnIfMissing('messages', 'edited_at', 'TEXT');
+  addColumnIfMissing('messages', 'deleted', 'INTEGER DEFAULT 0');
   addColumnIfMissing('chats', 'photo', 'TEXT');
   addColumnIfMissing('chats', 'pinned', 'INTEGER DEFAULT 0');
 }
