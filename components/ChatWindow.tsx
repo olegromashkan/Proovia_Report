@@ -121,7 +121,7 @@ export default function ChatWindow({ user, chatId, name }: ChatWindowProps) {
         )}
         <div className="flex items-center gap-2">
           <div className="relative w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-600 flex items-center justify-center">
-            <span className="text-sm font-medium text-gray-600 dark:text-gray-300">{user[0]?.toUpperCase()}</span>
+            <span className="text-sm font-medium text-gray-600 dark:text-gray-300">{(name || user || '')[0]?.toUpperCase()}</span>
             <div className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 rounded-full border border-white dark:border-gray-800" />
           </div>
           <h3 className="font-semibold text-gray-900 dark:text-white truncate max-w-[200px]">
