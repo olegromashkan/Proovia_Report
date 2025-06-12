@@ -15,6 +15,7 @@ export default function CreateGroupModal({ open, onClose, onCreated }: Props) {
   const users = data?.users || [];
   const [name, setName] = useState('');
   const [members, setMembers] = useState<string[]>([]);
+  const [photo, setPhoto] = useState('');
 
   const toggle = (u: string) => {
     setMembers((prev) =>
@@ -26,7 +27,7 @@ export default function CreateGroupModal({ open, onClose, onCreated }: Props) {
     const res = await fetch('/api/chats', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, members }),
+      body: JSON.stringify({ name, members, photo }),
     });
     if (res.ok) {
       const d = await res.json();
@@ -46,6 +47,13 @@ export default function CreateGroupModal({ open, onClose, onCreated }: Props) {
         className="input input-bordered w-full mb-4"
         value={name}
         onChange={(e) => setName(e.target.value)}
+      />
+      <input
+        type="text"
+        placeholder="Avatar URL (optional)"
+        className="input input-bordered w-full mb-4"
+        value={photo}
+        onChange={(e) => setPhoto(e.target.value)}
       />
       <div className="max-h-60 overflow-y-auto space-y-1">
         {users

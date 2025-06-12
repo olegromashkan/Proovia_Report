@@ -72,6 +72,7 @@ export function init() {
     CREATE TABLE IF NOT EXISTS chats (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       name TEXT,
+      photo TEXT,
       pinned INTEGER DEFAULT 0,
       created_at TEXT DEFAULT CURRENT_TIMESTAMP
     );
@@ -163,6 +164,7 @@ export function init() {
   addColumnIfMissing('messages', 'chat_id', 'INTEGER');
   addColumnIfMissing('messages', 'reply_to', 'INTEGER');
   addColumnIfMissing('messages', 'pinned', 'INTEGER DEFAULT 0');
+  addColumnIfMissing('chats', 'photo', 'TEXT');
   addColumnIfMissing('chats', 'pinned', 'INTEGER DEFAULT 0');
 }
 

@@ -9,7 +9,7 @@ export default function MessagesPage() {
   const { data: chatData } = useFetch<{ chats: any[] }>('/api/chats');
   const users = data?.users || [];
   const chats = chatData?.chats || [];
-  const [active, setActive] = useState<{type:'user'|'chat';id:string|number;name?:string}|null>(null);
+  const [active, setActive] = useState<{type:'user'|'chat';id:string|number;name?:string;photo?:string}|null>(null);
   const [query, setQuery] = useState('');
 
   const filtered = users.filter((u) =>
@@ -33,14 +33,18 @@ export default function MessagesPage() {
             {chats.map((c) => (
               <div key={`c-${c.id}`} className="relative group">
                 <button
-                  onClick={() => setActive({ type: 'chat', id: c.id, name: c.name })}
+                  onClick={() => setActive({ type: 'chat', id: c.id, name: c.name, photo: c.photo })}
                   className={`w-full flex items-center gap-2 p-2 rounded-lg border text-left transition-all ${
                     active?.type === 'chat' && active.id === c.id
                       ? 'bg-blue-100 dark:bg-gray-700 border-blue-200 dark:border-gray-600'
                       : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700'
                   }`}
                 >
-                  <Icon name="users" className="w-5 h-5" />
+                  {c.photo ? (
+                    <img src={c.photo} alt={c.name} className="w-8 h-8 rounded-full object-cover" />
+                  ) : (
+                    <Icon name="users" className="w-5 h-5" />
+                  )}
                   <span className="flex-1 truncate">{c.name}</span>
                 </button>
                 <button
@@ -61,7 +65,7 @@ export default function MessagesPage() {
             {filtered.map((u) => (
               <button
                 key={u.id}
-                onClick={() => setActive({ type: 'user', id: u.username, name: u.username })}
+                onClick={() => setActive({ type: 'user', id: u.username, name: u.username, photo: u.photo })}
                 className={`w-full flex items-center gap-2 p-2 rounded-lg border text-left transition-all ${
                   active?.type === 'user' && active.id === u.username
                     ? 'bg-blue-100 dark:bg-gray-700 border-blue-200 dark:border-gray-600'
@@ -85,6 +89,7 @@ export default function MessagesPage() {
             user={active?.type === 'user' ? (active.id as string) : undefined}
             chatId={active?.type === 'chat' ? (active.id as number) : undefined}
             name={active?.name}
+            photo={active?.photo}
           />
         </div>
       </div>
