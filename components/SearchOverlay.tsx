@@ -14,6 +14,7 @@ export default function SearchOverlay({ open, onClose }: { open: boolean; onClos
   const [suggest, setSuggest] = useState<string[]>([]);
   const [selected, setSelected] = useState<any | null>(null);
   const [selectedIndex, setSelectedIndex] = useState(-1);
+  const [report, setReport] = useState<any | null>(null);
 
   useEffect(() => {
     if (!q) {
@@ -23,14 +24,28 @@ export default function SearchOverlay({ open, onClose }: { open: boolean; onClos
       return;
     }
     const controller = new AbortController();
-    fetch(`/api/search?q=${encodeURIComponent(q)}`, { signal: controller.signal })
-      .then(res => res.ok ? res.json() : Promise.reject())
-      .then(data => {
-        setResults(data.items || []);
-        setSuggest(data.suggest || []);
-        setSelectedIndex(-1);
-      })
-      .catch(() => {});
+    const lower = q.toLowerCase();
+    if (lower.includes('report')) {
+      fetch(`/api/nl-report?q=${encodeURIComponent(q)}`, { signal: controller.signal })
+        .then(res => res.ok ? res.json() : Promise.reject())
+        .then(data => {
+          setReport(data.report || null);
+          setResults([]);
+          setSuggest([]);
+          setSelectedIndex(-1);
+        })
+        .catch(() => {});
+    } else {
+      setReport(null);
+      fetch(`/api/search?q=${encodeURIComponent(q)}`, { signal: controller.signal })
+        .then(res => res.ok ? res.json() : Promise.reject())
+        .then(data => {
+          setResults(data.items || []);
+          setSuggest(data.suggest || []);
+          setSelectedIndex(-1);
+        })
+        .catch(() => {});
+    }
     return () => controller.abort();
   }, [q]);
 
@@ -73,6 +88,7 @@ export default function SearchOverlay({ open, onClose }: { open: boolean; onClos
       setSuggest([]);
       setSelected(null);
       setSelectedIndex(-1);
+      setReport(null);
     }
   }, [open]);
 
@@ -125,7 +141,40 @@ export default function SearchOverlay({ open, onClose }: { open: boolean; onClos
           </button>
         </div>
 
-        {/* Results */}
+        {/* Report Results */}
+        {report && (
+          <div className="border-b border-gray-200/50 p-4 space-y-2 text-sm">
+            <h3 className="font-semibold">Report Summary</h3>
+            <p>Total: {report.summary.total}</p>
+            <p>Completed: {report.summary.complete}</p>
+            <p>Failed: {report.summary.failed}</p>
+            {report.topDrivers && (
+              <div>
+                <p className="font-semibold mt-2">Top Drivers</p>
+                <ul className="list-disc ml-5">
+                  {report.topDrivers.map((d: any) => (
+                    <li key={d.driver}>{d.driver} ({d.count})</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            {report.topPostcodes && (
+              <div>
+                <p className="font-semibold mt-2">Top Postcodes</p>
+                <ul className="list-disc ml-5">
+                  {report.topPostcodes.map((p: any) => (
+                    <li key={p.postcode}>{p.postcode} ({p.count})</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            {report.startTimes && (
+              <p className="mt-2">Start: {report.startTimes.first} • Last: {report.startTimes.last}</p>
+            )}
+          </div>
+        )}
+
+        {/* Search Results */}
         <div className="max-h-96 overflow-y-auto">
           {results.length === 0 && q && (
             <div className="px-4 py-8 text-center text-gray-500 text-sm">
