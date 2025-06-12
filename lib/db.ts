@@ -69,11 +69,27 @@ export function init() {
       created_at TEXT DEFAULT CURRENT_TIMESTAMP
     );
 
+    CREATE TABLE IF NOT EXISTS chats (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT,
+      pinned INTEGER DEFAULT 0,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP
+    );
+
+    CREATE TABLE IF NOT EXISTS chat_members (
+      chat_id INTEGER,
+      username TEXT,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP
+    );
+
     CREATE TABLE IF NOT EXISTS messages (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
+      chat_id INTEGER,
       sender TEXT,
       receiver TEXT,
       text TEXT,
+      reply_to INTEGER,
+      pinned INTEGER DEFAULT 0,
       created_at TEXT DEFAULT CURRENT_TIMESTAMP
     );
     CREATE TABLE IF NOT EXISTS posts (
@@ -113,6 +129,9 @@ export function init() {
     'posts',
     'post_likes',
     'post_comments',
+    'chats',
+    'chat_members',
+    'messages',
   ];
   for (const table of tables) {
     try {
@@ -141,6 +160,10 @@ export function init() {
   addColumnIfMissing('tasks', 'due_at', 'TEXT');
   addColumnIfMissing('posts', 'updated_at', 'TEXT');
   addColumnIfMissing('posts', 'type', "TEXT DEFAULT 'user'");
+  addColumnIfMissing('messages', 'chat_id', 'INTEGER');
+  addColumnIfMissing('messages', 'reply_to', 'INTEGER');
+  addColumnIfMissing('messages', 'pinned', 'INTEGER DEFAULT 0');
+  addColumnIfMissing('chats', 'pinned', 'INTEGER DEFAULT 0');
 }
 
 init();

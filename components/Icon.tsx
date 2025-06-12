@@ -48,6 +48,8 @@ const iconMap: Record<string, string> = {
   'exclamation-triangle': 'exclamation-triangle',
   'x-circle': 'x-circle',
   'question-mark-circle': 'question-circle',
+  star: 'star',
+  reply: 'arrow-90deg-left',
 };
 
 export default function Icon({ name, className }: IconProps) {

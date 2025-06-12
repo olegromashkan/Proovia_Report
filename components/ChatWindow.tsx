@@ -9,27 +9,35 @@ interface Message {
   sender: string;
   receiver: string;
   text: string;
+  reply_to?: number;
+  pinned?: number;
   created_at: string;
 }
 
 interface ChatWindowProps {
-  user: string | null;
+  user?: string | null;
+  chatId?: number | null;
+  name?: string | null;
 }
 
-export default function ChatWindow({ user }: ChatWindowProps) {
+export default function ChatWindow({ user, chatId, name }: ChatWindowProps) {
   const me = useUser();
   const [messages, setMessages] = useState<Message[]>([]);
+  const [pinnedMessages, setPinnedMessages] = useState<Message[]>([]);
   const [text, setText] = useState('');
+  const [replyTo, setReplyTo] = useState<Message | null>(null);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const endRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const load = async () => {
-    if (!user) return;
-    const res = await fetch(`/api/messages?user=${user}`);
+    if (!user && !chatId) return;
+    const query = chatId ? `chat=${chatId}` : `user=${user}`;
+    const res = await fetch(`/api/messages?${query}`);
     if (res.ok) {
       const d = await res.json();
       setMessages(d.messages);
+      setPinnedMessages(d.pinned || []);
     }
   };
 
@@ -37,22 +45,32 @@ export default function ChatWindow({ user }: ChatWindowProps) {
     load();
     const id = setInterval(load, 5000);
     return () => clearInterval(id);
-  }, [user]);
+  }, [user, chatId]);
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
   const send = async () => {
-    if (!text.trim() || !user) return;
+    if (!text.trim() || (!user && !chatId)) return;
     await fetch('/api/messages', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ to: user, text }),
+      body: JSON.stringify({ to: user, chatId, text, replyTo: replyTo?.id }),
     });
     setText('');
+    setReplyTo(null);
     load();
     inputRef.current?.focus();
+  };
+
+  const togglePin = async (m: Message) => {
+    await fetch('/api/messages', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: m.id, pinned: m.pinned ? 0 : 1 }),
+    });
+    load();
   };
 
   const createTask = async () => {
@@ -71,10 +89,14 @@ export default function ChatWindow({ user }: ChatWindowProps) {
     inputRef.current?.focus();
   };
 
-  if (!user) {
+  const startReply = (m: Message) => setReplyTo(m);
+  const cancelReply = () => setReplyTo(null);
+
+  if (!user && !chatId) {
     return (
-      <div className="flex-1 flex items-center justify-center text-gray-500 dark:text-gray-400">
-        Select a chat to start messaging
+      <div className="flex-1 flex flex-col items-center justify-center text-gray-500 dark:text-gray-400 gap-4">
+        <div>Select a chat to start messaging</div>
+        <button onClick={() => alert('Create group feature not implemented')} className="btn btn-primary btn-sm">New group</button>
       </div>
     );
   }
@@ -82,19 +104,40 @@ export default function ChatWindow({ user }: ChatWindowProps) {
   return (
     <div className="flex flex-col h-full bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
       <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200/50 dark:border-gray-700/50">
+        {replyTo && (
+          <div className="flex items-center justify-between mb-2 bg-gray-100 dark:bg-gray-700 rounded p-2 text-xs">
+            <span className="truncate">Replying to: {replyTo.text}</span>
+            <button onClick={cancelReply} className="ml-2 text-gray-600 dark:text-gray-300">
+              <Icon name="xmark" className="w-4 h-4" />
+            </button>
+          </div>
+        )}
         <div className="flex items-center gap-2">
           <div className="relative w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-600 flex items-center justify-center">
             <span className="text-sm font-medium text-gray-600 dark:text-gray-300">{user[0]?.toUpperCase()}</span>
             <div className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 rounded-full border border-white dark:border-gray-800" />
           </div>
           <h3 className="font-semibold text-gray-900 dark:text-white truncate max-w-[200px]">
-            {user}
+            {name || user}
           </h3>
         </div>
       </div>
 
       <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-gray-50/50 dark:bg-gray-900/50">
-        {messages.length === 0 ? (
+        {pinnedMessages.length > 0 && (
+          <div className="space-y-3">
+            {pinnedMessages.map((m) => (
+              <div key={m.id} className="flex justify-center">
+                <div className="bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-100 px-3 py-1 rounded-lg text-sm flex items-center gap-2">
+                  <Icon name="star" className="w-4 h-4" />
+                  <span className="break-words">{m.text}</span>
+                  <button onClick={() => togglePin(m)} className="ml-1 text-xs">Unpin</button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+        {messages.length === 0 && pinnedMessages.length === 0 ? (
           <div className="text-center text-sm text-gray-500 dark:text-gray-400 py-4">
             No messages yet
           </div>
@@ -107,15 +150,28 @@ export default function ChatWindow({ user }: ChatWindowProps) {
               className={`flex ${m.sender === me ? 'justify-end' : 'justify-start'}`}
             >
               <div
-                className={`p-3 rounded-2xl max-w-[80%] text-sm ${
+                className={`relative p-3 rounded-2xl max-w-[80%] text-sm group ${
                   m.sender === me
                     ? 'bg-blue-500 text-white rounded-br-sm'
                     : 'bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-white rounded-bl-sm'
                 }`}
               >
+                {m.reply_to && (
+                  <div className="text-xs opacity-70 mb-1 border-l-2 border-gray-400 pl-2">
+                    Reply to #{m.reply_to}
+                  </div>
+                )}
                 <div className="break-words">{m.text}</div>
                 <div className="text-xs opacity-70 mt-1 text-right">
                   {new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                </div>
+                <div className="absolute hidden group-hover:flex gap-1 -top-3 right-0 text-xs">
+                  <button onClick={() => startReply(m)} className="bg-gray-300 dark:bg-gray-600 p-1 rounded">
+                    <Icon name="reply" className="w-3 h-3" />
+                  </button>
+                  <button onClick={() => togglePin(m)} className="bg-gray-300 dark:bg-gray-600 p-1 rounded">
+                    <Icon name="star" className="w-3 h-3" />
+                  </button>
                 </div>
               </div>
             </motion.div>
