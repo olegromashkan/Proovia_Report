@@ -7,8 +7,9 @@ function formatDate(d: Date) {
 
 interface Item {
   driver: string;
-  route: string;
   calendar?: string;
+  date: string;
+  punctuality?: number | null;
 }
 
 export default function DriverRoutes() {
@@ -30,6 +31,19 @@ export default function DriverRoutes() {
       .catch(() => setItems([]))
       .finally(() => setLoading(false));
   }, [start, end]);
+
+  const dates = Array.from(new Set(items.map(it => it.date))).sort();
+  const drivers = Array.from(new Set(items.map(it => it.driver))).sort();
+
+  const map: Record<string, Record<string, { route: string; tasks: string; punctuality: number | null }>> = {};
+  items.forEach(it => {
+    const afterColon = it.calendar?.split(':')[1] || it.calendar || '';
+    const route = afterColon.split(' ')[0] || '';
+    const taskMatch = it.calendar?.match(/\((\d+)\)/);
+    const tasks = taskMatch ? taskMatch[1] : '';
+    if (!map[it.driver]) map[it.driver] = {};
+    map[it.driver][it.date] = { route, tasks, punctuality: it.punctuality ?? null };
+  });
 
   return (
     <Layout title="Driver Routes">
@@ -53,29 +67,44 @@ export default function DriverRoutes() {
           <thead>
             <tr>
               <th>Driver</th>
-              <th>Route</th>
-              <th>Calendar</th>
+              {dates.map(d => (
+                <th key={d} colSpan={3}>{d}</th>
+              ))}
+            </tr>
+            <tr>
+              <th></th>
+              {dates.flatMap(d => [
+                <th key={`${d}-route`}>Route</th>,
+                <th key={`${d}-tasks`}>Tasks</th>,
+                <th key={`${d}-punc`}>Punctuality</th>
+              ])}
             </tr>
           </thead>
           <tbody>
             {loading ? (
               <tr>
-                <td colSpan={3} className="text-center py-4">
+                <td colSpan={1 + dates.length * 3} className="text-center py-4">
                   Loading...
                 </td>
               </tr>
             ) : (
-              items.map((it, idx) => (
-                <tr key={idx} className="hover">
-                  <td>{it.driver}</td>
-                  <td>{it.route}</td>
-                  <td>{it.calendar || 'Unknown'}</td>
+              drivers.map(driver => (
+                <tr key={driver} className="hover">
+                  <td>{driver}</td>
+                  {dates.map(d => {
+                    const data = map[driver]?.[d];
+                    return [
+                      <td key={`${driver}-${d}-r`}>{data?.route || '-'}</td>,
+                      <td key={`${driver}-${d}-t`}>{data?.tasks || '-'}</td>,
+                      <td key={`${driver}-${d}-p`}>{data?.punctuality ?? '-'}</td>
+                    ];
+                  })}
                 </tr>
               ))
             )}
-            {!loading && items.length === 0 && (
+            {!loading && drivers.length === 0 && (
               <tr>
-                <td colSpan={3} className="text-center py-4">
+                <td colSpan={1 + dates.length * 3} className="text-center py-4">
                   No data
                 </td>
               </tr>

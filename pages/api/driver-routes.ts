@@ -49,7 +49,23 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
         item.CalendarName ||
         item['CalendarName'] ||
         'Unknown';
-      return { driver, route, calendar };
+
+      const rawDate = item.Start_Time || item['Start_Time'] || item['Trip.Start_Time'];
+      const date = parseDate(String(rawDate).split(' ')[0]) || 'Unknown';
+
+      const arrival = item.Arrival_Time || item['Arrival_Time'];
+      const done = item.Time_Completed || item['Time_Completed'];
+      let punctuality: number | null = null;
+      if (arrival && done) {
+        const parseMinutes = (str: string) => {
+          const time = str.split(' ')[1] || str;
+          const [h = '0', m = '0', s = '0'] = time.split(':');
+          return Number(h) * 60 + Number(m) + Number(s) / 60;
+        };
+        punctuality = Math.round(parseMinutes(done) - parseMinutes(arrival));
+      }
+
+      return { driver, route, calendar, date, punctuality };
     });
 
   res.status(200).json({ items });
