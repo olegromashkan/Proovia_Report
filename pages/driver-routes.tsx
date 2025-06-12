@@ -8,11 +8,15 @@ function formatDate(d: Date) {
 interface Item {
   driver: string;
   route: string;
+  calendar?: string;
 }
 
 export default function DriverRoutes() {
   const today = formatDate(new Date());
-  const [start, setStart] = useState(today);
+  const sevenAgoDate = new Date();
+  sevenAgoDate.setDate(sevenAgoDate.getDate() - 6);
+  const sevenAgo = formatDate(sevenAgoDate);
+  const [start, setStart] = useState(sevenAgo);
   const [end, setEnd] = useState(today);
   const [items, setItems] = useState<Item[]>([]);
   const [loading, setLoading] = useState(false);
@@ -50,12 +54,13 @@ export default function DriverRoutes() {
             <tr>
               <th>Driver</th>
               <th>Route</th>
+              <th>Calendar</th>
             </tr>
           </thead>
           <tbody>
             {loading ? (
               <tr>
-                <td colSpan={2} className="text-center py-4">
+                <td colSpan={3} className="text-center py-4">
                   Loading...
                 </td>
               </tr>
@@ -64,12 +69,13 @@ export default function DriverRoutes() {
                 <tr key={idx} className="hover">
                   <td>{it.driver}</td>
                   <td>{it.route}</td>
+                  <td>{it.calendar || 'Unknown'}</td>
                 </tr>
               ))
             )}
             {!loading && items.length === 0 && (
               <tr>
-                <td colSpan={2} className="text-center py-4">
+                <td colSpan={3} className="text-center py-4">
                   No data
                 </td>
               </tr>
