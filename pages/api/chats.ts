@@ -13,9 +13,11 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
   }
 
   if (req.method === 'POST') {
-    const { name, members } = req.body || {};
+    const { name, members, photo } = req.body || {};
     if (!name || !Array.isArray(members)) return res.status(400).end();
-    const result = db.prepare('INSERT INTO chats (name) VALUES (?)').run(name);
+    const result = db
+      .prepare('INSERT INTO chats (name, photo) VALUES (?, ?)')
+      .run(name, photo || null);
     const id = result.lastInsertRowid as number;
     const stmt = db.prepare('INSERT INTO chat_members (chat_id, username) VALUES (?, ?)');
     stmt.run(id, username);
@@ -26,9 +28,12 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
   }
 
   if (req.method === 'PUT') {
-    const { id, pinned } = req.body || {};
+    const { id, pinned, photo } = req.body || {};
     if (!id) return res.status(400).end();
-    db.prepare('UPDATE chats SET pinned = ? WHERE id = ?').run(pinned ? 1 : 0, id);
+    const stmt = db.prepare(
+      'UPDATE chats SET pinned = COALESCE(?, pinned), photo = COALESCE(?, photo) WHERE id = ?'
+    );
+    stmt.run(pinned !== undefined ? (pinned ? 1 : 0) : null, photo ?? null, id);
     return res.status(200).json({ message: 'Updated' });
   }
 

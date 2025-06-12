@@ -4,6 +4,7 @@ import useUser from '../lib/useUser';
 import Picker from 'emoji-picker-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import CreateGroupModal from './CreateGroupModal';
+import useFetch from '../lib/useFetch';
 
 interface Message {
   id: number;
@@ -19,9 +20,10 @@ interface ChatWindowProps {
   user?: string | null;
   chatId?: number | null;
   name?: string | null;
+  photo?: string | null;
 }
 
-export default function ChatWindow({ user, chatId, name }: ChatWindowProps) {
+export default function ChatWindow({ user, chatId, name, photo }: ChatWindowProps) {
   const me = useUser();
   const [messages, setMessages] = useState<Message[]>([]);
   const [pinnedMessages, setPinnedMessages] = useState<Message[]>([]);
@@ -31,6 +33,8 @@ export default function ChatWindow({ user, chatId, name }: ChatWindowProps) {
   const [createOpen, setCreateOpen] = useState(false);
   const endRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const { data: usersData } = useFetch<{ users: any[] }>('/api/users');
+  const users = usersData?.users || [];
 
   const load = async () => {
     if (!user && !chatId) return;
@@ -113,17 +117,23 @@ export default function ChatWindow({ user, chatId, name }: ChatWindowProps) {
       <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200/50 dark:border-gray-700/50">
         {replyTo && (
           <div className="flex items-center justify-between mb-2 bg-gray-100 dark:bg-gray-700 rounded p-2 text-xs">
-            <span className="truncate">Replying to: {replyTo.text}</span>
+            <span className="truncate">
+              Replying to: {replyTo.text.length > 50 ? replyTo.text.slice(0, 50) + '…' : replyTo.text}
+            </span>
             <button onClick={cancelReply} className="ml-2 text-gray-600 dark:text-gray-300">
               <Icon name="xmark" className="w-4 h-4" />
             </button>
           </div>
         )}
         <div className="flex items-center gap-2">
-          <div className="relative w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-600 flex items-center justify-center">
-            <span className="text-sm font-medium text-gray-600 dark:text-gray-300">{(name || user || '')[0]?.toUpperCase()}</span>
-            <div className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 rounded-full border border-white dark:border-gray-800" />
-          </div>
+          {photo ? (
+            <img src={photo} alt={name || user || ''} className="w-8 h-8 rounded-full object-cover" />
+          ) : (
+            <div className="relative w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-600 flex items-center justify-center">
+              <span className="text-sm font-medium text-gray-600 dark:text-gray-300">{(name || user || '')[0]?.toUpperCase()}</span>
+              <div className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 rounded-full border border-white dark:border-gray-800" />
+            </div>
+          )}
           <h3 className="font-semibold text-gray-900 dark:text-white truncate max-w-[200px]">
             {name || user}
           </h3>
@@ -149,40 +159,53 @@ export default function ChatWindow({ user, chatId, name }: ChatWindowProps) {
             No messages yet
           </div>
         ) : (
-          messages.map((m) => (
-            <motion.div
-              key={m.id}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className={`flex ${m.sender === me ? 'justify-end' : 'justify-start'}`}
-            >
-              <div
-                className={`relative p-3 rounded-2xl max-w-[80%] text-sm group ${
-                  m.sender === me
-                    ? 'bg-blue-500 text-white rounded-br-sm'
-                    : 'bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-white rounded-bl-sm'
-                }`}
+          messages.map((m) => {
+            const senderPhoto = users.find((u) => u.username === m.sender)?.photo;
+            const replyText = messages.find((r) => r.id === m.reply_to)?.text;
+            return (
+              <motion.div
+                key={m.id}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className={`flex items-end ${m.sender === me ? 'justify-end' : 'justify-start'}`}
               >
-                {m.reply_to && (
-                  <div className="text-xs opacity-70 mb-1 border-l-2 border-gray-400 pl-2">
-                    Reply to: {messages.find((r) => r.id === m.reply_to)?.text || `#${m.reply_to}`}
-                  </div>
+                {m.sender !== me && (
+                  senderPhoto ? (
+                    <img src={senderPhoto} alt={m.sender} className="w-6 h-6 rounded-full object-cover mr-2" />
+                  ) : (
+                    <div className="w-6 h-6 rounded-full bg-gray-300 dark:bg-gray-600 mr-2 flex items-center justify-center text-xs font-bold text-gray-700 dark:text-gray-200">
+                      {m.sender[0]?.toUpperCase()}
+                    </div>
+                  )
                 )}
-                <div className="break-words">{m.text}</div>
-                <div className="text-xs opacity-70 mt-1 text-right">
-                  {new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                <div
+                  className={`relative p-3 rounded-2xl max-w-[80%] text-sm group ${
+                    m.sender === me
+                      ? 'bg-blue-500 text-white rounded-br-sm'
+                      : 'bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-white rounded-bl-sm'
+                  }`}
+                >
+                  {m.reply_to && replyText && (
+                    <div className="text-xs opacity-70 mb-1 border-l-2 border-gray-400 pl-2">
+                      Reply to: {replyText.length > 50 ? replyText.slice(0, 50) + '…' : replyText}
+                    </div>
+                  )}
+                  <div className="break-words">{m.text}</div>
+                  <div className="text-xs opacity-70 mt-1 text-right">
+                    {new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  </div>
+                  <div className="absolute hidden group-hover:flex gap-1 -top-3 right-0 text-xs">
+                    <button onClick={() => startReply(m)} className="bg-gray-300 dark:bg-gray-600 p-1 rounded">
+                      <Icon name="reply" className="w-3 h-3" />
+                    </button>
+                    <button onClick={() => togglePin(m)} className="bg-gray-300 dark:bg-gray-600 p-1 rounded">
+                      <Icon name="star" className="w-3 h-3" />
+                    </button>
+                  </div>
                 </div>
-                <div className="absolute hidden group-hover:flex gap-1 -top-3 right-0 text-xs">
-                  <button onClick={() => startReply(m)} className="bg-gray-300 dark:bg-gray-600 p-1 rounded">
-                    <Icon name="reply" className="w-3 h-3" />
-                  </button>
-                  <button onClick={() => togglePin(m)} className="bg-gray-300 dark:bg-gray-600 p-1 rounded">
-                    <Icon name="star" className="w-3 h-3" />
-                  </button>
-                </div>
-              </div>
-            </motion.div>
-          ))
+              </motion.div>
+            );
+          })
         )}
         <div ref={endRef} />
       </div>
