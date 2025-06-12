@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import Icon from '../../components/Icon';
-import Layout from '../../components/Layout';
+import Layout from '../../components/Layout'; // Verify this path
 import useFetch from '../../lib/useFetch';
 import ChatWindow from '../../components/ChatWindow';
 import CreateGroupModal from '../../components/CreateGroupModal';
@@ -11,10 +11,10 @@ export default function MessagesPage() {
   const { data: chatData } = useFetch<{ chats: any[] }>('/api/chats');
   const users = data?.users || [];
   const chats = chatData?.chats || [];
-  const [active, setActive] = useState<{type:'user'|'chat';id:string|number;name?:string;photo?:string}|null>(null);
+  const [active, setActive] = useState<{ type: 'user' | 'chat'; id: string | number; name?: string; photo?: string } | null>(null);
   const [query, setQuery] = useState('');
   const [createOpen, setCreateOpen] = useState(false);
-  const [editGroup, setEditGroup] = useState<any|null>(null);
+  const [editGroup, setEditGroup] = useState<any | null>(null);
 
   const filtered = users.filter((u) =>
     u.username.toLowerCase().includes(query.toLowerCase())
@@ -22,86 +22,118 @@ export default function MessagesPage() {
 
   return (
     <Layout title="Messages" fullWidth>
-      <div className="flex flex-col md:flex-row gap-4 h-[80vh] mx-auto max-w-6xl p-4">
-        <div className="w-full md:w-64 shrink-0 space-y-4">
-          <div className="flex items-center gap-2">
+      <div className="flex flex-col md:flex-row h-[90vh] mx-auto max-w-7xl bg-gray-50 dark:bg-gray-900">
+        {/* Sidebar */}
+        <div className="w-full md:w-80 shrink-0 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 p-4 flex flex-col">
+          <div className="flex items-center gap-2 mb-4">
             <input
               type="text"
-              placeholder="Search..."
-              className="input input-bordered flex-1"
+              placeholder="Search messages..."
+              className="input input-bordered w-full bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 rounded-full py-2 px-4 focus:ring-2 focus:ring-blue-500"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
             />
           </div>
-          <div className="overflow-y-auto max-h-full pr-2 space-y-4">
-            <div className="flex items-center justify-between">
-              <span className="font-semibold text-sm text-gray-500">Groups</span>
-              <button onClick={() => setCreateOpen(true)} className="btn btn-xs" aria-label="New group">
-                <Icon name="plus" className="w-3 h-3" />
-              </button>
-            </div>
+          <div className="flex items-center justify-between mb-3">
+            <span className="font-semibold text-lg text-gray-900 dark:text-gray-100">Messages</span>
+            <button
+              onClick={() => setCreateOpen(true)}
+              className="btn btn-sm btn-circle bg-blue-500 text-white hover:bg-blue-600"
+              aria-label="New group"
+            >
+              <Icon name="plus" className="w-4 h-4" />
+            </button>
+          </div>
+          <div className="overflow-y-auto flex-1 space-y-2">
             {chats.map((c) => (
               <div key={`c-${c.id}`} className="relative group">
                 <button
                   onClick={() => setActive({ type: 'chat', id: c.id, name: c.name, photo: c.photo })}
-                  className={`w-full flex items-center gap-2 p-2 rounded-lg border text-left transition-all ${
+                  className={`w-full flex items-center gap-3 p-3 rounded-xl text-left transition-all ${
                     active?.type === 'chat' && active.id === c.id
-                      ? 'bg-blue-100 dark:bg-gray-700 border-blue-200 dark:border-gray-600'
-                      : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700'
+                      ? 'bg-blue-100 dark:bg-blue-900/50'
+                      : 'hover:bg-gray-100 dark:hover:bg-gray-700'
                   }`}
                 >
                   {c.photo ? (
-                    <img src={c.photo} alt={c.name} className="w-8 h-8 rounded-full object-cover" />
+                    <img src={c.photo} alt={c.name} className="w-10 h-10 rounded-full object-cover" />
                   ) : (
-                    <Icon name="users" className="w-5 h-5" />
+                    <div className="w-10 h-10 rounded-full bg-gray-200 dark:bg-gray-600 flex items-center justify-center text-gray-600 dark:text-gray-300 font-bold">
+                      {c.name[0]?.toUpperCase()}
+                    </div>
                   )}
-                  <span className="flex-1 truncate">{c.name}</span>
+                  <div className="flex-1">
+                    <div className="flex justify-between">
+                      <span className="font-semibold text-gray-900 dark:text-gray-100 truncate">{c.name}</span>
+                      <span className="text-xs text-gray-500 dark:text-gray-400">12:34 PM</span>
+                    </div>
+                    <div className="text-sm text-gray-500 dark:text-gray-400 truncate">
+                      {c.lastMessage || 'No messages yet'}
+                    </div>
+                  </div>
+                  {c.unread && (
+                    <div className="w-2 h-2 rounded-full bg-blue-500 absolute right-3 top-5" />
+                  )}
                 </button>
-                <button
-                  onClick={() => setEditGroup(c)}
-                  className="absolute top-1 right-7 p-1 text-xs hidden group-hover:block"
-                >
-                  <Icon name="pen" className="w-4 h-4" />
-                </button>
-                <button
-                  onClick={async () => {
-                    await fetch('/api/chats', {
-                      method: 'PUT',
-                      headers: { 'Content-Type': 'application/json' },
-                      body: JSON.stringify({ id: c.id, pinned: c.pinned ? 0 : 1 })
-                    });
-                    window.location.reload();
-                  }}
-                  className="absolute top-1 right-1 p-1 text-xs hidden group-hover:block"
-                >
-                  <Icon name="star" className={`w-4 h-4 ${c.pinned ? 'text-yellow-500' : ''}`} />
-                </button>
+                <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <button
+                    onClick={() => setEditGroup(c)}
+                    className="p-1 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-full"
+                  >
+                    <Icon name="pen" className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+                  </button>
+                  <button
+                    onClick={async () => {
+                      await fetch('/api/chats', {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ id: c.id, pinned: c.pinned ? 0 : 1 }),
+                      });
+                      window.location.reload();
+                    }}
+                    className="p-1 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-full"
+                  >
+                    <Icon name="star" className={`w-4 h-4 ${c.pinned ? 'text-yellow-400' : 'text-gray-500 dark:text-gray-400'}`} />
+                  </button>
+                </div>
               </div>
             ))}
-            <div className="mt-4 font-semibold text-sm text-gray-500">Chats</div>
+            <div className="mt-4 font-semibold text-lg text-gray-900 dark:text-gray-100">Direct Messages</div>
             {filtered.map((u) => (
               <button
                 key={u.id}
                 onClick={() => setActive({ type: 'user', id: u.username, name: u.username, photo: u.photo })}
-                className={`w-full flex items-center gap-2 p-2 rounded-lg border text-left transition-all ${
+                className={`w-full flex items-center gap-3 p-3 rounded-xl text-left transition-all ${
                   active?.type === 'user' && active.id === u.username
-                    ? 'bg-blue-100 dark:bg-gray-700 border-blue-200 dark:border-gray-600'
-                    : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700'
+                    ? 'bg-blue-100 dark:bg-blue-900/50'
+                    : 'hover:bg-gray-100 dark:hover:bg-gray-700'
                 }`}
               >
                 {u.photo ? (
-                  <img src={u.photo} alt={u.username} className="w-8 h-8 rounded-full object-cover" />
+                  <img src={u.photo} alt={u.username} className="w-10 h-10 rounded-full object-cover" />
                 ) : (
-                  <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center text-sm font-bold text-gray-600">
+                  <div className="w-10 h-10 rounded-full bg-gray-200 dark:bg-gray-600 flex items-center justify-center text-gray-600 dark:text-gray-300 font-bold">
                     {u.username[0]?.toUpperCase()}
                   </div>
                 )}
-                <span className="flex-1 truncate">{u.username}</span>
+                <div className="flex-1">
+                  <div className="flex justify-between">
+                    <span className="font-semibold text-gray-900 dark:text-gray-100 truncate">{u.username}</span>
+                    <span className="text-xs text-gray-500 dark:text-gray-400">12:34 PM</span>
+                  </div>
+                  <div className="text-sm text-gray-500 dark:text-gray-400 truncate">
+                    {u.lastMessage || 'No messages yet'}
+                  </div>
+                </div>
+                {u.unread && (
+                  <div className="w-2 h-2 rounded-full bg-blue-500 absolute right-3 top-5" />
+                )}
               </button>
             ))}
           </div>
         </div>
-        <div className="flex-1 min-w-0">
+        {/* Chat Window */}
+        <div className="flex-1 min-w-0 bg-white dark:bg-gray-800 rounded-xl shadow-sm">
           <ChatWindow
             user={active?.type === 'user' ? (active.id as string) : undefined}
             chatId={active?.type === 'chat' ? (active.id as number) : undefined}
