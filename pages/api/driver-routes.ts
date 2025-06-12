@@ -15,8 +15,13 @@ function parseDate(value: string | undefined): string | null {
 
 export default function handler(req: NextApiRequest, res: NextApiResponse) {
   const { start, end } = req.query;
-  const startDate = typeof start === 'string' ? start : '1970-01-01';
-  const endDate = typeof end === 'string' ? end : '2100-01-01';
+  const today = new Date();
+  const defaultEnd = today.toISOString().slice(0,10);
+  const defaultStartDate = new Date(today);
+  defaultStartDate.setDate(defaultStartDate.getDate() - 6);
+  const defaultStart = defaultStartDate.toISOString().slice(0,10);
+  const startDate = typeof start === 'string' ? start : defaultStart;
+  const endDate = typeof end === 'string' ? end : defaultEnd;
 
   const rows = db.prepare('SELECT data FROM schedule_trips').all();
   const items = rows
@@ -36,7 +41,15 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
         item.RouteName ||
         item['Trip.Name'] ||
         `${item.Start_Location || item['Trip.Start_Location'] || ''} - ${item.End_Location || item['Trip.End_Location'] || ''}`;
-      return { driver, route };
+      const calendar =
+        item.Calendar_Name ||
+        item['Calendar_Name'] ||
+        item.Calendar ||
+        item['Calendar'] ||
+        item.CalendarName ||
+        item['CalendarName'] ||
+        'Unknown';
+      return { driver, route, calendar };
     });
 
   res.status(200).json({ items });
