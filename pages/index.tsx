@@ -5,6 +5,8 @@ import Layout from '../components/Layout';
 import Card from '../components/Card';
 import Modal from '../components/Modal';
 import Calendar from '../components/Calendar';
+import Skeleton from '../components/Skeleton';
+import Icon from '../components/Icon';
 import useUser from '../lib/useUser';
 import useFetch from '../lib/useFetch';
 
@@ -16,6 +18,7 @@ export default function Home() {
   const username = useUser();
   const { data: userData } = useFetch<{ user: any }>(username ? '/api/user' : null);
   const user = userData?.user;
+  const loadingUser = !!username && userData === undefined;
 
   useEffect(() => {
     fetch('/api/summary')
@@ -56,7 +59,9 @@ export default function Home() {
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.2, type: 'spring', stiffness: 120, damping: 20 }}
           >
-            {user?.photo ? (
+            {loadingUser ? (
+              <Skeleton className="w-28 h-28 rounded-full border-4 border-white shadow-xl" />
+            ) : user?.photo ? (
               <img
                 src={user.photo}
                 alt="avatar"
@@ -69,9 +74,21 @@ export default function Home() {
             )}
             <div className="text-white">
               <h2 className="text-3xl font-extrabold">
-                {user?.username || 'Guest'}
+                {loadingUser ? <Skeleton className="w-40 h-8" /> : user?.username || 'Guest'}
               </h2>
-              {!user && (
+              {loadingUser ? (
+                <Skeleton className="mt-2 w-24 h-4" />
+              ) : user ? (
+                <div className="flex gap-4 mt-2">
+                  <Link
+                    href={`/profile/${user.username}`}
+                    className="flex items-center gap-1 text-white hover:text-[#b53133] transition"
+                  >
+                    <Icon name="person" className="w-4 h-4" />
+                    Profile
+                  </Link>
+                </div>
+              ) : (
                 <Link
                   href="/auth/login"
                   className="text-sm text-white hover:text-[#b53133] transition"
