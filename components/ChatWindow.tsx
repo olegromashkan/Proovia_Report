@@ -5,6 +5,7 @@ import useUser from '../lib/useUser';
 import Picker from 'emoji-picker-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import CreateGroupModal from './CreateGroupModal';
+import EditGroupModal from './EditGroupModal';
 import useFetch from '../lib/useFetch';
 
 interface Message {
@@ -32,6 +33,7 @@ export default function ChatWindow({ user, chatId, name, photo }: ChatWindowProp
   const [replyTo, setReplyTo] = useState<Message | null>(null);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
   const endRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const emojiPickerRef = useRef<HTMLDivElement>(null);
@@ -154,6 +156,15 @@ export default function ChatWindow({ user, chatId, name, photo }: ChatWindowProp
             {name || user}
           </h3>
         </div>
+        {chatId && (
+          <button
+            onClick={() => setEditOpen(true)}
+            className="p-2 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full"
+            aria-label="Edit group"
+          >
+            <Icon name="pen" className="w-4 h-4" />
+          </button>
+        )}
       </div>
 
       <div className="flex-1 overflow-y-auto p-3 space-y-2 bg-gray-50/50 dark:bg-gray-900/50 -webkit-overflow-scrolling-touch">
@@ -334,5 +345,11 @@ export default function ChatWindow({ user, chatId, name, photo }: ChatWindowProp
         </div>
       </div>
     </div>
+    <EditGroupModal
+      open={editOpen}
+      chat={chatId ? { id: chatId, name: name || '', photo: photo || undefined } : null}
+      onClose={() => setEditOpen(false)}
+      onSaved={() => window.location.reload()}
+    />
   );
 }

@@ -28,12 +28,25 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
   }
 
   if (req.method === 'PUT') {
-    const { id, pinned, photo } = req.body || {};
+    const { id, pinned, photo, name } = req.body || {};
     if (!id) return res.status(400).end();
-    const stmt = db.prepare(
-      'UPDATE chats SET pinned = COALESCE(?, pinned), photo = COALESCE(?, photo) WHERE id = ?'
-    );
-    stmt.run(pinned !== undefined ? (pinned ? 1 : 0) : null, photo ?? null, id);
+    const updates: string[] = [];
+    const params: any[] = [];
+    if (pinned !== undefined) {
+      updates.push('pinned = ?');
+      params.push(pinned ? 1 : 0);
+    }
+    if (photo !== undefined) {
+      updates.push('photo = ?');
+      params.push(photo);
+    }
+    if (name !== undefined) {
+      updates.push('name = ?');
+      params.push(name);
+    }
+    if (!updates.length) return res.status(400).end();
+    params.push(id);
+    db.prepare(`UPDATE chats SET ${updates.join(', ')} WHERE id = ?`).run(...params);
     return res.status(200).json({ message: 'Updated' });
   }
 
