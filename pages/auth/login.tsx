@@ -80,28 +80,30 @@ export default function Login() {
               exit={{ opacity: 0 }}
               transition={{ duration: 0.7 }}
             >
-              <div className="relative">
+              <motion.img
+                src="https://cdn.proovia.uk/pd/images/logo/logo-default.svg"
+                alt="Proovia logo"
+                className="w-40 mb-6"
+                initial={{ y: 0 }}
+                animate={{ y: -80 }}
+                transition={{ type: 'spring', stiffness: 200, damping: 20, delay: 0.3 }}
+              />
+              <motion.div
+                className="relative"
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ type: 'spring', stiffness: 200, damping: 20, delay: 0.3 }}
+              >
                 <motion.img
                   src={userData.photo}
                   alt="User avatar"
                   className="w-48 h-48 object-cover rounded-full border-4 border-white shadow-2xl"
-                  initial={{ scale: 0.8 }}
-                  animate={{ scale: 1 }}
-                  transition={{ type: 'spring', stiffness: 200, damping: 20 }}
                 />
                 <motion.div
                   className="absolute inset-0 border-4 border-transparent border-t-[#b53133] border-r-[#b53133] rounded-full"
                   animate={{ rotate: 360 }}
                   transition={{ duration: 1.5, repeat: Infinity, ease: 'linear' }}
                 />
-              </div>
-              <motion.div
-                className="text-white text-4xl font-extrabold mt-6"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.8, delay: 0.3 }}
-              >
-                Welcome back!
               </motion.div>
             </motion.div>
           )}
