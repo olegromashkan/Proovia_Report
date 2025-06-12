@@ -61,6 +61,24 @@ export default function ChatWindow({ user, chatId, name, photo }: ChatWindowProp
     endRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
+  const lastIdRef = useRef<number | null>(null);
+  useEffect(() => {
+    if (Notification.permission === 'default') {
+      Notification.requestPermission();
+    }
+  }, []);
+
+  useEffect(() => {
+    if (messages.length === 0) return;
+    const last = messages[messages.length - 1];
+    if (lastIdRef.current && last.id !== lastIdRef.current && last.sender !== me) {
+      if (Notification.permission === 'granted') {
+        new Notification(last.sender, { body: last.text });
+      }
+    }
+    lastIdRef.current = last.id;
+  }, [messages, me]);
+
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (emojiPickerRef.current && !emojiPickerRef.current.contains(event.target as Node)) {
@@ -135,7 +153,7 @@ export default function ChatWindow({ user, chatId, name, photo }: ChatWindowProp
 
   return (
     <>
-      <div className="flex flex-col h-full bg-white dark:bg-gray-900 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+      <div className="flex flex-col h-full bg-gradient-to-br from-white to-gray-50 dark:from-gray-900 dark:to-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
       <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200/50 dark:border-gray-700/50 bg-white dark:bg-gray-800 shadow-sm">
         <div className="flex items-center gap-3">
           {photo ? (
@@ -158,13 +176,26 @@ export default function ChatWindow({ user, chatId, name, photo }: ChatWindowProp
           </h3>
         </div>
         {chatId && (
-          <button
-            onClick={() => setEditOpen(true)}
-            className="p-2 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full"
-            aria-label="Edit group"
-          >
-            <Icon name="pen" className="w-4 h-4" />
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setEditOpen(true)}
+              className="p-2 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full"
+              aria-label="Edit group"
+            >
+              <Icon name="pen" className="w-4 h-4" />
+            </button>
+            <button
+              onClick={async () => {
+                if (!confirm('Delete this chat?')) return;
+                await fetch(`/api/chats?id=${chatId}`, { method: 'DELETE' });
+                window.location.reload();
+              }}
+              className="p-2 text-red-500 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full"
+              aria-label="Delete chat"
+            >
+              <Icon name="trash" className="w-4 h-4" />
+            </button>
+          </div>
         )}
       </div>
 

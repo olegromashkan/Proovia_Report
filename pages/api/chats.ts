@@ -6,9 +6,28 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
   if (!username) return res.status(401).end();
 
   if (req.method === 'GET') {
-    const rows = db.prepare(
-      'SELECT c.* FROM chats c JOIN chat_members m ON c.id = m.chat_id WHERE m.username = ? ORDER BY c.pinned DESC, c.created_at DESC'
-    ).all(username);
+    const { id } = req.query as { id?: string };
+
+    if (id) {
+      const chat = db.prepare('SELECT * FROM chats WHERE id = ?').get(id);
+      const members = db
+        .prepare('SELECT username FROM chat_members WHERE chat_id = ?')
+        .all(id)
+        .map((r: any) => r.username);
+      return res.status(200).json({ chat, members });
+    }
+
+    const rows = db
+      .prepare(
+        `SELECT c.*, 
+          (SELECT text FROM messages WHERE chat_id = c.id ORDER BY created_at DESC LIMIT 1) AS lastMessage,
+          (SELECT created_at FROM messages WHERE chat_id = c.id ORDER BY created_at DESC LIMIT 1) AS lastTime
+        FROM chats c
+        JOIN chat_members m ON c.id = m.chat_id
+        WHERE m.username = ?
+        ORDER BY c.pinned DESC, COALESCE(lastTime, c.created_at) DESC`
+      )
+      .all(username);
     return res.status(200).json({ chats: rows });
   }
 
@@ -28,7 +47,7 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
   }
 
   if (req.method === 'PUT') {
-    const { id, pinned, photo, name } = req.body || {};
+    const { id, pinned, photo, name, addMembers, removeMembers } = req.body || {};
     if (!id) return res.status(400).end();
     const updates: string[] = [];
     const params: any[] = [];
@@ -44,10 +63,34 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
       updates.push('name = ?');
       params.push(name);
     }
-    if (!updates.length) return res.status(400).end();
-    params.push(id);
-    db.prepare(`UPDATE chats SET ${updates.join(', ')} WHERE id = ?`).run(...params);
+    if (updates.length) {
+      params.push(id);
+      db.prepare(`UPDATE chats SET ${updates.join(', ')} WHERE id = ?`).run(...params);
+    }
+
+    if (Array.isArray(addMembers)) {
+      const stmt = db.prepare('INSERT INTO chat_members (chat_id, username) VALUES (?, ?)');
+      for (const m of addMembers) {
+        stmt.run(id, m);
+      }
+    }
+    if (Array.isArray(removeMembers)) {
+      const stmt = db.prepare('DELETE FROM chat_members WHERE chat_id = ? AND username = ?');
+      for (const m of removeMembers) {
+        stmt.run(id, m);
+      }
+    }
+
     return res.status(200).json({ message: 'Updated' });
+  }
+
+  if (req.method === 'DELETE') {
+    const { id } = req.query as { id?: string };
+    if (!id) return res.status(400).end();
+    db.prepare('DELETE FROM chat_members WHERE chat_id = ?').run(id);
+    db.prepare('DELETE FROM messages WHERE chat_id = ?').run(id);
+    db.prepare('DELETE FROM chats WHERE id = ?').run(id);
+    return res.status(200).json({ message: 'Deleted' });
   }
 
   res.status(405).end();
