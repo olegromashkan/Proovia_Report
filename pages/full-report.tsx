@@ -142,11 +142,44 @@ export default function FullReport() {
       });
   }, [trips, statusFilter, contractorFilter, auctionFilter, search, sortField, sortDir, driverToContractor]);
 
-  const stats = useMemo(() => ({
-    total: filteredAndSorted.length,
-    complete: filteredAndSorted.filter((t) => t.Status === 'Complete').length,
-    failed: filteredAndSorted.filter((t) => t.Status === 'Failed').length,
-  }), [filteredAndSorted]);
+  const stats = useMemo(() => {
+    let positiveTimeCompleted = 0;
+    let positiveArrivalTime = 0;
+
+    filteredAndSorted.forEach((trip) => {
+      if (!trip || !trip['Address.Working_Hours'] || !trip.Time_Completed || !trip.Arrival_Time) return;
+
+      const matches = String(trip['Address.Working_Hours']).match(/\d{2}:\d{2}/g);
+      const endTime = matches ? matches[1] : null;
+      if (!endTime) return;
+
+      const [h, m] = endTime.split(':').map(Number);
+
+      const timeCompletedDate = new Date(trip.Time_Completed);
+      const whEndForCompleted = new Date(timeCompletedDate);
+      whEndForCompleted.setHours(h, m, 0, 0);
+
+      const arrivalDate = new Date(trip.Arrival_Time);
+      const whEndForArrival = new Date(arrivalDate);
+      whEndForArrival.setHours(h, m, 0, 0);
+
+      if (timeCompletedDate.getTime() - whEndForCompleted.getTime() >= 0) {
+        positiveTimeCompleted++;
+      }
+
+      if (arrivalDate.getTime() - whEndForArrival.getTime() >= 0) {
+        positiveArrivalTime++;
+      }
+    });
+
+    return {
+      total: filteredAndSorted.length,
+      complete: filteredAndSorted.filter((t) => t.Status === 'Complete').length,
+      failed: filteredAndSorted.filter((t) => t.Status === 'Failed').length,
+      positiveTimeCompleted,
+      positiveArrivalTime,
+    };
+  }, [filteredAndSorted]);
 
   const startContractors = useMemo(() => {
     const set = new Set<string>();
@@ -460,6 +493,8 @@ export default function FullReport() {
                         <div className="stat p-2"><div className="stat-title text-xs">Total</div><div className="stat-value text-md">{stats.total}</div></div>
                         <div className="stat p-2"><div className="stat-title text-xs text-success">Complete</div><div className="stat-value text-md text-success">{stats.complete}</div></div>
                         <div className="stat p-2"><div className="stat-title text-xs text-error">Failed</div><div className="stat-value text-md text-error">{stats.failed}</div></div>
+                        <div className="stat p-2"><div className="stat-title text-xs text-warning">Time Completed &gt; WH</div><div className="stat-value text-md text-warning">{stats.positiveTimeCompleted}</div></div>
+                        <div className="stat p-2"><div className="stat-title text-xs text-warning">Arrival Time &gt; WH</div><div className="stat-value text-md text-warning">{stats.positiveArrivalTime}</div></div>
                     </div>
                 </div>
                 <div className="overflow-y-auto h-[calc(75vh-50px)] space-y-2 pr-1">
