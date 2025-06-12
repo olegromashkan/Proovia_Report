@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/router';
 import Layout from '../components/Layout';
@@ -5,7 +6,7 @@ import TripModal from '../components/TripModal';
 import Icon from '../components/Icon';
 import VanCheck from '../components/VanCheck';
 
-// --- Хелперы ---
+// --- Helpers ---
 interface Trip {
   ID: string;
   [key: string]: any;
@@ -21,17 +22,16 @@ function calcLoad(startTime: string) {
   if (isNaN(h) || isNaN(m)) return 'N/A';
   const date = new Date();
   date.setHours(h, m, 0, 0);
-  // Время загрузки = время выезда минус 1.5 часа
   date.setMinutes(date.getMinutes() - 90);
   return date.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
 }
 
-// --- Основной компонент ---
+// --- Main Component ---
 export default function FullReport() {
   const router = useRouter();
   const today = useMemo(() => formatDate(new Date()), []);
 
-  // --- Состояния (State) ---
+  // --- State ---
   const [trips, setTrips] = useState<Trip[]>([]);
   const [startData, setStartData] = useState<any[]>([]);
   const [vanChecks, setVanChecks] = useState<any[]>([]);
@@ -41,7 +41,7 @@ export default function FullReport() {
   const [isDrawerOpen, setDrawerOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Состояния фильтров
+  // Filter States
   const [start, setStart] = useState(today);
   const [end, setEnd] = useState(today);
   const [statusFilter, setStatusFilter] = useState('');
@@ -53,7 +53,7 @@ export default function FullReport() {
   const [vanSearch, setVanSearch] = useState('');
   const [vanContractor, setVanContractor] = useState('');
 
-  // Динамические данные для фильтров
+  // Dynamic Filter Data
   const { contractors, auctions } = useMemo(() => {
     const contractorSet = new Set<string>();
     startData.forEach(r => { if (r.Contractor_Name) contractorSet.add(r.Contractor_Name); });
@@ -73,7 +73,7 @@ export default function FullReport() {
     return map;
   }, [startData]);
 
-  // --- Загрузка данных ---
+  // --- Data Loading ---
   useEffect(() => {
     if (!router.isReady) return;
     const { start: qStart, end: qEnd } = router.query;
@@ -105,7 +105,7 @@ export default function FullReport() {
     fetchTrips();
   }, [router.isReady, start, end]);
 
-  // --- Фильтрация и сортировка ---
+  // --- Filtering and Sorting ---
   const filteredAndSorted = useMemo(() => {
     return trips
       .filter((t) => {
@@ -216,7 +216,7 @@ export default function FullReport() {
     }).sort((a,b) => String(a.Asset).localeCompare(String(b.Asset)));
   }, [startData, startSearch, startContractor]);
 
-  // --- Обработчики ---
+  // --- Handlers ---
   const setDateRange = (s: Date, e: Date) => {
     setStart(formatDate(s));
     setEnd(formatDate(e));
@@ -293,7 +293,7 @@ export default function FullReport() {
     URL.revokeObjectURL(url);
   };
 
-  // --- UI Компоненты ---
+  // --- UI Components ---
   const FilterPanel = (
     <div className="menu p-4 w-80 min-h-full bg-base-100 text-base-content space-y-4">
       <div className="flex justify-between items-center">
@@ -380,157 +380,190 @@ export default function FullReport() {
             </label>
           </div>
 
-          <div className="grid lg:grid-cols-3 gap-6">
-            <div className="card bg-base-100 shadow-xl"><div className="card-body p-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="card bg-base-100 shadow-xl lg:col-span-2">
+              <div className="card-body p-4">
                 <h2 className="card-title">Start Times Analysis</h2>
                 <div className="flex flex-wrap gap-2 my-2">
-                    <input
-                      type="text"
-                      placeholder="Search..."
-                      value={startSearch}
-                      onChange={(e) => setStartSearch(e.target.value)}
-                      className="input input-bordered input-sm flex-1 max-w-xs"
-                    />
-                    <select
-                      value={startContractor}
-                      onChange={(e) => setStartContractor(e.target.value)}
-                      className="select select-bordered select-sm max-w-xs"
-                    >
-                      <option value="">All Contractors</option>
-                      {startContractors.map((c) => (
-                        <option key={c} value={c}>{c}</option>
-                      ))}
-                    </select>
-                    <button onClick={copyStartTable} className="btn btn-sm btn-outline">
-                      <Icon name="copy" />
-                      Copy
-                    </button>
-                    <button onClick={downloadStartCSV} className="btn btn-sm btn-outline">
-                      <Icon name="download" />
-                      Download
-                    </button>
+                  <input
+                    type="text"
+                    placeholder="Search..."
+                    value={startSearch}
+                    onChange={(e) => setStartSearch(e.target.value)}
+                    className="input input-bordered input-sm flex-1 max-w-xs"
+                  />
+                  <select
+                    value={startContractor}
+                    onChange={(e) => setStartContractor(e.target.value)}
+                    className="select select-bordered select-sm max-w-xs"
+                  >
+                    <option value="">All Contractors</option>
+                    {startContractors.map((c) => (
+                      <option key={c} value={c}>{c}</option>
+                    ))}
+                  </select>
+                  <button onClick={copyStartTable} className="btn btn-sm btn-outline">
+                    <Icon name="copy" />
+                    Copy
+                  </button>
+                  <button onClick={downloadStartCSV} className="btn btn-sm btn-outline">
+                    <Icon name="download" />
+                    Download
+                  </button>
                 </div>
-                <div className="overflow-auto h-[75vh]">
-                    <div className="table-responsive">
+                <div className="overflow-x-auto max-h-[75vh]">
+                  <div className="table-responsive">
                     <table className="table table-xs table-pin-rows table-zebra w-full">
-                        <thead>
-                            <tr>
-                                <th>Asset</th>
-                                <th>Contractor</th>
-                                <th>Driver</th>
-                                <th>Arrive WH</th>
-                                <th>Load Time</th>
-                                <th>Diff Load</th>
-                                <th>Start Time</th>
-                                <th>Left WH</th>
-                                <th>Diff Start</th>
+                      <thead>
+                        <tr>
+                          <th>Asset</th>
+                          <th>Contractor</th>
+                          <th>Driver</th>
+                          <th>Arrive WH</th>
+                          <th>Load Time</th>
+                          <th>Diff Load</th>
+                          <th>Start Time</th>
+                          <th>Left WH</th>
+                          <th>Diff Start</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {filteredStart.map((r, idx) => {
+                          const load = calcLoad(r.Start_Time);
+                          const diffLoad = diffTime(r.First_Mention_Time, load);
+                          const diffStart = diffTime(r.Last_Mention_Time, r.Start_Time);
+                          return (
+                            <tr key={idx} className="hover">
+                              <td>{r.Asset}</td>
+                              <td>{r.Contractor_Name}</td>
+                              <td>{r.Driver}</td>
+                              <td>{r.First_Mention_Time}</td>
+                              <td>{load}</td>
+                              <td>{diffLoad}</td>
+                              <td>{r.Start_Time}</td>
+                              <td>{r.Last_Mention_Time}</td>
+                              <td>{diffStart}</td>
                             </tr>
-                        </thead>
-                        <tbody>
-                            {filteredStart.map((r, idx) => {
-                                const load = calcLoad(r.Start_Time);
-                                const diffLoad = diffTime(r.First_Mention_Time, load);
-                                const diffStart = diffTime(r.Last_Mention_Time, r.Start_Time);
-                                return (
-                                    <tr key={idx} className="hover">
-                                        <td>{r.Asset}</td>
-                                        <td>{r.Contractor_Name}</td>
-                                        <td>{r.Driver}</td>
-                                        <td>{r.First_Mention_Time}</td>
-                                        <td>{load}</td>
-                                        <td>{diffLoad}</td>
-                                        <td>{r.Start_Time}</td>
-                                        <td>{r.Last_Mention_Time}</td>
-                                <td>{diffStart}</td>
-                            </tr>
-                        );
-                            })}
-                        </tbody>
+                          );
+                        })}
+                      </tbody>
                     </table>
-                    </div>
+                  </div>
                 </div>
-            </div></div>
+              </div>
+            </div>
 
-            <div className="card bg-base-100 shadow-xl"><div className="card-body p-4">
+            <div className="card bg-base-100 shadow-xl">
+              <div className="card-body p-3">
                 <h2 className="card-title">Van Check</h2>
                 <div className="flex flex-wrap gap-2 my-2">
-                    <input
-                      type="text"
-                      placeholder="Search..."
-                      value={vanSearch}
-                      onChange={(e) => setVanSearch(e.target.value)}
-                      className="input input-bordered input-sm flex-1 max-w-xs"
-                    />
-                    <select
-                      value={vanContractor}
-                      onChange={(e) => setVanContractor(e.target.value)}
-                      className="select select-bordered select-sm max-w-xs"
-                    >
-                      <option value="">All Contractors</option>
-                      {vanContractors.map((c) => (
-                        <option key={c} value={c}>{c}</option>
-                      ))}
-                    </select>
-                </div>
-                <div className="overflow-y-auto h-[75vh] space-y-2">
-                    {filteredVanChecks.map((vc, idx) => (
-                      <VanCheck key={idx} data={vc} contractor={driverToContractor[vc.driver_id]} />
+                  <input
+                    type="text"
+                    placeholder="Search..."
+                    value={vanSearch}
+                    onChange={(e) => setVanSearch(e.target.value)}
+                    className="input input-bordered input-xs flex-1 max-w-xs"
+                  />
+                  <select
+                    value={vanContractor}
+                    onChange={(e) => setVanContractor(e.target.value)}
+                    className="select select-bordered select-xs max-w-xs"
+                  >
+                    <option value="">All Contractors</option>
+                    {vanContractors.map((c) => (
+                      <option key={c} value={c}>{c}</option>
                     ))}
+                  </select>
                 </div>
-            </div></div>
+                <div className="overflow-y-auto max-h-[75vh] space-y-1">
+                  {filteredVanChecks.map((vc, idx) => (
+                    <VanCheck key={idx} data={vc} contractor={driverToContractor[vc.driver_id]} />
+                  ))}
+                </div>
+              </div>
+            </div>
 
-            <div className="card bg-base-100 shadow-xl"><div className="card-body p-4">
-                <div className="flex justify-between items-center mb-2">
-                    <div className="flex items-center gap-4">
-                         <h2 className="card-title">Orders</h2>
-                         <div className="btn-group">
-                            <button onClick={dateShortcuts.today} className="btn btn-xs btn-ghost">Today</button>
-                            <button onClick={dateShortcuts.yesterday} className="btn btn-xs btn-ghost">Yesterday</button>
-                            <button onClick={dateShortcuts.lastWeek} className="btn btn-xs btn-ghost">Last Week</button>
-                         </div>
+            <div className="card bg-base-100 shadow-xl">
+              <div className="card-body p-4">
+                <div className="flex flex-col gap-2">
+                  <div className="flex items-center gap-4">
+                    <h2 className="card-title">Orders</h2>
+                    <div className="btn-group">
+                      <button onClick={dateShortcuts.today} className="btn btn-xs btn-ghost">Today</button>
+                      <button onClick={dateShortcuts.yesterday} className="btn btn-xs btn-ghost">Yesterday</button>
+                      <button onClick={dateShortcuts.lastWeek} className="btn btn-xs btn-ghost">Last Week</button>
                     </div>
-                    <div className="stats bg-transparent text-right stats-horizontal shadow-none">
-                        <div className="stat p-2"><div className="stat-title text-xs">Total</div><div className="stat-value text-md">{stats.total}</div></div>
-                        <div className="stat p-2"><div className="stat-title text-xs text-success">Complete</div><div className="stat-value text-md text-success">{stats.complete}</div></div>
-                        <div className="stat p-2"><div className="stat-title text-xs text-error">Failed</div><div className="stat-value text-md text-error">{stats.failed}</div></div>
-                        <div className="stat p-2"><div className="stat-title text-xs text-warning">Time Completed &gt; WH</div><div className="stat-value text-md text-warning">{stats.positiveTimeCompleted}</div></div>
-                        <div className="stat p-2"><div className="stat-title text-xs text-warning">Arrival Time &gt; WH</div><div className="stat-value text-md text-warning">{stats.positiveArrivalTime}</div></div>
+                  </div>
+                  <div className="stats bg-transparent flex flex-col md:flex-row gap-2">
+                    <div className="stat p-2">
+                      <div className="stat-title text-xs">Total</div>
+                      <div className="stat-value text-md">{stats.total}</div>
                     </div>
+                    <div className="stat p-2">
+                      <div className="stat-title text-xs text-success">Complete</div>
+                      <div className="stat-value text-md text-success">{stats.complete}</div>
+                    </div>
+                    <div className="stat p-2">
+                      <div className="stat-title text-xs text-error">Failed</div>
+                      <div className="stat-value text-md text-error">{stats.failed}</div>
+                    </div>
+                    <div className="stat p-2">
+                      <div className="stat-title text-xs text-warning">Time Completed > WH</div>
+                      <div className="stat-value text-md text-warning">{stats.positiveTimeCompleted}</div>
+                    </div>
+                    <div className="stat p-2">
+                      <div className="stat-title text-xs text-warning">Arrival Time > WH</div>
+                      <div className="stat-value text-md text-warning">{stats.positiveArrivalTime}</div>
+                    </div>
+                  </div>
                 </div>
-                <div className="overflow-y-auto h-[calc(75vh-50px)] space-y-2 pr-1">
-                    {isLoading ? <div className="loading loading-spinner loading-lg mx-auto mt-20 block"></div> : filteredAndSorted.map((trip) => {
-                        const statusColor = trip.Status === 'Complete' ? 'bg-success' : trip.Status === 'Failed' ? 'bg-error' : 'bg-base-300';
-                        const summaryText = (trip.Summary || '').split(' ')[0];
-                        return (
-                            <div key={trip.ID} onClick={() => setSelected(trip)} className="card card-compact bg-base-200 shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer">
-                                <div className="flex flex-wrap sm:flex-nowrap items-stretch">
-                                    <div className={`w-2 rounded-l-md ${statusColor}`}></div>
-                                    <div className="card-body p-3 flex flex-wrap sm:flex-nowrap items-center gap-3">
-                                        {trip.Seq && (
-                                            <div className="flex-shrink-0 avatar placeholder">
-                                                <div className="bg-primary/20 text-primary-content rounded-full w-10 h-10 flex items-center justify-center">
-                                                    <span className="text-lg font-bold text-primary">{trip.Seq}</span>
-                                                </div>
-                                            </div>
-                                        )}
-                                        <div className="flex-grow min-w-0">
-                                            <div className="flex justify-between items-baseline">
-                                                <p className="font-bold text-md truncate" title={trip['Order.OrderNumber']}>#{trip['Order.OrderNumber']}</p>
-                                                <p className="text-xs font-mono badge badge-ghost">{trip['Address.Postcode']}</p>
-                                            </div>
-                                            <p className="text-sm text-base-content/70 truncate">{trip['Trip.Driver1'] || 'No Driver'}</p>
-                                        </div>
-                                        <div className="flex-shrink-0 flex flex-col items-end gap-1 text-xs w-24">
-                                            {summaryText && <div className="badge badge-outline badge-sm w-full justify-center">{summaryText}</div>}
-                                            {trip['Order.Auction'] && <div className="badge badge-ghost badge-sm mt-1 w-full justify-center truncate">{trip['Order.Auction']}</div>}
-                                        </div>
-                                    </div>
+                <div className="overflow-y-auto max-h-[calc(75vh-50px)] space-y-2 pr-1">
+                  {isLoading ? (
+                    <div className="loading loading-spinner loading-lg mx-auto mt-20 block"></div>
+                  ) : (
+                    filteredAndSorted.map((trip) => {
+                      const statusColor = trip.Status === 'Complete' ? 'bg-success' : trip.Status === 'Failed' ? 'bg-error' : 'bg-base-300';
+                      const summaryText = (trip.Summary || '').split(' ')[0];
+                      return (
+                        <div
+                          key={trip.ID}
+                          onClick={() => setSelected(trip)}
+                          className="card card-compact bg-base-200 shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer"
+                        >
+                          <div className="flex flex-wrap sm:flex-nowrap items-stretch">
+                            <div className={`w-2 rounded-l-md ${statusColor}`}></div>
+                            <div className="card-body p-3 flex flex-wrap sm:flex-nowrap items-center gap-3">
+                              {trip.Seq && (
+                                <div className="flex-shrink-0 avatar placeholder">
+                                  <div className="bg-primary/20 text-primary-content rounded-full w-10 h-10 flex items-center justify-center">
+                                    <span className="text-lg font-bold text-primary">{trip.Seq}</span>
+                                  </div>
                                 </div>
+                              )}
+                              <div className="flex-grow min-w-0">
+                                <div className="flex justify-between items-baseline">
+                                  <p className="font-bold text-md truncate" title={trip['Order.OrderNumber']}>
+                                    #{trip['Order.OrderNumber']}
+                                  </p>
+                                  <p className="text-xs font-mono badge badge-ghost">{trip['Address.Postcode']}</p>
+                                </div>
+                                <p className="text-sm text-base-content/70 truncate">{trip['Trip.Driver1'] || 'No Driver'}</p>
+                              </div>
+                              <div className="flex-shrink-0 flex flex-col items-end gap-1 text-xs w-24">
+                                {summaryText && <div className="badge badge-outline badge-sm w-full justify-center">{summaryText}</div>}
+                                {trip['Order.Auction'] && (
+                                  <div className="badge badge-ghost badge-sm mt-1 w-full justify-center truncate">{trip['Order.Auction']}</div>
+                                )}
+                              </div>
                             </div>
-                        );
-                    })}
+                          </div>
+                        </div>
+                      );
+                    })
+                  )}
                 </div>
-            </div></div>
+              </div>
+            </div>
           </div>
         </div>
         <div className="drawer-side z-50">
