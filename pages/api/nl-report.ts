@@ -126,14 +126,18 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
     };
 
     // Aggregate statistics
-    const driverCount: Record<string, number> = {};
+    const driverStats: Record<string, { complete: number; failed: number }> = {};
     const postcodeCount: Record<string, number> = {};
     let earliest: Date | null = null;
     let latest: Date | null = null;
 
     items.forEach((it: any) => {
       const driver = String(it['Trip.Driver1'] || it.Driver1 || 'Unknown');
-      driverCount[driver] = (driverCount[driver] || 0) + 1;
+      if (!driverStats[driver]) driverStats[driver] = { complete: 0, failed: 0 };
+      const status = String(it.Status || '').toLowerCase();
+      if (status === 'complete') driverStats[driver].complete++;
+      else if (status === 'failed') driverStats[driver].failed++;
+
       const pc = String(it['Address.Postcode'] || 'Unknown');
       postcodeCount[pc] = (postcodeCount[pc] || 0) + 1;
       const t = parseTime(it['Start_Time'] || it['Trip.Start_Time']);
@@ -144,10 +148,15 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
     });
 
     // Get top drivers and postcodes
-    const topDrivers = Object.entries(driverCount)
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 5)
-      .map(([driver, count]) => ({ driver, count }));
+    const topDrivers = Object.entries(driverStats)
+      .map(([driver, s]) => ({
+        driver,
+        complete: s.complete,
+        failed: s.failed,
+        total: s.complete + s.failed,
+      }))
+      .sort((a, b) => b.total - a.total)
+      .slice(0, 3);
 
     const topPostcodes = Object.entries(postcodeCount)
       .sort((a, b) => b[1] - a[1])
