@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback, memo, useRef } from 'react';
+import { useState, useEffect, useMemo, useCallback, memo, useRef, Fragment } from 'react';
 import { useRouter } from 'next/router';
 import Layout from '../components/Layout';
 import TripModal from '../components/TripModal';
@@ -113,12 +113,12 @@ const ScrollingStats = ({ trips, driverToContractor }: { trips: Trip[], driverTo
       >
         {/* Duplicate for seamless scroll */}
         {[1, 2].map(key => (
-          <React.Fragment key={key}>
+          <Fragment key={key}>
             <StatCard title="🏆 Top Drivers" data={stats.topDrivers} color="from-blue-500 to-blue-600" />
             <StatCard title="📍 Top Postcodes" data={stats.topPostcodes} color="from-purple-500 to-purple-600" />
             <StatCard title="🏪 Top Auctions" data={stats.topAuctions} color="from-green-500 to-green-600" />
             <StatCard title="🚛 Top Contractors" data={stats.topContractors} color="from-orange-500 to-orange-600" />
-          </React.Fragment>
+          </Fragment>
         ))}
       </div>
     </div>
