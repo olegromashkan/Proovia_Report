@@ -1,7 +1,8 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import db from '../../lib/db';
+import { withRetry } from '../../lib/withRetry';
 
-export default function handler(req: NextApiRequest, res: NextApiResponse) {
+export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   const username = req.cookies.user as string | undefined;
   if (req.method === 'GET') {
     const target = (req.query.username as string) || username;
@@ -10,9 +11,11 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
       return;
     }
     try {
-      const info = db
-        .prepare('SELECT status, status_message, last_seen FROM users WHERE username = ?')
-        .get(target);
+      const info = await withRetry(() =>
+        db.prepare('SELECT status, status_message, last_seen FROM users WHERE username = ?').get(
+          target,
+        ),
+      );
       if (!info) {
         res.status(404).end();
         return;
@@ -46,10 +49,14 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
     }
     params.push(username);
     try {
-      db.prepare(`UPDATE users SET ${updates.join(', ')} WHERE username = ?`).run(...params);
-      const info = db
-        .prepare('SELECT status, status_message, last_seen FROM users WHERE username = ?')
-        .get(username);
+      await withRetry(() =>
+        db.prepare(`UPDATE users SET ${updates.join(', ')} WHERE username = ?`).run(...params),
+      );
+      const info = await withRetry(() =>
+        db.prepare('SELECT status, status_message, last_seen FROM users WHERE username = ?').get(
+          username,
+        ),
+      );
       res.status(200).json(info);
     } catch (err: any) {
       if (err.code === 'SQLITE_BUSY') {
