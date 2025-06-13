@@ -1,6 +1,8 @@
 import Database from 'better-sqlite3';
 
-const db = new Database('database.db');
+const db = new Database('database.db', { timeout: 5000 });
+db.pragma('journal_mode = WAL');
+db.pragma('busy_timeout = 5000');
 
 export function init() {
   db.exec(`
