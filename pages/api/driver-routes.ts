@@ -24,6 +24,14 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
   const endDate = typeof end === 'string' ? end : defaultEnd;
 
   const rows = db.prepare('SELECT data FROM schedule_trips').all();
+  const driverRows = db.prepare('SELECT data FROM drivers_report').all();
+  const driverMap: Record<string, string> = {};
+  driverRows.forEach((r: any) => {
+    const d = JSON.parse(r.data);
+    if (d.Full_Name) {
+      driverMap[d.Full_Name.trim()] = d.Contractor_Name || 'Unknown';
+    }
+  });
   const items = rows
     .map((r: any) => JSON.parse(r.data))
     .filter((item: any) => {
@@ -101,7 +109,8 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
         punctuality = Math.round(parseMinutes(done) - parseMinutes(arrival));
       }
 
-      return { driver, route, calendar, date, start_time, end_time, punctuality, price };
+      const contractor = driverMap[driver] || 'Unknown';
+      return { driver, contractor, route, calendar, date, start_time, end_time, punctuality, price };
     });
 
   res.status(200).json({ items });
