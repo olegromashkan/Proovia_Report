@@ -2,23 +2,8 @@ import { useEffect, useState, useCallback, useRef, DragEvent, ChangeEvent } from
 import Layout from '../components/Layout';
 import Modal from '../components/Modal';
 import Icon from '../components/Icon';
-import Card from '../components/Card';
-
-function formatDate(d: Date) {
-  return d.toISOString().slice(0,10);
-}
-
-const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-
-function parseDate(value: string | undefined): string | null {
-  if (!value) return null;
-  const [d, mon, rest] = value.split('-');
-  if (!d || !mon || !rest) return null;
-  const [y] = rest.split(' ');
-  const mIndex = MONTHS.indexOf(mon);
-  if (mIndex === -1) return null;
-  return `${y}-${String(mIndex + 1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-}
+import { motion, AnimatePresence } from 'framer-motion';
+import { debounce } from 'lodash';
 
 interface Item {
   driver: string;
@@ -31,34 +16,50 @@ interface Item {
   price?: number | string;
 }
 
+function formatDate(d: Date): string {
+  return d.toISOString().slice(0, 10);
+}
+
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+function parseDate(value: string | undefined): string | null {
+  if (!value) return null;
+  const [d, mon, rest] = value.split('-');
+  if (!d || !mon || !rest) return null;
+  const [y] = rest.split(' ');
+  const mIndex = MONTHS.indexOf(mon);
+  if (mIndex === -1) return null;
+  return `${y}-${String(mIndex + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+}
+
 function getRouteColorClass(route: string): string {
   const upper = route.toUpperCase();
-  const grey = ['EDINBURGH','GLASGOW','INVERNESS','ABERDEEN','EX+TR','TQ+PL'];
+  const grey = ['EDINBURGH', 'GLASGOW', 'INVERNESS', 'ABERDEEN', 'EX+TR', 'TQ+PL'];
   if (grey.includes(upper)) return 'text-gray-500';
   const parts = upper.split('+');
   const has = (arr: string[]) => parts.some(p => arr.includes(p));
-  const purple = ['WD','HA','UB','TW','KT','CR','BR','DA','RM','IG','EN','SM','W','NW','N','E','EC','SE','WC'];
+  const purple = ['WD', 'HA', 'UB', 'TW', 'KT', 'CR', 'BR', 'DA', 'RM', 'IG', 'EN', 'SM', 'W', 'NW', 'N', 'E', 'EC', 'SE', 'WC'];
   if (has(purple)) return 'text-purple-500';
-  const yellow = ['LL','SY','SA'];
+  const yellow = ['LL', 'SY', 'SA'];
   if (has(yellow)) return 'text-yellow-500';
-  const red = ['LA','CA','NE','DL','DH','SR','TS','HG','YO','HU','BD'];
+  const red = ['LA', 'CA', 'NE', 'DL', 'DH', 'SR', 'TS', 'HG', 'YO', 'HU', 'BD'];
   if (has(red)) return 'text-red-500';
-  const blue = ['NR','IP','CO'];
+  const blue = ['NR', 'IP', 'CO'];
   if (has(blue)) return 'text-blue-500';
-  const green = ['ME','CT','TN','RH','BN','GU','PO','SO'];
+  const green = ['ME', 'CT', 'TN', 'RH', 'BN', 'GU', 'PO', 'SO'];
   if (has(green)) return 'text-green-500';
-  const pink = ['SP','BH','DT','TA','EX','TQ','PL','TR'];
+  const pink = ['SP', 'BH', 'DT', 'TA', 'EX', 'TQ', 'PL', 'TR'];
   if (has(pink)) return 'text-pink-500';
-  const light = ['ST','TF','WV','DY','HR','WR','B','WS','CV','NN'];
+  const light = ['ST', 'TF', 'WV', 'DY', 'HR', 'WR', 'B', 'WS', 'CV', 'NN'];
   if (has(light)) return 'text-sky-500';
   return '';
 }
 
 function stylePunctuality(val: number | null) {
   if (val === null) return '-';
-  if (val <= 45) return <span className="text-success">{val}</span>;
-  if (val <= 90) return <span className="text-warning">{val}</span>;
-  return <span className="text-error">{val}</span>;
+  if (val <= 45) return <span className="text-green-500">{val}</span>;
+  if (val <= 90) return <span className="text-yellow-500">{val}</span>;
+  return <span className="text-red-500">{val}</span>;
 }
 
 export default function DriverRoutes() {
@@ -70,6 +71,7 @@ export default function DriverRoutes() {
   const [end, setEnd] = useState(today);
   const [items, setItems] = useState<Item[]>([]);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [modalDate, setModalDate] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [columnMenuOpen, setColumnMenuOpen] = useState(false);
@@ -82,6 +84,10 @@ export default function DriverRoutes() {
     price: true,
   });
   const menuRef = useRef<HTMLDivElement>(null);
+  const cardContainerRef = useRef<HTMLDivElement>(null);
+  const scrollIntervalRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Close column menu on outside click
   useEffect(() => {
     const handler = (e: MouseEvent) => {
       if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
@@ -92,28 +98,78 @@ export default function DriverRoutes() {
     return () => document.removeEventListener('click', handler);
   }, []);
 
-  const load = useCallback(() => {
-    const params = new URLSearchParams({ start, end }).toString();
-    setLoading(true);
-    fetch(`/api/driver-routes?${params}`)
-      .then(res => (res.ok ? res.json() : Promise.reject()))
-      .then(data => setItems(data.items || []))
-      .catch(() => setItems([]))
-      .finally(() => setLoading(false));
-  }, [start, end]);
+  // Debounced load function
+  const load = useCallback(
+    debounce(async () => {
+      const params = new URLSearchParams({ start, end }).toString();
+      setLoading(true);
+      setError(null);
+      try {
+        const res = await fetch(`/api/driver-routes?${params}`);
+        if (!res.ok) throw new Error('Failed to load routes');
+        const data = await res.json();
+        setItems(data.items || []);
+      } catch (err) {
+        setError('Failed to load routes. Please try again.');
+        setItems([]);
+      } finally {
+        setLoading(false);
+      }
+    }, 500),
+    [start, end]
+  );
 
   useEffect(() => {
     load();
+    return () => load.cancel();
   }, [load]);
 
-  const dates = Array.from(new Set(items.map(it => it.date))).sort();
-  const drivers = Array.from(new Set(items.map(it => it.driver))).sort();
-  const colOrder: Array<keyof typeof visibleCols> = ['start','end','route','tasks','punctuality','price'];
-  const visibleKeys = colOrder.filter(k => visibleCols[k]);
+  // Horizontal scroll for cards
+  useEffect(() => {
+    const container = cardContainerRef.current;
+    if (!container) return;
+
+    const handleMouseMove = (e: MouseEvent) => {
+      const { left, width } = container.getBoundingClientRect();
+      const mouseX = e.clientX - left;
+      const edgeThreshold = 100;
+      const scrollSpeed = 5;
+
+      if (scrollIntervalRef.current) clearInterval(scrollIntervalRef.current);
+
+      if (mouseX < edgeThreshold && container.scrollLeft > 0) {
+        scrollIntervalRef.current = setInterval(() => {
+          container.scrollBy({ left: -scrollSpeed, behavior: 'auto' });
+        }, 16);
+      } else if (mouseX > width - edgeThreshold && container.scrollLeft < container.scrollWidth - container.clientWidth) {
+        scrollIntervalRef.current = setInterval(() => {
+          container.scrollBy({ left: scrollSpeed, behavior: 'auto' });
+        }, 16);
+      }
+    };
+
+    const handleMouseLeave = () => {
+      if (scrollIntervalRef.current) clearInterval(scrollIntervalRef.current);
+    };
+
+    container.addEventListener('mousemove', handleMouseMove);
+    container.addEventListener('mouseleave', handleMouseLeave);
+    return () => {
+      container.removeEventListener('mousemove', handleMouseMove);
+      container.removeEventListener('mouseleave', handleMouseLeave);
+      if (scrollIntervalRef.current) clearInterval(scrollIntervalRef.current);
+    };
+  }, []);
+
+  // Data processing
+  const dates = Array.from(new Set(items.map((it) => it.date))).sort().reverse();
+  const drivers = Array.from(new Set(items.map((it) => it.driver))).sort();
+  const colOrder: Array<keyof typeof visibleCols> = ['start', 'end', 'route', 'tasks', 'punctuality', 'price'];
+  const visibleKeys = colOrder.filter((k) => visibleCols[k]);
 
   const map: Record<string, Record<string, { route: string; tasks: string; start?: string | null; end?: string | null; punctuality: number | null; price?: number | string }>> = {};
   const driverContractor: Record<string, string> = {};
-  items.forEach(it => {
+  items.forEach((it) => {
     const afterColon = it.calendar?.split(':')[1] || it.calendar || '';
     const route = afterColon.split(' ')[0] || '';
     const taskMatch = it.calendar?.match(/\((\d+)\)/);
@@ -130,18 +186,23 @@ export default function DriverRoutes() {
     };
   });
 
-  const contractorStats = Object.entries(driverContractor).reduce<Record<string, { drivers: Set<string>; total: number; count: number }>>((acc, [drv, contractor]) => {
-    if (!acc[contractor]) acc[contractor] = { drivers: new Set(), total: 0, count: 0 };
-    acc[contractor].drivers.add(drv);
-    items.filter(i => i.driver === drv).forEach(i => {
-      const n = Number(i.price);
-      if (!isNaN(n)) {
-        acc[contractor].total += n;
-        acc[contractor].count += 1;
-      }
-    });
-    return acc;
-  }, {});
+  const contractorStats = Object.entries(driverContractor).reduce<Record<string, { drivers: Set<string>; total: number; count: number }>>(
+    (acc, [drv, contractor]) => {
+      if (!acc[contractor]) acc[contractor] = { drivers: new Set(), total: 0, count: 0 };
+      acc[contractor].drivers.add(drv);
+      items
+        .filter((i) => i.driver === drv)
+        .forEach((i) => {
+          const n = Number(i.price);
+          if (!isNaN(n)) {
+            acc[contractor].total += n;
+            acc[contractor].count += 1;
+          }
+        });
+      return acc;
+    },
+    {}
+  );
   const contractorCards = Object.entries(contractorStats).map(([name, info]) => ({
     name,
     driverCount: info.drivers.size,
@@ -158,10 +219,10 @@ export default function DriverRoutes() {
       else if (Array.isArray(data.schedule_trips)) trips = data.schedule_trips;
       else if (Array.isArray(data.scheduleTrips)) trips = data.scheduleTrips;
       if (!Array.isArray(trips)) {
-        alert('No schedule trips found');
+        setError('No schedule trips found in file');
         return;
       }
-      const filtered = trips.filter(it => {
+      const filtered = trips.filter((it) => {
         const raw = it.Start_Time || it['Start_Time'] || it['Trip.Start_Time'];
         const iso = parseDate(String(raw).split(' ')[0]);
         return iso === dateStr;
@@ -169,12 +230,12 @@ export default function DriverRoutes() {
       await fetch('/api/update-schedule-trips', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ date: dateStr, trips: filtered })
+        body: JSON.stringify({ date: dateStr, trips: filtered }),
       });
       setModalDate(null);
       load();
     } catch (err) {
-      alert('Failed to process file');
+      setError('Failed to process file');
       console.error(err);
     }
   };
@@ -195,182 +256,329 @@ export default function DriverRoutes() {
 
   return (
     <Layout title="Driver Routes" fullWidth>
-      <h1 className="text-2xl font-bold mb-4">Driver Routes</h1>
-      {contractorCards.length > 0 && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mb-4">
-          {contractorCards.map(c => (
-            <Card key={c.name} title={c.name} value={
-              <div className="text-lg">
-                <div>{c.driverCount} drivers</div>
-                <div>Avg £{c.avgPrice.toFixed(2)}</div>
-              </div>
-            } />
-          ))}
-        </div>
-      )}
-      <div className="flex flex-wrap gap-2 mb-4">
-        <input
-          type="date"
-          value={start}
-          onChange={e => setStart(e.target.value)}
-          className="input input-bordered input-sm"
-        />
-        <input
-          type="date"
-          value={end}
-          onChange={e => setEnd(e.target.value)}
-          className="input input-bordered input-sm"
-        />
-        <div className="relative" ref={menuRef}>
-          <button
-            type="button"
-            className="btn btn-sm btn-ghost"
-            onClick={() => setColumnMenuOpen(!columnMenuOpen)}
-            title="Toggle columns"
-          >
-            <Icon name="eye" />
-          </button>
-          {columnMenuOpen && (
-            <div className="absolute right-0 mt-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded shadow-lg p-2 z-50 space-y-1">
-              {colOrder.map(key => (
-                <label key={key} className="flex items-center gap-2 cursor-pointer px-2">
-                  <input
-                    type="checkbox"
-                    className="checkbox checkbox-sm"
-                    checked={visibleCols[key]}
-                    onChange={() => setVisibleCols(v => ({ ...v, [key]: !v[key] }))}
-                  />
-                  <span className="text-sm">
-                    {key === 'route'
-                      ? 'Route'
-                      : key === 'tasks'
-                      ? 'Tasks'
-                      : key === 'start'
-                      ? 'Start Time'
-                      : key === 'end'
-                      ? 'End Time'
-                      : key === 'punctuality'
-                      ? 'Punctuality'
-                      : 'Price'}
-                  </span>
-                </label>
+      <div className="h-[calc(100vh-120px)] flex flex-col">
+        {/* Header section */}
+        <div className="flex-shrink-0 p-4 space-y-4">
+          {/* Error Message */}
+          <AnimatePresence>
+            {error && (
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                className="bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-100 px-3 py-2 rounded-lg text-sm flex items-center justify-between"
+              >
+                <span>{error}</span>
+                <button onClick={() => setError(null)} className="text-red-600 dark:text-red-300 hover:text-red-800 dark:hover:text-red-100">
+                  <Icon name="xmark" className="w-4 h-4" />
+                </button>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* Contractor Cards */}
+          {contractorCards.length > 0 && (
+            <div
+              ref={cardContainerRef}
+              className="flex overflow-x-auto space-x-3 pb-2 scrollbar-hidden"
+              style={{ scrollBehavior: 'smooth' }}
+            >
+              {contractorCards.map((c) => (
+                <motion.div
+                  key={c.name}
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  className="flex-shrink-0 w-48 bg-white dark:bg-gray-800 rounded-xl shadow-md p-3 border border-gray-200 dark:border-gray-700 hover:shadow-lg transition-shadow"
+                >
+                  <h3 className="text-sm font-semibold text-gray-900 dark:text-white truncate">{c.name}</h3>
+                  <div className="text-xs text-gray-600 dark:text-gray-300 mt-1">
+                    <div>{c.driverCount} drivers</div>
+                    <div>Avg £{c.avgPrice.toFixed(2)}</div>
+                  </div>
+                </motion.div>
               ))}
             </div>
           )}
-        </div>
-      </div>
-      <div className="overflow-x-auto">
-        <table className="table table-sm w-full text-center border border-gray-300" style={{borderCollapse:'collapse'}}>
-          <thead>
-            <tr>
-              <th className="border border-gray-300">Driver</th>
-              <th className="border border-gray-300">Contractor</th>
-              {dates.map(d => (
-                <th key={d} colSpan={visibleKeys.length} className="relative border border-gray-300">
-                  {d}
-                  <button
-                    className="absolute right-1 top-1 btn btn-xs btn-ghost"
-                    onClick={() => setModalDate(d)}
+
+          {/* Filters */}
+          <div className="flex flex-wrap gap-2 items-center">
+            <input
+              type="date"
+              value={start}
+              onChange={(e) => setStart(e.target.value)}
+              className="px-2 py-1 text-sm bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg border border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-blue-500"
+              aria-label="Start date"
+            />
+            <input
+              type="date"
+              value={end}
+              onChange={(e) => setEnd(e.target.value)}
+              className="px-2 py-1 text-sm bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg border border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-blue-500"
+              aria-label="End date"
+            />
+            <div className="relative" ref={menuRef}>
+              <button
+                type="button"
+                className="px-2 py-1 text-sm bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg border border-gray-300 dark:border-gray-600"
+                onClick={() => setColumnMenuOpen(!columnMenuOpen)}
+                title="Toggle columns"
+              >
+                <Icon name="eye" className="w-4 h-4" />
+              </button>
+              <AnimatePresence>
+                {columnMenuOpen && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    className="absolute right-0 mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg p-2 z-50 space-y-1 w-40"
                   >
-                    <Icon name="refresh" />
-                  </button>
-                </th>
-              ))}
-            </tr>
-            <tr>
-              <th className="border border-gray-300"></th>
-              <th className="border border-gray-300"></th>
-              {dates.flatMap(d =>
-                visibleKeys.map(key => (
-                  <th key={`${d}-${key}`} className="border border-gray-300">{
-                    key === 'route'
-                      ? 'Route'
-                      : key === 'tasks'
-                      ? 'Tasks'
-                      : key === 'start'
-                      ? 'Start Time'
-                      : key === 'end'
-                      ? 'End Time'
-                      : key === 'punctuality'
-                      ? 'Punctuality'
-                      : 'Price'
-                  }</th>
-                ))
-              )}
-            </tr>
-          </thead>
-          <tbody>
-            {loading ? (
-              <tr>
-                <td colSpan={2 + dates.length * visibleKeys.length} className="text-center py-4">
-                  Loading...
-                </td>
-              </tr>
-            ) : (
-              drivers.map(driver => (
-                <tr key={driver} className="hover">
-                  <td className="border border-gray-300">{driver}</td>
-                  <td className="border border-gray-300">{driverContractor[driver] || '-'}</td>
-                  {dates.flatMap(d => {
-                    const data = map[driver]?.[d];
-                    return visibleKeys.map(key => {
-                      if (key === 'route') {
-                        return (
-                          <td key={`${driver}-${d}-r`} className={`${getRouteColorClass(data?.route || '')} border border-gray-300`}>
-                            {data?.route || '-'}
-                          </td>
-                        );
-                      }
-                      if (key === 'tasks') {
-                        return <td key={`${driver}-${d}-t`} className="border border-gray-300">{data?.tasks || '-'}</td>;
-                      }
-                      if (key === 'start') {
-                        return <td key={`${driver}-${d}-s`} className="border border-gray-300">{data?.start || '-'}</td>;
-                      }
-                      if (key === 'end') {
-                        return <td key={`${driver}-${d}-e`} className="border border-gray-300">{data?.end || '-'}</td>;
-                      }
-                      if (key === 'punctuality') {
-                        return (
-                          <td key={`${driver}-${d}-p`} className="border border-gray-300">{stylePunctuality(data?.punctuality ?? null)}</td>
-                        );
-                      }
-                      return <td key={`${driver}-${d}-price`} className="border border-gray-300">{data?.price ?? '-'}</td>;
-                    });
-                  })}
-                </tr>
-              ))
-            )}
-            {!loading && drivers.length === 0 && (
-              <tr>
-                <td colSpan={2 + dates.length * visibleKeys.length} className="text-center py-4">
-                  No data
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
-      <Modal open={modalDate !== null} onClose={() => setModalDate(null)}>
-        <h2 className="text-lg font-semibold mb-4">Update {modalDate}</h2>
-        <div
-          className="border-2 border-dashed rounded-lg p-6 text-center"
-          onDrop={handleDrop}
-          onDragOver={handleDrag}
-        >
-          <input
-            type="file"
-            accept=".json"
-            ref={fileInputRef}
-            onChange={handleInput}
-            className="hidden"
-          />
-          <label htmlFor="file" className="flex flex-col items-center gap-2 cursor-pointer" onClick={() => fileInputRef.current?.click()}>
-            <Icon name="file-arrow-up" className="text-3xl" />
-            <span>Drag file here or click to select</span>
-          </label>
+                    {colOrder.map((key) => (
+                      <label key={key} className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          className="w-3 h-3 rounded border-gray-300 dark:border-gray-600"
+                          checked={visibleCols[key]}
+                          onChange={() => setVisibleCols((v) => ({ ...v, [key]: !v[key] }))}
+                        />
+                        <span className="text-xs text-gray-900 dark:text-white">
+                          {key === 'route'
+                            ? 'Route'
+                            : key === 'tasks'
+                            ? 'Tasks'
+                            : key === 'start'
+                            ? 'Start Time'
+                            : key === 'end'
+                            ? 'End Time'
+                            : key === 'punctuality'
+                            ? 'Punctuality'
+                            : 'Price'}
+                        </span>
+                      </label>
+                    ))}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+          </div>
         </div>
-      </Modal>
+
+        {/* Table container */}
+        <div className="flex-1 px-4 pb-4 min-h-0 overflow-hidden">
+          <div className="h-full bg-white dark:bg-gray-800 rounded-xl shadow-md border border-gray-200 dark:border-gray-700 overflow-hidden">
+            <div className="relative h-full overflow-auto">
+              <table className="w-full text-center border-collapse text-sm">
+                <colgroup>
+                  <col style={{ width: '200px', minWidth: '200px' }} />
+                  <col style={{ width: '150px', minWidth: '150px' }} />
+                  {dates.flatMap(() =>
+                    visibleKeys.map(() => <col key={Math.random()} style={{ width: '80px', minWidth: '80px' }} />)
+                  )}
+                </colgroup>
+                <thead>
+                  <tr className="bg-gray-50 dark:bg-gray-700 sticky top-0 z-20">
+                    <th
+                      className="sticky left-0 z-30 bg-gray-50 dark:bg-gray-700 border-b border-r border-gray-200 dark:border-gray-600 px-3 py-2 text-left text-gray-900 dark:text-white font-semibold"
+                      style={{ position: 'sticky', left: 0 }}
+                    >
+                      Driver
+                    </th>
+                    <th
+                      className="sticky left-[200px] z-30 bg-gray-50 dark:bg-gray-700 border-b border-r border-gray-200 dark:border-gray-600 px-3 py-2 text-left text-gray-900 dark:text-white font-semibold"
+                      style={{ position: 'sticky', left: '200px' }}
+                    >
+                      Contractor
+                    </th>
+                    {dates.map((d, index) => (
+                      <th
+                        key={d}
+                        colSpan={visibleKeys.length}
+                        className={`relative border-b ${index < dates.length - 1 ? 'border-r' : ''} border-gray-200 dark:border-gray-600 px-3 py-2 text-gray-900 dark:text-white font-semibold min-w-[100px]`}
+                      >
+                        {d}
+                        <button
+                          className="absolute right-1 top-1 w-5 h-5 flex items-center justify-center bg-gray-200 dark:bg-gray-600 hover:bg-gray-300 dark:hover:bg-gray-500 rounded text-xs"
+                          onClick={() => setModalDate(d)}
+                          title="Update schedule"
+                        >
+                          <Icon name="refresh" className="w-3 h-3" />
+                        </button>
+                      </th>
+                    ))}
+                  </tr>
+                  <tr className="bg-gray-50 dark:bg-gray-700 sticky top-[40px] z-20">
+                    <th
+                      className="sticky left-0 z-30 bg-gray-50 dark:bg-gray-700 border-b border-r border-gray-200 dark:border-gray-600"
+                      style={{ position: 'sticky', left: 0 }}
+                    ></th>
+                    <th
+                      className="sticky left-[200px] z-30 bg-gray-50 dark:bg-gray-700 border-b border-r border-gray-200 dark:border-gray-600"
+                      style={{ position: 'sticky', left: '200px' }}
+                    ></th>
+                    {dates.flatMap((d, dateIndex) =>
+                      visibleKeys.map((key, keyIndex) => (
+                        <th
+                          key={`${d}-${key}`}
+                          className={`border-b ${dateIndex < dates.length - 1 && keyIndex === visibleKeys.length - 1 ? 'border-r' : ''} border-gray-200 dark:border-gray-600 px-2 py-1 text-gray-900 dark:text-white font-medium min-w-[80px] text-xs`}
+                        >
+                          {key === 'route'
+                            ? 'Route'
+                            : key === 'tasks'
+                            ? 'Tasks'
+                            : key === 'start'
+                            ? 'Start'
+                            : key === 'end'
+                            ? 'End'
+                            : key === 'punctuality'
+                            ? 'Punct.'
+                            : 'Price'}
+                        </th>
+                      ))
+                    )}
+                  </tr>
+                </thead>
+                <tbody>
+                  {loading ? (
+                    <tr>
+                      <td
+                        colSpan={2 + dates.length * visibleKeys.length}
+                        className="text-center py-4 text-gray-500 dark:text-gray-400"
+                      >
+                        <div className="flex justify-center items-center gap-2">
+                          <Icon name="spinner" className="w-4 h-4 animate-spin" />
+                          Loading...
+                        </div>
+                      </td>
+                    </tr>
+                  ) : drivers.length === 0 ? (
+                    <tr>
+                      <td
+                        colSpan={2 + dates.length * visibleKeys.length}
+                        className="text-center py-4 text-gray-500 dark:text-gray-400"
+                      >
+                        No data available
+                      </td>
+                    </tr>
+                  ) : (
+                    drivers.map((driver, index) => (
+                      <tr
+                        key={driver}
+                        className={`${index % 2 === 0 ? 'bg-white dark:bg-gray-800' : 'bg-gray-50 dark:bg-gray-700'} hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors`}
+                      >
+                        <td
+                          className="sticky left-0 z-10 bg-inherit border-b border-r border-gray-200 dark:border-gray-600 px-3 py-2 text-left text-gray-900 dark:text-white font-medium"
+                          style={{ position: 'sticky', left: 0 }}
+                        >
+                          {driver}
+                        </td>
+                        <td
+                          className="sticky left-[200px] z-10 bg-inherit border-b border-r border-gray-200 dark:border-gray-600 px-3 py-2 text-left text-gray-900 dark:text-white"
+                          style={{ position: 'sticky', left: '200px' }}
+                        >
+                          {driverContractor[driver] || '-'}
+                        </td>
+                        {dates.flatMap((d, dateIndex) => {
+                          const data = map[driver]?.[d];
+                          return visibleKeys.map((key, keyIndex) => {
+                            const isLastKeyInDate = keyIndex === visibleKeys.length - 1;
+                            const isLastDate = dateIndex === dates.length - 1;
+                            const borderClass = `border-b ${!isLastDate && isLastKeyInDate ? 'border-r' : ''} border-gray-200 dark:border-gray-600`;
+
+                            if (key === 'route') {
+                              return (
+                                <td
+                                  key={`${driver}-${d}-r`}
+                                  className={`${getRouteColorClass(data?.route || '')} ${borderClass} px-2 py-2`}
+                                >
+                                  {data?.route || '-'}
+                                </td>
+                              );
+                            }
+                            if (key === 'tasks') {
+                              return (
+                                <td
+                                  key={`${driver}-${d}-t`}
+                                  className={`${borderClass} px-2 py-2 text-gray-900 dark:text-white`}
+                                >
+                                  {data?.tasks || '-'}
+                                </td>
+                              );
+                            }
+                            if (key === 'start') {
+                              return (
+                                <td
+                                  key={`${driver}-${d}-s`}
+                                  className={`${borderClass} px-2 py-2 text-gray-900 dark:text-white`}
+                                >
+                                  {data?.start || '-'}
+                                </td>
+                              );
+                            }
+                            if (key === 'end') {
+                              return (
+                                <td
+                                  key={`${driver}-${d}-e`}
+                                  className={`${borderClass} px-2 py-2 text-gray-900 dark:text-white`}
+                                >
+                                  {data?.end || '-'}
+                                </td>
+                              );
+                            }
+                            if (key === 'punctuality') {
+                              return (
+                                <td
+                                  key={`${driver}-${d}-p`}
+                                  className={`${borderClass} px-2 py-2`}
+                                >
+                                  {stylePunctuality(data?.punctuality ?? null)}
+                                </td>
+                              );
+                            }
+                            return (
+                              <td
+                                key={`${driver}-${d}-price`}
+                                className={`${borderClass} px-2 py-2 text-gray-900 dark:text-white`}
+                              >
+                                {data?.price ?? '-'}
+                              </td>
+                            );
+                          });
+                        })}
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        {/* File Upload Modal */}
+        <Modal open={modalDate !== null} onClose={() => setModalDate(null)}>
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Update Schedule for {modalDate}</h2>
+          <motion.div
+            className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-xl p-8 text-center bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+            onDrop={handleDrop}
+            onDragOver={handleDrag}
+            initial={{ scale: 1 }}
+            whileHover={{ scale: 1.02 }}
+          >
+            <input
+              type="file"
+              accept=".json"
+              ref={fileInputRef}
+              onChange={handleInput}
+              className="hidden"
+              id="file-upload"
+            />
+            <label htmlFor="file-upload" className="flex flex-col items-center gap-3 cursor-pointer">
+              <Icon name="file-arrow-up" className="text-4xl text-gray-500 dark:text-gray-400" />
+              <span className="text-gray-600 dark:text-gray-300">Drag JSON file here or click to select</span>
+              <span className="text-sm text-gray-500 dark:text-gray-400">Only .json files are accepted</span>
+            </label>
+          </motion.div>
+        </Modal>
+      </div>
     </Layout>
   );
 }

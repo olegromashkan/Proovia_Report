@@ -1,5 +1,4 @@
-
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback, memo, useRef } from 'react';
 import { useRouter } from 'next/router';
 import Layout from '../components/Layout';
 import TripModal from '../components/TripModal';
@@ -12,19 +11,154 @@ interface Trip {
   [key: string]: any;
 }
 
-function formatDate(date: Date) {
-  return date.toISOString().slice(0, 10);
-}
+const formatDate = (date: Date) => date.toISOString().slice(0, 10);
 
-function calcLoad(startTime: string) {
-  if (!startTime || typeof startTime !== 'string' || !startTime.includes(':')) return 'N/A';
+const calcLoad = (startTime: string) => {
+  if (!startTime?.includes(':')) return 'N/A';
   const [h, m] = startTime.trim().split(':').map(Number);
   if (isNaN(h) || isNaN(m)) return 'N/A';
   const date = new Date();
   date.setHours(h, m, 0, 0);
   date.setMinutes(date.getMinutes() - 90);
   return date.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
-}
+};
+
+const diffTime = (t1: string, t2: string) => {
+  if (!t1 || !t2) return 'N/A';
+  const [h1, m1] = t1.split(':').map(Number);
+  const [h2, m2] = t2.split(':').map(Number);
+  if ([h1, m1, h2, m2].some(n => isNaN(n))) return 'N/A';
+  const minutes1 = h1 * 60 + m1;
+  const minutes2 = h2 * 60 + m2;
+  let diff = Math.abs(minutes1 - minutes2);
+  if (diff > 12 * 60) diff = 24 * 60 - diff;
+  return diff.toString();
+};
+
+// --- Scrolling Stats Component ---
+const ScrollingStats = ({ trips, driverToContractor }: { trips: Trip[], driverToContractor: Record<string, string> }) => {
+  const scrollRef = useRef<HTMLDivElement>(null);
+  
+  const stats = useMemo(() => {
+    // Top Drivers
+    const driverCounts: Record<string, number> = {};
+    const postcodeCounts: Record<string, number> = {};
+    const auctionCounts: Record<string, number> = {};
+    const contractorCounts: Record<string, number> = {};
+    
+    trips.forEach(trip => {
+      const driver = trip['Trip.Driver1'];
+      const postcode = trip['Address.Postcode'];
+      const auction = trip['Order.Auction'];
+      const contractor = driver ? driverToContractor[driver] : null;
+      
+      if (driver) driverCounts[driver] = (driverCounts[driver] || 0) + 1;
+      if (postcode) postcodeCounts[postcode] = (postcodeCounts[postcode] || 0) + 1;
+      if (auction) auctionCounts[auction] = (auctionCounts[auction] || 0) + 1;
+      if (contractor) contractorCounts[contractor] = (contractorCounts[contractor] || 0) + 1;
+    });
+    
+    const topDrivers = Object.entries(driverCounts)
+      .sort(([,a], [,b]) => b - a)
+      .slice(0, 10);
+      
+    const topPostcodes = Object.entries(postcodeCounts)
+      .sort(([,a], [,b]) => b - a)
+      .slice(0, 10);
+      
+    const topAuctions = Object.entries(auctionCounts)
+      .sort(([,a], [,b]) => b - a)
+      .slice(0, 10);
+      
+    const topContractors = Object.entries(contractorCounts)
+      .sort(([,a], [,b]) => b - a)
+      .slice(0, 10);
+    
+    return { topDrivers, topPostcodes, topAuctions, topContractors };
+  }, [trips, driverToContractor]);
+  
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (scrollRef.current) {
+        scrollRef.current.scrollLeft += 1;
+        if (scrollRef.current.scrollLeft >= scrollRef.current.scrollWidth / 2) {
+          scrollRef.current.scrollLeft = 0;
+        }
+      }
+    }, 30);
+    
+    return () => clearInterval(interval);
+  }, []);
+  
+  const StatCard = ({ title, data, color }: { title: string, data: [string, number][], color: string }) => (
+    <div className={`bg-gradient-to-br ${color} rounded-xl p-4 shadow-lg min-w-[250px] text-white`}>
+      <h3 className="font-bold text-lg mb-3 opacity-90">{title}</h3>
+      <div className="space-y-1">
+        {data.slice(0, 3).map(([name, count], idx) => (
+          <div key={idx} className="flex justify-between items-center">
+            <span className="text-sm truncate max-w-[150px]">{name}</span>
+            <span className="font-bold">{count}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+  
+  return (
+    <div className="overflow-hidden relative bg-base-200 py-3">
+      <div 
+        ref={scrollRef}
+        className="flex gap-4 px-4 overflow-x-hidden"
+        style={{ scrollBehavior: 'smooth' }}
+      >
+        {/* Duplicate for seamless scroll */}
+        {[1, 2].map(key => (
+          <React.Fragment key={key}>
+            <StatCard title="🏆 Top Drivers" data={stats.topDrivers} color="from-blue-500 to-blue-600" />
+            <StatCard title="📍 Top Postcodes" data={stats.topPostcodes} color="from-purple-500 to-purple-600" />
+            <StatCard title="🏪 Top Auctions" data={stats.topAuctions} color="from-green-500 to-green-600" />
+            <StatCard title="🚛 Top Contractors" data={stats.topContractors} color="from-orange-500 to-orange-600" />
+          </React.Fragment>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+// --- Memoized Components ---
+const TripCard = memo(({ trip, onClick }: { trip: Trip; onClick: () => void }) => {
+  const statusColor = trip.Status === 'Complete' ? 'border-l-success' : 
+                     trip.Status === 'Failed' ? 'border-l-error' : 'border-l-base-300';
+  const summaryText = (trip.Summary || '').split(' ')[0];
+  
+  return (
+    <div
+      onClick={onClick}
+      className={`bg-base-200 rounded-lg border-l-4 ${statusColor} p-3 hover:shadow-lg transition-all cursor-pointer group`}
+    >
+      <div className="flex items-center gap-3">
+        {trip.Seq && (
+          <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+            <span className="text-sm font-bold text-primary">{trip.Seq}</span>
+          </div>
+        )}
+        <div className="flex-grow min-w-0">
+          <div className="flex items-center gap-2">
+            <p className="font-semibold truncate">#{trip['Order.OrderNumber']}</p>
+            <span className="badge badge-ghost badge-sm">{trip['Address.Postcode']}</span>
+          </div>
+          <p className="text-sm opacity-70">{trip['Trip.Driver1'] || 'No Driver'}</p>
+        </div>
+        <div className="flex flex-col items-end gap-1 flex-shrink-0">
+          {summaryText && <span className="badge badge-outline badge-sm">{summaryText}</span>}
+          {trip['Order.Auction'] && (
+            <span className="badge badge-ghost badge-sm">{trip['Order.Auction']}</span>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+});
 
 // --- Main Component ---
 export default function FullReport() {
@@ -35,89 +169,104 @@ export default function FullReport() {
   const [trips, setTrips] = useState<Trip[]>([]);
   const [startData, setStartData] = useState<any[]>([]);
   const [vanChecks, setVanChecks] = useState<any[]>([]);
-  const [startSearch, setStartSearch] = useState('');
-  const [startContractor, setStartContractor] = useState('');
   const [selected, setSelected] = useState<Trip | null>(null);
   const [isDrawerOpen, setDrawerOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Filter States
-  const [start, setStart] = useState(today);
-  const [end, setEnd] = useState(today);
-  const [statusFilter, setStatusFilter] = useState('');
-  const [contractorFilter, setContractorFilter] = useState('');
-  const [auctionFilter, setAuctionFilter] = useState('');
-  const [search, setSearch] = useState('');
+  // Filters
+  const [filters, setFilters] = useState({
+    start: today,
+    end: today,
+    status: '',
+    contractor: '',
+    auction: '',
+    search: '',
+    startSearch: '',
+    startContractor: '',
+    vanSearch: '',
+    vanContractor: ''
+  });
+
   const [sortField, setSortField] = useState('Order.OrderNumber');
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
-  const [vanSearch, setVanSearch] = useState('');
-  const [vanContractor, setVanContractor] = useState('');
 
-  // Dynamic Filter Data
-  const { contractors, auctions } = useMemo(() => {
+  // Derived data
+  const { contractors, auctions, driverToContractor } = useMemo(() => {
     const contractorSet = new Set<string>();
-    startData.forEach(r => { if (r.Contractor_Name) contractorSet.add(r.Contractor_Name); });
+    const driverMap: Record<string, string> = {};
+    
+    startData.forEach(r => {
+      if (r.Contractor_Name) {
+        contractorSet.add(r.Contractor_Name);
+        if (r.Driver) driverMap[r.Driver] = r.Contractor_Name;
+      }
+    });
+    
     const auctionSet = new Set<string>();
     trips.forEach(t => {
       if (t['Order.Auction']) auctionSet.add(t['Order.Auction']);
     });
+    
     return {
       contractors: Array.from(contractorSet).sort(),
       auctions: Array.from(auctionSet).sort(),
+      driverToContractor: driverMap
     };
   }, [trips, startData]);
-
-  const driverToContractor = useMemo(() => {
-    const map: Record<string, string> = {};
-    startData.forEach(r => { if (r.Driver) map[r.Driver] = r.Contractor_Name; });
-    return map;
-  }, [startData]);
 
   // --- Data Loading ---
   useEffect(() => {
     if (!router.isReady) return;
     const { start: qStart, end: qEnd } = router.query;
-    if (typeof qStart === 'string') setStart(qStart);
-    if (typeof qEnd === 'string') setEnd(qEnd);
+    if (typeof qStart === 'string') {
+      setFilters(prev => ({ ...prev, start: qStart }));
+    }
+    if (typeof qEnd === 'string') {
+      setFilters(prev => ({ ...prev, end: qEnd }));
+    }
   }, [router.isReady, router.query]);
 
   useEffect(() => {
     if (!router.isReady) return;
-    const fetchTrips = async () => {
+    
+    const fetchData = async () => {
       setIsLoading(true);
-      const res = await fetch(`/api/report?start=${start}&end=${end}`);
-      if (res.ok) {
-        const data = await res.json();
-        setTrips((data.items || []) as Trip[]);
-      }
-      const resStart = await fetch(`/api/start-times?start=${start}&end=${end}`);
-      if (resStart.ok) {
-        const d = await resStart.json();
-        setStartData(d.items || []);
-      }
-      const resVan = await fetch(`/api/van-checks?start=${start}&end=${end}`);
-      if (resVan.ok) {
-        const v = await resVan.json();
-        setVanChecks(v.items || []);
-      }
+      
+      const [resTrips, resStart, resVan] = await Promise.all([
+        fetch(`/api/report?start=${filters.start}&end=${filters.end}`),
+        fetch(`/api/start-times?start=${filters.start}&end=${filters.end}`),
+        fetch(`/api/van-checks?start=${filters.start}&end=${filters.end}`)
+      ]);
+      
+      const [tripsData, startData, vanData] = await Promise.all([
+        resTrips.ok ? resTrips.json() : { items: [] },
+        resStart.ok ? resStart.json() : { items: [] },
+        resVan.ok ? resVan.json() : { items: [] }
+      ]);
+      
+      setTrips(tripsData.items || []);
+      setStartData(startData.items || []);
+      setVanChecks(vanData.items || []);
       setIsLoading(false);
     };
-    fetchTrips();
-  }, [router.isReady, start, end]);
+    
+    fetchData();
+  }, [router.isReady, filters.start, filters.end]);
 
-  // --- Filtering and Sorting ---
-  const filteredAndSorted = useMemo(() => {
+  // --- Filtering ---
+  const filteredTrips = useMemo(() => {
     return trips
-      .filter((t) => {
-        const matchesStatus = !statusFilter || t.Status?.toLowerCase() === statusFilter.toLowerCase();
+      .filter(t => {
+        const matchesStatus = !filters.status || t.Status?.toLowerCase() === filters.status.toLowerCase();
         const contractor = driverToContractor[t['Trip.Driver1']] || 'Unknown';
-        const matchesContractor = !contractorFilter || contractor === contractorFilter;
-        const matchesAuction = !auctionFilter || t['Order.Auction'] === auctionFilter;
-        const matchesSearch = search ? (
-            String(t['Order.OrderNumber'] || '').toLowerCase().includes(search.toLowerCase()) ||
-            String(t['Trip.Driver1'] || '').toLowerCase().includes(search.toLowerCase()) ||
-            String(t['Address.Postcode'] || '').toLowerCase().includes(search.toLowerCase())
-        ) : true;
+        const matchesContractor = !filters.contractor || contractor === filters.contractor;
+        const matchesAuction = !filters.auction || t['Order.Auction'] === filters.auction;
+        const matchesSearch = !filters.search || [
+          t['Order.OrderNumber'],
+          t['Trip.Driver1'],
+          t['Address.Postcode']
+        ].some(field => String(field || '').toLowerCase().includes(filters.search.toLowerCase()));
+        
         return matchesStatus && matchesContractor && matchesAuction && matchesSearch;
       })
       .sort((a, b) => {
@@ -132,29 +281,26 @@ export default function FullReport() {
           }
         }
         
-        if (typeof valA === 'number' && typeof valB === 'number') {
-          return sortDir === 'asc' ? valA - valB : valB - valA;
-        }
-        
-        return sortDir === 'asc'
-          ? String(valA).localeCompare(String(valB))
-          : String(valB).localeCompare(String(valA));
+        const compareResult = typeof valA === 'number' && typeof valB === 'number'
+          ? valA - valB
+          : String(valA).localeCompare(String(valB));
+          
+        return sortDir === 'asc' ? compareResult : -compareResult;
       });
-  }, [trips, statusFilter, contractorFilter, auctionFilter, search, sortField, sortDir, driverToContractor]);
+  }, [trips, filters, sortField, sortDir, driverToContractor]);
 
   const stats = useMemo(() => {
     let positiveTimeCompleted = 0;
     let positiveArrivalTime = 0;
 
-    filteredAndSorted.forEach((trip) => {
-      if (!trip || !trip['Address.Working_Hours'] || !trip.Time_Completed || !trip.Arrival_Time) return;
+    filteredTrips.forEach(trip => {
+      if (!trip?.['Address.Working_Hours'] || !trip.Time_Completed || !trip.Arrival_Time) return;
 
       const matches = String(trip['Address.Working_Hours']).match(/\d{2}:\d{2}/g);
-      const endTime = matches ? matches[1] : null;
+      const endTime = matches?.[1];
       if (!endTime) return;
 
       const [h, m] = endTime.split(':').map(Number);
-
       const timeCompletedDate = new Date(trip.Time_Completed);
       const whEndForCompleted = new Date(timeCompletedDate);
       whEndForCompleted.setHours(h, m, 0, 0);
@@ -163,23 +309,18 @@ export default function FullReport() {
       const whEndForArrival = new Date(arrivalDate);
       whEndForArrival.setHours(h, m, 0, 0);
 
-      if (timeCompletedDate.getTime() - whEndForCompleted.getTime() >= 0) {
-        positiveTimeCompleted++;
-      }
-
-      if (arrivalDate.getTime() - whEndForArrival.getTime() >= 0) {
-        positiveArrivalTime++;
-      }
+      if (timeCompletedDate >= whEndForCompleted) positiveTimeCompleted++;
+      if (arrivalDate >= whEndForArrival) positiveArrivalTime++;
     });
 
     return {
-      total: filteredAndSorted.length,
-      complete: filteredAndSorted.filter((t) => t.Status === 'Complete').length,
-      failed: filteredAndSorted.filter((t) => t.Status === 'Failed').length,
+      total: filteredTrips.length,
+      complete: filteredTrips.filter(t => t.Status === 'Complete').length,
+      failed: filteredTrips.filter(t => t.Status === 'Failed').length,
       positiveTimeCompleted,
       positiveArrivalTime,
     };
-  }, [filteredAndSorted]);
+  }, [filteredTrips]);
 
   const startContractors = useMemo(() => {
     const set = new Set<string>();
@@ -196,88 +337,100 @@ export default function FullReport() {
     return Array.from(set).sort();
   }, [vanChecks, driverToContractor]);
 
+  const filteredStartData = useMemo(() => {
+    return startData.filter(r => {
+      const matchContractor = !filters.startContractor || r.Contractor_Name === filters.startContractor;
+      const matchSearch = !filters.startSearch || 
+        Object.values(r).some(v => String(v).toLowerCase().includes(filters.startSearch.toLowerCase()));
+      return matchContractor && matchSearch;
+    }).sort((a, b) => String(a.Asset).localeCompare(String(b.Asset)));
+  }, [startData, filters]);
+
   const filteredVanChecks = useMemo(() => {
     return vanChecks.filter(vc => {
       const contractor = driverToContractor[vc.driver_id] || 'Unknown';
-      const matchContractor = !vanContractor || contractor === vanContractor;
-      const matchSearch = vanSearch ? (
-        String(vc.driver_id).toLowerCase().includes(vanSearch.toLowerCase()) ||
-        String(vc.van_id).toLowerCase().includes(vanSearch.toLowerCase())
-      ) : true;
+      const matchContractor = !filters.vanContractor || contractor === filters.vanContractor;
+      const matchSearch = !filters.vanSearch || [
+        vc.driver_id,
+        vc.van_id
+      ].some(field => String(field).toLowerCase().includes(filters.vanSearch.toLowerCase()));
       return matchContractor && matchSearch;
     });
-  }, [vanChecks, vanSearch, vanContractor, driverToContractor]);
-
-  const filteredStart = useMemo(() => {
-    return startData.filter(r => {
-      const matchContractor = !startContractor || r.Contractor_Name === startContractor;
-      const matchSearch = startSearch ? Object.values(r).some(v => String(v).toLowerCase().includes(startSearch.toLowerCase())) : true;
-      return matchContractor && matchSearch;
-    }).sort((a,b) => String(a.Asset).localeCompare(String(b.Asset)));
-  }, [startData, startSearch, startContractor]);
+  }, [vanChecks, filters, driverToContractor]);
 
   // --- Handlers ---
-  const setDateRange = (s: Date, e: Date) => {
-    setStart(formatDate(s));
-    setEnd(formatDate(e));
-  };
+  const setDateRange = useCallback((start: Date, end: Date) => {
+    setFilters(prev => ({
+      ...prev,
+      start: formatDate(start),
+      end: formatDate(end)
+    }));
+  }, []);
 
-  const dateShortcuts = {
+  const dateShortcuts = useMemo(() => ({
     today: () => setDateRange(new Date(), new Date()),
-    yesterday: () => { const d = new Date(); d.setDate(d.getDate() - 1); setDateRange(d, d); },
-    last7Days: () => { const e = new Date(); const s = new Date(); s.setDate(e.getDate() - 6); setDateRange(s, e); },
+    yesterday: () => {
+      const d = new Date();
+      d.setDate(d.getDate() - 1);
+      setDateRange(d, d);
+    },
+    last7Days: () => {
+      const end = new Date();
+      const start = new Date();
+      start.setDate(end.getDate() - 6);
+      setDateRange(start, end);
+    },
     thisWeek: () => {
       const now = new Date();
-      const dayOfWeek = now.getDay();
-      const firstDay = new Date(now.setDate(now.getDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1)));
-      const lastDay = new Date(new Date(firstDay).setDate(firstDay.getDate() + 6));
-      setDateRange(firstDay, lastDay);
+      const day = now.getDay();
+      const diff = now.getDate() - day + (day === 0 ? -6 : 1);
+      const start = new Date(now.setDate(diff));
+      const end = new Date(start);
+      end.setDate(start.getDate() + 6);
+      setDateRange(start, end);
     },
     lastWeek: () => {
       const now = new Date();
       now.setDate(now.getDate() - 7);
-      const dayOfWeek = now.getDay();
-      const firstDay = new Date(now.setDate(now.getDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1)));
-      const lastDay = new Date(new Date(firstDay).setDate(firstDay.getDate() + 6));
-      setDateRange(firstDay, lastDay);
-    },
-  };
+      const day = now.getDay();
+      const diff = now.getDate() - day + (day === 0 ? -6 : 1);
+      const start = new Date(now.setDate(diff));
+      const end = new Date(start);
+      end.setDate(start.getDate() + 6);
+      setDateRange(start, end);
+    }
+  }), [setDateRange]);
 
   const handleReset = () => {
-    setStart(today); setEnd(today);
-    setStatusFilter(''); setContractorFilter(''); setAuctionFilter(''); setSearch('');
-    setSortField('Order.OrderNumber'); setSortDir('asc');
+    setFilters({
+      start: today,
+      end: today,
+      status: '',
+      contractor: '',
+      auction: '',
+      search: '',
+      startSearch: '',
+      startContractor: '',
+      vanSearch: '',
+      vanContractor: ''
+    });
+    setSortField('Order.OrderNumber');
+    setSortDir('asc');
   };
 
-  const copyStartTable = () => {
-    const rows = filteredStart.map(r => {
+  const copyStartTable = useCallback(() => {
+    const rows = filteredStartData.map(r => {
       const load = calcLoad(r.Start_Time);
       const diffLoad = diffTime(r.First_Mention_Time, load);
       const diffStart = diffTime(r.Last_Mention_Time, r.Start_Time);
       return [r.Asset, r.Contractor_Name, r.Driver, r.First_Mention_Time, load, diffLoad, r.Start_Time, r.Last_Mention_Time, diffStart].join(',');
     });
-    const text = rows.join('\n');
-    if (typeof navigator !== 'undefined' && navigator.clipboard && window.isSecureContext) {
-      navigator.clipboard.writeText(text);
-    } else {
-      const textarea = document.createElement('textarea');
-      textarea.value = text;
-      textarea.style.position = 'fixed';
-      textarea.style.left = '-9999px';
-      document.body.appendChild(textarea);
-      textarea.focus();
-      textarea.select();
-      try {
-        document.execCommand('copy');
-      } finally {
-        document.body.removeChild(textarea);
-      }
-    }
-  };
+    navigator.clipboard.writeText(rows.join('\n'));
+  }, [filteredStartData]);
 
-  const downloadStartCSV = () => {
+  const downloadStartCSV = useCallback(() => {
     const header = ['Asset','Contractor','Driver','Arrive WH','Load Time','Diff Load','Start Time','Left WH','Diff Start'];
-    const rows = filteredStart.map(r => {
+    const rows = filteredStartData.map(r => {
       const load = calcLoad(r.Start_Time);
       const diffLoad = diffTime(r.First_Mention_Time, load);
       const diffStart = diffTime(r.Last_Mention_Time, r.Start_Time);
@@ -291,286 +444,342 @@ export default function FullReport() {
     a.download = 'start_times.csv';
     a.click();
     URL.revokeObjectURL(url);
-  };
-
-  // --- UI Components ---
-  const FilterPanel = (
-    <div className="menu p-4 w-80 min-h-full bg-base-100 text-base-content space-y-4">
-      <div className="flex justify-between items-center">
-        <h3 className="font-bold text-xl">Filters & Sort</h3>
-        <button onClick={() => setDrawerOpen(false)} className="btn btn-sm btn-ghost btn-circle">✕</button>
-      </div>
-      <div className="form-control">
-        <label className="label pt-0"><span className="label-text">Date Range</span></label>
-        <div className="flex gap-2">
-            <input type="date" value={start} onChange={(e) => setStart(e.target.value)} className="input input-bordered w-full input-sm" />
-            <input type="date" value={end} onChange={(e) => setEnd(e.target.value)} className="input input-bordered w-full input-sm" />
-        </div>
-        <div className="grid grid-cols-2 gap-1 mt-2">
-            <button onClick={dateShortcuts.today} className="btn btn-ghost btn-xs justify-start">Today</button>
-            <button onClick={dateShortcuts.yesterday} className="btn btn-ghost btn-xs justify-start">Yesterday</button>
-            <button onClick={dateShortcuts.thisWeek} className="btn btn-ghost btn-xs justify-start">This Week</button>
-            <button onClick={dateShortcuts.lastWeek} className="btn btn-ghost btn-xs justify-start">Last Week</button>
-            <button onClick={dateShortcuts.last7Days} className="btn btn-ghost btn-xs justify-start col-span-2">Last 7 Days</button>
-        </div>
-      </div>
-      <div className="divider my-0"></div>
-      <div className="form-control">
-        <label className="label py-0"><span className="label-text">Search</span></label>
-        <input type="text" placeholder="Order, Driver, Postcode..." value={search} onChange={(e) => setSearch(e.target.value)} className="input input-bordered input-sm" />
-      </div>
-      <div className="form-control">
-        <label className="label py-0"><span className="label-text">Status</span></label>
-        <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="select select-bordered select-sm">
-          <option value="">All</option><option value="Complete">Complete</option><option value="Failed">Failed</option>
-        </select>
-      </div>
-      <div className="form-control">
-        <label className="label py-0"><span className="label-text">Contractor</span></label>
-        <select value={contractorFilter} onChange={(e) => setContractorFilter(e.target.value)} className="select select-bordered select-sm">
-          <option value="">All</option>{contractors.map((c) => <option key={c} value={c}>{c}</option>)}
-        </select>
-      </div>
-      <div className="form-control">
-        <label className="label py-0"><span className="label-text">Auction</span></label>
-        <select value={auctionFilter} onChange={(e) => setAuctionFilter(e.target.value)} className="select select-bordered select-sm">
-          <option value="">All</option>{auctions.map((a) => <option key={a} value={a}>{a}</option>)}
-        </select>
-      </div>
-      <div className="divider my-0"></div>
-      <div className="form-control">
-        <label className="label py-0"><span className="label-text">Sort Field</span></label>
-        <select value={sortField} onChange={(e) => setSortField(e.target.value)} className="select select-bordered select-sm">
-          <option value="Seq">Sequence</option><option value="Order.OrderNumber">Order Number</option><option value="Trip.Driver1">Driver</option><option value="Address.Postcode">Postcode</option>
-        </select>
-      </div>
-       <div className="form-control">
-        <label className="label py-0"><span className="label-text">Direction</span></label>
-        <div className="btn-group w-full">
-            <button onClick={() => setSortDir('asc')} className={`btn btn-sm flex-1 ${sortDir === 'asc' ? 'btn-active' : ''}`}>Ascending</button>
-            <button onClick={() => setSortDir('desc')} className={`btn btn-sm flex-1 ${sortDir === 'desc' ? 'btn-active' : ''}`}>Descending</button>
-        </div>
-      </div>
-      <div className="flex-grow"></div>
-      <button onClick={handleReset} className="btn btn-primary btn-outline w-full"><Icon name="refresh" />Reset</button>
-    </div>
-  );
-
-  function diffTime(t1: string, t2: string) {
-    if (!t1 || !t2) return 'N/A';
-    const [h1, m1] = t1.split(':').map(Number);
-    const [h2, m2] = t2.split(':').map(Number);
-    if ([h1, m1, h2, m2].some((n) => isNaN(n))) return 'N/A';
-    const minutes1 = h1 * 60 + m1;
-    const minutes2 = h2 * 60 + m2;
-    let diff = Math.abs(minutes1 - minutes2);
-    if (diff > 12 * 60) diff = 24 * 60 - diff;
-    return diff.toString();
-  }
+  }, [filteredStartData]);
 
   return (
     <Layout title="Orders Report" fullWidth>
       <div className="drawer drawer-end">
         <input id="filter-drawer" type="checkbox" className="drawer-toggle" checked={isDrawerOpen} onChange={() => setDrawerOpen(!isDrawerOpen)} />
-        <div className="drawer-content p-4">
-          <div className="flex justify-between items-center mb-4">
-            <h1 className="text-3xl font-bold text-base-content">Proovia Logistics</h1>
-            <label htmlFor="filter-drawer" className="btn btn-primary drawer-button gap-2">
-              <Icon name="search" /> Filters & Sort
-            </label>
+        
+        <div className="drawer-content">
+          {/* Scrolling Stats */}
+          <ScrollingStats trips={trips} driverToContractor={driverToContractor} />
+          
+          {/* Header */}
+          <div className="bg-base-200 p-3 sticky top-0 z-40 backdrop-blur-lg bg-opacity-90">
+            <div className="flex justify-between items-center">
+              <div className="flex gap-2">
+                <div className="btn-group btn-group-sm">
+                  <button onClick={dateShortcuts.today} className="btn btn-sm">Today</button>
+                  <button onClick={dateShortcuts.yesterday} className="btn btn-sm">Yesterday</button>
+                  <button onClick={dateShortcuts.last7Days} className="btn btn-sm">7 Days</button>
+                  <button onClick={dateShortcuts.thisWeek} className="btn btn-sm">This Week</button>
+                  <button onClick={dateShortcuts.lastWeek} className="btn btn-sm">Last Week</button>
+                </div>
+              </div>
+              <label htmlFor="filter-drawer" className="btn btn-primary btn-sm gap-2">
+                <Icon name="filter" className="w-4 h-4" />
+                Filters & Sort
+              </label>
+            </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <div className="card bg-base-100 shadow-xl lg:col-span-2">
-              <div className="card-body p-4">
-                <h2 className="card-title">Start Times Analysis</h2>
-                <div className="flex flex-wrap gap-2 my-2">
+          {/* Main Content */}
+          <div className="p-3 grid grid-cols-1 lg:grid-cols-12 gap-3">
+            {/* Start Times - Takes 5 columns */}
+            <div className="lg:col-span-5 bg-base-100 rounded-lg shadow-lg p-3">
+              <div className="flex justify-between items-center mb-2">
+                <h2 className="text-lg font-bold">Start Times Analysis</h2>
+                <div className="flex gap-2">
                   <input
                     type="text"
                     placeholder="Search..."
-                    value={startSearch}
-                    onChange={(e) => setStartSearch(e.target.value)}
-                    className="input input-bordered input-sm flex-1 max-w-xs"
+                    value={filters.startSearch}
+                    onChange={(e) => setFilters(prev => ({ ...prev, startSearch: e.target.value }))}
+                    className="input input-bordered input-xs w-28"
                   />
                   <select
-                    value={startContractor}
-                    onChange={(e) => setStartContractor(e.target.value)}
-                    className="select select-bordered select-sm max-w-xs"
+                    value={filters.startContractor}
+                    onChange={(e) => setFilters(prev => ({ ...prev, startContractor: e.target.value }))}
+                    className="select select-bordered select-xs w-32"
                   >
                     <option value="">All Contractors</option>
-                    {startContractors.map((c) => (
-                      <option key={c} value={c}>{c}</option>
-                    ))}
+                    {startContractors.map(c => <option key={c} value={c}>{c}</option>)}
                   </select>
-                  <button onClick={copyStartTable} className="btn btn-sm btn-outline">
-                    <Icon name="copy" />
-                    Copy
+                  <button onClick={copyStartTable} className="btn btn-xs btn-ghost" title="Copy">
+                    <Icon name="copy" className="w-3 h-3" />
                   </button>
-                  <button onClick={downloadStartCSV} className="btn btn-sm btn-outline">
-                    <Icon name="download" />
-                    Download
+                  <button onClick={downloadStartCSV} className="btn btn-xs btn-ghost" title="Download">
+                    <Icon name="download" className="w-3 h-3" />
                   </button>
                 </div>
-                <div className="overflow-x-auto max-h-[75vh]">
-                  <div className="table-responsive">
-                    <table className="table table-xs table-pin-rows table-zebra w-full">
-                      <thead>
-                        <tr>
-                          <th>Asset</th>
-                          <th>Contractor</th>
-                          <th>Driver</th>
-                          <th>Arrive WH</th>
-                          <th>Load Time</th>
-                          <th>Diff Load</th>
-                          <th>Start Time</th>
-                          <th>Left WH</th>
-                          <th>Diff Start</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {filteredStart.map((r, idx) => {
-                          const load = calcLoad(r.Start_Time);
-                          const diffLoad = diffTime(r.First_Mention_Time, load);
-                          const diffStart = diffTime(r.Last_Mention_Time, r.Start_Time);
-                          return (
-                            <tr key={idx} className="hover">
-                              <td>{r.Asset}</td>
-                              <td>{r.Contractor_Name}</td>
-                              <td>{r.Driver}</td>
-                              <td>{r.First_Mention_Time}</td>
-                              <td>{load}</td>
-                              <td>{diffLoad}</td>
-                              <td>{r.Start_Time}</td>
-                              <td>{r.Last_Mention_Time}</td>
-                              <td>{diffStart}</td>
-                            </tr>
-                          );
-                        })}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
               </div>
-            </div>
-
-            <div className="card bg-base-100 shadow-xl">
-              <div className="card-body p-3">
-                <h2 className="card-title">Van Check</h2>
-                <div className="flex flex-wrap gap-2 my-2">
-                  <input
-                    type="text"
-                    placeholder="Search..."
-                    value={vanSearch}
-                    onChange={(e) => setVanSearch(e.target.value)}
-                    className="input input-bordered input-xs flex-1 max-w-xs"
-                  />
-                  <select
-                    value={vanContractor}
-                    onChange={(e) => setVanContractor(e.target.value)}
-                    className="select select-bordered select-xs max-w-xs"
-                  >
-                    <option value="">All Contractors</option>
-                    {vanContractors.map((c) => (
-                      <option key={c} value={c}>{c}</option>
-                    ))}
-                  </select>
-                </div>
-                <div className="overflow-y-auto max-h-[75vh] space-y-1">
-                  {filteredVanChecks.map((vc, idx) => (
-                    <VanCheck key={idx} data={vc} contractor={driverToContractor[vc.driver_id]} />
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            <div className="card bg-base-100 shadow-xl">
-              <div className="card-body p-4">
-                <div className="flex flex-col gap-2">
-                  <div className="flex items-center gap-4">
-                    <h2 className="card-title">Orders</h2>
-                    <div className="btn-group">
-                      <button onClick={dateShortcuts.today} className="btn btn-xs btn-ghost">Today</button>
-                      <button onClick={dateShortcuts.yesterday} className="btn btn-xs btn-ghost">Yesterday</button>
-                      <button onClick={dateShortcuts.lastWeek} className="btn btn-xs btn-ghost">Last Week</button>
-                    </div>
-                  </div>
-                  <div className="stats bg-transparent flex flex-col md:flex-row gap-2">
-                    <div className="stat p-2">
-                      <div className="stat-title text-xs">Total</div>
-                      <div className="stat-value text-md">{stats.total}</div>
-                    </div>
-                    <div className="stat p-2">
-                      <div className="stat-title text-xs text-success">Complete</div>
-                      <div className="stat-value text-md text-success">{stats.complete}</div>
-                    </div>
-                    <div className="stat p-2">
-                      <div className="stat-title text-xs text-error">Failed</div>
-                      <div className="stat-value text-md text-error">{stats.failed}</div>
-                    </div>
-                    <div className="stat p-2">
-                      <div className="stat-title text-xs text-warning">Time Completed > WH</div>
-                      <div className="stat-value text-md text-warning">{stats.positiveTimeCompleted}</div>
-                    </div>
-                    <div className="stat p-2">
-                      <div className="stat-title text-xs text-warning">Arrival Time > WH</div>
-                      <div className="stat-value text-md text-warning">{stats.positiveArrivalTime}</div>
-                    </div>
-                  </div>
-                </div>
-                <div className="overflow-y-auto max-h-[calc(75vh-50px)] space-y-2 pr-1">
-                  {isLoading ? (
-                    <div className="loading loading-spinner loading-lg mx-auto mt-20 block"></div>
-                  ) : (
-                    filteredAndSorted.map((trip) => {
-                      const statusColor = trip.Status === 'Complete' ? 'bg-success' : trip.Status === 'Failed' ? 'bg-error' : 'bg-base-300';
-                      const summaryText = (trip.Summary || '').split(' ')[0];
+              
+              <div className="overflow-auto max-h-[calc(100vh-220px)]">
+                <table className="table table-xs table-zebra">
+                  <thead className="sticky top-0 bg-base-100 z-10">
+                    <tr>
+                      <th>Asset</th>
+                      <th>Contractor</th>
+                      <th>Driver</th>
+                      <th>Arrive WH</th>
+                      <th>Load Time</th>
+                      <th>Diff Load</th>
+                      <th>Start Time</th>
+                      <th>Left WH</th>
+                      <th>Diff Start</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredStartData.map((r, idx) => {
+                      const load = calcLoad(r.Start_Time);
+                      const diffLoad = diffTime(r.First_Mention_Time, load);
+                      const diffStart = diffTime(r.Last_Mention_Time, r.Start_Time);
                       return (
-                        <div
-                          key={trip.ID}
-                          onClick={() => setSelected(trip)}
-                          className="card card-compact bg-base-200 shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer"
-                        >
-                          <div className="flex flex-wrap sm:flex-nowrap items-stretch">
-                            <div className={`w-2 rounded-l-md ${statusColor}`}></div>
-                            <div className="card-body p-3 flex flex-wrap sm:flex-nowrap items-center gap-3">
-                              {trip.Seq && (
-                                <div className="flex-shrink-0 avatar placeholder">
-                                  <div className="bg-primary/20 text-primary-content rounded-full w-10 h-10 flex items-center justify-center">
-                                    <span className="text-lg font-bold text-primary">{trip.Seq}</span>
-                                  </div>
-                                </div>
-                              )}
-                              <div className="flex-grow min-w-0">
-                                <div className="flex justify-between items-baseline">
-                                  <p className="font-bold text-md truncate" title={trip['Order.OrderNumber']}>
-                                    #{trip['Order.OrderNumber']}
-                                  </p>
-                                  <p className="text-xs font-mono badge badge-ghost">{trip['Address.Postcode']}</p>
-                                </div>
-                                <p className="text-sm text-base-content/70 truncate">{trip['Trip.Driver1'] || 'No Driver'}</p>
-                              </div>
-                              <div className="flex-shrink-0 flex flex-col items-end gap-1 text-xs w-24">
-                                {summaryText && <div className="badge badge-outline badge-sm w-full justify-center">{summaryText}</div>}
-                                {trip['Order.Auction'] && (
-                                  <div className="badge badge-ghost badge-sm mt-1 w-full justify-center truncate">{trip['Order.Auction']}</div>
-                                )}
-                              </div>
-                            </div>
-                          </div>
-                        </div>
+                        <tr key={idx} className="hover">
+                          <td className="font-medium">{r.Asset}</td>
+                          <td>{r.Contractor_Name}</td>
+                          <td>{r.Driver}</td>
+                          <td>{r.First_Mention_Time}</td>
+                          <td className="text-info">{load}</td>
+                          <td className={parseInt(diffLoad) > 15 ? 'text-warning' : ''}>{diffLoad}</td>
+                          <td className="font-medium">{r.Start_Time}</td>
+                          <td>{r.Last_Mention_Time}</td>
+                          <td className={parseInt(diffStart) > 15 ? 'text-warning' : ''}>{diffStart}</td>
+                        </tr>
                       );
-                    })
-                  )}
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* Van Checks - Takes 3 columns */}
+            <div className="lg:col-span-3 bg-base-100 rounded-lg shadow-lg p-3">
+              <div className="flex justify-between items-center mb-2">
+                <h2 className="text-lg font-bold">Van Check</h2>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    placeholder="Search..."
+                    value={filters.vanSearch}
+                    onChange={(e) => setFilters(prev => ({ ...prev, vanSearch: e.target.value }))}
+                    className="input input-bordered input-xs w-24"
+                  />
+                  <select
+                    value={filters.vanContractor}
+                    onChange={(e) => setFilters(prev => ({ ...prev, vanContractor: e.target.value }))}
+                    className="select select-bordered select-xs w-28"
+                  >
+                    <option value="">All Contractors</option>
+                    {vanContractors.map(c => <option key={c} value={c}>{c}</option>)}
+                  </select>
                 </div>
+              </div>
+              
+              <div className="overflow-auto max-h-[calc(100vh-220px)] space-y-1">
+                {filteredVanChecks.map((vc, idx) => (
+                  <VanCheck key={idx} data={vc} contractor={driverToContractor[vc.driver_id]} />
+                ))}
+              </div>
+            </div>
+
+            {/* Orders - Takes 4 columns */}
+            <div className="lg:col-span-4 bg-base-100 rounded-lg shadow-lg p-3">
+              <div className="mb-2">
+                <div className="flex justify-between items-center mb-3">
+                  <h2 className="text-lg font-bold">Orders</h2>
+                  <div className="flex gap-2">
+                    <button onClick={dateShortcuts.today} className="btn btn-xs btn-ghost">Today</button>
+                    <button onClick={dateShortcuts.yesterday} className="btn btn-xs btn-ghost">Yesterday</button>
+                    <button onClick={dateShortcuts.lastWeek} className="btn btn-xs btn-ghost">Last Week</button>
+                  </div>
+                </div>
+                
+                {/* Stats */}
+                <div className="grid grid-cols-5 gap-2 mb-3">
+                  <div className="bg-base-200 rounded p-2 text-center">
+                    <div className="text-xs opacity-70">Total</div>
+                    <div className="text-lg font-bold">{stats.total}</div>
+                  </div>
+                  <div className="bg-success/20 rounded p-2 text-center">
+                    <div className="text-xs text-success">Complete</div>
+                    <div className="text-lg font-bold text-success">{stats.complete}</div>
+                  </div>
+                  <div className="bg-error/20 rounded p-2 text-center">
+                    <div className="text-xs text-error">Failed</div>
+                    <div className="text-lg font-bold text-error">{stats.failed}</div>
+                  </div>
+                  <div className="bg-warning/20 rounded p-2 text-center">
+                    <div className="text-xs text-warning">Late TC</div>
+                    <div className="text-lg font-bold text-warning">{stats.positiveTimeCompleted}</div>
+                  </div>
+                  <div className="bg-warning/20 rounded p-2 text-center">
+                    <div className="text-xs text-warning">Late Arr</div>
+                    <div className="text-lg font-bold text-warning">{stats.positiveArrivalTime}</div>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="overflow-auto max-h-[calc(100vh-320px)] space-y-2">
+                {isLoading ? (
+                  <div className="flex justify-center items-center h-32">
+                    <span className="loading loading-spinner loading-md"></span>
+                  </div>
+                ) : (
+                  filteredTrips.map(trip => (
+                    <TripCard 
+                      key={trip.ID} 
+                      trip={trip} 
+                      onClick={() => setSelected(trip)} 
+                    />
+                  ))
+                )}
               </div>
             </div>
           </div>
         </div>
+
+        {/* Filter Drawer */}
         <div className="drawer-side z-50">
-          <label htmlFor="filter-drawer" aria-label="close sidebar" className="drawer-overlay"></label>
-          {FilterPanel}
+          <label htmlFor="filter-drawer" className="drawer-overlay"></label>
+          <div className="menu p-4 w-80 min-h-full bg-base-100 text-base-content">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="font-bold text-xl">Filters & Sort</h3>
+              <button onClick={() => setDrawerOpen(false)} className="btn btn-sm btn-ghost btn-circle">✕</button>
+            </div>
+
+            {/* Date Range */}
+            <div className="form-control mb-4">
+              <label className="label">
+                <span className="label-text">Date Range</span>
+              </label>
+              <div className="flex gap-2">
+                <input 
+                  type="date" 
+                  value={filters.start} 
+                  onChange={(e) => setFilters(prev => ({ ...prev, start: e.target.value }))} 
+                  className="input input-bordered input-sm flex-1" 
+                />
+                <input 
+                  type="date" 
+                  value={filters.end} 
+                  onChange={(e) => setFilters(prev => ({ ...prev, end: e.target.value }))} 
+                  className="input input-bordered input-sm flex-1" 
+                />
+              </div>
+            </div>
+
+            {/* Quick Date Buttons */}
+            <div className="grid grid-cols-2 gap-2 mb-4">
+              {Object.entries(dateShortcuts).map(([key, fn]) => (
+                <button key={key} onClick={fn} className="btn btn-ghost btn-sm capitalize">
+                  {key.replace(/([A-Z])/g, ' $1').trim()}
+                </button>
+              ))}
+            </div>
+
+            <div className="divider my-2"></div>
+
+            {/* Search */}
+            <div className="form-control mb-3">
+              <label className="label">
+                <span className="label-text">Search Orders</span>
+              </label>
+              <input 
+                type="text" 
+                placeholder="Order, Driver, Postcode..."
+                value={filters.search} 
+                onChange={(e) => setFilters(prev => ({ ...prev, search: e.target.value }))} 
+                className="input input-bordered input-sm" 
+              />
+            </div>
+
+            {/* Status Filter */}
+            <div className="form-control mb-3">
+              <label className="label">
+                <span className="label-text">Status</span>
+              </label>
+              <select 
+                value={filters.status} 
+                onChange={(e) => setFilters(prev => ({ ...prev, status: e.target.value }))} 
+                className="select select-bordered select-sm"
+              >
+                <option value="">All</option>
+                <option value="Complete">Complete</option>
+                <option value="Failed">Failed</option>
+              </select>
+            </div>
+
+            {/* Contractor Filter */}
+            <div className="form-control mb-3">
+              <label className="label">
+                <span className="label-text">Contractor</span>
+              </label>
+              <select 
+                value={filters.contractor} 
+                onChange={(e) => setFilters(prev => ({ ...prev, contractor: e.target.value }))} 
+                className="select select-bordered select-sm"
+              >
+                <option value="">All</option>
+                {contractors.map(c => <option key={c} value={c}>{c}</option>)}
+              </select>
+            </div>
+
+            {/* Auction Filter */}
+            <div className="form-control mb-3">
+              <label className="label">
+                <span className="label-text">Auction</span>
+              </label>
+              <select 
+                value={filters.auction} 
+                onChange={(e) => setFilters(prev => ({ ...prev, auction: e.target.value }))} 
+                className="select select-bordered select-sm"
+              >
+                <option value="">All</option>
+                {auctions.map(a => <option key={a} value={a}>{a}</option>)}
+              </select>
+            </div>
+
+            <div className="divider my-2"></div>
+
+            {/* Sort Options */}
+            <div className="form-control mb-3">
+              <label className="label">
+                <span className="label-text">Sort By</span>
+              </label>
+              <select 
+                value={sortField} 
+                onChange={(e) => setSortField(e.target.value)} 
+                className="select select-bordered select-sm"
+              >
+                <option value="Seq">Sequence</option>
+                <option value="Order.OrderNumber">Order Number</option>
+                <option value="Trip.Driver1">Driver</option>
+                <option value="Address.Postcode">Postcode</option>
+              </select>
+            </div>
+
+            <div className="form-control mb-4">
+              <label className="label">
+                <span className="label-text">Direction</span>
+              </label>
+              <div className="btn-group w-full">
+                <button 
+                  onClick={() => setSortDir('asc')} 
+                  className={`btn btn-sm flex-1 ${sortDir === 'asc' ? 'btn-active' : ''}`}
+                >
+                  Ascending
+                </button>
+                <button 
+                  onClick={() => setSortDir('desc')} 
+                  className={`btn btn-sm flex-1 ${sortDir === 'desc' ? 'btn-active' : ''}`}
+                >
+                  Descending
+                </button>
+              </div>
+            </div>
+
+            <div className="flex-grow"></div>
+            
+            <button onClick={handleReset} className="btn btn-outline btn-primary w-full">
+              <Icon name="refresh" className="w-4 h-4" />
+              Reset All
+            </button>
+          </div>
         </div>
       </div>
+
       <TripModal trip={selected} onClose={() => setSelected(null)} allTrips={trips} />
     </Layout>
   );
