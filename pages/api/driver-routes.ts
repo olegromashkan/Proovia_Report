@@ -50,8 +50,21 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
         item['CalendarName'] ||
         'Unknown';
 
-      const rawDate = item.Start_Time || item['Start_Time'] || item['Trip.Start_Time'];
-      const date = parseDate(String(rawDate).split(' ')[0]) || 'Unknown';
+      const rawStart =
+        item.Start_Time ||
+        item['Start_Time'] ||
+        item['Trip.Start_Time'];
+      const date = parseDate(String(rawStart).split(' ')[0]) || 'Unknown';
+      const start_time = rawStart ? String(rawStart).split(' ')[1] || String(rawStart) : null;
+
+      const rawEnd =
+        item.Time_Completed ||
+        item['Time_Completed'] ||
+        item['Trip.Time_Completed'] ||
+        item.Arrival_Time ||
+        item['Arrival_Time'] ||
+        item['Trip.Arrival_Time'];
+      const end_time = rawEnd ? String(rawEnd).split(' ')[1] || String(rawEnd) : null;
 
       const arrival =
         item.Arrival_Time ||
@@ -88,7 +101,7 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
         punctuality = Math.round(parseMinutes(done) - parseMinutes(arrival));
       }
 
-      return { driver, route, calendar, date, punctuality, price };
+      return { driver, route, calendar, date, start_time, end_time, punctuality, price };
     });
 
   res.status(200).json({ items });
