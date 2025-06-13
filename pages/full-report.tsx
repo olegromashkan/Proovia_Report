@@ -41,26 +41,31 @@ const ScrollingStats = ({ trips, driverToContractor }: { trips: Trip[], driverTo
   
   const stats = useMemo(() => {
     // Top Drivers
-    const driverCounts: Record<string, number> = {};
+    const driverStats: Record<string, { complete: number; failed: number }> = {};
     const postcodeCounts: Record<string, number> = {};
     const auctionCounts: Record<string, number> = {};
     const contractorCounts: Record<string, number> = {};
-    
+
     trips.forEach(trip => {
       const driver = trip['Trip.Driver1'];
       const postcode = trip['Address.Postcode'];
       const auction = trip['Order.Auction'];
       const contractor = driver ? driverToContractor[driver] : null;
-      
-      if (driver) driverCounts[driver] = (driverCounts[driver] || 0) + 1;
+
+      if (driver) {
+        if (!driverStats[driver]) driverStats[driver] = { complete: 0, failed: 0 };
+        if (trip.Status === 'Complete') driverStats[driver].complete++;
+        else if (trip.Status === 'Failed') driverStats[driver].failed++;
+      }
       if (postcode) postcodeCounts[postcode] = (postcodeCounts[postcode] || 0) + 1;
       if (auction) auctionCounts[auction] = (auctionCounts[auction] || 0) + 1;
       if (contractor) contractorCounts[contractor] = (contractorCounts[contractor] || 0) + 1;
     });
-    
-    const topDrivers = Object.entries(driverCounts)
-      .sort(([,a], [,b]) => b - a)
-      .slice(0, 10);
+
+    const topDrivers = Object.entries(driverStats)
+      .map(([d, s]) => ({ driver: d, complete: s.complete, failed: s.failed, total: s.complete + s.failed }))
+      .sort((a, b) => b.total - a.total)
+      .slice(0, 3);
       
     const topPostcodes = Object.entries(postcodeCounts)
       .sort(([,a], [,b]) => b - a)
@@ -81,7 +86,7 @@ const ScrollingStats = ({ trips, driverToContractor }: { trips: Trip[], driverTo
     const interval = setInterval(() => {
       if (scrollRef.current) {
         scrollRef.current.scrollLeft += 1;
-        if (scrollRef.current.scrollLeft >= scrollRef.current.scrollWidth / 2) {
+        if (scrollRef.current.scrollLeft >= scrollRef.current.scrollWidth - scrollRef.current.clientWidth) {
           scrollRef.current.scrollLeft = 0;
         }
       }
@@ -103,6 +108,20 @@ const ScrollingStats = ({ trips, driverToContractor }: { trips: Trip[], driverTo
       </div>
     </div>
   );
+
+  const TopDriversCard = ({ data }: { data: { driver: string; complete: number; failed: number }[] }) => (
+    <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-4 shadow-lg min-w-[250px] text-white">
+      <h3 className="font-bold text-lg mb-3 opacity-90">🏆 Top Drivers</h3>
+      <div className="space-y-1">
+        {data.map((d, idx) => (
+          <div key={d.driver} className="flex justify-between items-center">
+            <span className="text-sm truncate max-w-[150px]">{idx + 1}. {d.driver}</span>
+            <span className="font-bold">{d.complete}✓ {d.failed}✗</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
   
   return (
     <div className="overflow-hidden relative bg-base-200 py-3">
@@ -111,15 +130,10 @@ const ScrollingStats = ({ trips, driverToContractor }: { trips: Trip[], driverTo
         className="flex gap-4 px-4 overflow-x-hidden"
         style={{ scrollBehavior: 'smooth' }}
       >
-        {/* Duplicate for seamless scroll */}
-        {[1, 2].map(key => (
-          <Fragment key={key}>
-            <StatCard title="🏆 Top Drivers" data={stats.topDrivers} color="from-blue-500 to-blue-600" />
-            <StatCard title="📍 Top Postcodes" data={stats.topPostcodes} color="from-purple-500 to-purple-600" />
-            <StatCard title="🏪 Top Auctions" data={stats.topAuctions} color="from-green-500 to-green-600" />
-            <StatCard title="🚛 Top Contractors" data={stats.topContractors} color="from-orange-500 to-orange-600" />
-          </Fragment>
-        ))}
+        <TopDriversCard data={stats.topDrivers} />
+        <StatCard title="📍 Top Postcodes" data={stats.topPostcodes} color="from-purple-500 to-purple-600" />
+        <StatCard title="🏪 Top Auctions" data={stats.topAuctions} color="from-green-500 to-green-600" />
+        <StatCard title="🚛 Top Contractors" data={stats.topContractors} color="from-orange-500 to-orange-600" />
       </div>
     </div>
   );

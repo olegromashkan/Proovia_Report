@@ -190,8 +190,10 @@ export default function SearchOverlay({ open, onClose }: { open: boolean; onClos
               <div>
                 <p className="font-semibold mt-2">Top Drivers</p>
                 <ul className="list-disc ml-5">
-                  {report.topDrivers.map((d: any) => (
-                    <li key={d.driver}>{d.driver} ({d.count})</li>
+                  {report.topDrivers.map((d: any, idx: number) => (
+                    <li key={d.driver}>
+                      {idx + 1}. {d.driver} - {d.complete}✓ {d.failed}✗
+                    </li>
                   ))}
                 </ul>
               </div>
