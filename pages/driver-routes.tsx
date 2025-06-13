@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback, useRef, DragEvent, ChangeEvent } from
 import Layout from '../components/Layout';
 import Modal from '../components/Modal';
 import Icon from '../components/Icon';
+import Card from '../components/Card';
 
 function formatDate(d: Date) {
   return d.toISOString().slice(0,10);
@@ -21,6 +22,7 @@ function parseDate(value: string | undefined): string | null {
 
 interface Item {
   driver: string;
+  contractor?: string;
   calendar?: string;
   date: string;
   start_time?: string | null;
@@ -72,10 +74,10 @@ export default function DriverRoutes() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [columnMenuOpen, setColumnMenuOpen] = useState(false);
   const [visibleCols, setVisibleCols] = useState({
-    route: true,
-    tasks: true,
     start: true,
     end: true,
+    route: true,
+    tasks: true,
     punctuality: true,
     price: true,
   });
@@ -106,16 +108,18 @@ export default function DriverRoutes() {
 
   const dates = Array.from(new Set(items.map(it => it.date))).sort();
   const drivers = Array.from(new Set(items.map(it => it.driver))).sort();
-  const visibleKeys = (Object.keys(visibleCols) as Array<keyof typeof visibleCols>)
-    .filter(k => visibleCols[k]);
+  const colOrder: Array<keyof typeof visibleCols> = ['start','end','route','tasks','punctuality','price'];
+  const visibleKeys = colOrder.filter(k => visibleCols[k]);
 
   const map: Record<string, Record<string, { route: string; tasks: string; start?: string | null; end?: string | null; punctuality: number | null; price?: number | string }>> = {};
+  const driverContractor: Record<string, string> = {};
   items.forEach(it => {
     const afterColon = it.calendar?.split(':')[1] || it.calendar || '';
     const route = afterColon.split(' ')[0] || '';
     const taskMatch = it.calendar?.match(/\((\d+)\)/);
     const tasks = taskMatch ? taskMatch[1] : '';
     if (!map[it.driver]) map[it.driver] = {};
+    if (it.contractor) driverContractor[it.driver] = it.contractor;
     map[it.driver][it.date] = {
       route,
       tasks,
@@ -125,6 +129,24 @@ export default function DriverRoutes() {
       price: it.price,
     };
   });
+
+  const contractorStats = Object.entries(driverContractor).reduce<Record<string, { drivers: Set<string>; total: number; count: number }>>((acc, [drv, contractor]) => {
+    if (!acc[contractor]) acc[contractor] = { drivers: new Set(), total: 0, count: 0 };
+    acc[contractor].drivers.add(drv);
+    items.filter(i => i.driver === drv).forEach(i => {
+      const n = Number(i.price);
+      if (!isNaN(n)) {
+        acc[contractor].total += n;
+        acc[contractor].count += 1;
+      }
+    });
+    return acc;
+  }, {});
+  const contractorCards = Object.entries(contractorStats).map(([name, info]) => ({
+    name,
+    driverCount: info.drivers.size,
+    avgPrice: info.count ? info.total / info.count : 0,
+  }));
 
   const handleFile = async (dateStr: string, file: File) => {
     try {
@@ -174,6 +196,18 @@ export default function DriverRoutes() {
   return (
     <Layout title="Driver Routes" fullWidth>
       <h1 className="text-2xl font-bold mb-4">Driver Routes</h1>
+      {contractorCards.length > 0 && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mb-4">
+          {contractorCards.map(c => (
+            <Card key={c.name} title={c.name} value={
+              <div className="text-lg">
+                <div>{c.driverCount} drivers</div>
+                <div>Avg £{c.avgPrice.toFixed(2)}</div>
+              </div>
+            } />
+          ))}
+        </div>
+      )}
       <div className="flex flex-wrap gap-2 mb-4">
         <input
           type="date"
@@ -198,7 +232,7 @@ export default function DriverRoutes() {
           </button>
           {columnMenuOpen && (
             <div className="absolute right-0 mt-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded shadow-lg p-2 z-50 space-y-1">
-              {(Object.keys(visibleCols) as Array<keyof typeof visibleCols>).map(key => (
+              {colOrder.map(key => (
                 <label key={key} className="flex items-center gap-2 cursor-pointer px-2">
                   <input
                     type="checkbox"
@@ -226,12 +260,13 @@ export default function DriverRoutes() {
         </div>
       </div>
       <div className="overflow-x-auto">
-        <table className="table table-sm w-full text-center">
+        <table className="table table-sm w-full text-center border border-gray-300" style={{borderCollapse:'collapse'}}>
           <thead>
             <tr>
-              <th>Driver</th>
+              <th className="border border-gray-300">Driver</th>
+              <th className="border border-gray-300">Contractor</th>
               {dates.map(d => (
-                <th key={d} colSpan={visibleKeys.length} className="relative">
+                <th key={d} colSpan={visibleKeys.length} className="relative border border-gray-300">
                   {d}
                   <button
                     className="absolute right-1 top-1 btn btn-xs btn-ghost"
@@ -243,10 +278,11 @@ export default function DriverRoutes() {
               ))}
             </tr>
             <tr>
-              <th></th>
+              <th className="border border-gray-300"></th>
+              <th className="border border-gray-300"></th>
               {dates.flatMap(d =>
                 visibleKeys.map(key => (
-                  <th key={`${d}-${key}`}>{
+                  <th key={`${d}-${key}`} className="border border-gray-300">{
                     key === 'route'
                       ? 'Route'
                       : key === 'tasks'
@@ -266,39 +302,40 @@ export default function DriverRoutes() {
           <tbody>
             {loading ? (
               <tr>
-                <td colSpan={1 + dates.length * visibleKeys.length} className="text-center py-4">
+                <td colSpan={2 + dates.length * visibleKeys.length} className="text-center py-4">
                   Loading...
                 </td>
               </tr>
             ) : (
               drivers.map(driver => (
                 <tr key={driver} className="hover">
-                  <td>{driver}</td>
+                  <td className="border border-gray-300">{driver}</td>
+                  <td className="border border-gray-300">{driverContractor[driver] || '-'}</td>
                   {dates.flatMap(d => {
                     const data = map[driver]?.[d];
                     return visibleKeys.map(key => {
                       if (key === 'route') {
                         return (
-                          <td key={`${driver}-${d}-r`} className={getRouteColorClass(data?.route || '')}>
+                          <td key={`${driver}-${d}-r`} className={`${getRouteColorClass(data?.route || '')} border border-gray-300`}>
                             {data?.route || '-'}
                           </td>
                         );
                       }
                       if (key === 'tasks') {
-                        return <td key={`${driver}-${d}-t`}>{data?.tasks || '-'}</td>;
+                        return <td key={`${driver}-${d}-t`} className="border border-gray-300">{data?.tasks || '-'}</td>;
                       }
                       if (key === 'start') {
-                        return <td key={`${driver}-${d}-s`}>{data?.start || '-'}</td>;
+                        return <td key={`${driver}-${d}-s`} className="border border-gray-300">{data?.start || '-'}</td>;
                       }
                       if (key === 'end') {
-                        return <td key={`${driver}-${d}-e`}>{data?.end || '-'}</td>;
+                        return <td key={`${driver}-${d}-e`} className="border border-gray-300">{data?.end || '-'}</td>;
                       }
                       if (key === 'punctuality') {
                         return (
-                          <td key={`${driver}-${d}-p`}>{stylePunctuality(data?.punctuality ?? null)}</td>
+                          <td key={`${driver}-${d}-p`} className="border border-gray-300">{stylePunctuality(data?.punctuality ?? null)}</td>
                         );
                       }
-                      return <td key={`${driver}-${d}-price`}>{data?.price ?? '-'}</td>;
+                      return <td key={`${driver}-${d}-price`} className="border border-gray-300">{data?.price ?? '-'}</td>;
                     });
                   })}
                 </tr>
@@ -306,7 +343,7 @@ export default function DriverRoutes() {
             )}
             {!loading && drivers.length === 0 && (
               <tr>
-                <td colSpan={1 + dates.length * visibleKeys.length} className="text-center py-4">
+                <td colSpan={2 + dates.length * visibleKeys.length} className="text-center py-4">
                   No data
                 </td>
               </tr>
