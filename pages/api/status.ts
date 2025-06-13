@@ -5,24 +5,61 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
   const username = req.cookies.user as string | undefined;
   if (req.method === 'GET') {
     const target = (req.query.username as string) || username;
-    if (!target) return res.status(401).end();
-    const info = db.prepare('SELECT status, status_message, last_seen FROM users WHERE username = ?').get(target);
-    if (!info) return res.status(404).end();
-    return res.status(200).json(info);
+    if (!target) {
+      res.status(401).end();
+      return;
+    }
+    try {
+      const info = db
+        .prepare('SELECT status, status_message, last_seen FROM users WHERE username = ?')
+        .get(target);
+      if (!info) {
+        res.status(404).end();
+        return;
+      }
+      res.status(200).json(info);
+    } catch (err: any) {
+      if (err.code === 'SQLITE_BUSY') {
+        res.status(503).json({ message: 'Database is busy' });
+      } else {
+        throw err;
+      }
+    }
+    return;
   }
 
   if (req.method === 'POST') {
-    if (!username) return res.status(401).end();
+    if (!username) {
+      res.status(401).end();
+      return;
+    }
     const { status, message } = req.body || {};
     const updates: string[] = ['last_seen = CURRENT_TIMESTAMP'];
     const params: any[] = [];
-    if (status) { updates.push('status = ?'); params.push(status); }
-    if (message !== undefined) { updates.push('status_message = ?'); params.push(message); }
+    if (status) {
+      updates.push('status = ?');
+      params.push(status);
+    }
+    if (message !== undefined) {
+      updates.push('status_message = ?');
+      params.push(message);
+    }
     params.push(username);
-    db.prepare(`UPDATE users SET ${updates.join(', ')} WHERE username = ?`).run(...params);
-    const info = db.prepare('SELECT status, status_message, last_seen FROM users WHERE username = ?').get(username);
-    return res.status(200).json(info);
+    try {
+      db.prepare(`UPDATE users SET ${updates.join(', ')} WHERE username = ?`).run(...params);
+      const info = db
+        .prepare('SELECT status, status_message, last_seen FROM users WHERE username = ?')
+        .get(username);
+      res.status(200).json(info);
+    } catch (err: any) {
+      if (err.code === 'SQLITE_BUSY') {
+        res.status(503).json({ message: 'Database is busy' });
+      } else {
+        throw err;
+      }
+    }
+    return;
   }
 
-  return res.status(405).end();
+  res.status(405).end();
 }
