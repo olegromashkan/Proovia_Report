@@ -4,20 +4,40 @@ import { createHash } from 'crypto';
 
 export default function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') {
-    return res.status(405).json({ message: 'Method not allowed' });
+    res.status(405).json({ message: 'Method not allowed' });
+    return;
   }
   const { username, password } = req.body || {};
   if (!username || !password) {
-    return res.status(400).json({ message: 'Missing username or password' });
+    res.status(400).json({ message: 'Missing username or password' });
+    return;
   }
   const hashed = createHash('sha256').update(password).digest('hex');
-  const user = db.prepare(
-    'SELECT id, username, photo, header FROM users WHERE username = ? AND password = ?'
-  ).get(username, hashed);
-  if (!user) {
-    return res.status(401).json({ message: 'Invalid credentials' });
+  let user: any;
+  try {
+    user = db
+      .prepare('SELECT id, username, photo, header FROM users WHERE username = ? AND password = ?')
+      .get(username, hashed);
+  } catch (err: any) {
+    if (err.code === 'SQLITE_BUSY') {
+      res.status(503).json({ message: 'Database is busy' });
+      return;
+    }
+    throw err;
   }
-  db.prepare('UPDATE users SET status = ?, last_seen = CURRENT_TIMESTAMP WHERE username = ?').run('online', username);
+  if (!user) {
+    res.status(401).json({ message: 'Invalid credentials' });
+    return;
+  }
+  try {
+    db.prepare('UPDATE users SET status = ?, last_seen = CURRENT_TIMESTAMP WHERE username = ?').run('online', username);
+  } catch (err: any) {
+    if (err.code === 'SQLITE_BUSY') {
+      res.status(503).json({ message: 'Database is busy' });
+      return;
+    }
+    throw err;
+  }
   // The frontend relies on accessing the "user" cookie via `document.cookie`.
   // Setting the cookie as HttpOnly prevents client-side code from reading it,
   // which causes the navbar to always show the login button even after a
@@ -27,5 +47,6 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
   // Browsers expect cookie values to be ASCII-only, otherwise setting the
   // cookie may fail with a runtime error.
   res.setHeader('Set-Cookie', `user=${encodeURIComponent(username)}; Path=/`);
-  return res.status(200).json({ message: 'Logged in', user });
+  res.status(200).json({ message: 'Logged in', user });
+  return;
 }
