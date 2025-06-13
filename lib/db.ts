@@ -1,8 +1,16 @@
 import Database from 'better-sqlite3';
 
-const db = new Database('database.db', { timeout: 5000 });
-db.pragma('journal_mode = WAL');
-db.pragma('busy_timeout = 5000');
+declare global {
+  // eslint-disable-next-line no-var
+  var sqliteDb: Database | undefined;
+}
+
+const db: Database = global.sqliteDb || new Database('database.db', { timeout: 5000 });
+if (!global.sqliteDb) {
+  db.pragma('journal_mode = WAL');
+  db.pragma('busy_timeout = 5000');
+  global.sqliteDb = db;
+}
 
 export function init() {
   db.exec(`
