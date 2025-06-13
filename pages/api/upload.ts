@@ -87,8 +87,12 @@ export default function handler(
 
     generateSummaryPosts();
     res.status(200).json({ message: 'Uploaded' });
-  } catch (err) {
+  } catch (err: any) {
     console.error(err);
+    if (err && (err.statusCode === 413 || err.status === 413)) {
+      addNotification('error', 'Upload failed: payload too large');
+      return res.status(413).json({ message: 'Payload too large' });
+    }
     addNotification('error', 'Upload failed');
     res.status(500).json({ message: 'Server error' });
   }

@@ -91,6 +91,8 @@ export default function Upload() {
           loaded += file.size;
           if (xhr.status >= 200 && xhr.status < 300) {
             setLogs((l) => [...l, `${file.name} uploaded`]);
+          } else if (xhr.status === 413) {
+            setLogs((l) => [...l, `${file.name} failed: file too large`]);
           } else {
             setLogs((l) => [...l, `${file.name} failed: ${xhr.statusText}`]);
           }
