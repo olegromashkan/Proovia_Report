@@ -35,20 +35,7 @@ export default function MyApp({ Component, pageProps }: AppProps) {
 
   return (
     <>
-      <Head>
-        <link
-          rel="stylesheet"
-          href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-        />
-        <link
-          rel="stylesheet"
-          href="https://cdn.jsdelivr.net/npm/daisyui@3.9.4/dist/full.css"
-        />
-        <link
-          rel="stylesheet"
-          href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css"
-        />
-      </Head>
+      <Head />
       <Script src="https://cdn.jsdelivr.net/npm/chart.js"></Script>
       <Script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></Script>
       <Component {...pageProps} />
