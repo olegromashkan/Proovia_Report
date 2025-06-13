@@ -1,8 +1,9 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import db from '../../lib/db';
+import { withRetry } from '../../lib/withRetry';
 import { createHash } from 'crypto';
 
-export default function handler(req: NextApiRequest, res: NextApiResponse) {
+export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') {
     res.status(405).json({ message: 'Method not allowed' });
     return;
@@ -15,9 +16,12 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
   const hashed = createHash('sha256').update(password).digest('hex');
   let user: any;
   try {
-    user = db
-      .prepare('SELECT id, username, photo, header FROM users WHERE username = ? AND password = ?')
-      .get(username, hashed);
+    user = await withRetry(() =>
+      db.prepare('SELECT id, username, photo, header FROM users WHERE username = ? AND password = ?').get(
+        username,
+        hashed,
+      ),
+    );
   } catch (err: any) {
     if (err.code === 'SQLITE_BUSY') {
       res.status(503).json({ message: 'Database is busy' });
@@ -30,7 +34,12 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
     return;
   }
   try {
-    db.prepare('UPDATE users SET status = ?, last_seen = CURRENT_TIMESTAMP WHERE username = ?').run('online', username);
+    await withRetry(() =>
+      db.prepare('UPDATE users SET status = ?, last_seen = CURRENT_TIMESTAMP WHERE username = ?').run(
+        'online',
+        username,
+      ),
+    );
   } catch (err: any) {
     if (err.code === 'SQLITE_BUSY') {
       res.status(503).json({ message: 'Database is busy' });
