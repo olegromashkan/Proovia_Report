@@ -213,6 +213,15 @@ export default function DriverRoutes() {
     }))
     .sort((a, b) => b.avgPrice - a.avgPrice);
 
+  const topContractors = contractorCards.slice(0, 3).map(c => c.name);
+
+  const hexToRgba = (hex: string, alpha: number) => {
+    const r = parseInt(hex.slice(1, 3), 16);
+    const g = parseInt(hex.slice(3, 5), 16);
+    const b = parseInt(hex.slice(5, 7), 16);
+    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+  };
+
   useEffect(() => {
     if (!chartRef.current) return;
     const Chart = (window as any).Chart;
@@ -253,15 +262,37 @@ export default function DriverRoutes() {
         if (rec) return +(rec.sum / rec.count).toFixed(2);
         return null;
       });
+      const isTop = topContractors.includes(name);
+      const color = COLORS[idx % COLORS.length];
+      const baseAlpha = isTop ? 1 : 0.3;
       return {
         label: name,
         data,
-        borderColor: COLORS[idx % COLORS.length],
-        tension: 0.1,
+        borderColor: hexToRgba(color, baseAlpha),
+        backgroundColor: hexToRgba(color, baseAlpha),
+        borderWidth: 2,
+        tension: 0.4,
         fill: false,
         spanGaps: true,
       };
     });
+
+    const highlightPlugin = {
+      id: 'highlight',
+      afterEvent(chart: any, args: any) {
+        const e = args.event;
+        const points = chart.getElementsAtEventForMode(e.native, 'dataset', { intersect: false }, false);
+        chart.data.datasets.forEach((ds: any, i: number) => {
+          const color = COLORS[i % COLORS.length];
+          const isActive = points.length && points[0].datasetIndex === i && e.type === 'mousemove';
+          const isTop = topContractors.includes(ds.label);
+          const alpha = isActive ? 1 : isTop ? 1 : 0.3;
+          ds.borderColor = hexToRgba(color, alpha);
+          ds.backgroundColor = hexToRgba(color, alpha);
+        });
+        chart.update('none');
+      }
+    };
 
     chartInstanceRef.current = new Chart(chartRef.current, {
       type: 'line',
@@ -271,6 +302,7 @@ export default function DriverRoutes() {
         maintainAspectRatio: false,
         plugins: { legend: { position: 'bottom' } },
       },
+      plugins: [highlightPlugin],
     });
 
     return () => {
@@ -373,8 +405,8 @@ export default function DriverRoutes() {
           )}
 
           {/* Avg Price Chart */}
-          <div className="h-64">
-            <canvas ref={chartRef} />
+          <div className="h-48 bg-white dark:bg-gray-800 rounded-xl shadow p-4">
+            <canvas ref={chartRef} className="w-full h-full" />
           </div>
 
           {/* Filters */}
