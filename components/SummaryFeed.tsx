@@ -1,4 +1,11 @@
 import { useEffect, useState } from 'react';
+import Icon from './Icon';
+
+interface Summary {
+  avgPriceTop3: number;
+  topEndDrivers: { driver: string; time: string }[];
+  topStartDrivers: { driver: string; time: string }[];
+}
 
 interface Post {
   id: number;
@@ -9,6 +16,7 @@ interface Post {
 export default function SummaryFeed() {
   const [posts, setPosts] = useState<Post[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [summary, setSummary] = useState<Summary | null>(null);
 
   useEffect(() => {
     setIsLoading(true);
@@ -21,10 +29,45 @@ export default function SummaryFeed() {
       .catch(() => {
         setIsLoading(false);
       });
+    fetch('/api/summary')
+      .then(res => (res.ok ? res.json() : Promise.reject()))
+      .then(data => {
+        setSummary(data as Summary);
+      })
+      .catch(() => {});
   }, []);
 
   return (
     <div className="space-y-4 max-h-96 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600 scrollbar-track-transparent pr-2">
+      {summary && (
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div className="flex items-center gap-2 bg-white dark:bg-gray-800 p-3 rounded-xl border border-gray-200 dark:border-gray-700">
+            <Icon name="cash" className="text-[#b53133] w-5 h-5" />
+            <div className="text-sm">
+              <div className="text-gray-500 text-xs">Avg Price Top 3</div>
+              <div className="font-semibold">£{summary.avgPriceTop3.toFixed(2)}</div>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 bg-white dark:bg-gray-800 p-3 rounded-xl border border-gray-200 dark:border-gray-700">
+            <Icon name="clock" className="text-[#b53133] w-5 h-5" />
+            <div className="text-sm">
+              <div className="text-gray-500 text-xs">Latest End</div>
+              <div className="font-semibold">
+                {summary.topEndDrivers.map(d => `${d.driver} (${d.time})`).join(', ')}
+              </div>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 bg-white dark:bg-gray-800 p-3 rounded-xl border border-gray-200 dark:border-gray-700">
+            <Icon name="clock" className="text-[#b53133] w-5 h-5" />
+            <div className="text-sm">
+              <div className="text-gray-500 text-xs">Earliest Start</div>
+              <div className="font-semibold">
+                {summary.topStartDrivers.map(d => `${d.driver} (${d.time})`).join(', ')}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
       {isLoading ? (
         <div className="space-y-3">
           {[...Array(3)].map((_, i) => (
