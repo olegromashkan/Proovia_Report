@@ -62,6 +62,18 @@ export default function Calendar() {
     weeks.push(week);
   }
 
+  const dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+  const daysList = Array.from({ length: daysInMonth }, (_, i) => {
+    const date = new Date(year, month - 1, i + 1);
+    const iso = `${year}-${String(month).padStart(2, '0')}-${String(i + 1).padStart(2, '0')}`;
+    return {
+      num: i + 1,
+      weekday: dayNames[(date.getDay() + 6) % 7],
+      stat: stats[iso],
+      isToday: iso === todayStr,
+    };
+  });
+
   const months = [
     'January', 'February', 'March', 'April', 'May', 'June',
     'July', 'August', 'September', 'October', 'November', 'December',
@@ -124,7 +136,7 @@ export default function Calendar() {
 
         {/* Calendar Grid */}
         <div className={`transition-opacity duration-200 ${loading ? 'opacity-20' : 'opacity-100'}`}>
-          <div className="grid grid-cols-7 gap-1 text-center">
+          <div className="hidden sm:grid grid-cols-7 gap-1 text-center">
             {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map(d => (
               <div key={d} className="font-normal text-xs text-base-content/60 pb-2">
                 {d}
@@ -175,6 +187,39 @@ export default function Calendar() {
                 );
               })
             )}
+          </div>
+
+          <div className="sm:hidden flex flex-col gap-1">
+            {daysList.map(day => {
+              const isClickable = !!day.stat;
+              const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(day.num).padStart(2, '0')}`;
+              return (
+                <div
+                  key={day.num}
+                  onClick={() => isClickable && router.push(`/full-report?start=${dateStr}&end=${dateStr}`)}
+                  className={`p-2 border border-transparent rounded-lg flex items-center justify-between transition-all duration-200 ${
+                    isClickable ? 'cursor-pointer hover:border-primary/50' : 'cursor-default'
+                  } ${day.isToday ? 'border-primary' : ''} ${getIntensityClass(day.stat)}`}
+                >
+                  <div className="flex items-center gap-2">
+                    <span className={`font-medium ${day.isToday ? 'text-primary' : 'text-base-content/70'}`}>{day.num}</span>
+                    <span className="text-xs text-base-content/60">{day.weekday}</span>
+                  </div>
+                  {day.stat && (
+                    <div className="flex items-center gap-2 text-xs">
+                      <div className="flex items-center gap-1" title="Completed">
+                        <Icon name="check" className="text-success/80" />
+                        <span className="font-semibold text-success">{day.stat.complete}</span>
+                      </div>
+                      <div className="flex items-center gap-1" title="Failed">
+                        <Icon name="ban" className="text-error/80" />
+                        <span className="font-semibold text-error">{day.stat.failed}</span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
         </div>
       </div>
