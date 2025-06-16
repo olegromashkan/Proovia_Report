@@ -12,10 +12,16 @@ interface ContractorInfo {
   avgPrice: number;
 }
 
+interface DriverInfo {
+  driver: string;
+  contractor: string;
+  avgPrice: number;
+}
+
 interface FeedData {
   posts: Post[];
   topContractors: ContractorInfo[];
-  earliestStart: { driver: string; time: string } | null;
+  topDrivers: DriverInfo[];
   latestEnd: { driver: string; time: string } | null;
 }
 
@@ -38,7 +44,7 @@ export default function SummaryFeed() {
 
   const posts = data?.posts || [];
   const topContractors = data?.topContractors || [];
-  const earliest = data?.earliestStart;
+  const topDrivers = data?.topDrivers || [];
   const latest = data?.latestEnd;
 
   return (
@@ -79,32 +85,37 @@ export default function SummaryFeed() {
                 </div>
               </div>
             )}
-            <div className="flex flex-col gap-3 flex-1">
-              {earliest && (
-                <div className="bg-white dark:bg-gray-800 rounded-xl p-3 border border-gray-200 dark:border-gray-700 shadow-sm">
-                  <div className="flex items-center gap-2 mb-1 text-sm font-semibold text-gray-700 dark:text-gray-200">
-                    <Icon name="truck" className="w-4 h-4" />
-                    Earliest Start
-                  </div>
-                  <div className="text-xs flex justify-between">
-                    <span className="truncate max-w-[100px]">{earliest.driver}</span>
-                    <span>{earliest.time}</span>
-                  </div>
+            {topDrivers.length > 0 && (
+              <div className="flex-1 bg-white dark:bg-gray-800 rounded-xl p-3 border border-gray-200 dark:border-gray-700 shadow-sm">
+                <div className="flex items-center gap-2 mb-2 text-sm font-semibold text-gray-700 dark:text-gray-200">
+                  <Icon name="trophy" className="w-4 h-4 text-yellow-500" />
+                  Top Drivers
                 </div>
-              )}
-              {latest && (
-                <div className="bg-white dark:bg-gray-800 rounded-xl p-3 border border-gray-200 dark:border-gray-700 shadow-sm">
-                  <div className="flex items-center gap-2 mb-1 text-sm font-semibold text-gray-700 dark:text-gray-200">
-                    <Icon name="clock" className="w-4 h-4" />
-                    Latest End
-                  </div>
-                  <div className="text-xs flex justify-between">
-                    <span className="truncate max-w-[100px]">{latest.driver}</span>
-                    <span>{latest.time}</span>
-                  </div>
+                <div className="space-y-1 text-xs">
+                  {topDrivers.map((d) => (
+                    <div key={d.driver} className="flex justify-between">
+                      <span className="truncate max-w-[120px]">{d.driver}</span>
+                      <span className="flex gap-1">
+                        <span className="text-gray-500">{d.contractor}</span>
+                        <span className="font-medium">£{d.avgPrice.toFixed(2)}</span>
+                      </span>
+                    </div>
+                  ))}
                 </div>
-              )}
-            </div>
+              </div>
+            )}
+            {latest && (
+              <div className="flex-1 bg-white dark:bg-gray-800 rounded-xl p-3 border border-gray-200 dark:border-gray-700 shadow-sm">
+                <div className="flex items-center gap-2 mb-1 text-sm font-semibold text-gray-700 dark:text-gray-200">
+                  <Icon name="clock" className="w-4 h-4" />
+                  Latest End
+                </div>
+                <div className="text-xs flex justify-between">
+                  <span className="truncate max-w-[100px]">{latest.driver}</span>
+                  <span>{latest.time}</span>
+                </div>
+              </div>
+            )}
           </div>
           {posts.map(p => (
             <div
