@@ -51,6 +51,7 @@ const iconMap: Record<string, string> = {
   'x-circle': 'x-circle',
   'question-mark-circle': 'question-circle',
   star: 'star',
+  'star-fill': 'star-fill',
   reply: 'arrow-90deg-left',
 };
 
