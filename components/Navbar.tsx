@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/router';
@@ -23,7 +23,8 @@ export default function Navbar() {
   const [navOpen, setNavOpen] = useState(false);
   const [hovered, setHovered] = useState(false);
   const [pinned, setPinned] = useState<string[]>([]);
-  const [position, setPosition] = useState({ x: 20, y: 20 });
+  const [position, setPosition] = useState({ x: 16, y: 16 });
+  const navRef = useRef<HTMLDivElement>(null);
 
   const navLinks: NavLink[] = [
     { href: '/', icon: 'house', label: 'Home' },
@@ -43,7 +44,22 @@ export default function Navbar() {
     if (saved) setPosition(JSON.parse(saved));
     const pins = localStorage.getItem('pinnedLinks');
     if (pins) setPinned(JSON.parse(pins));
-  }, []);
+    const handleResize = () => {
+      const size = 48;
+      const margin = 16;
+      const w = window.innerWidth;
+      const h = window.innerHeight;
+      let { x, y } = position;
+      if (x + size + margin > w) x = w - size - margin;
+      if (y + size + margin > h) y = h - size - margin;
+      if (x < margin) x = margin;
+      if (y < margin) y = margin;
+      setPosition({ x, y });
+      localStorage.setItem('navBubble', JSON.stringify({ x, y }));
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [position]);
 
   const handleDragEnd = (_: any, info: any) => {
     const size = 48;
@@ -79,6 +95,19 @@ export default function Navbar() {
     setPosition({ x, y });
     localStorage.setItem('navBubble', JSON.stringify({ x, y }));
   };
+
+  const edge = useMemo(() => {
+    if (typeof window === 'undefined') return 'left';
+    const size = 48;
+    const margin = 16;
+    const w = window.innerWidth;
+    const h = window.innerHeight;
+    if (Math.abs(position.x - margin) < 1) return 'left';
+    if (Math.abs(position.x - (w - size - margin)) < 1) return 'right';
+    if (Math.abs(position.y - margin) < 1) return 'top';
+    if (Math.abs(position.y - (h - size - margin)) < 1) return 'bottom';
+    return 'left';
+  }, [position]);
 
   const togglePin = (href: string) => {
     setPinned(prev => {
@@ -117,7 +146,15 @@ export default function Navbar() {
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.9 }}
                 transition={{ duration: 0.15 }}
-                className="absolute left-14 top-1/2 -translate-y-1/2 flex flex-col gap-2"
+                className={`absolute ${
+                  edge === 'left'
+                    ? 'left-14 top-1/2 -translate-y-1/2 flex flex-col'
+                    : edge === 'right'
+                    ? 'right-14 top-1/2 -translate-y-1/2 flex flex-col'
+                    : edge === 'top'
+                    ? 'top-14 left-1/2 -translate-x-1/2 flex flex-row'
+                    : 'bottom-14 left-1/2 -translate-x-1/2 flex flex-row'
+                } gap-3`}
               >
                 {pinned
                   .map(h => navLinks.find(l => l.href === h))
@@ -133,11 +170,20 @@ export default function Navbar() {
           <AnimatePresence>
             {navOpen && (
               <motion.aside
+                ref={navRef}
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.95 }}
                 transition={{ duration: 0.15 }}
-                className="absolute left-14 top-1/2 -translate-y-1/2 w-64 bg-white dark:bg-gray-800 p-4 flex flex-col rounded-2xl shadow-2xl"
+                className={`absolute ${
+                  edge === 'left'
+                    ? 'left-14 top-1/2 -translate-y-1/2'
+                    : edge === 'right'
+                    ? 'right-14 top-1/2 -translate-y-1/2'
+                    : edge === 'top'
+                    ? 'top-14 left-1/2 -translate-x-1/2'
+                    : 'bottom-14 left-1/2 -translate-x-1/2'
+                } w-64 max-h-[calc(100vh-4rem)] overflow-y-auto bg-white dark:bg-gray-800 p-4 flex flex-col rounded-2xl shadow-2xl`}
               >
                 <div className="flex-1 flex flex-col space-y-6">
                   <Link href="/" className="flex items-center gap-3 px-2">
@@ -159,7 +205,7 @@ export default function Navbar() {
                           key={href}
                           href={href}
                           aria-current={isActive(href) ? 'page' : undefined}
-                          className={`flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-semibold transition-all duration-200 ${
+                          className={`group flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-semibold transition-all duration-200 ${
                             isActive(href)
                               ? 'bg-[#b53133] text-white shadow-md'
                               : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-white'
@@ -173,7 +219,7 @@ export default function Navbar() {
                               e.stopPropagation();
                               togglePin(href);
                             }}
-                            className="ml-auto p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700"
+                            className="ml-auto p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700 opacity-0 group-hover:opacity-100 transition-opacity"
                             aria-label={isPinned ? 'Unpin' : 'Pin'}
                           >
                             <Icon name={isPinned ? 'star-fill' : 'star'} className="w-4 h-4" />
