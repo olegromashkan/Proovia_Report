@@ -260,7 +260,8 @@ export default function DriverRoutes() {
 
   return (
     <Layout title="Driver Routes" fullWidth>
-      <div className="flex flex-col h-[calc(100vh-80px)] p-4 space-y-4">
+      <div className="flex flex-col h-full">
+        <div className="p-4 space-y-4 flex flex-col">
         {/* Header Section */}
         <div className="space-y-4">
           {/* Error Message */}
@@ -273,8 +274,11 @@ export default function DriverRoutes() {
                 className="bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-100 px-4 py-2 rounded-lg text-sm flex items-center justify-between"
               >
                 <span>{error}</span>
-                <button onClick={() => setError(null)} className="text-red-600 dark:text-red-300 hover:text-red-800 dark:hover:text-red-100">
-                  <Icon name="xmark" className="w-4 h-4" />
+                <button
+                  onClick={() => setError(null)}
+                  className="w-5 h-5 flex items-center justify-center rounded-full hover:bg-red-200 dark:hover:bg-red-800"
+                >
+                  <Icon name="xmark" className="w-4 h-4 text-red-600 dark:text-red-300" />
                 </button>
               </motion.div>
             )}
@@ -328,7 +332,7 @@ export default function DriverRoutes() {
             <div className="relative" ref={menuRef}>
               <button
                 type="button"
-                className="px-2 py-1 text-sm bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg border border-gray-300 dark:border-gray-600"
+                className="h-8 px-3 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 rounded-md border border-gray-300 dark:border-gray-600"
                 onClick={() => setColumnMenuOpen(!columnMenuOpen)}
                 title="Toggle columns"
               >
@@ -369,11 +373,11 @@ export default function DriverRoutes() {
                 )}
               </AnimatePresence>
               <button
-              onClick={() => setShowContractorCards(!showContractorCards)}
-              className="text-sm text-blue-600 dark:text-blue-400 hover:underline"
-            >
-              {showContractorCards ? 'Hide' : 'Show'}
-            </button>
+                onClick={() => setShowContractorCards(!showContractorCards)}
+                className="h-8 px-3 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm"
+              >
+                {showContractorCards ? 'Hide' : 'Show'}
+              </button>
             </div>
           </div>
         </div>
@@ -410,11 +414,11 @@ export default function DriverRoutes() {
                   >
                     {formatDisplayDate(d)}
                     <button
-                      className="absolute right-0.5 top-0.5 w-4 h-4 flex items-center justify-center bg-gray-200 dark:bg-gray-600 hover:bg-gray-300 dark:hover:bg-gray-500 rounded text-[10px]"
+                      className="absolute right-1 top-1 w-5 h-5 flex items-center justify-center bg-gray-200 dark:bg-gray-600 hover:bg-gray-300 dark:hover:bg-gray-500 rounded"
                       onClick={() => setModalDate(d)}
                       title="Update schedule"
                     >
-                      <Icon name="refresh" className="w-2 h-2" />
+                      <Icon name="refresh" className="w-3 h-3" />
                     </button>
                   </th>
                 ))}
@@ -589,6 +593,7 @@ export default function DriverRoutes() {
             </label>
           </motion.div>
         </Modal>
+        </div>
       </div>
     </Layout>
   );
