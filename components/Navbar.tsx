@@ -21,6 +21,7 @@ export default function Navbar({ isSidebarOpen, setIsSidebarOpen }: { isSidebarO
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [tasksOpen, setTasksOpen] = useState(false);
+  const [bottomBarVisible, setBottomBarVisible] = useState(true);
   const router = useRouter();
 
   // Handle scroll effect for navbar shadow
@@ -178,24 +179,7 @@ export default function Navbar({ isSidebarOpen, setIsSidebarOpen }: { isSidebarO
           />
         </Link>
 
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => setSearchOpen(true)}
-            className="p-2 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-[#b53133]/10 dark:hover:bg-[#b53133]/20 transition-colors duration-200"
-            aria-label="Open search"
-          >
-            <Icon name="search" className="w-5 h-5" />
-          </button>
-          <NotificationCenter />
-          <button
-            onClick={() => setTasksOpen(true)}
-            className="p-2 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-[#b53133]/10 dark:hover:bg-[#b53133]/20 transition-colors duration-200"
-            aria-label="Open tasks"
-          >
-            <Icon name="check" className="w-5 h-5" />
-          </button>
-          <UserMenu />
-        </div>
+        <div />
       </div>
 
       {/* Mobile Menu Overlay */}
@@ -243,6 +227,56 @@ export default function Navbar({ isSidebarOpen, setIsSidebarOpen }: { isSidebarO
           ))}
         </div>
       </div>
+
+      {/* Mobile Bottom Bar */}
+      <div
+        className={`
+          lg:hidden fixed bottom-0 inset-x-0 z-40 flex items-center justify-around
+          px-4 py-2 bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm
+          border-t border-gray-200/20 dark:border-gray-700/20
+          transition-transform duration-300
+          ${bottomBarVisible ? 'translate-y-0' : 'translate-y-full'}
+        `}
+      >
+        <button
+          onClick={() => setSearchOpen(true)}
+          className="p-2 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-[#b53133]/10 dark:hover:bg-[#b53133]/20 transition-colors duration-200"
+          aria-label="Open search"
+        >
+          <Icon name="search" className="w-6 h-6" />
+        </button>
+        <NotificationCenter />
+        <button
+          onClick={() => setTasksOpen(true)}
+          className="p-2 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-[#b53133]/10 dark:hover:bg-[#b53133]/20 transition-colors duration-200"
+          aria-label="Open tasks"
+        >
+          <Icon name="check" className="w-6 h-6" />
+        </button>
+        <UserMenu />
+        <button
+          onClick={() => setBottomBarVisible(false)}
+          className="p-2 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-[#b53133]/10 dark:hover:bg-[#b53133]/20 transition-colors duration-200"
+          aria-label="Hide navbar"
+        >
+          <Icon name="chevron-down" className="w-5 h-5" />
+        </button>
+      </div>
+
+      {/* Bottom Bar Toggle */}
+      <button
+        onClick={() => setBottomBarVisible(true)}
+        className={`
+          lg:hidden fixed bottom-4 right-4 z-40 p-2 rounded-full shadow
+          bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm
+          border border-gray-200/20 dark:border-gray-700/20
+          text-gray-600 dark:text-gray-300 transition-opacity duration-300
+          ${bottomBarVisible ? 'opacity-0 pointer-events-none' : 'opacity-100'}
+        `}
+        aria-label="Show navbar"
+      >
+        <Icon name="chevron-up" className="w-5 h-5" />
+      </button>
 
       {/* Overlays */}
       <SearchOverlay open={searchOpen} onClose={() => setSearchOpen(false)} />
