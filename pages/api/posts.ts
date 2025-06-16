@@ -7,33 +7,20 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
   const current = req.cookies.user || '';
 
   if (req.method === 'GET') {
-    const { user, type, limit } = req.query as { user?: string; type?: string; limit?: string };
+    const { user } = req.query as { user?: string };
     const base = `
       SELECT p.id, p.username, p.content, p.image, p.created_at, p.updated_at, p.type, u.photo,
         (SELECT COUNT(*) FROM post_likes WHERE post_id = p.id) as likes,
         (SELECT COUNT(*) FROM post_comments WHERE post_id = p.id) as comments,
         (SELECT 1 FROM post_likes WHERE post_id = p.id AND username = ?) as liked
       FROM posts p JOIN users u ON p.username = u.username`;
+    let rows;
     const order = 'ORDER BY COALESCE(p.updated_at, p.created_at) DESC';
-    const where: string[] = [];
-    const params: any[] = [current];
     if (user) {
-      where.push('p.username = ?');
-      params.push(user);
+      rows = db.prepare(`${base} WHERE p.username = ? ${order}`).all(current, user);
+    } else {
+      rows = db.prepare(`${base} ${order}`).all(current);
     }
-    if (type) {
-      where.push('p.type = ?');
-      params.push(type);
-    }
-    let query = base;
-    if (where.length) query += ' WHERE ' + where.join(' AND ');
-    query += ` ${order}`;
-    const lim = Math.min(100, Number(limit || 0)) || 0;
-    if (lim) {
-      query += ' LIMIT ?';
-      params.push(lim);
-    }
-    const rows = db.prepare(query).all(...params);
     return res.status(200).json({ posts: rows });
   }
 

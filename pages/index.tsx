@@ -7,7 +7,6 @@ import Modal from '../components/Modal';
 import Calendar from '../components/Calendar';
 import Skeleton from '../components/Skeleton';
 import Icon from '../components/Icon';
-import SummaryFeed from '../components/SummaryFeed';
 import useUser from '../lib/useUser';
 import useFetch from '../lib/useFetch';
 
@@ -37,14 +36,12 @@ export default function Home() {
 
   return (
     <Layout title="Home" fullWidth>
-      <div className="grid lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 space-y-6">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ type: 'spring', stiffness: 120, damping: 20 }}
-            className="relative rounded-2xl overflow-hidden shadow-xl"
-          >
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ type: 'spring', stiffness: 120, damping: 20 }}
+        className="relative rounded-2xl overflow-hidden shadow-xl mb-8"
+      >
         {user?.header ? (
           <img
             src={user.header}
@@ -120,10 +117,10 @@ export default function Home() {
               </motion.div>
             ))}
           </motion.div>
-          <Calendar />
         </div>
-        <SummaryFeed />
-      </div>
+      </motion.div>
+
+      <Calendar />
 
       <Modal open={!!open} onClose={() => setOpen(null)}>
         <h2 className="text-xl font-bold mb-2">{cards.find((c) => c.id === open)?.title}</h2>
