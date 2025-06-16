@@ -55,40 +55,30 @@ export default function Navbar({ isSidebarOpen, setIsSidebarOpen }: { isSidebarO
       <nav
         className={`
           hidden lg:fixed lg:inset-y-0 lg:left-0 lg:w-60 lg:flex lg:flex-col
-          bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm
+          justify-between bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm
           border-r border-gray-200/20 dark:border-gray-700/20
-          p-4 space-y-4 z-50 transition-all duration-300
+          p-4 z-50 transition-all duration-300
           ${scrolled ? 'shadow-lg' : 'shadow-sm'}
           ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}
         `}
       >
-        {/* Toggle Button */}
-        <div className="flex justify-end">
-          <button
-            onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-            className="p-2 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-[#b53133]/10 dark:hover:bg-[#b53133]/20 transition-colors duration-200"
-            aria-label={isSidebarOpen ? 'Hide sidebar' : 'Show sidebar'}
-          >
-            <Icon name={isSidebarOpen ? 'chevron-left' : 'chevron-right'} className="w-5 h-5" />
-          </button>
-        </div>
+        <div className="space-y-6">
+          {/* Logo */}
+          <Link href="/" className="flex items-center gap-2 group">
+            <div className="p-1.5 bg-gradient-to-br from-[#b53133]/20 to-[#b53133]/40 rounded-lg group-hover:scale-105 transition-transform duration-200">
+              <Image
+                src="https://cdn.proovia.uk/pd/images/logo/logo-default.svg"
+                alt="Proovia Logo"
+                width={120}
+                height={32}
+                className="h-8 w-auto"
+                onError={(e) => (e.currentTarget.src = '/fallback-logo.png')}
+              />
+            </div>
+          </Link>
 
-        {/* Logo */}
-        <Link href="/" className="flex items-center gap-2 mb-6 group">
-          <div className="p-1.5 bg-gradient-to-br from-[#b53133]/20 to-[#b53133]/40 rounded-lg group-hover:scale-105 transition-transform duration-200">
-            <Image
-              src="https://cdn.proovia.uk/pd/images/logo/logo-default.svg"
-              alt="Proovia Logo"
-              width={120}
-              height={32}
-              className="h-8 w-auto"
-              onError={(e) => (e.currentTarget.src = '/fallback-logo.png')}
-            />
-          </div>
-        </Link>
-
-        {/* Navigation Links */}
-        <div className="flex-1 space-y-1">
+          {/* Navigation Links */}
+          <div className="space-y-1">
           {navLinks.map(({ href, icon, label }) => (
             <Link
               key={href}
@@ -113,6 +103,7 @@ export default function Navbar({ isSidebarOpen, setIsSidebarOpen }: { isSidebarO
             </Link>
           ))}
         </div>
+        </div>
 
         {/* Action Buttons */}
         <div className="flex flex-col gap-2 pt-4 border-t border-gray-200/20 dark:border-gray-700/20">
@@ -133,6 +124,13 @@ export default function Navbar({ isSidebarOpen, setIsSidebarOpen }: { isSidebarO
             <Icon name="check" className="w-5 h-5" />
           </button>
           <UserMenu />
+          <button
+            onClick={() => setIsSidebarOpen(false)}
+            className="p-2 mt-2 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-[#b53133]/10 dark:hover:bg-[#b53133]/20 transition-colors duration-200"
+            aria-label="Hide sidebar"
+          >
+            <Icon name="chevron-left" className="w-5 h-5" />
+          </button>
         </div>
       </nav>
 
