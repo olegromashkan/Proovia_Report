@@ -68,7 +68,7 @@ export default function SummaryFeed() {
         </div>
       ) : (
         <>
-          <div className="flex gap-3">
+          <div className="flex gap-3 flex-wrap">
             {topContractors.length > 0 && (
               <div className="flex-1 bg-white dark:bg-gray-800 rounded-xl p-3 border border-gray-200 dark:border-gray-700 shadow-sm">
                 <div className="flex items-center gap-2 mb-2 text-sm font-semibold text-gray-700 dark:text-gray-200">
