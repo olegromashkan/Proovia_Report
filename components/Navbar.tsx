@@ -7,7 +7,6 @@ import NotificationCenter from './NotificationCenter';
 import SearchOverlay from './SearchOverlay';
 import Icon from './Icon';
 import UserMenu from './UserMenu';
-import UserPanel from './UserPanel';
 import TasksPanel from './TasksPanel';
 import { motion, AnimatePresence, PanInfo } from 'framer-motion';
 
@@ -39,7 +38,6 @@ export default function Navbar() {
   const router = useRouter();
   const [searchOpen, setSearchOpen] = useState(false);
   const [tasksOpen, setTasksOpen] = useState(false);
-  const [userPanelOpen, setUserPanelOpen] = useState(false);
   const [navOpen, setNavOpen] = useState(false);
   const [hovered, setHovered] = useState(false);
   const [pinned, setPinned] = useState<string[]>([]);
@@ -301,7 +299,6 @@ export default function Navbar() {
         setNavOpen(false);
         setSearchOpen(false);
         setTasksOpen(false);
-        setUserPanelOpen(false);
       }
     };
 
@@ -313,10 +310,6 @@ export default function Navbar() {
         document.removeEventListener('keydown', handleKeyDown);
       };
     }
-  }, [navOpen]);
-
-  useEffect(() => {
-    if (!navOpen) setUserPanelOpen(false);
   }, [navOpen]);
 
   // Мемоизированные закрепленные ссылки
@@ -530,7 +523,7 @@ export default function Navbar() {
                       >
                         <Icon name="check" className="w-5 h-5 text-gray-600 dark:text-gray-300" />
                       </button>
-                      <UserMenu onOpen={() => setUserPanelOpen(true)} />
+                      <UserMenu />
                     </div>
                   </div>
                 </div>
@@ -542,7 +535,6 @@ export default function Navbar() {
 
       <SearchOverlay open={searchOpen} onClose={() => setSearchOpen(false)} />
       <TasksPanel open={tasksOpen} onClose={() => setTasksOpen(false)} />
-      <UserPanel open={userPanelOpen} onClose={() => setUserPanelOpen(false)} />
 
       <style jsx global>{`
         .custom-scrollbar {
