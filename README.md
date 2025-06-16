@@ -4,7 +4,9 @@ This project uses **Next.js** with UnoCSS and a small SQLite database.
 
 The interface now adapts to mobile screens thanks to responsive
 layout tweaks in several pages. On phones the calendar switches
-to a scrollable list that keeps the look of calendar cells.
+to a scrollable list that keeps the look of calendar cells. The
+full report page has been adjusted so its tables and summary
+cards scroll horizontally when space is limited.
 
 ## Development
 
