@@ -18,7 +18,7 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
   const today = new Date();
   const defaultEnd = today.toISOString().slice(0,10);
   const defaultStartDate = new Date(today);
-  defaultStartDate.setDate(defaultStartDate.getDate() - 29);
+  defaultStartDate.setDate(defaultStartDate.getDate() - 6);
   const defaultStart = defaultStartDate.toISOString().slice(0,10);
   const startDate = typeof start === 'string' ? start : defaultStart;
   const endDate = typeof end === 'string' ? end : defaultEnd;
