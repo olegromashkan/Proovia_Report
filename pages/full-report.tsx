@@ -125,10 +125,10 @@ const ScrollingStats = ({ trips, driverToContractor }: { trips: Trip[], driverTo
   );
   
   return (
-    <div className="overflow-hidden relative bg-base-200 py-3">
-      <div 
+    <div className="overflow-x-auto bg-base-200 py-3">
+      <div
         ref={scrollRef}
-        className="flex gap-4 px-4 overflow-x-hidden"
+        className="flex gap-4 px-4"
         style={{ scrollBehavior: 'smooth' }}
       >
         <TopDriversCard data={stats.topDrivers} />
@@ -532,7 +532,7 @@ export default function FullReport() {
               </div>
               
               <div className="overflow-auto max-h-[calc(100vh-220px)]">
-                <table className="table table-xs table-zebra">
+                <table className="table table-xs table-zebra min-w-max">
                   <thead className="sticky top-0 bg-base-100 z-10">
                     <tr>
                       {[
@@ -630,7 +630,7 @@ export default function FullReport() {
                 </div>
                 
                 {/* Stats */}
-                <div className="grid grid-cols-5 gap-2 mb-3">
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 mb-3">
                   <div className="bg-base-200 rounded p-2 text-center">
                     <div className="text-xs opacity-70">Total</div>
                     <div className="text-lg font-bold">{stats.total}</div>
