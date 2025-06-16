@@ -15,7 +15,8 @@ interface NavLink {
   label: string;
 }
 
-export default function Navbar() {
+export default function Navbar({ isSidebarOpen, setIsSidebarOpen }: { isSidebarOpen: boolean; setIsSidebarOpen: (open: boolean) => void }) {
+  // State management
   const [searchOpen, setSearchOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
@@ -24,9 +25,7 @@ export default function Navbar() {
 
   // Handle scroll effect for navbar shadow
   useEffect(() => {
-    const handleScroll = () => {
-      setScrolled(window.scrollY > 20);
-    };
+    const handleScroll = () => setScrolled(window.scrollY > 20);
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
@@ -36,6 +35,7 @@ export default function Navbar() {
     setMobileMenuOpen(false);
   }, [router.pathname]);
 
+  // Navigation links
   const navLinks: NavLink[] = [
     { href: '/', icon: 'house', label: 'Home' },
     { href: '/feed', icon: 'chat', label: 'Feed' },
@@ -51,18 +51,31 @@ export default function Navbar() {
 
   return (
     <>
+      {/* Desktop Sidebar */}
       <nav
         className={`
-          hidden lg:fixed lg:inset-y-0 lg:left-0 lg:flex lg:w-60 lg:flex-col
+          hidden lg:fixed lg:inset-y-0 lg:left-0 lg:w-60 lg:flex lg:flex-col
           bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm
           border-r border-gray-200/20 dark:border-gray-700/20
-          p-4 space-y-4 z-50 transition-shadow duration-300
+          p-4 space-y-4 z-50 transition-all duration-300
           ${scrolled ? 'shadow-lg' : 'shadow-sm'}
+          ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}
         `}
       >
+        {/* Toggle Button */}
+        <div className="flex justify-end">
+          <button
+            onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+            className="p-2 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-[#b53133]/10 dark:hover:bg-[#b53133]/20 transition-colors duration-200"
+            aria-label={isSidebarOpen ? 'Hide sidebar' : 'Show sidebar'}
+          >
+            <Icon name={isSidebarOpen ? 'chevron-left' : 'chevron-right'} className="w-5 h-5" />
+          </button>
+        </div>
+
         {/* Logo */}
         <Link href="/" className="flex items-center gap-2 mb-6 group">
-          <div className="relative p-1.5 bg-gradient-to-br from-[#b53133]/20 to-[#b53133]/40 rounded-lg group-hover:scale-105 transition-transform duration-200">
+          <div className="p-1.5 bg-gradient-to-br from-[#b53133]/20 to-[#b53133]/40 rounded-lg group-hover:scale-105 transition-transform duration-200">
             <Image
               src="https://cdn.proovia.uk/pd/images/logo/logo-default.svg"
               alt="Proovia Logo"
@@ -74,7 +87,7 @@ export default function Navbar() {
           </div>
         </Link>
 
-        {/* Nav Links */}
+        {/* Navigation Links */}
         <div className="flex-1 space-y-1">
           {navLinks.map(({ href, icon, label }) => (
             <Link
@@ -82,12 +95,11 @@ export default function Navbar() {
               href={href}
               aria-current={isActiveLink(href) ? 'page' : undefined}
               className={`
-                relative flex items-center gap-3 px-4 py-2 rounded-lg
-                text-sm font-medium transition-all duration-200
-                hover:bg-[#b53133]/10 dark:hover:bg-[#b53133]/20
+                flex items-center gap-3 px-4 py-2 rounded-lg text-sm font-medium
+                transition-colors duration-200
                 ${isActiveLink(href)
                   ? 'text-[#b53133] bg-[#b53133]/10'
-                  : 'text-gray-700 dark:text-gray-200 hover:text-[#b53133]'}
+                  : 'text-gray-700 dark:text-gray-200 hover:text-[#b53133] hover:bg-[#b53133]/10 dark:hover:bg-[#b53133]/20'}
               `}
             >
               <Icon
@@ -96,7 +108,7 @@ export default function Navbar() {
               />
               <span>{label}</span>
               {isActiveLink(href) && (
-                <div className="absolute inset-y-0 right-0 w-1 rounded-l bg-[#b53133]" />
+                <span className="absolute inset-y-0 right-0 w-1 rounded-l bg-[#b53133]" />
               )}
             </Link>
           ))}
@@ -104,9 +116,10 @@ export default function Navbar() {
 
         {/* Action Buttons */}
         <div className="flex flex-col gap-2 pt-4 border-t border-gray-200/20 dark:border-gray-700/20">
+          <ThemeToggle />
           <button
             onClick={() => setSearchOpen(true)}
-            className="p-2 text-gray-600 dark:text-gray-300 hover:bg-[#b53133]/10 dark:hover:bg-[#b53133]/20 rounded-lg transition-all duration-200"
+            className="p-2 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-[#b53133]/10 dark:hover:bg-[#b53133]/20 transition-colors duration-200"
             aria-label="Open search"
           >
             <Icon name="search" className="w-5 h-5" />
@@ -114,28 +127,43 @@ export default function Navbar() {
           <NotificationCenter />
           <button
             onClick={() => setTasksOpen(true)}
-            className="p-2 text-gray-600 dark:text-gray-300 hover:bg-[#b53133]/10 dark:hover:bg-[#b53133]/20 rounded-lg transition-all duration-200"
+            className="p-2 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-[#b53133]/10 dark:hover:bg-[#b53133]/20 transition-colors duration-200"
             aria-label="Open tasks"
           >
             <Icon name="check" className="w-5 h-5" />
           </button>
           <UserMenu />
-          <ThemeToggle />
         </div>
       </nav>
+
+      {/* Sidebar Toggle Button (when sidebar is hidden) */}
+      <button
+        onClick={() => setIsSidebarOpen(true)}
+        className={`
+          hidden lg:block fixed top-4 left-4 z-50 p-2 rounded-lg
+          bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm
+          border border-gray-200/20 dark:border-gray-700/20
+          text-gray-600 dark:text-gray-300 hover:bg-[#b53133]/10 dark:hover:bg-[#b53133]/20
+          transition-all duration-300
+          ${isSidebarOpen ? 'opacity-0 pointer-events-none' : 'opacity-100'}
+        `}
+        aria-label="Show sidebar"
+      >
+        <Icon name="chevron-right" className="w-5 h-5" />
+      </button>
 
       {/* Mobile Top Bar */}
       <div
         className={`
-          lg:hidden flex items-center justify-between px-4 py-3 sticky top-0 z-40
-          bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm
+          lg:hidden sticky top-0 z-40 flex items-center justify-between
+          px-4 py-3 bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm
           border-b border-gray-200/20 dark:border-gray-700/20
           ${scrolled ? 'shadow-lg' : 'shadow-sm'}
         `}
       >
         <button
           onClick={() => setMobileMenuOpen(true)}
-          className="p-2 text-gray-600 dark:text-gray-300 hover:bg-[#b53133]/10 dark:hover:bg-[#b53133]/20 rounded-lg transition-all duration-200"
+          className="p-2 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-[#b53133]/10 dark:hover:bg-[#b53133]/20 transition-colors duration-200"
           aria-label="Open menu"
         >
           <Icon name="list" className="w-5 h-5" />
@@ -155,7 +183,7 @@ export default function Navbar() {
         <div className="flex items-center gap-2">
           <button
             onClick={() => setSearchOpen(true)}
-            className="p-2 text-gray-600 dark:text-gray-300 hover:bg-[#b53133]/10 dark:hover:bg-[#b53133]/20 rounded-lg transition-all duration-200"
+            className="p-2 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-[#b53133]/10 dark:hover:bg-[#b53133]/20 transition-colors duration-200"
             aria-label="Open search"
           >
             <Icon name="search" className="w-5 h-5" />
@@ -163,7 +191,7 @@ export default function Navbar() {
           <NotificationCenter />
           <button
             onClick={() => setTasksOpen(true)}
-            className="p-2 text-gray-600 dark:text-gray-300 hover:bg-[#b53133]/10 dark:hover:bg-[#b53133]/20 rounded-lg transition-all duration-200"
+            className="p-2 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-[#b53133]/10 dark:hover:bg-[#b53133]/20 transition-colors duration-200"
             aria-label="Open tasks"
           >
             <Icon name="check" className="w-5 h-5" />
@@ -175,7 +203,7 @@ export default function Navbar() {
       {/* Mobile Menu Overlay */}
       <div
         className={`
-          lg:hidden fixed inset-0 z-40 transition-all duration-300
+          lg:hidden fixed inset-0 z-40 transition-opacity duration-300
           ${mobileMenuOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}
         `}
       >
@@ -187,7 +215,7 @@ export default function Navbar() {
           className={`
             absolute left-0 top-0 bottom-0 w-60 bg-white dark:bg-gray-800
             rounded-r-2xl border-r border-gray-200/20 dark:border-gray-700/20
-            shadow-xl p-4 space-y-2 transform transition-all duration-300
+            shadow-xl p-4 space-y-2 transform transition-transform duration-300
             ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}
           `}
         >
@@ -198,11 +226,11 @@ export default function Navbar() {
               onClick={() => setMobileMenuOpen(false)}
               aria-current={isActiveLink(href) ? 'page' : undefined}
               className={`
-                flex items-center gap-3 px-4 py-3 rounded-lg
-                text-sm font-medium transition-all duration-200
+                flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium
+                transition-colors duration-200
                 ${isActiveLink(href)
                   ? 'text-[#b53133] bg-[#b53133]/10'
-                  : 'text-gray-700 dark:text-gray-200 hover:bg-[#b53133]/10 dark:hover:bg-[#b53133]/20 hover:text-[#b53133]'}
+                  : 'text-gray-700 dark:text-gray-200 hover:text-[#b53133] hover:bg-[#b53133]/10 dark:hover:bg-[#b53133]/20'}
               `}
             >
               <Icon
@@ -211,14 +239,14 @@ export default function Navbar() {
               />
               <span>{label}</span>
               {isActiveLink(href) && (
-                <div className="ml-auto w-2 h-2 bg-[#b53133] rounded-full" />
+                <span className="ml-auto w-2 h-2 bg-[#b53133] rounded-full" />
               )}
             </Link>
           ))}
         </div>
       </div>
 
-      {/* Search Overlay */}
+      {/* Overlays */}
       <SearchOverlay open={searchOpen} onClose={() => setSearchOpen(false)} />
       <TasksPanel open={tasksOpen} onClose={() => setTasksOpen(false)} />
     </>
