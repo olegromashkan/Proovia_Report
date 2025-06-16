@@ -27,6 +27,8 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
 
   interface ContractorStat { sum: number; count: number; }
   const contractorStats: Record<string, ContractorStat> = {};
+  interface DriverStat { contractor: string; sum: number; count: number }
+  const driverStats: Record<string, DriverStat> = {};
   interface DriverTime { earliest: number | null; latest: number | null; labelStart?: string; labelEnd?: string; }
   const driverTimes: Record<string, DriverTime> = {};
 
@@ -41,6 +43,10 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
       if (!contractorStats[contractor]) contractorStats[contractor] = { sum: 0, count: 0 };
       contractorStats[contractor].sum += price;
       contractorStats[contractor].count += 1;
+
+      if (!driverStats[driver]) driverStats[driver] = { contractor, sum: 0, count: 0 };
+      driverStats[driver].sum += price;
+      driverStats[driver].count += 1;
     }
 
     const startRaw = item.Start_Time || item['Start_Time'] || item['Trip.Start_Time'];
@@ -70,15 +76,17 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
     .sort((a, b) => b.avgPrice - a.avgPrice)
     .slice(0, 3);
 
-  let earliestStart: { driver: string; time: string } | null = null;
+  const topDrivers = Object.entries(driverStats)
+    .map(([driver, s]) => ({
+      driver,
+      contractor: s.contractor,
+      avgPrice: s.sum / s.count,
+    }))
+    .sort((a, b) => b.avgPrice - a.avgPrice)
+    .slice(0, 3);
   let latestEnd: { driver: string; time: string } | null = null;
 
   Object.entries(driverTimes).forEach(([drv, t]) => {
-    if (t.earliest !== null) {
-      if (!earliestStart || t.earliest < parseMinutes(earliestStart.time)!) {
-        earliestStart = { driver: drv, time: t.labelStart || '' };
-      }
-    }
     if (t.latest !== null) {
       if (!latestEnd || t.latest > parseMinutes(latestEnd.time)!) {
         latestEnd = { driver: drv, time: t.labelEnd || '' };
@@ -86,5 +94,5 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
     }
   });
 
-  res.status(200).json({ posts, topContractors, earliestStart, latestEnd });
+  res.status(200).json({ posts, topContractors, topDrivers, latestEnd });
 }
