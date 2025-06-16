@@ -270,10 +270,8 @@ export default function DriverRoutes() {
         data,
         borderColor: hexToRgba(color, baseAlpha),
         backgroundColor: hexToRgba(color, baseAlpha),
-        borderWidth: 2,
-        tension: 0.4,
-        fill: false,
-        spanGaps: true,
+        borderWidth: 1,
+        stack: 'all',
       };
     });
 
@@ -295,18 +293,18 @@ export default function DriverRoutes() {
     };
 
     chartInstanceRef.current = new Chart(chartRef.current, {
-      type: 'line',
+      type: 'bar',
       data: { labels: uniqueDates, datasets },
       options: {
         responsive: true,
         maintainAspectRatio: false,
+        animation: false,
         plugins: {
           legend: { position: 'bottom' },
-          decimation: {
-            enabled: true,
-            algorithm: 'lttb',
-            samples: 100,
-          },
+        },
+        scales: {
+          x: { stacked: true },
+          y: { stacked: true },
         },
       },
       plugins: [highlightPlugin],
