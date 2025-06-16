@@ -5,6 +5,7 @@ import Layout from '../components/Layout';
 import Card from '../components/Card';
 import Modal from '../components/Modal';
 import Calendar from '../components/Calendar';
+import SummaryFeed from '../components/SummaryFeed';
 import Skeleton from '../components/Skeleton';
 import Icon from '../components/Icon';
 import useUser from '../lib/useUser';
@@ -120,7 +121,14 @@ export default function Home() {
         </div>
       </motion.div>
 
-      <Calendar />
+      <div className="flex flex-col md:flex-row gap-6">
+        <div className="flex-1">
+          <Calendar />
+        </div>
+        <div className="w-full md:w-72">
+          <SummaryFeed />
+        </div>
+      </div>
 
       <Modal open={!!open} onClose={() => setOpen(null)}>
         <h2 className="text-xl font-bold mb-2">{cards.find((c) => c.id === open)?.title}</h2>
