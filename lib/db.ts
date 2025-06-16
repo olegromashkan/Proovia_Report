@@ -6,7 +6,7 @@ declare global {
 }
 
 const db: Database =
-  global.sqliteDb || new Database('file:database.db?mode=rwc&cache=shared', { timeout: 5000 });
+  global.sqliteDb || new Database('database.db', { timeout: 5000 });
 if (!global.sqliteDb) {
   try {
     db.pragma('journal_mode = WAL');

@@ -1,6 +1,6 @@
 import React from 'react';
 
-// Интерфейс для статусов (цвет индикатора)
+// Интерфейсы
 interface TireStatuses {
   front_left?: string;
   front_right?: string;
@@ -15,7 +15,6 @@ interface Statuses {
   damage: string;
 }
 
-// Интерфейс для детальной информации (текст подсказки)
 interface Details {
   tires?: string | TireStatuses;
   lights?: string;
@@ -26,9 +25,9 @@ interface Details {
 // Функция для определения цвета статуса
 const getStatusColor = (status: string, fallbackColor = 'hsl(var(--neutral))') => {
   switch (status?.toLowerCase()) {
-    case 'ok': return 'hsl(var(--su))';      // success (e.g., green)
-    case 'warning': return 'hsl(var(--wa))'; // warning (e.g., yellow)
-    case 'error': return 'hsl(var(--er))';   // error (e.g., red)
+    case 'ok': return 'hsl(var(--su))'; // Зеленый
+    case 'warning': return 'hsl(var(--wa))'; // Желтый
+    case 'error': return 'hsl(var(--er))'; // Красный
     default: return fallbackColor;
   }
 };
@@ -48,97 +47,114 @@ const VanVisual: React.FC<{ statuses: Statuses; details?: Details }> = ({ status
       : details.tires;
 
   return (
-    // @ts-ignore to suppress potential SVG attribute type errors
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 240" className="w-full h-auto text-neutral-content">
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 600 200"
+      className="w-full h-auto text-neutral-content max-w-md mx-auto"
+    >
       <defs>
         <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
-          <feDropShadow dx="1.5" dy="1.5" stdDeviation="2.5" floodColor="hsl(var(--neutral) / 0.1)" />
+          <feDropShadow dx="1" dy="1" stdDeviation="2" floodColor="hsl(var(--neutral) / 0.15)" />
         </filter>
         <linearGradient id="bodyGradient" x1="0%" y1="0%" x2="100%" y2="100%">
           <stop offset="0%" style={{ stopColor: 'hsl(var(--base-100))', stopOpacity: 1 }} />
           <stop offset="100%" style={{ stopColor: 'hsl(var(--base-200))', stopOpacity: 1 }} />
         </linearGradient>
         <linearGradient id="highlightGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-          <stop offset="0%" style={{ stopColor: 'hsl(var(--base-100))', stopOpacity: 0.8 }} />
-          <stop offset="100%" style={{ stopColor: 'hsl(var(--base-300))', stopOpacity: 0.6 }} />
+          <stop offset="0%" style={{ stopColor: 'hsl(var(--base-100))', stopOpacity: 0.9 }} />
+          <stop offset="100%" style={{ stopColor: 'hsl(var(--base-300))', stopOpacity: 0.7 }} />
         </linearGradient>
       </defs>
 
       <style>
         {`
           .interactive:hover {
-            transform: scale(1.15);
-            transition: transform 0.2s ease-in-out;
+            transform: scale(1.1);
+            transition: transform 0.2s ease-in-out, opacity 0.2s ease-in-out;
           }
           .tooltip:hover {
             cursor: pointer;
+            opacity: 0.9;
+          }
+          .tooltip::after {
+            font-family: 'Inter', sans-serif;
+            font-size: 12px;
+            padding: 4px 8px;
+            border-radius: 4px;
+            background: hsl(var(--neutral) / 0.9);
+            color: hsl(var(--neutral-content));
           }
         `}
       </style>
 
       {/* --- Top View --- */}
       <g transform="translate(10, 10)">
-        <text x="0" y="12" className="text-sm font-sans" fill="hsl(var(--neutral-content) / 0.7)" opacity="0.6">Top View</text>
-        <g transform="translate(0, 24) scale(1.2)" filter="url(#shadow)">
-          <rect x="1" y="1" width="178" height="98" rx="14" fill="url(#bodyGradient)" stroke={strokeColor} strokeWidth="1.2" />
-          <path d="M100 1 H173 a6 6 0 0 1 6 6 V 44 a6 6 0 0 1 -6 6 H100 Z" fill="url(#highlightGradient)" />
-          <g className="tooltip interactive" data-tip={`Oil Status${details.oil ? `: ${details.oil}` : ''}`}>
-            <path d="M30 1 H100 V49 H30 a6 6 0 0 1 -6 -6 V 6 a6 6 0 0 1 6-6z" fill={getStatusColor(statuses.oil)} opacity="0.6" />
+        <text x="0" y="10" className="text-xs font-sans" fill="hsl(var(--neutral-content) / 0.7)" opacity="0.8">
+          Top View
+        </text>
+        <g transform="translate(0, 20) scale(1.1)" filter="url(#shadow)">
+          <rect x="0" y="0" width="160" height="80" rx="10" fill="urlвідомости(#bodyGradient)" stroke={strokeColor} strokeWidth="1" />
+          <path d="M90 0 H150 a5 5 0 0 1 5 5 V 35 a5 5 0 0 1 -5 5 H90 Z" fill="url(#highlightGradient)" />
+          <g className="tooltip interactive" data-tip={`Oil: ${details.oil || 'N/A'}`}>
+            <path d="M20 0 H90 V40 H20 a5 5 0 0 1 -5 -5 V 5 a5 5 0 0 1 5-5z" fill={getStatusColor(statuses.oil)} opacity="0.7" />
           </g>
           {isDamage && (
-            <g className="tooltip interactive" data-tip={`Damage Status${details.damage ? `: ${details.damage}` : ''}`}>
-              <path d="M60 25 L120 75 M120 25 L60 75" stroke={getStatusColor(statuses.damage)} strokeWidth="3" strokeLinecap="round" opacity="0.8" />
+            <g className="tooltip interactive" data-tip={`Damage: ${details.damage || 'N/A'}`}>
+              <path d="M50 20 L110 60 M110 20 L50 60" stroke={getStatusColor(statuses.damage)} strokeWidth="2.5" strokeLinecap="round" opacity="0.9" />
             </g>
           )}
-          <rect x="1" y="1" width="178" height="88" rx="12" fill="none" stroke="hsl(var(--neutral-content) / 0.1)" strokeWidth="1.2" />
-          <g className="tooltip interactive" data-tip={`Tires Status${tiresTip ? `: ${tiresTip}` : ''}`}> 
-            <rect x="20" y="-8" width="48" height="22" rx="6" fill="url(#highlightGradient)" stroke={getStatusColor(tireStatus('front_left'))} strokeWidth="1.8" />
-            <rect x="120" y="-8" width="48" height="22" rx="6" fill="url(#highlightGradient)" stroke={getStatusColor(tireStatus('front_right'))} strokeWidth="1.8" />
-            <rect x="20" y="80" width="48" height="22" rx="6" fill="url(#highlightGradient)" stroke={getStatusColor(tireStatus('rear_left'))} strokeWidth="1.8" />
-            <rect x="120" y="80" width="48" height="22" rx="6" fill="url(#highlightGradient)" stroke={getStatusColor(tireStatus('rear_right'))} strokeWidth="1.8" />
+          <g className="tooltip interactive" data-tip={tiresTip || 'Tires: N/A'}>
+            <rect x="15" y="-6" width="40" height="18" rx="5" fill="url(#highlightGradient)" stroke={getStatusColor(tireStatus('front_left'))} strokeWidth="1.5" />
+            <rect x="110" y="-6" width="40" height="18" rx="5" fill="url(#highlightGradient)" stroke={getStatusColor(tireStatus('front_right'))} strokeWidth="1.5" />
+            <rect x="15" y="68" width="40" height="18" rx="5" fill="url(#highlightGradient)" stroke={getStatusColor(tireStatus('rear_left'))} strokeWidth="1.5" />
+            <rect x="110" y="68" width="40" height="18" rx="5" fill="url(#highlightGradient)" stroke={getStatusColor(tireStatus('rear_right'))} strokeWidth="1.5" />
           </g>
         </g>
       </g>
 
       {/* --- Side View --- */}
-      <g transform="translate(250, 10)">
-        <text x="0" y="12" className="text-sm font-sans" fill="hsl(var(--neutral-content) / 0.7)" opacity="0.6">Side View</text>
-        <g transform="translate(0, 24) scale(1.2)" filter="url(#shadow)">
-          <path d="M10 85 V 40 C 10 30, 18 20, 28 20 H 100 L 120 0 H 165 C 175 0, 183 8, 183 18 V 75 L 170 85 Z" fill="url(#bodyGradient)" stroke={strokeColor} strokeWidth="1.2" />
-          <path d="M10 85 V 40 C 10 30, 18 20, 28 20 H 90 V 85 Z" fill="url(#highlightGradient)" />
-          <path d="M95 20 H 115 L 125 45 H 95 Z" fill="hsl(var(--base-300) / 0.5)" />
+      <g transform="translate(200, 10)">
+        <text x="0" y="10" className="text-xs font-sans" fill="hsl(var(--neutral-content) / 0.7)" opacity="0.8">
+          Side View
+        </text>
+        <g transform="translate(0, 20) scale(1.1)" filter="url(#shadow)">
+          <path d="M5 75 V 35 C 5 27, 12 20, 20 20 H 90 L 105 5 H 145 C 153 5, 160 12, 160 20 V 70 L 150 75 Z" fill="url(#bodyGradient)" stroke={strokeColor} strokeWidth="1" />
+          <path d="M5 75 V 35 C 5 27, 12 20, 20 20 H 80 V 75 Z" fill="url(#highlightGradient)" />
+          <path d="M85 20 H 100 L 110 40 H 85 Z" fill="hsl(var(--base-300) / 0.5)" />
           {isDamage && (
-            <g className="tooltip interactive" data-tip={`Damage Status${details.damage ? `: ${details.damage}` : ''}`}>
-              <path d="M80 50 C 90 40, 100 60, 110 50" stroke={getStatusColor(statuses.damage)} strokeWidth="2.4" fill="none" strokeLinecap="round" strokeDasharray="4 4" />
+            <g className="tooltip interactive" data-tip={`Damage: ${details.damage || 'N/A'}`}>
+              <path d="M70 45 C 80 35, 90 55, 100 45" stroke={getStatusColor(statuses.damage)} strokeWidth="2" fill="none" strokeLinecap="round" strokeDasharray="3 3" />
             </g>
           )}
-          <g className="tooltip interactive" data-tip={`Tires Status${tiresTip ? `: ${tiresTip}` : ''}`}>
-            <circle cx="45" cy="85" r="19" fill="url(#highlightGradient)" stroke={getStatusColor(tireStatus('front_left'))} strokeWidth="2.4" />
-            <circle cx="150" cy="85" r="19" fill="url(#highlightGradient)" stroke={getStatusColor(tireStatus('rear_left'))} strokeWidth="2.4" />
+          <g className="tooltip interactive" data-tip={tiresTip || 'Tires: N/A'}>
+            <circle cx="40" cy="75" r="15" fill="url(#highlightGradient)" stroke={getStatusColor(tireStatus('front_left'))} strokeWidth="2" />
+            <circle cx="130" cy="75" r="15" fill="url(#highlightGradient)" stroke={getStatusColor(tireStatus('rear_left'))} strokeWidth="2" />
           </g>
-          <g className="tooltip interactive" data-tip={`Lights Status${details.lights ? `: ${details.lights}` : ''}`}>
-            <rect x="180" y="25" width="6" height="12" rx="2.4" fill={getStatusColor(statuses.lights, 'transparent')} />
-            <rect x="175" y="65" width="12" height="6" rx="2.4" fill={getStatusColor(statuses.lights, 'transparent')} />
+          <g className="tooltip interactive" data-tip={`Lights: ${details.lights || 'N/A'}`}>
+            <rect x="155" y="20" width="5" height="10" rx="2" fill={getStatusColor(statuses.lights, 'transparent')} />
+            <rect x="150" y="60" width="10" height="5" rx="2" fill={getStatusColor(statuses.lights, 'transparent')} />
           </g>
         </g>
       </g>
 
       {/* --- Front View --- */}
-      <g transform="translate(490, 10)">
-        <text x="0" y="12" className="text-sm font-sans" fill="hsl(var(--neutral-content) / 0.7)" opacity="0.6">Front View</text>
-        <g transform="translate(25, 24) scale(1.2)" filter="url(#shadow)">
-          <path d="M5 90 V 20 C 5 10 15 0 25 0 H 125 C 135 0 145 10 145 20 V 90 Z" fill="url(#bodyGradient)" stroke={strokeColor} strokeWidth="1.2" />
-          <path d="M20 0 H 130 L 115 40 H 35 Z" fill="url(#highlightGradient)" />
-          <g className="tooltip interactive" data-tip={`Oil Status${details.oil ? `: ${details.oil}` : ''}`}>
-            <rect x="40" y="50" width="84" height="30" rx="3.6" fill={getStatusColor(statuses.oil)} opacity="0.6" />
+      <g transform="translate(390, 10)">
+        <text x="0" y="10" className="text-xs font-sans" fill="hsl(var(--neutral-content) / 0.7)" opacity="0.8">
+          Front View
+        </text>
+        <g transform="translate(20, 20) scale(1.1)" filter="url(#shadow)">
+          <path d="M5 80 V 15 C 5 7 12 0 20 0 H 110 C 118 0 125 7 125 15 V 80 Z" fill="url(#bodyGradient)" stroke={strokeColor} strokeWidth="1" />
+          <path d="M15 0 H 115 L 100 35 H 30 Z" fill="url(#highlightGradient)" />
+          <g className="tooltip interactive" data-tip={`Oil: ${details.oil || 'N/A'}`}>
+            <rect x="35" y="45" width="70" height="25" rx="3" fill={getStatusColor(statuses.oil)} opacity="0.7" />
           </g>
-          <g className="tooltip interactive" data-tip={`Lights Status${details.lights ? `: ${details.lights}` : ''}`}>
-            <rect x="15" y="50" width="24" height="9.6" rx="2.4" fill={getStatusColor(statuses.lights)} />
-            <rect x="115" y="50" width="24" height="9.6" rx="2.4" fill={getStatusColor(statuses.lights)} />
+          <g className="tooltip interactive" data-tip={`Lights: ${details.lights || 'N/A'}`}>
+            <rect x="10" y="45" width="20" height="8" rx="2" fill={getStatusColor(statuses.lights)} />
+            <rect x="100" y="45" width="20" height="8" rx="2" fill={getStatusColor(statuses.lights)} />
           </g>
           {isDamage && (
-            <g className="tooltip interactive" data-tip={`Damage Status${details.damage ? `: ${details.damage}` : ''}`}>
-              <circle cx="75" cy="45" r="12" fill="none" stroke={getStatusColor(statuses.damage)} strokeWidth="2.4" opacity="0.9" />
+            <g className="tooltip interactive" data-tip={`Damage: ${details.damage || 'N/A'}`}>
+              <circle cx="65" cy="40" r="10" fill="none" stroke={getStatusColor(statuses.damage)} strokeWidth="2" opacity="0.9" />
             </g>
           )}
         </g>

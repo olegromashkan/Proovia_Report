@@ -7,8 +7,9 @@ import { useEffect } from 'react';
 export default function MyApp({ Component, pageProps }: AppProps) {
   useEffect(() => {
     const saved = localStorage.getItem('theme');
-    const theme = saved || 'light';
+    const theme = saved || 'dark';
     document.documentElement.setAttribute('data-theme', theme);
+    document.documentElement.classList.toggle('dark', theme === 'dark');
     const vars = [
       '--p',
       '--a',
@@ -35,7 +36,7 @@ export default function MyApp({ Component, pageProps }: AppProps) {
 
   return (
     <>
-      <Head />
+      <Head>{null}</Head>
       <Script src="https://cdn.jsdelivr.net/npm/chart.js"></Script>
       <Script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></Script>
       <Component {...pageProps} />

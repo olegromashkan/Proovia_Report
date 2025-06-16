@@ -1,19 +1,21 @@
 import { useEffect, useState } from 'react';
 
 export default function ThemeToggle() {
-  const [theme, setTheme] = useState<'light' | 'dark'>('light');
+  const [theme, setTheme] = useState<'light' | 'dark'>('dark');
 
   useEffect(() => {
     const saved = localStorage.getItem('theme') as 'light' | 'dark' | null;
-    const initial = saved || 'light';
+    const initial = saved || 'dark';
     setTheme(initial);
     document.documentElement.setAttribute('data-theme', initial);
+    document.documentElement.classList.toggle('dark', initial === 'dark');
   }, []);
 
   const toggle = () => {
     const next = theme === 'light' ? 'dark' : 'light';
     setTheme(next);
     document.documentElement.setAttribute('data-theme', next);
+    document.documentElement.classList.toggle('dark', next === 'dark');
     localStorage.setItem('theme', next);
   };
 

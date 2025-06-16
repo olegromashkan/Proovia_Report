@@ -62,10 +62,10 @@ export default function Chat() {
           {messages.map(m => (
             <div
               key={m.id}
-              className={`p-2 rounded-lg max-w-xs ${
+                className={`p-2 rounded-lg max-w-xs ${
                 m.sender===me
-                  ? 'bg-[#b53133] ml-auto text-black'
-                  : 'bg-gray-200 dark:bg-gray-700 text-black'
+                  ? 'bg-[#b53133] ml-auto text-black dark:text-white'
+                  : 'bg-gray-200 dark:bg-gray-700 text-black dark:text-white'
               }`}
             >
               {m.text}

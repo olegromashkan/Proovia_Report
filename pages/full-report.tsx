@@ -30,8 +30,9 @@ const diffTime = (t1: string, t2: string) => {
   if ([h1, m1, h2, m2].some(n => isNaN(n))) return 'N/A';
   const minutes1 = h1 * 60 + m1;
   const minutes2 = h2 * 60 + m2;
-  let diff = Math.abs(minutes1 - minutes2);
-  if (diff > 12 * 60) diff = 24 * 60 - diff;
+  let diff = minutes2 - minutes1;
+  if (diff > 12 * 60) diff -= 24 * 60;
+  if (diff < -12 * 60) diff += 24 * 60;
   return diff.toString();
 };
 
@@ -203,6 +204,8 @@ export default function FullReport() {
 
   const [sortField, setSortField] = useState('Order.OrderNumber');
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
+  const [startSortField, setStartSortField] = useState<'Asset' | 'Contractor_Name' | 'Driver' | 'First_Mention_Time' | 'Start_Time' | 'Last_Mention_Time'>('Driver');
+  const [startSortDir, setStartSortDir] = useState<'asc' | 'desc'>('asc');
 
   // Derived data
   const { contractors, auctions, driverToContractor } = useMemo(() => {
@@ -352,13 +355,20 @@ export default function FullReport() {
   }, [vanChecks, driverToContractor]);
 
   const filteredStartData = useMemo(() => {
-    return startData.filter(r => {
-      const matchContractor = !filters.startContractor || r.Contractor_Name === filters.startContractor;
-      const matchSearch = !filters.startSearch || 
-        Object.values(r).some(v => String(v).toLowerCase().includes(filters.startSearch.toLowerCase()));
-      return matchContractor && matchSearch;
-    }).sort((a, b) => String(a.Asset).localeCompare(String(b.Asset)));
-  }, [startData, filters]);
+    return startData
+      .filter(r => {
+        const matchContractor = !filters.startContractor || r.Contractor_Name === filters.startContractor;
+        const matchSearch = !filters.startSearch ||
+          Object.values(r).some(v => String(v).toLowerCase().includes(filters.startSearch.toLowerCase()));
+        return matchContractor && matchSearch;
+      })
+      .sort((a, b) => {
+        const valA = a[startSortField] ?? '';
+        const valB = b[startSortField] ?? '';
+        const cmp = String(valA).localeCompare(String(valB), undefined, { numeric: true });
+        return startSortDir === 'asc' ? cmp : -cmp;
+      });
+  }, [startData, filters, startSortField, startSortDir]);
 
   const filteredVanChecks = useMemo(() => {
     return vanChecks.filter(vc => {
@@ -430,6 +440,8 @@ export default function FullReport() {
     });
     setSortField('Order.OrderNumber');
     setSortDir('asc');
+    setStartSortField('Driver');
+    setStartSortDir('asc');
   };
 
   const copyStartTable = useCallback(() => {
@@ -523,15 +535,32 @@ export default function FullReport() {
                 <table className="table table-xs table-zebra">
                   <thead className="sticky top-0 bg-base-100 z-10">
                     <tr>
-                      <th>Asset</th>
-                      <th>Contractor</th>
-                      <th>Driver</th>
-                      <th>Arrive WH</th>
-                      <th>Load Time</th>
-                      <th>Diff Load</th>
-                      <th>Start Time</th>
-                      <th>Left WH</th>
-                      <th>Diff Start</th>
+                      {[
+                        ['Asset', 'Asset'],
+                        ['Contractor', 'Contractor_Name'],
+                        ['Driver', 'Driver'],
+                        ['Arrive WH', 'First_Mention_Time'],
+                        ['Load Time', 'load'],
+                        ['Diff Load', 'diffLoad'],
+                        ['Start Time', 'Start_Time'],
+                        ['Left WH', 'Last_Mention_Time'],
+                        ['Diff Start', 'diffStart'],
+                      ].map(([label, field]) => (
+                        <th
+                          key={field}
+                          className="cursor-pointer select-none"
+                          onClick={() => {
+                            if (field === 'load' || field === 'diffLoad' || field === 'diffStart') return;
+                            setStartSortField(field as any);
+                            setStartSortDir(prev => (startSortField === field ? (prev === 'asc' ? 'desc' : 'asc') : 'asc'));
+                          }}
+                        >
+                          {label}
+                          {startSortField === field && (
+                            <span>{startSortDir === 'asc' ? ' ▲' : ' ▼'}</span>
+                          )}
+                        </th>
+                      ))}
                     </tr>
                   </thead>
                   <tbody>
@@ -546,10 +575,10 @@ export default function FullReport() {
                           <td>{r.Driver}</td>
                           <td>{r.First_Mention_Time}</td>
                           <td className="text-info">{load}</td>
-                          <td className={parseInt(diffLoad) > 15 ? 'text-warning' : ''}>{diffLoad}</td>
+                          <td className={Math.abs(parseInt(diffLoad)) > 15 ? 'text-warning' : ''}>{diffLoad}</td>
                           <td className="font-medium">{r.Start_Time}</td>
                           <td>{r.Last_Mention_Time}</td>
-                          <td className={parseInt(diffStart) > 15 ? 'text-warning' : ''}>{diffStart}</td>
+                          <td className={Math.abs(parseInt(diffStart)) > 15 ? 'text-warning' : ''}>{diffStart}</td>
                         </tr>
                       );
                     })}

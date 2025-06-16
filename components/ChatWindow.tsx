@@ -266,7 +266,7 @@ export default function ChatWindow({ user, chatId, name, photo }: ChatWindowProp
             >
               <div className="flex items-center gap-3">
                 <Icon name="reply" className="w-4 h-4 text-primary" />
-                <span className="text-sm text-black truncate max-w-[250px]">
+                  <span className="text-sm text-black dark:text-white truncate max-w-[250px]">
                   Replying to: {replyTo.text.length > 40 ? replyTo.text.slice(0, 40) + '…' : replyTo.text}
                 </span>
               </div>
@@ -345,15 +345,15 @@ export default function ChatWindow({ user, chatId, name, photo }: ChatWindowProp
                   <div
                     className={`relative px-4 py-2.5 max-w-[75%] sm:max-w-[65%] text-sm group transition-all duration-200 ${
                   isMe
-                        ? 'bg-primary text-black rounded-3xl rounded-br-lg shadow-md'
-                        : 'bg-white dark:bg-gray-800 text-black rounded-3xl rounded-bl-lg shadow-md border border-gray-200 dark:border-gray-700'
+                        ? 'bg-primary text-black dark:text-white rounded-3xl rounded-br-lg shadow-md'
+                        : 'bg-white dark:bg-gray-800 text-black dark:text-white rounded-3xl rounded-bl-lg shadow-md border border-gray-200 dark:border-gray-700'
                     }`}
                   >
                     {m.reply_to && replyText && (
                       <div className={`text-xs mb-2 p-2 rounded-xl border-l-3 ${
                         isMe
-                          ? 'bg-primary/30 border-primary text-black'
-                          : 'bg-gray-100 dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-black'
+                          ? 'bg-primary/30 border-primary text-black dark:text-white'
+                          : 'bg-gray-100 dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-black dark:text-white'
                       }`}>
                         {replyText.length > 50 ? replyText.slice(0, 50) + '…' : replyText}
                       </div>
@@ -370,7 +370,7 @@ export default function ChatWindow({ user, chatId, name, photo }: ChatWindowProp
                       </>
                     )}
 
-                    <div className="text-xs mt-1 text-right text-black">
+                    <div className="text-xs mt-1 text-right text-black dark:text-white">
                       {new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                       {m.edited_at && !m.deleted && <span className="ml-1 italic">(edited)</span>}
                     </div>
@@ -451,7 +451,7 @@ export default function ChatWindow({ user, chatId, name, photo }: ChatWindowProp
             >
               <div className="flex items-center gap-3">
                 <Icon name="pen" className="w-4 h-4 text-primary" />
-                <span className="text-sm text-black truncate max-w-[250px]">
+                <span className="text-sm text-black dark:text-white truncate max-w-[250px]">
                   Editing message
                 </span>
               </div>

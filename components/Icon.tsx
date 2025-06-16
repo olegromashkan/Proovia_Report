@@ -6,6 +6,7 @@ interface IconProps {
 }
 
 const iconMap: Record<string, string> = {
+  
   house: 'house',
   upload: 'upload',
   'user-cog': 'person-gear',

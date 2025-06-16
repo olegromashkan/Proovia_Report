@@ -1,5 +1,7 @@
 export interface VarItem {
   key: string;
+  label?: string;
+  description?: string;
   type: 'color' | 'range';
   unit?: string;
   min?: number;

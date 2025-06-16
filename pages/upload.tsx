@@ -116,7 +116,7 @@ export default function Upload() {
     <Layout title="Upload Files">
       <h1 className="text-2xl font-bold mb-4">Upload Files</h1>
       <div
-        className="border-2 border-dashed rounded-lg p-6 text-center bg-white cursor-pointer"
+        className="border-2 border-dashed rounded-lg p-6 text-center bg-white dark:bg-gray-700 dark:border-gray-500 dark:text-gray-200 cursor-pointer"
         onDrop={handleDrop}
         onDragOver={handleDrag}
       >
@@ -128,7 +128,7 @@ export default function Upload() {
           onChange={handleInput}
           className="hidden"
         />
-        <label htmlFor="file" className="text-gray-500 flex flex-col items-center gap-2">
+        <label htmlFor="file" className="text-gray-500 dark:text-gray-400 flex flex-col items-center gap-2">
           <Icon name="file-arrow-up" className="text-3xl" />
           <span>Drag files here or click to select</span>
         </label>
@@ -151,13 +151,13 @@ export default function Upload() {
         Upload
       </button>
       <progress
-        className="w-full h-2 rounded bg-gray-200 mt-4"
+        className="w-full h-2 rounded bg-gray-200 dark:bg-gray-600 mt-4"
         value={progress}
         max={100}
       ></progress>
       {message && <p className="mt-2">{message}</p>}
       {logs.length > 0 && (
-        <div className="bg-gray-100 p-2 rounded mt-4">
+        <div className="bg-gray-100 dark:bg-gray-800 p-2 rounded mt-4 text-gray-800 dark:text-gray-200">
           <h2 className="font-semibold">Logs</h2>
           <ul className="list-disc list-inside text-sm">
             {logs.map((log, idx) => (

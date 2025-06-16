@@ -58,6 +58,14 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
     }
   }
 
+  // remove rows without essential information or with invalid dates
+  items = items.filter((it) => {
+    if (!it.van_id) return false;
+    if (!it.date) return false;
+    const d = new Date(it.date);
+    return !isNaN(d.getTime());
+  });
+
   if (startDate || endDate) {
     items = items.filter((it) => {
       const d = new Date(it.date);

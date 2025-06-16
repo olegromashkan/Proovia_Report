@@ -24,7 +24,7 @@ export default function UploadHistory() {
   if (items.length === 0) return null;
 
   return (
-    <div className="bg-white rounded-lg shadow p-4 space-y-2">
+    <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 space-y-2 text-gray-800 dark:text-gray-200">
       <h2 className="text-lg font-semibold">Upload History</h2>
       <ul className="list-disc list-inside text-sm space-y-1">
         {items.map((i) => (

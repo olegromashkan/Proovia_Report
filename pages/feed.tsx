@@ -128,7 +128,7 @@ export default function Feed() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ type: 'spring', stiffness: 120, damping: 20 }}
-            className="bg-white bg-opacity-90 p-4 rounded-2xl shadow-md border border-gray-100"
+            className="bg-white bg-opacity-90 dark:bg-gray-800 dark:bg-opacity-80 p-4 rounded-2xl shadow-md border border-gray-100 dark:border-gray-700"
           >
             <div className="flex items-start gap-3">
               {me.photo ? (
@@ -144,7 +144,7 @@ export default function Feed() {
               )}
               <div className="flex-1 space-y-3">
                 <textarea
-                  className="w-full p-3 rounded-xl bg-gray-50 text-gray-800 border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#b53133] resize-none"
+                  className="w-full p-3 rounded-xl bg-gray-50 dark:bg-gray-800 text-gray-800 dark:text-gray-200 border border-gray-200 dark:border-gray-700 focus:outline-none focus:ring-2 focus:ring-[#b53133] resize-none"
                   rows={2}
                   placeholder="What's happening?"
                   value={postText}
@@ -199,9 +199,9 @@ export default function Feed() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ type: 'spring', stiffness: 120, damping: 20 }}
-            className="bg-white bg-opacity-90 p-4 rounded-2xl shadow-md border border-gray-100 text-center"
+            className="bg-white bg-opacity-90 dark:bg-gray-800 dark:bg-opacity-80 p-4 rounded-2xl shadow-md border border-gray-100 dark:border-gray-700 text-center"
           >
-            <p className="text-gray-800 text-base">
+            <p className="text-gray-800 dark:text-gray-200 text-base">
               <Link href="/auth/login" className="text-[#b53133] hover:text-[#a12b2e] font-semibold">
                 Log in
               </Link>{' '}
@@ -219,7 +219,7 @@ export default function Feed() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ type: 'spring', stiffness: 120, damping: 20 }}
-            className="bg-white bg-opacity-90 p-4 rounded-2xl shadow-md border border-gray-100"
+            className="bg-white bg-opacity-90 dark:bg-gray-800 dark:bg-opacity-80 p-4 rounded-2xl shadow-md border border-gray-100 dark:border-gray-700"
           >
             <div className="flex items-center justify-between mb-3">
               <UserHoverCard username={p.username}>
@@ -235,10 +235,10 @@ export default function Feed() {
                       {p.username[0]?.toUpperCase()}
                     </div>
                   )}
-                  <div className="text-sm font-semibold text-gray-800">{p.username}</div>
+                  <div className="text-sm font-semibold text-gray-800 dark:text-gray-200">{p.username}</div>
                 </Link>
               </UserHoverCard>
-              <div className="text-xs text-gray-500">
+              <div className="text-xs text-gray-500 dark:text-gray-400">
                 {new Date(p.created_at).toLocaleString()}
                 {p.updated_at && (
                   <span className="italic ml-2">(edited)</span>
@@ -248,7 +248,7 @@ export default function Feed() {
             {editing === p.id ? (
               <div className="space-y-3">
                 <textarea
-                  className="w-full p-3 rounded-xl bg-gray-50 text-gray-800 border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#b53133] resize-none"
+                  className="w-full p-3 rounded-xl bg-gray-50 dark:bg-gray-800 text-gray-800 dark:text-gray-200 border border-gray-200 dark:border-gray-700 focus:outline-none focus:ring-2 focus:ring-[#b53133] resize-none"
                   rows={3}
                   value={editText}
                   onChange={(e) => setEditText(e.target.value)}
@@ -276,7 +276,7 @@ export default function Feed() {
                       Save
                     </motion.button>
                     <motion.button
-                      className="px-3 py-1 rounded-xl bg-gray-200 text-gray-800"
+                      className="px-3 py-1 rounded-xl bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200"
                       onClick={() => setEditing(null)}
                       whileHover={{ scale: 1.05 }}
                       whileTap={{ scale: 0.95 }}
@@ -288,7 +288,7 @@ export default function Feed() {
               </div>
             ) : (
               <>
-                <div className="text-gray-800 text-base whitespace-pre-wrap">{p.content}</div>
+                <div className="text-gray-800 dark:text-gray-200 text-base whitespace-pre-wrap">{p.content}</div>
                 {p.image && (
                   <motion.img
                     src={p.image}
@@ -371,12 +371,12 @@ export default function Feed() {
                             {c.username[0]?.toUpperCase()}
                         </div>
                         )}
-                        <div className="font-semibold text-gray-800">{c.username}</div>
+                        <div className="font-semibold text-gray-800 dark:text-gray-200">{c.username}</div>
                       </Link>
                     </UserHoverCard>
                     <div className="flex-1">
-                      <div className="text-gray-800 p-2 rounded-xl bg-gray-50">{c.text}</div>
-                      <div className="text-xs text-gray-500 mt-1">
+                      <div className="text-gray-800 dark:text-gray-200 p-2 rounded-xl bg-gray-50 dark:bg-gray-700">{c.text}</div>
+                      <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                         {new Date(c.created_at).toLocaleString()}
                       </div>
                     </div>
@@ -384,7 +384,7 @@ export default function Feed() {
                 ))}
                 <div className="flex items-center gap-2 mt-2">
                   <input
-                    className="flex-1 p-2 rounded-xl bg-gray-50 text-gray-800 border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#b53133]"
+                    className="flex-1 p-2 rounded-xl bg-gray-50 dark:bg-gray-800 text-gray-800 dark:text-gray-200 border border-gray-200 dark:border-gray-700 focus:outline-none focus:ring-2 focus:ring-[#b53133]"
                     placeholder="Comment..."
                     value={commentText[p.id] || ''}
                     onChange={(e) =>
