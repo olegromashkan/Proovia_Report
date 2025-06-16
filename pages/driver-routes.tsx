@@ -300,7 +300,14 @@ export default function DriverRoutes() {
       options: {
         responsive: true,
         maintainAspectRatio: false,
-        plugins: { legend: { position: 'bottom' } },
+        plugins: {
+          legend: { position: 'bottom' },
+          decimation: {
+            enabled: true,
+            algorithm: 'lttb',
+            samples: 100,
+          },
+        },
       },
       plugins: [highlightPlugin],
     });

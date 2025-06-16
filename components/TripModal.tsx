@@ -98,8 +98,29 @@ export default function TripModal({ trip, onClose, allTrips }: Props) {
 
     chartInstanceRef.current = new Chart(chartRef.current, {
       type: 'line',
-      data: { labels, datasets: [{ label: `Punctuality (min) for ${driver}`, data, borderColor: '#b53133', tension: 0.1, fill: false }] },
-      options: { responsive: true, maintainAspectRatio: false }
+      data: {
+        labels,
+        datasets: [
+          {
+            label: `Punctuality (min) for ${driver}`,
+            data,
+            borderColor: '#b53133',
+            tension: 0.1,
+            fill: false,
+          },
+        ],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          decimation: {
+            enabled: true,
+            algorithm: 'lttb',
+            samples: 50,
+          },
+        },
+      },
     });
 
     return () => {
