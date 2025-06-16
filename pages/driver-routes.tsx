@@ -74,6 +74,8 @@ export default function DriverRoutes() {
   const [error, setError] = useState<string | null>(null);
   const [modalDate, setModalDate] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const chartRef = useRef<HTMLCanvasElement>(null);
+  const chartInstanceRef = useRef<any>(null);
   const [columnMenuOpen, setColumnMenuOpen] = useState(false);
   const [visibleCols, setVisibleCols] = useState({
     start: true,
@@ -203,11 +205,81 @@ export default function DriverRoutes() {
     },
     {}
   );
-  const contractorCards = Object.entries(contractorStats).map(([name, info]) => ({
-    name,
-    driverCount: info.drivers.size,
-    avgPrice: info.count ? info.total / info.count : 0,
-  }));
+  const contractorCards = Object.entries(contractorStats)
+    .map(([name, info]) => ({
+      name,
+      driverCount: info.drivers.size,
+      avgPrice: info.count ? info.total / info.count : 0,
+    }))
+    .sort((a, b) => b.avgPrice - a.avgPrice);
+
+  useEffect(() => {
+    if (!chartRef.current) return;
+    const Chart = (window as any).Chart;
+    if (!Chart) return;
+
+    if (chartInstanceRef.current) {
+      chartInstanceRef.current.destroy();
+    }
+
+    const uniqueDates = Array.from(new Set(items.map(i => i.date))).sort();
+    const contractorNames = Array.from(new Set(items.map(i => i.contractor || 'Unknown'))).sort();
+    const aggregates: Record<string, Record<string, { sum: number; count: number }>> = {};
+    items.forEach(it => {
+      const c = it.contractor || 'Unknown';
+      const price = Number(it.price);
+      if (isNaN(price)) return;
+      if (!aggregates[c]) aggregates[c] = {};
+      if (!aggregates[c][it.date]) aggregates[c][it.date] = { sum: 0, count: 0 };
+      aggregates[c][it.date].sum += price;
+      aggregates[c][it.date].count += 1;
+    });
+
+    const COLORS = [
+      '#b53133',
+      '#3366cc',
+      '#22aa99',
+      '#994499',
+      '#ee6633',
+      '#aaaa11',
+      '#6633cc',
+      '#eec422',
+      '#316395',
+    ];
+
+    const datasets = contractorNames.map((name, idx) => {
+      const data = uniqueDates.map(d => {
+        const rec = aggregates[name]?.[d];
+        if (rec) return +(rec.sum / rec.count).toFixed(2);
+        return null;
+      });
+      return {
+        label: name,
+        data,
+        borderColor: COLORS[idx % COLORS.length],
+        tension: 0.1,
+        fill: false,
+        spanGaps: true,
+      };
+    });
+
+    chartInstanceRef.current = new Chart(chartRef.current, {
+      type: 'line',
+      data: { labels: uniqueDates, datasets },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { position: 'bottom' } },
+      },
+    });
+
+    return () => {
+      if (chartInstanceRef.current) {
+        chartInstanceRef.current.destroy();
+        chartInstanceRef.current = null;
+      }
+    };
+  }, [items]);
 
   const handleFile = async (dateStr: string, file: File) => {
     try {
@@ -299,6 +371,11 @@ export default function DriverRoutes() {
               ))}
             </div>
           )}
+
+          {/* Avg Price Chart */}
+          <div className="h-64">
+            <canvas ref={chartRef} />
+          </div>
 
           {/* Filters */}
           <div className="flex flex-wrap gap-2 items-center">
