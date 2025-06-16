@@ -7,20 +7,20 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
   const current = req.cookies.user || '';
 
   if (req.method === 'GET') {
-    const { user } = req.query as { user?: string };
+    const { user, type } = req.query as { user?: string; type?: string };
     const base = `
       SELECT p.id, p.username, p.content, p.image, p.created_at, p.updated_at, p.type, u.photo,
         (SELECT COUNT(*) FROM post_likes WHERE post_id = p.id) as likes,
         (SELECT COUNT(*) FROM post_comments WHERE post_id = p.id) as comments,
         (SELECT 1 FROM post_likes WHERE post_id = p.id AND username = ?) as liked
       FROM posts p JOIN users u ON p.username = u.username`;
-    let rows;
     const order = 'ORDER BY COALESCE(p.updated_at, p.created_at) DESC';
-    if (user) {
-      rows = db.prepare(`${base} WHERE p.username = ? ${order}`).all(current, user);
-    } else {
-      rows = db.prepare(`${base} ${order}`).all(current);
-    }
+    const where: string[] = [];
+    const params: any[] = [current];
+    if (user) { where.push('p.username = ?'); params.push(user); }
+    if (type) { where.push('p.type = ?'); params.push(type); }
+    const query = where.length ? `${base} WHERE ${where.join(' AND ')} ${order}` : `${base} ${order}`;
+    const rows = db.prepare(query).all(...params);
     return res.status(200).json({ posts: rows });
   }
 
