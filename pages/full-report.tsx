@@ -823,7 +823,7 @@ export default function FullReport() {
         </div>
       </div>
 
-      <TripModal trip={selected} onClose={() => setSelected(null)} allTrips={trips} />
+      <TripModal trip={selected} onClose={() => setSelected(null)} />
     </Layout>
   );
 }
