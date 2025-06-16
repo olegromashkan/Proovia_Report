@@ -74,8 +74,6 @@ export default function DriverRoutes() {
   const [error, setError] = useState<string | null>(null);
   const [modalDate, setModalDate] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const chartRef = useRef<HTMLCanvasElement>(null);
-  const chartInstanceRef = useRef<any>(null);
   const [columnMenuOpen, setColumnMenuOpen] = useState(false);
   const [visibleCols, setVisibleCols] = useState({
     start: true,
@@ -213,110 +211,6 @@ export default function DriverRoutes() {
     }))
     .sort((a, b) => b.avgPrice - a.avgPrice);
 
-  const topContractors = contractorCards.slice(0, 3).map(c => c.name);
-
-  const hexToRgba = (hex: string, alpha: number) => {
-    const r = parseInt(hex.slice(1, 3), 16);
-    const g = parseInt(hex.slice(3, 5), 16);
-    const b = parseInt(hex.slice(5, 7), 16);
-    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
-  };
-
-  useEffect(() => {
-    if (!chartRef.current) return;
-    const Chart = (window as any).Chart;
-    if (!Chart) return;
-
-    if (chartInstanceRef.current) {
-      chartInstanceRef.current.destroy();
-    }
-
-    const uniqueDates = Array.from(new Set(items.map(i => i.date))).sort();
-    const contractorNames = Array.from(new Set(items.map(i => i.contractor || 'Unknown'))).sort();
-    const aggregates: Record<string, Record<string, { sum: number; count: number }>> = {};
-    items.forEach(it => {
-      const c = it.contractor || 'Unknown';
-      const price = Number(it.price);
-      if (isNaN(price)) return;
-      if (!aggregates[c]) aggregates[c] = {};
-      if (!aggregates[c][it.date]) aggregates[c][it.date] = { sum: 0, count: 0 };
-      aggregates[c][it.date].sum += price;
-      aggregates[c][it.date].count += 1;
-    });
-
-    const COLORS = [
-      '#b53133',
-      '#3366cc',
-      '#22aa99',
-      '#994499',
-      '#ee6633',
-      '#aaaa11',
-      '#6633cc',
-      '#eec422',
-      '#316395',
-    ];
-
-    const datasets = contractorNames.map((name, idx) => {
-      const data = uniqueDates.map(d => {
-        const rec = aggregates[name]?.[d];
-        if (rec) return +(rec.sum / rec.count).toFixed(2);
-        return null;
-      });
-      const isTop = topContractors.includes(name);
-      const color = COLORS[idx % COLORS.length];
-      const baseAlpha = isTop ? 1 : 0.3;
-      return {
-        label: name,
-        data,
-        borderColor: hexToRgba(color, baseAlpha),
-        backgroundColor: hexToRgba(color, baseAlpha),
-        borderWidth: 1,
-        stack: 'all',
-      };
-    });
-
-    const highlightPlugin = {
-      id: 'highlight',
-      afterEvent(chart: any, args: any) {
-        const e = args.event;
-        const points = chart.getElementsAtEventForMode(e.native, 'dataset', { intersect: false }, false);
-        chart.data.datasets.forEach((ds: any, i: number) => {
-          const color = COLORS[i % COLORS.length];
-          const isActive = points.length && points[0].datasetIndex === i && e.type === 'mousemove';
-          const isTop = topContractors.includes(ds.label);
-          const alpha = isActive ? 1 : isTop ? 1 : 0.3;
-          ds.borderColor = hexToRgba(color, alpha);
-          ds.backgroundColor = hexToRgba(color, alpha);
-        });
-        chart.update('none');
-      }
-    };
-
-    chartInstanceRef.current = new Chart(chartRef.current, {
-      type: 'bar',
-      data: { labels: uniqueDates, datasets },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        animation: false,
-        plugins: {
-          legend: { position: 'bottom' },
-        },
-        scales: {
-          x: { stacked: true },
-          y: { stacked: true },
-        },
-      },
-      plugins: [highlightPlugin],
-    });
-
-    return () => {
-      if (chartInstanceRef.current) {
-        chartInstanceRef.current.destroy();
-        chartInstanceRef.current = null;
-      }
-    };
-  }, [items]);
 
   const handleFile = async (dateStr: string, file: File) => {
     try {
@@ -409,10 +303,6 @@ export default function DriverRoutes() {
             </div>
           )}
 
-          {/* Avg Price Chart */}
-          <div className="h-48 bg-white dark:bg-gray-800 rounded-xl shadow p-4">
-            <canvas ref={chartRef} className="w-full h-full" />
-          </div>
 
           {/* Filters */}
           <div className="flex flex-wrap gap-2 items-center">
