@@ -6,6 +6,18 @@ interface Post {
   created_at: string;
 }
 
+interface ContractorInfo {
+  contractor: string;
+  avgPrice: number;
+}
+
+interface FeedData {
+  posts: Post[];
+  topContractors: ContractorInfo[];
+  earliestStart: { driver: string; time: string } | null;
+  latestEnd: { driver: string; time: string } | null;
+}
+
 export default function SummaryFeed() {
   const [posts, setPosts] = useState<Post[]>([]);
   const [isLoading, setIsLoading] = useState(true);
