@@ -32,6 +32,7 @@ const iconMap: Record<string, string> = {
   refresh: 'arrow-clockwise',
   people: 'people',
   chat: 'chat-dots',
+  signpost: 'signpost',
   'hand-thumbs-up': 'hand-thumbs-up',
   'hand-thumbs-up-fill': 'hand-thumbs-up-fill',
   'chat-left': 'chat-left-text',
