@@ -1,4 +1,4 @@
-import { ReactNode, useState } from 'react';
+import { ReactNode, useState, useEffect } from 'react';
 import Head from 'next/head';
 import Navbar from './Navbar';
 import ToastNotifications from './ToastNotifications';
@@ -11,6 +11,15 @@ interface LayoutProps {
 
 export default function Layout({ children, title, fullWidth }: LayoutProps) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+
+  useEffect(() => {
+    const saved = localStorage.getItem('sidebarOpen');
+    if (saved !== null) setIsSidebarOpen(saved === 'true');
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem('sidebarOpen', isSidebarOpen.toString());
+  }, [isSidebarOpen]);
 
   return (
     <>

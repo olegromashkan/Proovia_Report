@@ -24,6 +24,15 @@ export default function Navbar({ isSidebarOpen, setIsSidebarOpen }: { isSidebarO
   const [bottomBarVisible, setBottomBarVisible] = useState(true);
   const router = useRouter();
 
+  useEffect(() => {
+    const saved = localStorage.getItem('bottomBarVisible');
+    if (saved !== null) setBottomBarVisible(saved === 'true');
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem('bottomBarVisible', bottomBarVisible.toString());
+  }, [bottomBarVisible]);
+
   // Handle scroll effect for navbar shadow
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 20);
@@ -63,7 +72,7 @@ export default function Navbar({ isSidebarOpen, setIsSidebarOpen }: { isSidebarO
           ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}
         `}
       >
-        <div className="space-y-6">
+        <div className="flex-1 space-y-6 flex flex-col">
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2 group">
             <div className="p-1.5 bg-gradient-to-br from-[#b53133]/20 to-[#b53133]/40 rounded-lg group-hover:scale-105 transition-transform duration-200">
@@ -108,7 +117,6 @@ export default function Navbar({ isSidebarOpen, setIsSidebarOpen }: { isSidebarO
 
         {/* Action Buttons */}
         <div className="flex flex-col gap-2 pt-4 border-t border-gray-200/20 dark:border-gray-700/20">
-          <ThemeToggle />
           <button
             onClick={() => setSearchOpen(true)}
             className="p-2 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-[#b53133]/10 dark:hover:bg-[#b53133]/20 transition-colors duration-200"
@@ -125,6 +133,7 @@ export default function Navbar({ isSidebarOpen, setIsSidebarOpen }: { isSidebarO
             <Icon name="check" className="w-5 h-5" />
           </button>
           <UserMenu />
+          <ThemeToggle />
           <button
             onClick={() => setIsSidebarOpen(false)}
             className="p-2 mt-2 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-[#b53133]/10 dark:hover:bg-[#b53133]/20 transition-colors duration-200"
