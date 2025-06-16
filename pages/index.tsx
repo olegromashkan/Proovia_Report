@@ -25,7 +25,7 @@ export default function Home() {
     fetch('/api/summary')
       .then((res) => (res.ok ? res.json() : Promise.reject()))
       .then(setSummary)
-      .catch(() => {});
+      .catch(() => { });
   }, []);
 
   const cards = [
@@ -122,10 +122,10 @@ export default function Home() {
       </motion.div>
 
       <div className="flex flex-col md:flex-row gap-6">
-        <div className="flex-1">
+        <div className="flex-[3] min-w-[800px]">
           <Calendar />
         </div>
-        <div className="w-full md:w-56">
+        <div className="flex-[1] w-full md:w-48">
           <SummaryFeed />
         </div>
       </div>
