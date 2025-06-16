@@ -64,10 +64,10 @@ function stylePunctuality(val: number | null) {
 
 export default function DriverRoutes() {
   const today = formatDate(new Date());
-  const sevenAgoDate = new Date();
-  sevenAgoDate.setDate(sevenAgoDate.getDate() - 6);
-  const sevenAgo = formatDate(sevenAgoDate);
-  const [start, setStart] = useState(sevenAgo);
+  const thirtyAgoDate = new Date();
+  thirtyAgoDate.setDate(thirtyAgoDate.getDate() - 29);
+  const thirtyAgo = formatDate(thirtyAgoDate);
+  const [start, setStart] = useState(thirtyAgo);
   const [end, setEnd] = useState(today);
   const [items, setItems] = useState<Item[]>([]);
   const [loading, setLoading] = useState(false);
