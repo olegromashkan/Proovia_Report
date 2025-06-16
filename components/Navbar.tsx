@@ -13,14 +13,16 @@ import { motion, AnimatePresence } from 'framer-motion';
 interface NavLink {
   href: string;
   icon: string;
-  label:string;
+  label: string;
 }
 
 export default function Navbar() {
   const router = useRouter();
   const [searchOpen, setSearchOpen] = useState(false);
   const [tasksOpen, setTasksOpen] = useState(false);
-  const [menuOpen, setMenuOpen] = useState(false);
+  const [navOpen, setNavOpen] = useState(false);
+  const [hovered, setHovered] = useState(false);
+  const [pinned, setPinned] = useState<string[]>([]);
   const [position, setPosition] = useState({ x: 20, y: 20 });
 
   const navLinks: NavLink[] = [
@@ -39,14 +41,53 @@ export default function Navbar() {
   useEffect(() => {
     const saved = localStorage.getItem('navBubble');
     if (saved) setPosition(JSON.parse(saved));
+    const pins = localStorage.getItem('pinnedLinks');
+    if (pins) setPinned(JSON.parse(pins));
   }, []);
 
-
   const handleDragEnd = (_: any, info: any) => {
-    const x = info.point.x;
-    const y = info.point.y;
+    const size = 48;
+    const margin = 16;
+    let x = info.point.x;
+    let y = info.point.y;
+    const w = window.innerWidth;
+    const h = window.innerHeight;
+    const dists = [
+      { edge: 'left', val: x },
+      { edge: 'right', val: w - x - size },
+      { edge: 'top', val: y },
+      { edge: 'bottom', val: h - y - size },
+    ].sort((a, b) => a.val - b.val);
+    switch (dists[0].edge) {
+      case 'left':
+        x = margin;
+        y = Math.min(Math.max(y, margin), h - size - margin);
+        break;
+      case 'right':
+        x = w - size - margin;
+        y = Math.min(Math.max(y, margin), h - size - margin);
+        break;
+      case 'top':
+        y = margin;
+        x = Math.min(Math.max(x, margin), w - size - margin);
+        break;
+      case 'bottom':
+        y = h - size - margin;
+        x = Math.min(Math.max(x, margin), w - size - margin);
+        break;
+    }
     setPosition({ x, y });
     localStorage.setItem('navBubble', JSON.stringify({ x, y }));
+  };
+
+  const togglePin = (href: string) => {
+    setPinned(prev => {
+      const next = prev.includes(href)
+        ? prev.filter(p => p !== href)
+        : [...prev, href];
+      localStorage.setItem('pinnedLinks', JSON.stringify(next));
+      return next;
+    });
   };
 
   return (
@@ -59,15 +100,38 @@ export default function Navbar() {
         className="fixed z-50"
       >
         <div
-          onMouseEnter={() => setMenuOpen(true)}
-          onMouseLeave={() => setMenuOpen(false)}
+          onMouseEnter={() => setHovered(true)}
+          onMouseLeave={() => setHovered(false)}
           className="relative"
         >
-          <div className="w-12 h-12 rounded-full bg-white dark:bg-gray-800 shadow-md flex items-center justify-center">
+          <div
+            className="w-12 h-12 rounded-full bg-white dark:bg-gray-800 shadow-md flex items-center justify-center"
+            onClick={() => setNavOpen(o => !o)}
+          >
             <Icon name="list" className="w-6 h-6 text-gray-600 dark:text-gray-300" />
           </div>
           <AnimatePresence>
-            {menuOpen && (
+            {hovered && !navOpen && pinned.length > 0 && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.9 }}
+                transition={{ duration: 0.15 }}
+                className="absolute left-14 top-1/2 -translate-y-1/2 flex flex-col gap-2"
+              >
+                {pinned
+                  .map(h => navLinks.find(l => l.href === h))
+                  .filter((l): l is NavLink => !!l)
+                  .map(({ href, icon, label }) => (
+                    <Link key={href} href={href} className="w-10 h-10 rounded-full bg-white dark:bg-gray-800 shadow flex items-center justify-center hover:bg-gray-100 dark:hover:bg-gray-700" aria-label={label}>
+                      <Icon name={icon} className="w-5 h-5 text-gray-600 dark:text-gray-300" />
+                    </Link>
+                  ))}
+              </motion.div>
+            )}
+          </AnimatePresence>
+          <AnimatePresence>
+            {navOpen && (
               <motion.aside
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
@@ -88,21 +152,35 @@ export default function Navbar() {
                   </Link>
 
                   <nav className="flex-1 space-y-2 px-2">
-                    {navLinks.map(({ href, icon, label }) => (
-                      <Link
-                        key={href}
-                        href={href}
-                        aria-current={isActive(href) ? 'page' : undefined}
-                        className={`flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-semibold transition-all duration-200 ${
-                          isActive(href)
-                            ? 'bg-[#b53133] text-white shadow-md'
-                            : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-white'
-                        }`}
-                      >
-                        <Icon name={icon} className="w-5 h-5" />
-                        <span>{label}</span>
-                      </Link>
-                    ))}
+                    {navLinks.map(({ href, icon, label }) => {
+                      const isPinned = pinned.includes(href);
+                      return (
+                        <Link
+                          key={href}
+                          href={href}
+                          aria-current={isActive(href) ? 'page' : undefined}
+                          className={`flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-semibold transition-all duration-200 ${
+                            isActive(href)
+                              ? 'bg-[#b53133] text-white shadow-md'
+                              : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-white'
+                          }`}
+                        >
+                          <Icon name={icon} className="w-5 h-5" />
+                          <span className="flex-1">{label}</span>
+                          <button
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              togglePin(href);
+                            }}
+                            className="ml-auto p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700"
+                            aria-label={isPinned ? 'Unpin' : 'Pin'}
+                          >
+                            <Icon name={isPinned ? 'star-fill' : 'star'} className="w-4 h-4" />
+                          </button>
+                        </Link>
+                      );
+                    })}
                   </nav>
                 </div>
 
@@ -136,4 +214,3 @@ export default function Navbar() {
     </>
   );
 }
-
