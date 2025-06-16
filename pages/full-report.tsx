@@ -97,7 +97,7 @@ const ScrollingStats = ({ trips, driverToContractor }: { trips: Trip[], driverTo
   }, []);
   
   const StatCard = ({ title, data, color }: { title: string, data: [string, number][], color: string }) => (
-    <div className={`bg-gradient-to-br ${color} rounded-xl p-4 shadow-lg min-w-[250px] text-white`}>
+    <div className={`bg-gradient-to-br ${color} rounded-xl p-4 shadow-lg min-w-[200px] sm:min-w-[250px] text-white`}>
       <h3 className="font-bold text-lg mb-3 opacity-90">{title}</h3>
       <div className="space-y-1">
         {data.slice(0, 3).map(([name, count], idx) => (
@@ -111,7 +111,7 @@ const ScrollingStats = ({ trips, driverToContractor }: { trips: Trip[], driverTo
   );
 
   const TopDriversCard = ({ data }: { data: { driver: string; complete: number; failed: number }[] }) => (
-    <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-4 shadow-lg min-w-[250px] text-white">
+    <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-4 shadow-lg min-w-[200px] sm:min-w-[250px] text-white">
       <h3 className="font-bold text-lg mb-3 opacity-90">🏆 Top Drivers</h3>
       <div className="space-y-1">
         {data.map((d, idx) => (

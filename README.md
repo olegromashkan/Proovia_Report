@@ -2,6 +2,9 @@
 
 This project uses **Next.js** with UnoCSS and a small SQLite database.
 
+The interface now adapts to mobile screens thanks to responsive
+layout tweaks in several pages.
+
 ## Development
 
 1. Install dependencies (requires internet access):
