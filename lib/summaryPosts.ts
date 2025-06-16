@@ -50,15 +50,29 @@ export function generateSummaryPosts(): number {
   const scheduleDates = new Set(getDates('schedule_trips'));
   const csvDates = new Set(getDates('csv_trips'));
 
-  interface DriverStat { diff: number[]; late: number[]; }
+  interface DriverStat {
+    diff: number[];
+    late: number[];
+    earliest?: number;
+    latest?: number;
+  }
+
   interface DayStats {
     total: number;
     complete: number;
     failed: number;
     drivers: Record<string, DriverStat>;
+    contractors: Record<string, { total: number; count: number }>;
   }
 
   const groups: Record<string, DayStats> = {};
+
+  const driverRows = db.prepare('SELECT data FROM drivers_report').all();
+  const driverMap: Record<string, string> = {};
+  driverRows.forEach((r: any) => {
+    const d = JSON.parse(r.data);
+    if (d.Full_Name) driverMap[d.Full_Name.trim()] = d.Contractor_Name || 'Unknown';
+  });
 
   items.forEach((item: any) => {
     const raw =
@@ -71,7 +85,7 @@ export function generateSummaryPosts(): number {
     const iso = parseDate(String(raw).split(' ')[0]);
     if (!iso) return;
     if (!groups[iso]) {
-      groups[iso] = { total: 0, complete: 0, failed: 0, drivers: {} };
+      groups[iso] = { total: 0, complete: 0, failed: 0, drivers: {}, contractors: {} };
     }
     const stats = groups[iso];
     stats.total += 1;
@@ -95,6 +109,32 @@ export function generateSummaryPosts(): number {
       item['Time_Completed'] || item.Time_Completed || item['Trip.Time_Completed']
     );
     if (late !== null) stats.drivers[driver].late.push(late);
+
+    const start = parseMinutes(item['Start_Time'] || item['Trip.Start_Time']);
+    if (start !== null) {
+      const cur = stats.drivers[driver].earliest;
+      if (cur === undefined || start < cur) stats.drivers[driver].earliest = start;
+    }
+    const end = parseMinutes(
+      item['Time_Completed'] || item.Time_Completed || item['Trip.Time_Completed'] || item['Last_Mention_Time'] || item.Last_Mention_Time
+    );
+    if (end !== null) {
+      const cur = stats.drivers[driver].latest;
+      if (cur === undefined || end > cur) stats.drivers[driver].latest = end;
+    }
+
+    const contractor =
+      driverMap[driver] || item.Contractor_Name || item['Contractor_Name'] || 'Unknown';
+    if (!stats.contractors[contractor]) {
+      stats.contractors[contractor] = { total: 0, count: 0 };
+    }
+    const priceRaw =
+      item['Order.Price'] || item.Price || item.Order_Value || item['Order_Value'] || item.OrderValue;
+    const price = parseFloat(priceRaw);
+    if (!isNaN(price)) {
+      stats.contractors[contractor].total += price;
+      stats.contractors[contractor].count += 1;
+    }
   });
 
   let created = 0;
@@ -129,8 +169,37 @@ export function generateSummaryPosts(): number {
       .map(d => d.driver)
       .join(', ');
 
-    const content = `Summary for ${date}: ${stats.complete} completed of ${stats.total}, ${stats.failed} failed. Best: ${best}. Worst: ${worst}.`;
-    db.prepare('INSERT INTO posts (username, content, created_at, type) VALUES (?, ?, ?, ?)').run('summary_bot', content, ts, 'summary');
+    const topContractors = Object.entries(stats.contractors)
+      .filter(([, c]) => c.count > 0)
+      .map(([name, c]) => ({ name, avg: c.total / c.count }))
+      .sort((a, b) => b.avg - a.avg)
+      .slice(0, 3);
+
+    const earliestDrivers = Object.entries(stats.drivers)
+      .filter(([, d]) => d.earliest !== undefined)
+      .sort((a, b) => (a[1].earliest! - b[1].earliest!))
+      .slice(0, 3)
+      .map(([driver, d]) => ({ driver, time: d.earliest! }));
+
+    const latestDrivers = Object.entries(stats.drivers)
+      .filter(([, d]) => d.latest !== undefined)
+      .sort((a, b) => (b[1].latest! - a[1].latest!))
+      .slice(0, 3)
+      .map(([driver, d]) => ({ driver, time: d.latest! }));
+
+    const summary = {
+      date,
+      total: stats.total,
+      complete: stats.complete,
+      failed: stats.failed,
+      best: best.split(', ').filter(Boolean),
+      worst: worst.split(', ').filter(Boolean),
+      topContractors,
+      earliestDrivers,
+      latestDrivers,
+    };
+
+    db.prepare('INSERT INTO posts (username, content, created_at, type) VALUES (?, ?, ?, ?)').run('summary_bot', JSON.stringify(summary), ts, 'summary');
     created += 1;
   }
   return created;
