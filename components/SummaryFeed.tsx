@@ -50,8 +50,13 @@ export default function SummaryFeed() {
   return (
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
     <div className="flex flex-col md:flex-row gap-4 h-[calc(100vh-220px)]">
       <div className="w-full md:w-1/2 min-w-[250px] h-60 md:h-auto overflow-hidden">
+=======
+    <div className="flex gap-4 h-[calc(100vh-220px)]">
+      <div className="w-1/2 min-w-[250px] overflow-hidden">
+>>>>>>> parent of 8f3bafd (Merge pull request #217 from olegromashkan/codex/fix-map-layout-and-display-issues)
         <OrderMap />
       </div>
       <div className="flex-1 overflow-y-auto space-y-4 scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600 scrollbar-track-transparent pr-2">

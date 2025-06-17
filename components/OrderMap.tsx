@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 
 // Global references for caching
 declare global {
@@ -10,27 +10,22 @@ declare global {
 
 export default function OrderMap() {
   const ref = useRef<HTMLDivElement>(null);
-  const [error, setError] = useState(false);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
     let root: any = window._orderMapRoot;
 
     const loadScripts = async () => {
-      try {
-        if (!window._amchartsReady) {
-          await Promise.all([
-            import(/* webpackIgnore: true */ 'https://cdn.amcharts.com/lib/5/index.js'),
-            import(/* webpackIgnore: true */ 'https://cdn.amcharts.com/lib/5/map.js'),
-            import(/* webpackIgnore: true */ 'https://cdn.amcharts.com/lib/5/geodata/ukLow.js'),
-            import(/* webpackIgnore: true */ 'https://cdn.amcharts.com/lib/5/themes/Animated.js'),
-          ]);
-          window._amchartsReady = true;
-        }
-        init();
-      } catch {
-        setError(true);
+      if (!window._amchartsReady) {
+        await Promise.all([
+          import(/* webpackIgnore: true */ 'https://cdn.amcharts.com/lib/5/index.js'),
+          import(/* webpackIgnore: true */ 'https://cdn.amcharts.com/lib/5/map.js'),
+          import(/* webpackIgnore: true */ 'https://cdn.amcharts.com/lib/5/geodata/ukLow.js'),
+          import(/* webpackIgnore: true */ 'https://cdn.amcharts.com/lib/5/themes/Animated.js'),
+        ]);
+        window._amchartsReady = true;
       }
+      init();
     };
 
     const init = async () => {
@@ -99,7 +94,6 @@ export default function OrderMap() {
         window._orderMapRoot = root;
       } else if (ref.current && root.dom) {
         ref.current.appendChild(root.dom);
-        root.resize();
       }
     };
 
@@ -111,12 +105,5 @@ export default function OrderMap() {
     };
   }, []);
 
-  if (error) {
-    return (
-      <div className="w-full h-full flex items-center justify-center text-sm text-gray-500">
-        Failed to load map
-      </div>
-    );
-  }
-  return <div ref={ref} className="w-full h-full min-h-[200px]" />;
+  return <div ref={ref} style={{ width: '100%', aspectRatio: '4 / 5' }} />;
 }
