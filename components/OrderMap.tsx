@@ -9,38 +9,55 @@ export default function OrderMap() {
 
   useEffect(() => {
     if (typeof window === 'undefined' || !ref.current) return;
-    const L = (window as any).L;
-    if (!L) return;
 
-    const map = L.map(ref.current).setView([54, -2], 6);
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
-      attribution: '© OpenStreetMap contributors © CARTO'
-    }).addTo(map);
+    let map: any;
 
-    Promise.all([
-      fetch('/regions.geojson').then(r => r.json()),
-      fetch('/api/region-stats').then(r => r.json())
-    ]).then(([geo, stats]: [any, RegionStats]) => {
-      L.geoJSON(geo, {
-        style: (feature: any) => {
-          const name = feature.properties.name;
-          const total = stats[name]?.total || 0;
-          const color = total ? '#b53133' : '#888888';
-          return { color, weight: 1, fillOpacity: 0.4 };
-        },
-        onEachFeature: (feature: any, layer: any) => {
-          const name = feature.properties.name;
-          const s = stats[name];
-          const html = s
-            ? `<strong>${name}</strong><br/>Total: ${s.total}<br/>Complete: ${s.complete}<br/>Failed: ${s.failed}`
-            : `<strong>${name}</strong><br/>No data`;
-          layer.bindPopup(html);
-        }
+    const init = () => {
+      const L = (window as any).L;
+      if (!L || !ref.current) return false;
+
+      map = L.map(ref.current).setView([54, -2], 6);
+      L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+        attribution: '© OpenStreetMap contributors © CARTO'
       }).addTo(map);
-    });
+
+      Promise.all([
+        fetch('/regions.geojson').then(r => r.json()),
+        fetch('/api/region-stats').then(r => r.json())
+      ]).then(([geo, stats]: [any, RegionStats]) => {
+        L.geoJSON(geo, {
+          style: (feature: any) => {
+            const name = feature.properties.name;
+            const total = stats[name]?.total || 0;
+            const color = total ? '#b53133' : '#888888';
+            return { color, weight: 1, fillOpacity: 0.4 };
+          },
+          onEachFeature: (feature: any, layer: any) => {
+            const name = feature.properties.name;
+            const s = stats[name];
+            const html = s
+              ? `<strong>${name}</strong><br/>Total: ${s.total}<br/>Complete: ${s.complete}<br/>Failed: ${s.failed}`
+              : `<strong>${name}</strong><br/>No data`;
+            layer.bindPopup(html);
+          }
+        }).addTo(map);
+      });
+
+      return true;
+    };
+
+    if (!init()) {
+      const id = setInterval(() => {
+        if (init()) clearInterval(id);
+      }, 100);
+      return () => {
+        clearInterval(id);
+        if (map) map.remove();
+      };
+    }
 
     return () => {
-      map.remove();
+      if (map) map.remove();
     };
   }, []);
 
