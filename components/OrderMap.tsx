@@ -106,7 +106,9 @@ export default function OrderMap() {
     loadScripts();
     return () => {
       if (ref.current && root && root.dom) {
-        try { ref.current.removeChild(root.dom); } catch {}
+        try {
+          ref.current.removeChild(root.dom);
+        } catch {}
       }
     };
   }, []);
