@@ -38,6 +38,8 @@ const iconMap: Record<string, string> = {
   'chat-left': 'chat-left-text',
   calendar: 'calendar',
   database: 'hdd-stack',
+  'chart-bar': 'bar-chart',
+  map: 'map',
   truck: 'truck',
   'light-bulb': 'lightbulb',
   beaker: 'beaker',
