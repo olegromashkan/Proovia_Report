@@ -59,8 +59,14 @@ export default function SummaryCharts() {
     const L = (window as any).L;
     const heat = (L as any).heatLayer;
     if (!L || !heat) return;
+
+    const bounds = L.latLngBounds([[49.9, -8.7], [61.0, 1.8]]);
+
     if (!mapInst.current) {
-      const map = L.map(mapRef.current, { zoomControl: false }).setView([51.505, -0.09], 6);
+      const map = L.map(mapRef.current, {
+        zoomControl: false,
+        maxBounds: bounds,
+      }).fitBounds(bounds);
       L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
         attribution: '© OpenStreetMap contributors © CARTO',
       }).addTo(map);
@@ -68,6 +74,7 @@ export default function SummaryCharts() {
       mapInst.current = { map, layer };
     } else {
       mapInst.current.layer.setLatLngs(data.coords);
+      mapInst.current.map.fitBounds(bounds);
     }
   }, [data]);
 
@@ -83,7 +90,11 @@ export default function SummaryCharts() {
         <div className="flex items-center gap-2 mb-2 text-sm font-semibold text-gray-700 dark:text-gray-200">
           <Icon name="map" className="w-4 h-4" /> Order Density
         </div>
-        <div ref={mapRef} className="h-40 rounded-md" />
+        <div
+          ref={mapRef}
+          className="w-full rounded-md"
+          style={{ aspectRatio: '4 / 5' }}
+        />
       </div>
     </div>
   );

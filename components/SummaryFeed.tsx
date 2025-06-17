@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
 import Icon from './Icon';
-import SummaryCharts from './SummaryCharts';
 
 interface Post {
   id: number;
@@ -49,7 +48,10 @@ export default function SummaryFeed() {
   const latest = data?.latestEnd;
 
   return (
-    <div className="space-y-4 max-h-96 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600 scrollbar-track-transparent pr-2">
+    <div
+      className="space-y-4 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600 scrollbar-track-transparent pr-2"
+      style={{ maxHeight: 'calc(100vh - 20rem)' }}
+    >
       {isLoading ? (
         <div className="space-y-3">
           {[...Array(3)].map((_, i) => (
@@ -115,7 +117,6 @@ export default function SummaryFeed() {
                 </div>
             )}
           </div>
-          <SummaryCharts />
           {posts.map(p => (
             <div
               key={p.id}

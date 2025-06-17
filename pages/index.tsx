@@ -6,6 +6,7 @@ import Card from '../components/Card';
 import Modal from '../components/Modal';
 import Calendar from '../components/Calendar';
 import SummaryFeed from '../components/SummaryFeed';
+import OrderMap from '../components/OrderMap';
 import Skeleton from '../components/Skeleton';
 import Icon from '../components/Icon';
 import useUser from '../lib/useUser';
@@ -122,10 +123,11 @@ export default function Home() {
       </motion.div>
 
       <div className="flex flex-col md:flex-row gap-6">
-        <div className="flex-[3] min-w-full md:min-w-[800px]">
-          <Calendar />
+        <div className="md:w-1/3">
+          <OrderMap />
         </div>
-        <div className="flex-[1] w-full md:w-48">
+        <div className="flex-1 flex flex-col gap-6">
+          <Calendar />
           <SummaryFeed />
         </div>
       </div>
