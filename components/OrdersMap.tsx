@@ -4,24 +4,37 @@ interface Data {
   coords: [number, number][];
 }
 
-export default function OrdersMap() {
-  const [data, setData] = useState<Data | null>(null);
+interface Props {
+  points?: [number, number][];
+}
+
+export default function OrdersMap({ points }: Props) {
+  const [data, setData] = useState<Data | null>(points ? { coords: points } : null);
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInst = useRef<any>(null);
 
   useEffect(() => {
+    if (points && points.length) {
+      const val = { coords: points } as Data;
+      setData(val);
+      localStorage.setItem('summaryMapData', JSON.stringify(val));
+      return;
+    }
+
     const cached = localStorage.getItem('summaryMapData');
     if (cached) {
       try { setData(JSON.parse(cached)); } catch {}
     }
-    fetch('/api/summary-map')
+
+    fetch('/api/home-data')
       .then(res => res.ok ? res.json() : Promise.reject())
       .then(d => {
-        setData(d as Data);
-        localStorage.setItem('summaryMapData', JSON.stringify(d));
+        const val = { coords: d.points } as Data;
+        setData(val);
+        localStorage.setItem('summaryMapData', JSON.stringify(val));
       })
       .catch(() => {});
-  }, []);
+  }, [points]);
 
   useEffect(() => {
     if (!data || !mapRef.current) return;
