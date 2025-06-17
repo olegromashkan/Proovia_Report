@@ -8,6 +8,8 @@ import Calendar from '../components/Calendar';
 import SummaryFeed from '../components/SummaryFeed';
 import Skeleton from '../components/Skeleton';
 import Icon from '../components/Icon';
+import HeatMap from '../components/HeatMap';
+import PaymentTypeBar from '../components/PaymentTypeBar';
 import useUser from '../lib/useUser';
 import useFetch from '../lib/useFetch';
 
@@ -15,6 +17,7 @@ type Summary = { total: number; complete: number; failed: number; avgPunctuality
 
 export default function Home() {
   const [summary, setSummary] = useState<Summary | null>(null);
+  const [homeData, setHomeData] = useState<{ paymentCounts: Record<string, number>; points: [number, number][] } | null>(null);
   const [open, setOpen] = useState<string | null>(null);
   const username = useUser();
   const { data: userData } = useFetch<{ user: any }>(username ? '/api/user' : null);
@@ -26,6 +29,22 @@ export default function Home() {
       .then((res) => (res.ok ? res.json() : Promise.reject()))
       .then(setSummary)
       .catch(() => { });
+  }, []);
+
+  useEffect(() => {
+    const cached = localStorage.getItem('homeData');
+    if (cached) {
+      try {
+        setHomeData(JSON.parse(cached));
+      } catch {}
+    }
+    fetch('/api/home-data')
+      .then(res => (res.ok ? res.json() : Promise.reject()))
+      .then(d => {
+        setHomeData(d);
+        localStorage.setItem('homeData', JSON.stringify(d));
+      })
+      .catch(() => {});
   }, []);
 
   const cards = [
@@ -121,12 +140,20 @@ export default function Home() {
         </div>
       </motion.div>
 
-      <div className="flex flex-col md:flex-row gap-6">
-        <div className="flex-[3] min-w-full md:min-w-[800px]">
-          <Calendar />
+      <div className="flex flex-col lg:flex-row gap-6 flex-1">
+        <div className="lg:w-4/12 h-64 lg:h-full">
+          <HeatMap points={homeData?.points || []} />
         </div>
-        <div className="flex-[1] w-full md:w-48">
-          <SummaryFeed />
+        <div className="lg:flex-1 flex flex-col gap-6">
+          <div className="flex flex-col md:flex-row gap-6 flex-1">
+            <div className="flex-[3] min-w-full md:min-w-[800px]">
+              <Calendar />
+            </div>
+            <div className="flex-[1] w-full md:w-48 h-full">
+              <SummaryFeed />
+            </div>
+          </div>
+          <PaymentTypeBar data={homeData?.paymentCounts || {}} />
         </div>
       </div>
 

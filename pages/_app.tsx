@@ -39,6 +39,7 @@ export default function MyApp({ Component, pageProps }: AppProps) {
       <Head>{null}</Head>
       <Script src="https://cdn.jsdelivr.net/npm/chart.js"></Script>
       <Script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></Script>
+      <Script src="https://unpkg.com/leaflet.heat/dist/leaflet-heat.js"></Script>
       <Component {...pageProps} />
     </>
   );
