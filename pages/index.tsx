@@ -6,8 +6,11 @@ import Card from '../components/Card';
 import Modal from '../components/Modal';
 import Calendar from '../components/Calendar';
 import SummaryFeed from '../components/SummaryFeed';
+import OrdersMap from '../components/OrdersMap';
 import Skeleton from '../components/Skeleton';
 import Icon from '../components/Icon';
+import HeatMap from '../components/HeatMap';
+import PaymentTypeBar from '../components/PaymentTypeBar';
 import useUser from '../lib/useUser';
 import useFetch from '../lib/useFetch';
 
@@ -15,6 +18,7 @@ type Summary = { total: number; complete: number; failed: number; avgPunctuality
 
 export default function Home() {
   const [summary, setSummary] = useState<Summary | null>(null);
+  const [homeData, setHomeData] = useState<{ paymentCounts: Record<string, number>; points: [number, number][] } | null>(null);
   const [open, setOpen] = useState<string | null>(null);
   const username = useUser();
   const { data: userData } = useFetch<{ user: any }>(username ? '/api/user' : null);
@@ -25,7 +29,23 @@ export default function Home() {
     fetch('/api/summary')
       .then((res) => (res.ok ? res.json() : Promise.reject()))
       .then(setSummary)
-      .catch(() => { });
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    const cached = localStorage.getItem('homeData');
+    if (cached) {
+      try {
+        setHomeData(JSON.parse(cached));
+      } catch {}
+    }
+    fetch('/api/home-data')
+      .then(res => (res.ok ? res.json() : Promise.reject()))
+      .then(d => {
+        setHomeData(d);
+        localStorage.setItem('homeData', JSON.stringify(d));
+      })
+      .catch(() => {});
   }, []);
 
   const cards = [
@@ -121,12 +141,17 @@ export default function Home() {
         </div>
       </motion.div>
 
-      <div className="flex flex-col md:flex-row gap-6 items-stretch">
-        <div className="md:flex-[5] md:min-w-[60%]">
-          <Calendar />
+      <div className="flex flex-col md:flex-row gap-6 flex-1 min-h-0">
+        <div className="md:w-60 flex-none">
+          <OrdersMap />
         </div>
-        <div className="md:flex-[4]">
-          <SummaryFeed />
+        <div className="flex flex-col md:flex-row gap-6 flex-1 min-h-0">
+          <div className="flex-[3] min-w-0 md:min-w-[600px] min-h-0">
+            <Calendar />
+          </div>
+          <div className="flex-[2] min-w-0 min-h-0 h-full">
+            <SummaryFeed />
+          </div>
         </div>
       </div>
 
