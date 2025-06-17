@@ -29,7 +29,7 @@ export default function Home() {
     fetch('/api/summary')
       .then((res) => (res.ok ? res.json() : Promise.reject()))
       .then(setSummary)
-      .catch(() => { });
+      .catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -146,10 +146,10 @@ export default function Home() {
           <OrdersMap />
         </div>
         <div className="flex flex-col md:flex-row gap-6 flex-1 min-h-0">
-          <div className="flex-[3] min-w-full md:min-w-[800px] min-h-0">
+          <div className="flex-[3] min-w-0 md:min-w-[600px] min-h-0">
             <Calendar />
           </div>
-          <div className="flex-[1] w-full md:w-48 min-h-0 h-full">
+          <div className="flex-[2] min-w-0 min-h-0 h-full">
             <SummaryFeed />
           </div>
         </div>

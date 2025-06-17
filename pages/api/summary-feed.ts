@@ -16,6 +16,7 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
 
   const tripRows = db.prepare('SELECT data FROM schedule_trips').all();
   const driverRows = db.prepare('SELECT data FROM drivers_report').all();
+  const tomorrowRows = db.prepare('SELECT data FROM copy_of_tomorrow_trips').all();
 
   const driverToContractor: Record<string, string> = {};
   driverRows.forEach((r: any) => {
@@ -31,6 +32,8 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
   const driverStats: Record<string, DriverStat> = {};
   interface DriverTime { earliest: number | null; latest: number | null; labelStart?: string; labelEnd?: string; }
   const driverTimes: Record<string, DriverTime> = {};
+  const paymentCounts: Record<string, number> = {};
+  const coords: Array<[number, number]> = [];
 
   tripRows.forEach((r: any) => {
     const item = JSON.parse(r.data);
@@ -71,6 +74,19 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
     }
   });
 
+  tomorrowRows.forEach((r: any) => {
+    const item = JSON.parse(r.data);
+    const pType = item['Payment.Type'] || item['Order.Payment_Type'] || 'Unknown';
+    paymentCounts[pType] = (paymentCounts[pType] || 0) + 1;
+    const latVal = item['Address.Latitude'] || item.Address_Latitude;
+    const lonVal = item['Address.Longitude'] || item.Address_Longitude;
+    const lat = parseFloat(String(latVal));
+    const lon = parseFloat(String(lonVal));
+    if (!isNaN(lat) && !isNaN(lon)) {
+      coords.push([lat, lon]);
+    }
+  });
+
   const topContractors = Object.entries(contractorStats)
     .map(([name, s]) => ({ contractor: name, avgPrice: s.sum / s.count }))
     .sort((a, b) => b.avgPrice - a.avgPrice)
@@ -94,5 +110,10 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
     }
   });
 
-  res.status(200).json({ posts, topContractors, topDrivers, latestEnd });
+  const paymentData = Object.entries(paymentCounts).map(([type, count]) => ({
+    type,
+    count,
+  }));
+
+  res.status(200).json({ posts, topContractors, topDrivers, latestEnd, paymentData, coords });
 }
