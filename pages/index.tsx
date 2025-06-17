@@ -125,7 +125,7 @@ export default function Home() {
         <div className="flex-[3] min-w-[800px]">
           <Calendar />
         </div>
-        <div className="flex-[1] w-full md:w-80">
+        <div className="flex-[1] w-full md:w-48">
           <SummaryFeed />
         </div>
       </div>
