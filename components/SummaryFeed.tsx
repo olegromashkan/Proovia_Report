@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import Icon from './Icon';
+import OrderMap from './OrderMap';
 
 interface Post {
   id: number;
@@ -48,7 +49,11 @@ export default function SummaryFeed() {
   const latest = data?.latestEnd;
 
   return (
-    <div className="space-y-4 max-h-96 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600 scrollbar-track-transparent pr-2">
+    <div className="flex gap-4 h-[calc(100vh-220px)]">
+      <div className="w-1/2 min-w-[250px] overflow-hidden">
+        <OrderMap />
+      </div>
+      <div className="flex-1 overflow-y-auto space-y-4 scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600 scrollbar-track-transparent pr-2">
       {isLoading ? (
         <div className="space-y-3">
           {[...Array(3)].map((_, i) => (
@@ -142,6 +147,7 @@ export default function SummaryFeed() {
           ))}
         </>
       )}
+      </div>
     </div>
   );
 }
