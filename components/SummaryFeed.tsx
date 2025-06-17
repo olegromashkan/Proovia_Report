@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
 import Icon from './Icon';
-import SummaryCharts from './SummaryCharts';
 
 interface Post {
   id: number;
@@ -115,7 +114,6 @@ export default function SummaryFeed() {
                 </div>
             )}
           </div>
-          <SummaryCharts />
           {posts.map(p => (
             <div
               key={p.id}
