@@ -121,11 +121,11 @@ export default function Home() {
         </div>
       </motion.div>
 
-      <div className="flex flex-col md:flex-row gap-6">
-        <div className="flex-[3] min-w-full md:min-w-[800px]">
+      <div className="flex flex-col md:flex-row gap-6 items-stretch">
+        <div className="md:flex-[5] md:min-w-[60%]">
           <Calendar />
         </div>
-        <div className="flex-[1] w-full md:w-48">
+        <div className="md:flex-[4]">
           <SummaryFeed />
         </div>
       </div>

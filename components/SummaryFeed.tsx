@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react';
 import Icon from './Icon';
+import PaymentTypeChart from './PaymentTypeChart';
+import Heatmap from './Heatmap';
 
 interface Post {
   id: number;
@@ -23,6 +25,8 @@ interface FeedData {
   topContractors: ContractorInfo[];
   topDrivers: DriverInfo[];
   latestEnd: { driver: string; time: string } | null;
+  paymentData: { type: string; count: number }[];
+  coords: Array<[number, number]>;
 }
 
 export default function SummaryFeed() {
@@ -30,11 +34,23 @@ export default function SummaryFeed() {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
+    const cached = localStorage.getItem('summaryCache');
+    if (cached) {
+      try {
+        const parsed = JSON.parse(cached);
+        if (Date.now() - parsed.ts < 24 * 60 * 60 * 1000) {
+          setData(parsed.data);
+        }
+      } catch {}
+    }
     setIsLoading(true);
     fetch('/api/summary-feed')
       .then(res => (res.ok ? res.json() : Promise.reject()))
       .then(d => {
         setData(d as FeedData);
+        try {
+          localStorage.setItem('summaryCache', JSON.stringify({ ts: Date.now(), data: d }));
+        } catch {}
         setIsLoading(false);
       })
       .catch(() => {
@@ -46,34 +62,41 @@ export default function SummaryFeed() {
   const topContractors = data?.topContractors || [];
   const topDrivers = data?.topDrivers || [];
   const latest = data?.latestEnd;
+  const paymentData = data?.paymentData || [];
+  const coords = data?.coords || [];
 
   return (
-    <div className="space-y-4 max-h-96 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600 scrollbar-track-transparent pr-2">
-      {isLoading ? (
-        <div className="space-y-3">
-          {[...Array(3)].map((_, i) => (
-            <div
-              key={i}
-              className="bg-base-200 p-4 rounded-xl border border-base-300 animate-pulse"
-            >
+    <div className="flex h-[calc(100vh-16rem)]">
+      <div className="w-2/5 pr-2">
+        <Heatmap points={coords} />
+      </div>
+      <div className="flex-1 space-y-4 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600 scrollbar-track-transparent pr-2">
+        {isLoading ? (
+          <div className="space-y-3">
+            {[...Array(3)].map((_, i) => (
+              <div
+                key={i}
+                className="bg-base-200 p-4 rounded-xl border border-base-300 animate-pulse"
+              >
               <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-3/4 mb-2"></div>
               <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-1/4"></div>
             </div>
           ))}
         </div>
-      ) : posts.length === 0 ? (
-        <div className="text-center text-gray-500 dark:text-gray-400 py-6">
-          <p className="text-sm font-medium">No posts available</p>
-          <p className="text-xs">Check back later for updates!</p>
-        </div>
-      ) : (
-        <>
-          <div className="flex gap-3 flex-wrap">
-            {topContractors.length > 0 && (
-              <div className="flex-1 bg-white dark:bg-gray-800 rounded-xl p-3 border border-gray-200 dark:border-gray-700 shadow-sm">
-                <div className="flex items-center gap-2 mb-2 text-sm font-semibold text-gray-700 dark:text-gray-200">
-                  <Icon name="star" className="w-4 h-4 text-yellow-500" />
-                  Top Contractors
+        ) : posts.length === 0 ? (
+          <div className="text-center text-gray-500 dark:text-gray-400 py-6">
+            <p className="text-sm font-medium">No posts available</p>
+            <p className="text-xs">Check back later for updates!</p>
+          </div>
+        ) : (
+          <>
+            <PaymentTypeChart data={paymentData} />
+            <div className="flex gap-3 flex-wrap">
+              {topContractors.length > 0 && (
+                <div className="flex-1 bg-white dark:bg-gray-800 rounded-xl p-3 border border-gray-200 dark:border-gray-700 shadow-sm">
+                  <div className="flex items-center gap-2 mb-2 text-sm font-semibold text-gray-700 dark:text-gray-200">
+                    <Icon name="star" className="w-4 h-4 text-yellow-500" />
+                    Top Contractors
                 </div>
                 <div className="space-y-1 text-xs">
                   {topContractors.map((c) => (
@@ -139,9 +162,10 @@ export default function SummaryFeed() {
                 </div>
               </div>
             </div>
-          ))}
-        </>
-      )}
+            ))}
+          </>
+        )}
+      </div>
     </div>
   );
 }
