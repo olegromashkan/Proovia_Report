@@ -49,8 +49,8 @@ export default function SummaryFeed() {
   const latest = data?.latestEnd;
 
   return (
-    <div className="flex gap-4 h-[calc(100vh-220px)]">
-      <div className="w-1/2 min-w-[250px] overflow-hidden">
+    <div className="flex flex-col md:flex-row gap-4 h-[calc(100vh-220px)]">
+      <div className="w-full md:w-1/2 min-w-[250px] h-60 md:h-auto overflow-hidden">
         <OrderMap />
       </div>
       <div className="flex-1 overflow-y-auto space-y-4 scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600 scrollbar-track-transparent pr-2">
