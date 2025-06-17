@@ -48,7 +48,7 @@ export default function SummaryFeed() {
   const latest = data?.latestEnd;
 
   return (
-    <div className="space-y-4 max-h-96 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600 scrollbar-track-transparent pr-2">
+    <div className="space-y-4 h-full overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600 scrollbar-track-transparent pr-2">
       {isLoading ? (
         <div className="space-y-3">
           {[...Array(3)].map((_, i) => (
