@@ -1,0 +1,61 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {"name": "NW"},
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [-8, 54],
+          [-2, 54],
+          [-2, 59],
+          [-8, 59],
+          [-8, 54]
+        ]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {"name": "NE"},
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [-2, 54],
+          [2, 54],
+          [2, 59],
+          [-2, 59],
+          [-2, 54]
+        ]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {"name": "SW"},
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [-8, 49],
+          [-2, 49],
+          [-2, 54],
+          [-8, 54],
+          [-8, 49]
+        ]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {"name": "SE"},
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [-2, 49],
+          [2, 49],
+          [2, 54],
+          [-2, 54],
+          [-2, 49]
+        ]]
+      }
+    }
+  ]
+}
