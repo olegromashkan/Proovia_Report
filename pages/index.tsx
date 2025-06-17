@@ -40,7 +40,7 @@ export default function Home() {
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ type: 'spring', stiffness: 120, damping: 20 }}
+        transition={{ type: 'spring', stiffness: 80, damping: 15 }}
         className="relative rounded-2xl overflow-hidden shadow-xl mb-8"
       >
         {user?.header ? (
@@ -58,7 +58,7 @@ export default function Home() {
             className="flex items-center gap-4 flex-1"
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.2, type: 'spring', stiffness: 120, damping: 20 }}
+            transition={{ delay: 0.2, type: 'spring', stiffness: 80, damping: 15 }}
           >
             {loadingUser ? (
               <Skeleton className="w-28 h-28 rounded-full border-4 border-white shadow-xl" />
@@ -66,7 +66,7 @@ export default function Home() {
               <img
                 src={user.photo}
                 alt="avatar"
-                className="w-28 h-28 rounded-full object-cover border-4 border-white shadow-xl"
+                className="w-28 h-28 rounded-full object-cover border-4 border-white shadow-xl transition-transform duration-300 hover:scale-105"
               />
             ) : (
               <div className="w-28 h-28 rounded-full bg-white/30 flex items-center justify-center text-5xl font-extrabold text-white border-4 border-white shadow-xl">
@@ -103,13 +103,13 @@ export default function Home() {
             className="grid grid-cols-2 sm:grid-cols-4 gap-4 w-full sm:w-auto"
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.4, type: 'spring', stiffness: 120, damping: 20 }}
+            transition={{ delay: 0.4, type: 'spring', stiffness: 80, damping: 15 }}
           >
             {cards.map((c) => (
               <motion.div
                 key={c.id}
-                className="bg-white/20 backdrop-blur-sm rounded-xl p-4 text-center border border-white/10 hover:bg-white/30 transition cursor-pointer"
-                whileHover={{ scale: 1.05, boxShadow: '0 4px 16px rgba(0, 0, 0, 0.2)' }}
+                className="bg-white/20 backdrop-blur-sm rounded-xl p-4 text-center border border-white/10 hover:bg-white/40 transition cursor-pointer"
+                whileHover={{ scale: 1.05, rotate: 2, boxShadow: '0 4px 16px rgba(0, 0, 0, 0.2)' }}
                 whileTap={{ scale: 0.95 }}
                 onClick={() => setOpen(c.id)}
               >
@@ -131,8 +131,10 @@ export default function Home() {
       </div>
 
       <Modal open={!!open} onClose={() => setOpen(null)}>
-        <h2 className="text-xl font-bold mb-2">{cards.find((c) => c.id === open)?.title}</h2>
-        <div className="h-40 flex items-center justify-center text-gray-500">Graph Placeholder</div>
+        <div className="bg-white p-6 rounded-lg shadow-lg">
+          <h2 className="text-xl font-bold mb-4">{cards.find((c) => c.id === open)?.title}</h2>
+          <div className="h-40 flex items-center justify-center text-gray-500">Graph Placeholder</div>
+        </div>
       </Modal>
     </Layout>
   );
