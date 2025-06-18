@@ -122,7 +122,7 @@ export default function Feed() {
 
   return (
     <Layout title="Feed" fullWidth>
-      <div className="max-w-2xl mx-auto space-y-4 py-6">
+      <div className="max-w-4xl mx-auto space-y-4 py-6">
         {me ? (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
