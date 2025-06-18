@@ -57,7 +57,7 @@ export default function Chat() {
 
   return (
     <Layout title={`Chat with ${user}`}>
-      <div className="max-w-xl mx-auto flex flex-col gap-4" style={{height:'70vh'}}>
+      <div className="max-w-2xl mx-auto flex flex-col gap-4" style={{height:'70vh'}}>
         <div className="flex-1 overflow-y-auto space-y-2 p-2 border rounded" style={{background:'var(--section-bg)'}}>
           {messages.map(m => (
             <div

@@ -139,7 +139,7 @@ export default function Profile() {
 
   return (
     <Layout title={`${info.username} Profile`} fullWidth>
-      <div className="max-w-4xl mx-auto">
+      <div className="max-w-6xl mx-auto">
         {/* Header Section with Profile Overlay */}
         <div className="relative">
           {/* Header Image */}

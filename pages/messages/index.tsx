@@ -22,7 +22,7 @@ export default function MessagesPage() {
 
   return (
     <Layout title="Messages" fullWidth>
-      <div className="flex flex-col md:flex-row h-[90vh] mx-auto max-w-7xl bg-gray-50 dark:bg-gray-900">
+      <div className="flex flex-col md:flex-row h-[90vh] mx-auto max-w-screen-2xl bg-gray-50 dark:bg-gray-900">
         {/* Sidebar */}
         <div className="w-full md:w-80 shrink-0 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 p-4 flex flex-col">
           <div className="flex items-center gap-2 mb-4">
