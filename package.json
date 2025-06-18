@@ -14,14 +14,17 @@
   "license": "ISC",
   "type": "module",
   "dependencies": {
+    "@tailwindcss/forms": "^0.5.10",
+    "@tailwindcss/typography": "^0.5.16",
     "better-sqlite3": "^9.0.0",
     "emoji-picker-react": "^4.12.2",
-    "framer-motion": "^12.17.3",
+    "framer-motion": "^12.18.1",
     "lodash": "^4.17.21",
     "lucide-react": "^0.514.0",
     "next": "latest",
     "react": "latest",
     "react-dom": "latest",
+    "react-infinite-scroll-component": "^6.1.0",
     "swr": "^2.3.3",
     "ts-node": "^10.9.2",
     "zustand": "^5.0.5"

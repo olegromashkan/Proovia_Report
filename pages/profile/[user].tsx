@@ -33,7 +33,7 @@ export default function Profile() {
   const [editText, setEditText] = useState('');
   const [editImage, setEditImage] = useState('');
 
-  const handleImage = (e: ChangeEvent<HTMLInputElement>, set: (v:string)=>void) => {
+  const handleImage = (e: ChangeEvent<HTMLInputElement>, set: (v: string) => void) => {
     const file = e.target.files?.[0];
     if (!file) return;
     const reader = new FileReader();
@@ -130,24 +130,23 @@ export default function Profile() {
 
   useEffect(() => { loadPosts(); }, [user]);
 
-  const vars = ['--p','--a','--b1','--b2','--card-bg','--section-bg','--rounded-btn','--rounded-box','--rounded-badge','--shadow-strength'];
+  const vars = ['--p', '--a', '--b1', '--b2', '--card-bg', '--section-bg', '--rounded-btn', '--rounded-box', '--rounded-badge', '--shadow-strength'];
   const custom = typeof window !== 'undefined' && current === user
-    ? vars.reduce((acc,v)=>{const val=localStorage.getItem('style'+v);if(val)acc[v]=val;return acc;},{} as Record<string,string>)
+    ? vars.reduce((acc, v) => { const val = localStorage.getItem('style' + v); if (val) acc[v] = val; return acc; }, {} as Record<string, string>)
     : {};
 
   if (!info) return <Layout title="Profile">Loading...</Layout>;
 
   return (
     <Layout title={`${info.username} Profile`} fullWidth>
-      <div className="max-w-6xl mx-auto">
-        {/* Header Section with Profile Overlay */}
+      <div className="max-w-4xl sm:max-w-5xl md:max-w-6xl lg:max-w-7xl xl:max-w-screen-2xl mx-auto">        {/* Header Section with Profile Overlay */}
         <div className="relative">
           {/* Header Image */}
           <div className="relative h-64 bg-[#b53133] rounded-2xl overflow-hidden shadow-xl">
             {info.header && (
-              <img 
-                src={info.header} 
-                alt="header" 
+              <img
+                src={info.header}
+                alt="header"
                 className="w-full h-full object-cover"
               />
             )}
@@ -159,9 +158,9 @@ export default function Profile() {
           <div className="absolute -bottom-16 left-8">
             <div className="relative">
               {info.photo ? (
-                <img 
-                  src={info.photo} 
-                  alt="avatar" 
+                <img
+                  src={info.photo}
+                  alt="avatar"
                   className="w-32 h-32 rounded-full border-4 border-white shadow-2xl object-cover bg-white"
                 />
               ) : (
@@ -179,8 +178,8 @@ export default function Profile() {
           {/* Edit Button */}
           {canEdit && (
             <div className="absolute top-4 right-4">
-              <button 
-                className="btn btn-sm bg-white/90 backdrop-blur-sm border-white/20 text-gray-800 hover:bg-white hover:shadow-lg transition-all duration-200" 
+              <button
+                className="btn btn-sm bg-white/90 backdrop-blur-sm border-white/20 text-gray-800 hover:bg-white hover:shadow-lg transition-all duration-200"
                 onClick={() => setEditing(!editing)}
               >
                 {editing ? (
@@ -226,10 +225,10 @@ export default function Profile() {
                   {info.status === 'online'
                     ? info.status_message || 'Online'
                     : info.status === 'away'
-                    ? 'Away'
-                    : info.status === 'dnd'
-                    ? 'Do not disturb'
-                    : 'last seen ' + new Date(info.last_seen).toLocaleString()}
+                      ? 'Away'
+                      : info.status === 'dnd'
+                        ? 'Do not disturb'
+                        : 'last seen ' + new Date(info.last_seen).toLocaleString()}
                 </span>
               </div>
               {info.status_message && info.status !== 'online' && (
@@ -252,48 +251,48 @@ export default function Profile() {
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
                 Edit Profile
               </h3>
-              
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                     Profile Photo
                   </label>
-                  <input 
-                    type="file" 
-                    accept="image/*" 
-                    onChange={e => handleImage(e, setPhoto)} 
-                    className="file-input file-input-bordered w-full bg-white dark:bg-gray-700" 
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={e => handleImage(e, setPhoto)}
+                    className="file-input file-input-bordered w-full bg-white dark:bg-gray-700"
                   />
                 </div>
-                
+
                 <div className="space-y-2">
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                     Header Image
                   </label>
-                  <input 
-                    type="file" 
-                    accept="image/*" 
-                    onChange={e => handleImage(e, setHeader)} 
-                    className="file-input file-input-bordered w-full bg-white dark:bg-gray-700" 
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={e => handleImage(e, setHeader)}
+                    className="file-input file-input-bordered w-full bg-white dark:bg-gray-700"
                   />
                 </div>
               </div>
-              
+
               <div className="space-y-2">
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                   New Password
                 </label>
-                <input 
-                  type="password" 
-                  placeholder="Enter new password" 
-                  value={password} 
-                  onChange={e => setPassword(e.target.value)} 
-                  className="input input-bordered w-full bg-white dark:bg-gray-700" 
+                <input
+                  type="password"
+                  placeholder="Enter new password"
+                  value={password}
+                  onChange={e => setPassword(e.target.value)}
+                  className="input input-bordered w-full bg-white dark:bg-gray-700"
                 />
               </div>
-              
+
               <div className="flex gap-3 pt-2">
-                <button 
+                <button
                   className="btn btn-primary flex-1 sm:flex-none sm:px-8"
                   onClick={save}
                 >
@@ -302,7 +301,7 @@ export default function Profile() {
                   </svg>
                   Save Changes
                 </button>
-                <button 
+                <button
                   className="btn btn-ghost"
                   onClick={() => setEditing(false)}
                 >
@@ -323,8 +322,8 @@ export default function Profile() {
               </h2>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                 {Object.entries(custom).map(([k, v]) => (
-                  <div 
-                    key={k} 
+                  <div
+                    key={k}
                     className="bg-gray-50 dark:bg-gray-700 rounded-lg p-3 border border-gray-200 dark:border-gray-600"
                   >
                     <div className="text-sm font-medium text-gray-700 dark:text-gray-300">
