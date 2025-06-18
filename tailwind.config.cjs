@@ -1,0 +1,17 @@
+module.exports = {
+  content: [
+    './pages/**/*.{ts,tsx}',
+    './components/**/*.{ts,tsx}',
+  ],
+  theme: {
+    extend: {},
+  },
+  plugins: [
+    require('@tailwindcss/forms'),
+    require('@tailwindcss/typography'),
+    require('daisyui'),
+  ],
+  daisyui: {
+    themes: ['light', 'dark'],
+  },
+};
