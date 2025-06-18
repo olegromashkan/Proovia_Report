@@ -36,6 +36,7 @@
     "autoprefixer": "^10.4.21",
     "postcss": "^8.5.4",
     "postcss-loader": "^8.1.1",
+    "@tailwindcss/postcss": "^0.1.0",
     "typescript": "latest"
   }
 }
