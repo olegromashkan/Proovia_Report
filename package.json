@@ -32,7 +32,6 @@
     "@types/node": "latest",
     "@types/react": "latest",
     "tailwindcss": "latest",
-    "@tailwindcss/postcss": "latest",
     "daisyui": "latest",
     "autoprefixer": "^10.4.21",
     "postcss": "^8.5.4",
