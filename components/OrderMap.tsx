@@ -6,17 +6,18 @@ interface RegionStats {
 
 export default function OrderMap() {
   const ref = useRef<HTMLDivElement>(null);
+  const mapRef = useRef<any>(null);
+  const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
-    if (typeof window === 'undefined' || !ref.current) return;
-
-    let map: any;
+    if (typeof window === 'undefined' || !ref.current || mapRef.current) return;
 
     const init = () => {
       const L = (window as any).L;
       if (!L || !ref.current) return false;
 
-      map = L.map(ref.current).setView([54, -2], 6);
+      const map = L.map(ref.current).setView([54, -2], 6);
+      mapRef.current = map;
       L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
         attribution: '© OpenStreetMap contributors © CARTO'
       }).addTo(map);
@@ -25,6 +26,7 @@ export default function OrderMap() {
         fetch('/regions.geojson').then(r => r.json()),
         fetch('/api/region-stats').then(r => r.json())
       ]).then(([geo, stats]: [any, RegionStats]) => {
+        if (!mapRef.current) return;
         L.geoJSON(geo, {
           style: (feature: any) => {
             const name = feature.properties.name;
@@ -40,24 +42,30 @@ export default function OrderMap() {
               : `<strong>${name}</strong><br/>No data`;
             layer.bindPopup(html);
           }
-        }).addTo(map);
+        }).addTo(mapRef.current);
       });
 
       return true;
     };
 
     if (!init()) {
-      const id = setInterval(() => {
-        if (init()) clearInterval(id);
+      intervalRef.current = setInterval(() => {
+        if (init() && intervalRef.current) {
+          clearInterval(intervalRef.current);
+          intervalRef.current = null;
+        }
       }, 100);
-      return () => {
-        clearInterval(id);
-        if (map) map.remove();
-      };
     }
 
     return () => {
-      if (map) map.remove();
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
+      if (mapRef.current) {
+        mapRef.current.remove();
+        mapRef.current = null;
+      }
     };
   }, []);
 
