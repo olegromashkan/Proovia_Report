@@ -220,6 +220,13 @@ const Navbar = memo(() => {
     }
   }, [navOpen]);
 
+  // Close nav when navigating to another page
+  useEffect(() => {
+    const close = () => setNavOpen(false);
+    router.events.on('routeChangeStart', close);
+    return () => router.events.off('routeChangeStart', close);
+  }, [router.events]);
+
   const pinnedLinks = useMemo(() => 
     pinned.map(href => navLinks.find(link => link.href === href)).filter((link): link is NavLink => !!link),
     [pinned, navLinks]
@@ -332,6 +339,7 @@ const Navbar = memo(() => {
                           <Link
                             href={href}
                             aria-current={active ? 'page' : undefined}
+                            onClick={() => setNavOpen(false)}
                             className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-150 ${
                               active ? 'bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300' : 'text-gray-600 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-white'
                             } touch:bg-gray-100 dark:touch:bg-gray-600`}
