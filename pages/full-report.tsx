@@ -4,6 +4,7 @@ import Layout from '../components/Layout';
 import TripModal from '../components/TripModal';
 import Icon from '../components/Icon';
 import VanCheck from '../components/VanCheck';
+import Modal from '../components/Modal';
 
 // --- Helpers ---
 interface Trip {
@@ -187,6 +188,9 @@ export default function FullReport() {
   const [selected, setSelected] = useState<Trip | null>(null);
   const [isDrawerOpen, setDrawerOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [lateIgnore, setLateIgnore] = useState<{ type: string; value: string }[]>([]);
+  const [showLateTC, setShowLateTC] = useState(false);
+  const [showLateArr, setShowLateArr] = useState(false);
 
   // Filters
   const [filters, setFilters] = useState({
@@ -270,6 +274,12 @@ export default function FullReport() {
     fetchData();
   }, [router.isReady, filters.start, filters.end]);
 
+  useEffect(() => {
+    fetch('/api/late-tc-ignore')
+      .then(res => res.ok ? res.json() : { items: [] })
+      .then(data => setLateIgnore(data.items || []));
+  }, []);
+
   // --- Filtering ---
   const filteredTrips = useMemo(() => {
     return trips
@@ -309,6 +319,15 @@ export default function FullReport() {
   const stats = useMemo(() => {
     let positiveTimeCompleted = 0;
     let positiveArrivalTime = 0;
+    const lateTC: Trip[] = [];
+    const lateArr: Trip[] = [];
+
+    const ignoredPostcodes = new Set(
+      lateIgnore.filter(i => i.type === 'postcode').map(i => i.value.toLowerCase())
+    );
+    const ignoredEmails = new Set(
+      lateIgnore.filter(i => i.type === 'email').map(i => i.value.toLowerCase())
+    );
 
     filteredTrips.forEach(trip => {
       if (!trip?.['Address.Working_Hours'] || !trip.Time_Completed || !trip.Arrival_Time) return;
@@ -326,8 +345,21 @@ export default function FullReport() {
       const whEndForArrival = new Date(arrivalDate);
       whEndForArrival.setHours(h, m, 0, 0);
 
-      if (timeCompletedDate >= whEndForCompleted) positiveTimeCompleted++;
-      if (arrivalDate >= whEndForArrival) positiveArrivalTime++;
+      const isLateTC = timeCompletedDate >= whEndForCompleted;
+      const isLateArr = arrivalDate >= whEndForArrival;
+
+      if (isLateTC) {
+        lateTC.push(trip);
+        const email = String(trip['Customer.Email'] || '').toLowerCase();
+        const pc = String(trip['Address.Postcode'] || '').toLowerCase();
+        if (!ignoredPostcodes.has(pc) && !ignoredEmails.has(email)) {
+          positiveTimeCompleted++;
+        }
+      }
+      if (isLateArr) {
+        lateArr.push(trip);
+        positiveArrivalTime++;
+      }
     });
 
     return {
@@ -336,8 +368,10 @@ export default function FullReport() {
       failed: filteredTrips.filter(t => t.Status === 'Failed').length,
       positiveTimeCompleted,
       positiveArrivalTime,
+      lateTC,
+      lateArr,
     };
-  }, [filteredTrips]);
+  }, [filteredTrips, lateIgnore]);
 
   const startContractors = useMemo(() => {
     const set = new Set<string>();
@@ -643,14 +677,20 @@ export default function FullReport() {
                     <div className="text-xs text-error">Failed</div>
                     <div className="text-lg font-bold text-error">{stats.failed}</div>
                   </div>
-                  <div className="bg-warning/20 rounded p-2 text-center">
+                  <button
+                    onClick={() => setShowLateTC(true)}
+                    className="bg-warning/20 rounded p-2 text-center w-full"
+                  >
                     <div className="text-xs text-warning">Late TC</div>
                     <div className="text-lg font-bold text-warning">{stats.positiveTimeCompleted}</div>
-                  </div>
-                  <div className="bg-warning/20 rounded p-2 text-center">
+                  </button>
+                  <button
+                    onClick={() => setShowLateArr(true)}
+                    className="bg-warning/20 rounded p-2 text-center w-full"
+                  >
                     <div className="text-xs text-warning">Late Arr</div>
                     <div className="text-lg font-bold text-warning">{stats.positiveArrivalTime}</div>
-                  </div>
+                  </button>
                 </div>
               </div>
               
@@ -824,6 +864,88 @@ export default function FullReport() {
       </div>
 
       <TripModal trip={selected} onClose={() => setSelected(null)} allTrips={trips} />
+
+      {/* Late TC Modal */}
+      <Modal open={showLateTC} onClose={() => setShowLateTC(false)} className="max-w-3xl">
+        <h2 className="text-lg font-bold mb-4">Late TC Orders</h2>
+        <div className="overflow-auto max-h-[60vh]">
+          <table className="table table-xs table-zebra w-full">
+            <thead>
+              <tr>
+                <th>Order</th>
+                <th>Auction</th>
+                <th>Email</th>
+                <th>Postcode</th>
+                <th>Type</th>
+                <th>Status</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              {stats.lateTC.map((t, idx) => (
+                <tr key={idx}>
+                  <td>{t['Order.OrderNumber']}</td>
+                  <td>{t['Order.Auction']}</td>
+                  <td>{t['Customer.Email']}</td>
+                  <td>{t['Address.Postcode']}</td>
+                  <td>{t.Collection_Delivery || t['Collection_Delivery']}</td>
+                  <td>{t.Status}</td>
+                  <td>
+                    <button
+                      className="btn btn-ghost btn-xs"
+                      onClick={async () => {
+                        const criterion = window.prompt('Ignore by email or postcode?', 'postcode');
+                        if (!criterion) return;
+                        const value = criterion === 'email' ? t['Customer.Email'] : t['Address.Postcode'];
+                        if (!value) return;
+                        await fetch('/api/late-tc-ignore', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({ type: criterion, value }),
+                        });
+                        setLateIgnore(prev => [...prev, { type: criterion, value }]);
+                      }}
+                    >
+                      <Icon name="eye" className="w-4 h-4" />
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </Modal>
+
+      {/* Late Arrival Modal */}
+      <Modal open={showLateArr} onClose={() => setShowLateArr(false)} className="max-w-3xl">
+        <h2 className="text-lg font-bold mb-4">Late Arrival Orders</h2>
+        <div className="overflow-auto max-h-[60vh]">
+          <table className="table table-xs table-zebra w-full">
+            <thead>
+              <tr>
+                <th>Order</th>
+                <th>Auction</th>
+                <th>Email</th>
+                <th>Postcode</th>
+                <th>Type</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {stats.lateArr.map((t, idx) => (
+                <tr key={idx}>
+                  <td>{t['Order.OrderNumber']}</td>
+                  <td>{t['Order.Auction']}</td>
+                  <td>{t['Customer.Email']}</td>
+                  <td>{t['Address.Postcode']}</td>
+                  <td>{t.Collection_Delivery || t['Collection_Delivery']}</td>
+                  <td>{t.Status}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </Modal>
     </Layout>
   );
 }

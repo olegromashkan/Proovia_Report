@@ -135,6 +135,13 @@ export function init() {
       text TEXT,
       created_at TEXT DEFAULT CURRENT_TIMESTAMP
     );
+    CREATE TABLE IF NOT EXISTS late_tc_ignore (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      type TEXT,
+      value TEXT,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      UNIQUE(type, value)
+    );
   `);
 
   // ensure legacy databases have the created_at column
@@ -152,6 +159,7 @@ export function init() {
     'chats',
     'chat_members',
     'messages',
+    'late_tc_ignore',
   ];
   for (const table of tables) {
     try {
