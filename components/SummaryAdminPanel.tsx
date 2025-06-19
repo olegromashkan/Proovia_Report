@@ -66,7 +66,12 @@ export default function SummaryAdminPanel() {
         <h3 className="font-semibold mb-2">Existing Summaries</h3>
         <ul className="space-y-2">
           {posts.map((p) => {
-            const info = JSON.parse(p.content || '{}');
+            let info: any = {};
+            try {
+              info = JSON.parse(p.content || '{}');
+            } catch {
+              info = {};
+            }
             const day = info.date || formatPostDate(p.created_at);
             return (
               <li
