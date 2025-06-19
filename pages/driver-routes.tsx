@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback, useRef, DragEvent, ChangeEvent } from 'react';
+import { formatDateTime } from '../lib/formatDate';
 import Layout from '../components/Layout';
 import Modal from '../components/Modal';
 import Icon from '../components/Icon';
@@ -63,8 +64,7 @@ function stylePunctuality(val: number | null) {
 }
 
 function formatDisplayDate(dateStr: string): string {
-  const date = new Date(dateStr);
-  return date.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
+  return formatDateTime(dateStr, { day: '2-digit', month: 'short' });
 }
 
 export default function DriverRoutes() {

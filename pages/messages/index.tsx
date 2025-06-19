@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { formatDateTime } from '../../lib/formatDate';
 import Icon from '../../components/Icon';
 import Layout from '../../components/Layout'; // Verify this path
 import useFetch from '../../lib/useFetch';
@@ -67,7 +68,7 @@ export default function MessagesPage() {
                       <span className="font-semibold text-gray-900 dark:text-gray-100 truncate">{c.name}</span>
                       <span className="text-xs text-gray-500 dark:text-gray-400">
                         {c.lastTime
-                          ? new Date(c.lastTime).toLocaleTimeString([], {
+                          ? formatDateTime(c.lastTime, {
                               hour: '2-digit',
                               minute: '2-digit',
                             })
@@ -138,7 +139,7 @@ export default function MessagesPage() {
                     <span className="font-semibold text-gray-900 dark:text-gray-100 truncate">{u.username}</span>
                     <span className="text-xs text-gray-500 dark:text-gray-400">
                       {u.lastTime
-                        ? new Date(u.lastTime).toLocaleTimeString([], {
+                        ? formatDateTime(u.lastTime, {
                             hour: '2-digit',
                             minute: '2-digit',
                           })

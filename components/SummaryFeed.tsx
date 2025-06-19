@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { formatDateTime } from '../lib/formatDate';
 import Icon from './Icon';
 import OrderMap from './OrderMap';
 
@@ -137,7 +138,7 @@ export default function SummaryFeed() {
                 <div className="flex-1">
                   <p className="text-sm text-gray-800 dark:text-gray-200 break-words">{p.content}</p>
                   <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                    {new Date(p.created_at).toLocaleDateString('en-US', {
+                    {formatDateTime(p.created_at, {
                       year: 'numeric',
                       month: 'short',
                       day: 'numeric',

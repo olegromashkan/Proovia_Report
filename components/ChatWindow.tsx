@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, ChangeEvent } from 'react';
+import { formatDateTime } from '../lib/formatDate';
 import Icon from './Icon';
 import useUser from '../lib/useUser';
 import Picker from 'emoji-picker-react';
@@ -371,7 +372,7 @@ export default function ChatWindow({ user, chatId, name, photo }: ChatWindowProp
                     )}
 
                     <div className="text-xs mt-1 text-right text-black dark:text-white">
-                      {new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      {formatDateTime(m.created_at, { hour: '2-digit', minute: '2-digit' })}
                       {m.edited_at && !m.deleted && <span className="ml-1 italic">(edited)</span>}
                     </div>
 

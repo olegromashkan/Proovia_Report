@@ -1,5 +1,6 @@
 import { useRouter } from 'next/router';
 import { useState, ChangeEvent, useEffect } from 'react';
+import { formatDateTime } from '../../lib/formatDate';
 import Link from 'next/link';
 import ChatPanel from '../../components/ChatPanel';
 import useFetch from '../../lib/useFetch';
@@ -214,7 +215,7 @@ export default function Profile() {
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                 </svg>
-                Joined {new Date(info.created_at).toLocaleDateString('en-US', {
+                Joined {formatDateTime(info.created_at, {
                   year: 'numeric',
                   month: 'long',
                   day: 'numeric'
@@ -229,7 +230,7 @@ export default function Profile() {
                     ? 'Away'
                     : info.status === 'dnd'
                     ? 'Do not disturb'
-                    : 'last seen ' + new Date(info.last_seen).toLocaleString()}
+                    : 'last seen ' + formatDateTime(info.last_seen)}
                 </span>
               </div>
               {info.status_message && info.status !== 'online' && (
@@ -388,7 +389,7 @@ export default function Profile() {
                     </Link>
                   </UserHoverCard>
                   <div className="text-xs text-gray-500 ml-auto">
-                    {new Date(p.created_at).toLocaleString()}
+                    {formatDateTime(p.created_at)}
                     {p.updated_at && (
                       <span className="italic ml-2">(edited)</span>
                     )}
@@ -467,7 +468,7 @@ export default function Profile() {
                         </UserHoverCard>
                         <div>
                           <div className="text-gray-700 dark:text-gray-200 whitespace-pre-wrap">{c.text}</div>
-                          <div className="text-xs text-gray-500">{new Date(c.created_at).toLocaleString()}</div>
+                          <div className="text-xs text-gray-500">{formatDateTime(c.created_at)}</div>
                         </div>
                       </div>
                     ))}

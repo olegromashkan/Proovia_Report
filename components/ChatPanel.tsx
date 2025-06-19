@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { formatDateTime } from '../lib/formatDate';
 import Icon from './Icon';
 import useUser from '../lib/useUser';
 import Picker from 'emoji-picker-react';
@@ -128,7 +129,7 @@ export default function ChatPanel({ open, user, onClose }: ChatPanelProps) {
               >
                 <div className="break-words">{m.text}</div>
                 <div className="text-xs opacity-70 mt-1 text-right">
-                  {new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  {formatDateTime(m.created_at, { hour: '2-digit', minute: '2-digit' })}
                 </div>
               </div>
             </motion.div>

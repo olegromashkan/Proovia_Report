@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { formatDateTime } from '../lib/formatDate';
 import Icon from './Icon';
 
 interface Notification {
@@ -42,7 +43,7 @@ export default function ToastNotifications() {
           <div className="flex-grow">
             <p className="font-semibold text-sm leading-tight">{n.message}</p>
             <p className="text-xs text-gray-500 mt-1">
-              {new Date(n.created_at).toLocaleString()}
+              {formatDateTime(n.created_at)}
             </p>
           </div>
           <button
