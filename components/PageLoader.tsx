@@ -77,7 +77,7 @@ const PageLoader = ({
     <AnimatePresence mode="wait" onExitComplete={onLoaded}>
       {loading && (
         <motion.div
-          className="fixed inset-0 flex items-center justify-center z-[10000] bg-black overflow-hidden"
+          className="fixed inset-0 w-screen h-screen flex items-center justify-center z-[2147483647] bg-black pointer-events-auto overflow-hidden"
           variants={loaderVariants}
           initial="initial"
           animate="animate"
