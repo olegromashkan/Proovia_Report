@@ -1,4 +1,5 @@
 import { useEffect, useRef, useMemo } from 'react';
+import copyToClipboard from '../lib/copyToClipboard';
 import Modal from './Modal';
 import Icon from './Icon';
 
@@ -158,7 +159,7 @@ export default function TripModal({ trip, onClose, allTrips }: Props) {
                         <div className={`badge ${statusColor.replace('text-', 'badge-')} badge-lg badge-outline`}>{status}</div>
                     </div>
                     <div className="flex flex-wrap gap-2 mt-2">
-                        <button onClick={() => navigator.clipboard.writeText(orderNumber)} className="px-2 py-1 text-xs rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-1"><Icon name="copy"/> Copy Order #</button>
+                        <button onClick={() => copyToClipboard(orderNumber)} className="px-2 py-1 text-xs rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-1"><Icon name="copy"/> Copy Order #</button>
                         <a href={`https://crm.proovia.uk/event-stream/order?search=${orderNumber}`} target="_blank" rel="noopener noreferrer" className="px-2 py-1 text-xs rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-1"><Icon name="upload"/> Photos</a>
                         <a href={`https://creatorapp.zoho.eu/dragrusu/copy-of-steeltrans-new/#Report:Copy_of_Tomorrow_trips?Order.OrderNumber=${orderNumber}`} target="_blank" rel="noopener noreferrer" className="px-2 py-1 text-xs rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-1"><Icon name="database"/> Zoho</a>
                     </div>

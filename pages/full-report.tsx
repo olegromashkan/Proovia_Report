@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useCallback, memo, useRef, Fragment } from 'react';
+import copyToClipboard from '../lib/copyToClipboard';
 import { useRouter } from 'next/router';
 import Layout from '../components/Layout';
 import TripModal from '../components/TripModal';
@@ -485,7 +486,7 @@ export default function FullReport() {
       const diffStart = diffTime(r.Last_Mention_Time, r.Start_Time);
       return [r.Asset, r.Contractor_Name, r.Driver, r.First_Mention_Time, load, diffLoad, r.Start_Time, r.Last_Mention_Time, diffStart].join(',');
     });
-    navigator.clipboard.writeText(rows.join('\n'));
+    copyToClipboard(rows.join('\n'));
   }, [filteredStartData]);
 
   const downloadStartCSV = useCallback(() => {
