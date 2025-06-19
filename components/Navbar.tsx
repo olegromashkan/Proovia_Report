@@ -59,7 +59,10 @@ const Navbar = memo(() => {
     { href: '/messages', icon: 'chat-left', label: 'Messages' },
   ], []);
 
-  const isActive = useCallback((href: string) => router.pathname === href, [router.pathname]);
+  const isActive = useCallback(
+    (href: string) => router.pathname.replace(/\/$/, '') === href,
+    [router.pathname]
+  );
 
   const determineCurrentEdge = useCallback((pos: Position): 'left' | 'right' | 'top' | 'bottom' => {
     if (windowSize.width === 0 || windowSize.height === 0) return 'left';
