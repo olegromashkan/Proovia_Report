@@ -3,10 +3,8 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/router';
 import ThemeToggle from './ThemeToggle';
-import NotificationCenter from './NotificationCenter';
 import SearchOverlay from './SearchOverlay';
 import Icon from './Icon';
-import UserMenu from './UserMenu';
 import TasksPanel from './TasksPanel';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -359,7 +357,6 @@ const Navbar = memo(() => {
                   <div className="flex items-center justify-between p-3 mt-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-750 rounded-lg">
                     <div className="flex items-center gap-2">
                       <ThemeToggle />
-                      <NotificationCenter />
                     </div>
                     <div className="flex items-center gap-2">
                       <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} onClick={() => setSearchOpen(true)} className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition-all duration-150" aria-label="Open search">
@@ -368,7 +365,6 @@ const Navbar = memo(() => {
                       <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} onClick={() => setTasksOpen(true)} className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition-all duration-150" aria-label="Open tasks">
                         <Icon name="check" className="w-5 h-5 text-gray-600 dark:text-gray-300" />
                       </motion.button>
-                      <UserMenu />
                     </div>
                   </div>
                 </div>
