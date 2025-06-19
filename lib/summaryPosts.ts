@@ -55,14 +55,20 @@ export function generateSummaryPosts(): number {
     late: number[];
     earliest?: number;
     latest?: number;
+    completeCount?: number;
+    failedCount?: number;
   }
 
   interface DayStats {
     total: number;
     complete: number;
     failed: number;
+    lateTC: number;
+    lateArr: number;
     drivers: Record<string, DriverStat>;
     contractors: Record<string, { total: number; count: number }>;
+    postcodes: Record<string, number>;
+    auctions: Record<string, number>;
   }
 
   const groups: Record<string, DayStats> = {};
@@ -85,7 +91,17 @@ export function generateSummaryPosts(): number {
     const iso = parseDate(String(raw).split(' ')[0]);
     if (!iso) return;
     if (!groups[iso]) {
-      groups[iso] = { total: 0, complete: 0, failed: 0, drivers: {}, contractors: {} };
+      groups[iso] = {
+        total: 0,
+        complete: 0,
+        failed: 0,
+        lateTC: 0,
+        lateArr: 0,
+        drivers: {},
+        contractors: {},
+        postcodes: {},
+        auctions: {},
+      };
     }
     const stats = groups[iso];
     stats.total += 1;
@@ -99,6 +115,12 @@ export function generateSummaryPosts(): number {
       item.Driver ||
       'Unknown';
     if (!stats.drivers[driver]) stats.drivers[driver] = { diff: [], late: [] };
+    if (status === 'complete') {
+      stats.drivers[driver].completeCount = (stats.drivers[driver].completeCount || 0) + 1;
+    }
+    if (status === 'failed') {
+      stats.drivers[driver].failedCount = (stats.drivers[driver].failedCount || 0) + 1;
+    }
     const diff = diffMinutes(
       item['Start_Time'] || item['Trip.Start_Time'],
       item['Last_Mention_Time'] || item.Last_Mention_Time
@@ -109,6 +131,32 @@ export function generateSummaryPosts(): number {
       item['Time_Completed'] || item.Time_Completed || item['Trip.Time_Completed']
     );
     if (late !== null) stats.drivers[driver].late.push(late);
+
+    const postcode = item['Address.Postcode'];
+    if (postcode) {
+      stats.postcodes[postcode] = (stats.postcodes[postcode] || 0) + 1;
+    }
+    const auction = item['Order.Auction'];
+    if (auction) {
+      stats.auctions[auction] = (stats.auctions[auction] || 0) + 1;
+    }
+
+    const wh = item['Address.Working_Hours'];
+    if (wh && item.Time_Completed && item.Arrival_Time) {
+      const m = String(wh).match(/\d{2}:\d{2}/g);
+      const endStr = m?.[1];
+      if (endStr) {
+        const [h, m2] = endStr.split(':').map(Number);
+        const tcDate = new Date(item.Time_Completed);
+        const tcLimit = new Date(tcDate);
+        tcLimit.setHours(h, m2, 0, 0);
+        const arrDate = new Date(item.Arrival_Time);
+        const arrLimit = new Date(arrDate);
+        arrLimit.setHours(h, m2, 0, 0);
+        if (tcDate >= tcLimit) stats.lateTC++;
+        if (arrDate >= arrLimit) stats.lateArr++;
+      }
+    }
 
     const start = parseMinutes(item['Start_Time'] || item['Trip.Start_Time']);
     if (start !== null) {
@@ -128,12 +176,12 @@ export function generateSummaryPosts(): number {
     if (!stats.contractors[contractor]) {
       stats.contractors[contractor] = { total: 0, count: 0 };
     }
+    stats.contractors[contractor].count += 1;
     const priceRaw =
       item['Order.Price'] || item.Price || item.Order_Value || item['Order_Value'] || item.OrderValue;
     const price = parseFloat(priceRaw);
     if (!isNaN(price)) {
       stats.contractors[contractor].total += price;
-      stats.contractors[contractor].count += 1;
     }
   });
 
@@ -150,53 +198,42 @@ export function generateSummaryPosts(): number {
       .get(ts);
     if (existing) continue;
 
-    const driverScores = Object.entries(stats.drivers).map(([driver, d]) => {
-      const avgDiff = d.diff.length ? d.diff.reduce((a, b) => a + b, 0) / d.diff.length : Infinity;
-      const avgLate = d.late.length ? d.late.reduce((a, b) => a + b, 0) / d.late.length : Infinity;
-      return { driver, score: Math.abs(avgDiff) + Math.abs(avgLate) };
-    });
-
-    const best = driverScores
-      .filter(d => isFinite(d.score))
-      .sort((a, b) => a.score - b.score)
-      .slice(0, 5)
-      .map(d => d.driver)
-      .join(', ');
-    const worst = driverScores
-      .filter(d => isFinite(d.score))
-      .sort((a, b) => b.score - a.score)
-      .slice(0, 5)
-      .map(d => d.driver)
-      .join(', ');
-
-    const topContractors = Object.entries(stats.contractors)
-      .filter(([, c]) => c.count > 0)
-      .map(([name, c]) => ({ name, avg: c.total / c.count }))
-      .sort((a, b) => b.avg - a.avg)
+    const topDrivers = Object.entries(stats.drivers)
+      .map(([drv, d]) => ({
+        driver: drv,
+        complete: d.completeCount || 0,
+        failed: d.failedCount || 0,
+        total: (d.completeCount || 0) + (d.failedCount || 0),
+      }))
+      .sort((a, b) => b.total - a.total)
       .slice(0, 3);
 
-    const earliestDrivers = Object.entries(stats.drivers)
-      .filter(([, d]) => d.earliest !== undefined)
-      .sort((a, b) => (a[1].earliest! - b[1].earliest!))
+    const topPostcodes = Object.entries(stats.postcodes)
+      .sort(([, a], [, b]) => b - a)
       .slice(0, 3)
-      .map(([driver, d]) => ({ driver, time: d.earliest! }));
+      .map(([postcode, count]) => ({ postcode, count }));
 
-    const latestDrivers = Object.entries(stats.drivers)
-      .filter(([, d]) => d.latest !== undefined)
-      .sort((a, b) => (b[1].latest! - a[1].latest!))
+    const topAuctions = Object.entries(stats.auctions)
+      .sort(([, a], [, b]) => b - a)
       .slice(0, 3)
-      .map(([driver, d]) => ({ driver, time: d.latest! }));
+      .map(([auction, count]) => ({ auction, count }));
+
+    const topContractors = Object.entries(stats.contractors)
+      .sort(([, a], [, b]) => b.count - a.count)
+      .slice(0, 3)
+      .map(([name, c]) => ({ contractor: name, count: c.count }));
 
     const summary = {
       date,
       total: stats.total,
       complete: stats.complete,
       failed: stats.failed,
-      best: best.split(', ').filter(Boolean),
-      worst: worst.split(', ').filter(Boolean),
+      lateTC: stats.lateTC,
+      lateArr: stats.lateArr,
+      topDrivers,
+      topPostcodes,
+      topAuctions,
       topContractors,
-      earliestDrivers,
-      latestDrivers,
     };
 
     db.prepare('INSERT INTO posts (username, content, created_at, type) VALUES (?, ?, ?, ?)').run('summary_bot', JSON.stringify(summary), ts, 'summary');
@@ -237,21 +274,31 @@ export function generateSummaryForDate(date: string): boolean {
     late: number[];
     earliest?: number;
     latest?: number;
+    completeCount?: number;
+    failedCount?: number;
   }
   interface DayStats {
     total: number;
     complete: number;
     failed: number;
+    lateTC: number;
+    lateArr: number;
     drivers: Record<string, DriverStat>;
     contractors: Record<string, { total: number; count: number }>;
+    postcodes: Record<string, number>;
+    auctions: Record<string, number>;
   }
 
   const stats: DayStats = {
     total: 0,
     complete: 0,
     failed: 0,
+    lateTC: 0,
+    lateArr: 0,
     drivers: {},
     contractors: {},
+    postcodes: {},
+    auctions: {},
   };
 
   const driverRows = db.prepare('SELECT data FROM drivers_report').all();
@@ -281,6 +328,12 @@ export function generateSummaryForDate(date: string): boolean {
       item.Driver ||
       'Unknown';
     if (!stats.drivers[driver]) stats.drivers[driver] = { diff: [], late: [] };
+    if (status === 'complete') {
+      stats.drivers[driver].completeCount = (stats.drivers[driver].completeCount || 0) + 1;
+    }
+    if (status === 'failed') {
+      stats.drivers[driver].failedCount = (stats.drivers[driver].failedCount || 0) + 1;
+    }
     const diff = diffMinutes(
       item['Start_Time'] || item['Trip.Start_Time'],
       item['Last_Mention_Time'] || item.Last_Mention_Time
@@ -322,53 +375,42 @@ export function generateSummaryForDate(date: string): boolean {
   const ts = tsDate.toISOString().slice(0, 10) + ' 00:00:00';
   db.prepare("DELETE FROM posts WHERE type = 'summary' AND date(created_at) = date(?)").run(ts);
 
-  const driverScores = Object.entries(stats.drivers).map(([driver, d]) => {
-    const avgDiff = d.diff.length ? d.diff.reduce((a, b) => a + b, 0) / d.diff.length : Infinity;
-    const avgLate = d.late.length ? d.late.reduce((a, b) => a + b, 0) / d.late.length : Infinity;
-    return { driver, score: Math.abs(avgDiff) + Math.abs(avgLate) };
-  });
-
-  const best = driverScores
-    .filter((d) => isFinite(d.score))
-    .sort((a, b) => a.score - b.score)
-    .slice(0, 5)
-    .map((d) => d.driver)
-    .join(', ');
-  const worst = driverScores
-    .filter((d) => isFinite(d.score))
-    .sort((a, b) => b.score - a.score)
-    .slice(0, 5)
-    .map((d) => d.driver)
-    .join(', ');
-
-  const topContractors = Object.entries(stats.contractors)
-    .filter(([, c]) => c.count > 0)
-    .map(([name, c]) => ({ name, avg: c.total / c.count }))
-    .sort((a, b) => b.avg - a.avg)
+  const topDrivers = Object.entries(stats.drivers)
+    .map(([drv, d]) => ({
+      driver: drv,
+      complete: d.completeCount || 0,
+      failed: d.failedCount || 0,
+      total: (d.completeCount || 0) + (d.failedCount || 0),
+    }))
+    .sort((a, b) => b.total - a.total)
     .slice(0, 3);
 
-  const earliestDrivers = Object.entries(stats.drivers)
-    .filter(([, d]) => d.earliest !== undefined)
-    .sort((a, b) => a[1].earliest! - b[1].earliest!)
+  const topPostcodes = Object.entries(stats.postcodes)
+    .sort(([, a], [, b]) => b - a)
     .slice(0, 3)
-    .map(([driver, d]) => ({ driver, time: d.earliest! }));
+    .map(([postcode, count]) => ({ postcode, count }));
 
-  const latestDrivers = Object.entries(stats.drivers)
-    .filter(([, d]) => d.latest !== undefined)
-    .sort((a, b) => b[1].latest! - a[1].latest!)
+  const topAuctions = Object.entries(stats.auctions)
+    .sort(([, a], [, b]) => b - a)
     .slice(0, 3)
-    .map(([driver, d]) => ({ driver, time: d.latest! }));
+    .map(([auction, count]) => ({ auction, count }));
+
+  const topContractors = Object.entries(stats.contractors)
+    .sort(([, a], [, b]) => b.count - a.count)
+    .slice(0, 3)
+    .map(([name, c]) => ({ contractor: name, count: c.count }));
 
   const summary = {
     date: iso,
     total: stats.total,
     complete: stats.complete,
     failed: stats.failed,
-    best: best.split(', ').filter(Boolean),
-    worst: worst.split(', ').filter(Boolean),
+    lateTC: stats.lateTC,
+    lateArr: stats.lateArr,
+    topDrivers,
+    topPostcodes,
+    topAuctions,
     topContractors,
-    earliestDrivers,
-    latestDrivers,
   };
 
   db.prepare('INSERT INTO posts (username, content, created_at, type) VALUES (?, ?, ?, ?)').run(
