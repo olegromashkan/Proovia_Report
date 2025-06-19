@@ -121,32 +121,78 @@ export default function SummaryFeed() {
               </div>
             </div>
           )}
-          {posts.map(p => (
-            <div
-              key={p.id}
-              className="bg-white dark:bg-gray-800 p-4 rounded-xl border border-gray-200/50 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-all duration-200 hover:border-[#b53133]/50"
-            >
-              <div className="flex items-start gap-3">
-                <div className="flex-shrink-0">
-                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#b53133]/20 to-[#b53133]/40 flex items-center justify-center">
-                    <svg className="w-5 h-5 text-[#b53133]" fill="currentColor" viewBox="0 0 20 20">
-                      <path d="M10 2a8 8 0 100 16 8 8 0 000-16zm0 14a6 6 0 110-12 6 6 0 010 12zm0-10a1 1 0 100 2 1 1 0 000-2zm0 4a1 1 0 100 2 1 1 0 000-2z" />
-                    </svg>
+          {posts.map(p => {
+            let info: any = null;
+            try { info = JSON.parse(p.content); } catch { }
+            return (
+              <div
+                key={p.id}
+                className="bg-white dark:bg-gray-800 p-4 rounded-xl border border-gray-200/50 dark:border-gray-700/50 shadow-sm"
+              >
+                {info && info.topDrivers ? (
+                  <div className="space-y-2 text-xs">
+                    <div className="font-semibold text-sm">
+                      {new Date(p.created_at).toLocaleDateString('en-GB')}
+                    </div>
+                    <div className="grid grid-cols-4 gap-2">
+                      <div className="bg-base-200 p-2 rounded">
+                        <div>Total</div>
+                        <div className="font-bold text-center">{info.total}</div>
+                      </div>
+                      <div className="bg-success/20 p-2 rounded text-success">
+                        <div>Complete</div>
+                        <div className="font-bold text-center">{info.complete}</div>
+                      </div>
+                      <div className="bg-error/20 p-2 rounded text-error">
+                        <div>Failed</div>
+                        <div className="font-bold text-center">{info.failed}</div>
+                      </div>
+                      <div className="bg-warning/20 p-2 rounded text-warning">
+                        <div>Late TC</div>
+                        <div className="font-bold text-center">{info.lateTC}</div>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <p className="font-semibold">Top Drivers</p>
+                        <ul>
+                          {info.topDrivers.map((d: any, i: number) => (
+                            <li key={i}>{d.driver}: {d.complete}✓ {d.failed}✗</li>
+                          ))}
+                        </ul>
+                      </div>
+                      <div>
+                        <p className="font-semibold">Top Postcodes</p>
+                        <ul>
+                          {info.topPostcodes.map((d: any, i: number) => (
+                            <li key={i}>{d.postcode} ({d.count})</li>
+                          ))}
+                        </ul>
+                      </div>
+                      <div>
+                        <p className="font-semibold">Top Auctions</p>
+                        <ul>
+                          {info.topAuctions.map((d: any, i: number) => (
+                            <li key={i}>{d.auction} ({d.count})</li>
+                          ))}
+                        </ul>
+                      </div>
+                      <div>
+                        <p className="font-semibold">Top Contractors</p>
+                        <ul>
+                          {info.topContractors.map((d: any, i: number) => (
+                            <li key={i}>{d.contractor} ({d.count})</li>
+                          ))}
+                        </ul>
+                      </div>
+                    </div>
                   </div>
-                </div>
-                <div className="flex-1">
+                ) : (
                   <p className="text-sm text-gray-800 dark:text-gray-200 break-words">{p.content}</p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                    {new Date(p.created_at).toLocaleDateString('en-US', {
-                      year: 'numeric',
-                      month: 'short',
-                      day: 'numeric',
-                    })}
-                  </p>
-                </div>
+                )}
               </div>
-            </div>
-          ))}
+            );
+          })}
         </>
       )}
       </div>
