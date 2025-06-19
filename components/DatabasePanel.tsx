@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState, useCallback } from 'react';
+import { formatDateTime } from '../lib/formatDate';
 import { Database, Search, RefreshCw, Plus, Download, Save, X, Trash2, Edit, ExternalLink, RotateCcw, AlertCircle } from 'lucide-react';
 
 const TABLES = [
@@ -339,7 +340,7 @@ export default function DatabasePanel() {
                         </td>
                       ))}
                       <td className="px-3 py-1.5 text-xs text-gray-500">
-                        {new Date(item.created_at).toLocaleDateString()} {new Date(item.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        {formatDateTime(item.created_at, { year: 'numeric', month: '2-digit', day: '2-digit' })} {formatDateTime(item.created_at, { hour: '2-digit', minute: '2-digit' })}
                       </td>
                       <td className="px-3 py-1.5 text-center">
                         <div className="flex items-center justify-center gap-1">

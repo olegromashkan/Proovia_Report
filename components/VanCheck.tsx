@@ -1,5 +1,6 @@
 import React from 'react';
 import Icon from './Icon';
+import { formatDateTime } from '../lib/formatDate';
 
 // --- Types ---
 interface CheckItem {
@@ -274,7 +275,7 @@ export default function VanCheck({ data, contractor }: Props) {
             <Odometer mileage={getItem(checks.mileage).value as string | number} />
             <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
               <Icon name="calendar" className="w-5 h-5" />
-              <span>{new Date(data.date).toLocaleDateString()}</span>
+              <span>{formatDateTime(data.date, { year: 'numeric', month: '2-digit', day: '2-digit' })}</span>
             </div>
             <div className={`
               flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-semibold

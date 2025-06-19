@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { formatDateTime } from '../lib/formatDate';
 import Layout from '../components/Layout';
 import VanCheck from '../components/VanCheck';
 import Modal from '../components/Modal';
@@ -216,7 +217,7 @@ export default function VanState() {
             (history[selected] || []).map((vc, idx) => (
               <li key={idx} className="py-2">
                 <div className="font-mono text-xs text-base-content/70">
-                  {new Date(vc.date).toLocaleString()}
+                  {formatDateTime(vc.date)}
                 </div>
                 <div className="mt-1 space-y-1">
                   {vc.driver_id && (

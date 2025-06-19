@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { formatDateTime } from '../lib/formatDate';
 import Icon from './Icon';
 import useFetch from '../lib/useFetch';
 
@@ -168,7 +169,7 @@ export default function TasksPanel({ open, onClose }: TasksPanelProps) {
                   <div className="text-xs text-gray-500 dark:text-gray-400">
                     Assigned to: {t.assignee}
                     {t.due_at && (
-                      <> | Due: {new Date(t.due_at).toLocaleString()}</>
+                      <> | Due: {formatDateTime(t.due_at)}</>
                     )}
                   </div>
                 </div>

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { formatDateTime } from '../lib/formatDate';
 
 interface Item {
   id: number;
@@ -29,7 +30,7 @@ export default function UploadHistory() {
       <ul className="list-disc list-inside text-sm space-y-1">
         {items.map((i) => (
           <li key={i.id}>
-            {i.message} ({new Date(i.created_at).toLocaleString()})
+            {i.message} ({formatDateTime(i.created_at)})
           </li>
         ))}
       </ul>

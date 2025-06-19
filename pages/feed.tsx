@@ -5,6 +5,7 @@ import Layout from '../components/Layout';
 import Icon from '../components/Icon';
 import useUser from '../lib/useUser';
 import UserHoverCard from '../components/UserHoverCard';
+import { formatDateTime } from '../lib/formatDate';
 
 export default function Feed() {
   const me = useUser();
@@ -239,7 +240,7 @@ export default function Feed() {
                 </Link>
               </UserHoverCard>
               <div className="text-xs text-gray-500 dark:text-gray-400">
-                {new Date(p.created_at).toLocaleString()}
+                {formatDateTime(p.created_at)}
                 {p.updated_at && (
                   <span className="italic ml-2">(edited)</span>
                 )}
@@ -377,7 +378,7 @@ export default function Feed() {
                     <div className="flex-1">
                       <div className="text-gray-800 dark:text-gray-200 p-2 rounded-xl bg-gray-50 dark:bg-gray-700">{c.text}</div>
                       <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                        {new Date(c.created_at).toLocaleString()}
+                        {formatDateTime(c.created_at)}
                       </div>
                     </div>
                   </motion.div>

@@ -22,7 +22,7 @@ const calcLoad = (startTime: string) => {
   const date = new Date();
   date.setHours(h, m, 0, 0);
   date.setMinutes(date.getMinutes() - 90);
-  return date.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+  return date.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', timeZone: 'UTC' });
 };
 
 const diffTime = (t1: string, t2: string) => {
