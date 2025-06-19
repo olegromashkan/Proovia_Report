@@ -10,8 +10,7 @@ export default function Card({ title, value, onClick }: CardProps) {
   return (
     <div
       onClick={onClick}
-      className="p-6 rounded-2xl shadow-lg cursor-pointer hover:shadow-xl transition-all text-center"
-      style={{ background: 'var(--card-bg)' }}
+      className="p-6 rounded-2xl bg-white dark:bg-gray-800 shadow-lg cursor-pointer hover:shadow-xl transition-all text-center"
     >
       <h2 className="text-sm font-semibold mb-1 text-gray-700 dark:text-gray-200">
         {title}
