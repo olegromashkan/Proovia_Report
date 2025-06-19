@@ -31,8 +31,10 @@ export default function SummaryAdminPanel() {
     setLoading(false);
   };
 
-  const formatPostDate = (str: string) =>
-    new Date(str).toLocaleDateString('en-GB');
+  const formatPostDate = (str: string) => {
+    const d = new Date(str);
+    return d.toISOString().slice(0, 10);
+  };
 
   return (
     <div className="space-y-4">
