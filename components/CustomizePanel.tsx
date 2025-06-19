@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import copyToClipboard from '../lib/copyToClipboard';
 import { Palette, Layout as LayoutIcon, Sparkles, RotateCcw, Download, Upload, Eye, EyeOff } from 'lucide-react';
 import RangeSlider from './RangeSlider';
 import ColorRow from './ColorRow';
@@ -98,7 +99,7 @@ export default function CustomizePanel() {
 
   const copyValue = async (text: string, key: string) => {
     try {
-      await navigator.clipboard.writeText(text);
+      await copyToClipboard(text);
       setCopied(key);
       setTimeout(() => setCopied(''), 2000);
     } catch {
