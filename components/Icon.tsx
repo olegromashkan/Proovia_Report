@@ -23,6 +23,7 @@ const iconMap: Record<string, string> = {
   pen: 'pencil',
   copy: 'clipboard',
   ban: 'ban',
+  eye: 'eye',
   save: 'save',
   'file-arrow-up': 'file-earmark-arrow-up',
   'rotate-left': 'arrow-counterclockwise',
