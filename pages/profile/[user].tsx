@@ -435,7 +435,7 @@ export default function Profile() {
                     )}
                   </>
                 )}
-                <div className="mt-3 flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400>
+                <div className="mt-3 flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400">
                   <button onClick={() => toggleLike(p.id, p.liked)} className="flex items-center gap-1">
                     <Icon name={p.liked ? 'hand-thumbs-up-fill' : 'hand-thumbs-up'} className="h-4 w-4" />
                     <span>{p.likes}</span>
@@ -471,20 +471,30 @@ export default function Profile() {
                           </Link>
                         </UserHoverCard>
                         <div>
-                          <div className="whitespace-pre-wrap whitespace-white text">
--gray-700 dark:text-gray-200">{c.text}</div>                          <div className="text-xs text-gray-500">{new Date(c.created_at).toLocaleString()}</div>
+                          <div className="whitespace-pre-wrap text-gray-700 dark:text-gray-200">
+                            {c.text}
+                          </div>
+                          <div className="text-xs text-gray-500">
+                            {new Date(c.created_at).toLocaleString()}
+                          </div>
                         </div>
                       </div>
                     ))}
                     <div className="flex items-center gap-2">
                       <input
-                        className="flex-1 rounded-full border rounded-lg border-gray-3 rounded-full px-3 py-2"
-                      />
+                        className="flex-1 rounded-lg border border-gray-300 px-3 py-2"
                         placeholder="Add a comment"
-                        value={commentText[p.id] || []}
-                        onChange={e => setCommentText(prev => ({ ...prev, [p.id]: e.target.value }))}
+                        value={commentText[p.id] || ''}
+                        onChange={e =>
+                          setCommentText(prev => ({ ...prev, [p.id]: e.target.value }))
+                        }
                       />
-                      <button className="rounded-lg bg-blue-600 px-4 py-2 text-white hover:bg-blue-700" onClick={() => addComment(p.id)}>Send</button>
+                      <button
+                        className="rounded-lg bg-blue-600 px-4 py-2 text-white hover:bg-blue-700"
+                        onClick={() => addComment(p.id)}
+                      >
+                        Send
+                      </button>
                     </div>
                   </div>
                 )}
