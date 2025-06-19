@@ -11,6 +11,7 @@ export default function OrderMap() {
     if (typeof window === 'undefined' || !ref.current) return;
 
     let map: any;
+    let mounted = true;
 
     const init = () => {
       const L = (window as any).L;
@@ -25,6 +26,7 @@ export default function OrderMap() {
         fetch('/regions.geojson').then(r => r.json()),
         fetch('/api/region-stats').then(r => r.json())
       ]).then(([geo, stats]: [any, RegionStats]) => {
+        if (!mounted || !map) return;
         L.geoJSON(geo, {
           style: (feature: any) => {
             const name = feature.properties.name;
@@ -51,12 +53,14 @@ export default function OrderMap() {
         if (init()) clearInterval(id);
       }, 100);
       return () => {
+        mounted = false;
         clearInterval(id);
         if (map) map.remove();
       };
     }
 
     return () => {
+      mounted = false;
       if (map) map.remove();
     };
   }, []);
