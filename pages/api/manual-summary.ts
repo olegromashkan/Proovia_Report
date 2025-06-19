@@ -3,13 +3,18 @@ import db from '../../lib/db';
 import { generateSummaryForDate } from '../../lib/summaryPosts';
 
 export default function handler(req: NextApiRequest, res: NextApiResponse) {
-  const { date } = req.query as { date?: string };
-  if (!date) return res.status(400).json({ message: 'Missing date' });
+  const { date, id } = req.query as { date?: string; id?: string };
   if (req.method === 'POST') {
+    if (!date) return res.status(400).json({ message: 'Missing date' });
     const created = generateSummaryForDate(date);
     return res.status(200).json({ created });
   }
   if (req.method === 'DELETE') {
+    if (id) {
+      db.prepare("DELETE FROM posts WHERE id = ? AND type = 'summary'").run(id);
+      return res.status(200).json({ message: 'Deleted' });
+    }
+    if (!date) return res.status(400).json({ message: 'Missing date or id' });
     const tsDate = new Date(date);
     tsDate.setDate(tsDate.getDate() + 1);
     const ts = tsDate.toISOString().slice(0, 10) + ' 00:00:00';

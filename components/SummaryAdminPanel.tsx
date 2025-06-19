@@ -23,10 +23,18 @@ export default function SummaryAdminPanel() {
     setLoading(false);
   };
 
-  const remove = async (d: string) => {
+  const removeByDate = async (d: string) => {
     if (!confirm('Delete summary for ' + d + '?')) return;
     setLoading(true);
     await fetch(`/api/manual-summary?date=${d}`, { method: 'DELETE' });
+    await mutate();
+    setLoading(false);
+  };
+
+  const removeById = async (id: number) => {
+    if (!confirm('Delete this summary?')) return;
+    setLoading(true);
+    await fetch(`/api/posts?id=${id}`, { method: 'DELETE' });
     await mutate();
     setLoading(false);
   };
@@ -57,7 +65,7 @@ export default function SummaryAdminPanel() {
           Generate
         </button>
         <button
-          onClick={() => remove(date)}
+          onClick={() => removeByDate(date)}
           disabled={!date || loading}
           className="btn btn-error"
         >
@@ -84,7 +92,7 @@ export default function SummaryAdminPanel() {
                   {day} - {info.total ?? ''} tasks
                 </span>
                 <button
-                  onClick={() => remove(day)}
+                  onClick={() => removeById(p.id)}
                   className="btn btn-xs btn-outline btn-error"
                 >
                   Delete
