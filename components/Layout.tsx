@@ -2,6 +2,8 @@ import { ReactNode } from 'react';
 import Head from 'next/head';
 import Navbar from './Navbar';
 import ToastNotifications from './ToastNotifications';
+import NotificationCenter from './NotificationCenter';
+import UserMenu from './UserMenu';
 
 interface LayoutProps {
   children: ReactNode;
@@ -18,6 +20,10 @@ export default function Layout({ children, title, fullWidth }: LayoutProps) {
       <div className="min-h-screen flex flex-col bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 text-base-content">
         <Navbar />
         <div className="flex-1 flex flex-col min-h-0">
+          <div className="fixed top-4 right-4 z-40 flex items-center gap-2">
+            <NotificationCenter />
+            <UserMenu />
+          </div>
           <ToastNotifications />
           <main
             className={
