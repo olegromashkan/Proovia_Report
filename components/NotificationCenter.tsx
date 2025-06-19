@@ -102,7 +102,7 @@ export default function NotificationCenter() {
       </button>
       
       {open && (
-        <div className="absolute right-0 mt-2 w-96 bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 z-50 p-4">
+        <div className="absolute right-0 mt-2 w-96 bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 z-60 p-4">
           <div className="flex justify-between items-center mb-2">
             <h3 className="text-lg font-semibold">Notifications</h3>
             {items.length > 0 && (

@@ -79,7 +79,7 @@ export default function UserMenu() {
         </button>
         
         {open && (
-          <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-900 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-50 py-2">
+        <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-900 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-60 py-2">
             <div className="px-4 py-2 text-sm text-red-600 dark:text-red-400">
               Error loading data
             </div>
@@ -129,7 +129,7 @@ export default function UserMenu() {
 
       {/* Dropdown menu */}
       {open && (
-        <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-gray-900 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-50 py-1">
+        <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-gray-900 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-60 py-1">
           {/* User information */}
           <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700">
             <div className="flex items-center space-x-3">
