@@ -204,3 +204,178 @@ export function generateSummaryPosts(): number {
   }
   return created;
 }
+
+export function generateSummaryForDate(date: string): boolean {
+  const iso = date.slice(0, 10);
+  const eventDates = new Set(
+    db
+      .prepare('SELECT DISTINCT date(created_at) d FROM event_stream')
+      .all()
+      .map((r: any) => r.d as string)
+  );
+  const scheduleDates = new Set(
+    db
+      .prepare('SELECT DISTINCT date(created_at) d FROM schedule_trips')
+      .all()
+      .map((r: any) => r.d as string)
+  );
+  const csvDates = new Set(
+    db
+      .prepare('SELECT DISTINCT date(created_at) d FROM csv_trips')
+      .all()
+      .map((r: any) => r.d as string)
+  );
+  if (!eventDates.has(iso) || !scheduleDates.has(iso) || !csvDates.has(iso)) {
+    return false;
+  }
+
+  const rows = db.prepare('SELECT data FROM copy_of_tomorrow_trips').all();
+  const items = rows.map((r: any) => JSON.parse(r.data));
+
+  interface DriverStat {
+    diff: number[];
+    late: number[];
+    earliest?: number;
+    latest?: number;
+  }
+  interface DayStats {
+    total: number;
+    complete: number;
+    failed: number;
+    drivers: Record<string, DriverStat>;
+    contractors: Record<string, { total: number; count: number }>;
+  }
+
+  const stats: DayStats = {
+    total: 0,
+    complete: 0,
+    failed: 0,
+    drivers: {},
+    contractors: {},
+  };
+
+  const driverRows = db.prepare('SELECT data FROM drivers_report').all();
+  const driverMap: Record<string, string> = {};
+  driverRows.forEach((r: any) => {
+    const d = JSON.parse(r.data);
+    if (d.Full_Name) driverMap[d.Full_Name.trim()] = d.Contractor_Name || 'Unknown';
+  });
+
+  items.forEach((item: any) => {
+    const raw =
+      item['Start_Time'] ||
+      item['Trip.Start_Time'] ||
+      item.Start_Time ||
+      item['Predicted_Time'] ||
+      item.Predicted_Time ||
+      '';
+    const d = parseDate(String(raw).split(' ')[0]);
+    if (d !== iso) return;
+    stats.total += 1;
+    const status = String(item.Status || '').toLowerCase();
+    if (status === 'complete') stats.complete += 1;
+    if (status === 'failed') stats.failed += 1;
+    const driver =
+      item['Trip.Driver1'] ||
+      item.Driver1 ||
+      item.Driver ||
+      'Unknown';
+    if (!stats.drivers[driver]) stats.drivers[driver] = { diff: [], late: [] };
+    const diff = diffMinutes(
+      item['Start_Time'] || item['Trip.Start_Time'],
+      item['Last_Mention_Time'] || item.Last_Mention_Time
+    );
+    if (diff !== null) stats.drivers[driver].diff.push(diff);
+    const late = diffMinutes(
+      item['Arrival_Time'] || item.Arrival_Time || item['Trip.Arrival_Time'],
+      item['Time_Completed'] || item.Time_Completed || item['Trip.Time_Completed']
+    );
+    if (late !== null) stats.drivers[driver].late.push(late);
+    const start = parseMinutes(item['Start_Time'] || item['Trip.Start_Time']);
+    if (start !== null) {
+      const cur = stats.drivers[driver].earliest;
+      if (cur === undefined || start < cur) stats.drivers[driver].earliest = start;
+    }
+    const end = parseMinutes(
+      item['Time_Completed'] || item.Time_Completed || item['Trip.Time_Completed'] || item['Last_Mention_Time'] || item.Last_Mention_Time
+    );
+    if (end !== null) {
+      const cur = stats.drivers[driver].latest;
+      if (cur === undefined || end > cur) stats.drivers[driver].latest = end;
+    }
+    const contractor =
+      driverMap[driver] || item.Contractor_Name || item['Contractor_Name'] || 'Unknown';
+    if (!stats.contractors[contractor]) {
+      stats.contractors[contractor] = { total: 0, count: 0 };
+    }
+    const priceRaw =
+      item['Order.Price'] || item.Price || item.Order_Value || item['Order_Value'] || item.OrderValue;
+    const price = parseFloat(priceRaw);
+    if (!isNaN(price)) {
+      stats.contractors[contractor].total += price;
+      stats.contractors[contractor].count += 1;
+    }
+  });
+
+  const tsDate = new Date(iso);
+  tsDate.setDate(tsDate.getDate() + 1);
+  const ts = tsDate.toISOString().slice(0, 10) + ' 00:00:00';
+  db.prepare("DELETE FROM posts WHERE type = 'summary' AND date(created_at) = date(?)").run(ts);
+
+  const driverScores = Object.entries(stats.drivers).map(([driver, d]) => {
+    const avgDiff = d.diff.length ? d.diff.reduce((a, b) => a + b, 0) / d.diff.length : Infinity;
+    const avgLate = d.late.length ? d.late.reduce((a, b) => a + b, 0) / d.late.length : Infinity;
+    return { driver, score: Math.abs(avgDiff) + Math.abs(avgLate) };
+  });
+
+  const best = driverScores
+    .filter((d) => isFinite(d.score))
+    .sort((a, b) => a.score - b.score)
+    .slice(0, 5)
+    .map((d) => d.driver)
+    .join(', ');
+  const worst = driverScores
+    .filter((d) => isFinite(d.score))
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 5)
+    .map((d) => d.driver)
+    .join(', ');
+
+  const topContractors = Object.entries(stats.contractors)
+    .filter(([, c]) => c.count > 0)
+    .map(([name, c]) => ({ name, avg: c.total / c.count }))
+    .sort((a, b) => b.avg - a.avg)
+    .slice(0, 3);
+
+  const earliestDrivers = Object.entries(stats.drivers)
+    .filter(([, d]) => d.earliest !== undefined)
+    .sort((a, b) => a[1].earliest! - b[1].earliest!)
+    .slice(0, 3)
+    .map(([driver, d]) => ({ driver, time: d.earliest! }));
+
+  const latestDrivers = Object.entries(stats.drivers)
+    .filter(([, d]) => d.latest !== undefined)
+    .sort((a, b) => b[1].latest! - a[1].latest!)
+    .slice(0, 3)
+    .map(([driver, d]) => ({ driver, time: d.latest! }));
+
+  const summary = {
+    date: iso,
+    total: stats.total,
+    complete: stats.complete,
+    failed: stats.failed,
+    best: best.split(', ').filter(Boolean),
+    worst: worst.split(', ').filter(Boolean),
+    topContractors,
+    earliestDrivers,
+    latestDrivers,
+  };
+
+  db.prepare('INSERT INTO posts (username, content, created_at, type) VALUES (?, ?, ?, ?)').run(
+    'summary_bot',
+    JSON.stringify(summary),
+    ts,
+    'summary'
+  );
+  return true;
+}
