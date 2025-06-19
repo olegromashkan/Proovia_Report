@@ -8,7 +8,7 @@ import PageLoader from '../components/PageLoader';
 
 export default function MyApp({ Component, pageProps }: AppProps) {
   const router = useRouter();
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const saved = localStorage.getItem('theme');
@@ -38,6 +38,11 @@ export default function MyApp({ Component, pageProps }: AppProps) {
     fetch('/api/status', { method: 'POST' });
     return () => clearInterval(interval);
   }, []);
+
+  // Hide loader once the initial route is ready
+  useEffect(() => {
+    if (router.isReady) setLoading(false);
+  }, [router.isReady]);
 
   useEffect(() => {
     const start = () => setLoading(true);
