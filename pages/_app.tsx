@@ -2,9 +2,14 @@ import type { AppProps } from 'next/app';
 import Head from 'next/head';
 import Script from 'next/script';
 import '../uno.css';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/router';
+import PageLoader from '../components/PageLoader';
 
 export default function MyApp({ Component, pageProps }: AppProps) {
+  const router = useRouter();
+  const [loading, setLoading] = useState(false);
+
   useEffect(() => {
     const saved = localStorage.getItem('theme');
     const theme = saved || 'dark';
@@ -34,11 +39,25 @@ export default function MyApp({ Component, pageProps }: AppProps) {
     return () => clearInterval(interval);
   }, []);
 
+  useEffect(() => {
+    const start = () => setLoading(true);
+    const end = () => setLoading(false);
+    router.events.on('routeChangeStart', start);
+    router.events.on('routeChangeComplete', end);
+    router.events.on('routeChangeError', end);
+    return () => {
+      router.events.off('routeChangeStart', start);
+      router.events.off('routeChangeComplete', end);
+      router.events.off('routeChangeError', end);
+    };
+  }, [router.events]);
+
   return (
     <>
       <Head>{null}</Head>
       <Script src="https://cdn.jsdelivr.net/npm/chart.js"></Script>
       <Script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></Script>
+      <PageLoader loading={loading} />
       <Component {...pageProps} />
     </>
   );
