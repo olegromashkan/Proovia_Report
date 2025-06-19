@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import Layout from '../../components/Layout';
@@ -154,12 +155,12 @@ export default function Login() {
                 </motion.button>
                 <p className="text-center text-gray-500 text-sm">
                   New here?{' '}
-                  <a
+                  <Link
                     href="/auth/register"
                     className="text-[#b53133] hover:text-[#a12b2e] font-semibold"
                   >
                     Sign up now!
-                  </a>
+                  </Link>
                 </p>
               </motion.div>
             )}

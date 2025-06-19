@@ -1,5 +1,5 @@
 import { motion, AnimatePresence, Variants } from 'framer-motion';
-import { memo } from 'react';
+import { memo, useEffect } from 'react';
 
 interface PageLoaderProps {
   loading: boolean;
@@ -73,6 +73,18 @@ const PageLoader = ({
   logoSrc = 'https://cdn.proovia.uk/pd/images/logo/logo-default.svg',
   onLoaded,
 }: PageLoaderProps) => {
+  useEffect(() => {
+    if (typeof document === 'undefined') return;
+    const original = document.body.style.overflow;
+    if (loading) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = original;
+    }
+    return () => {
+      document.body.style.overflow = original;
+    };
+  }, [loading]);
   return (
     <AnimatePresence mode="wait" onExitComplete={onLoaded}>
       {loading && (
