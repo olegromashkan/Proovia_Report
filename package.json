@@ -24,7 +24,9 @@
     "react-dom": "latest",
     "swr": "^2.3.3",
     "ts-node": "^10.9.2",
-    "zustand": "^5.0.5"
+    "zustand": "^5.0.5",
+    "react-plotly.js": "^2.5.1",
+    "plotly.js-dist": "^2.30.0"
   },
   "devDependencies": {
     "@types/node": "latest",
