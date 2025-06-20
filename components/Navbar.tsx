@@ -6,6 +6,8 @@ import ThemeToggle from './ThemeToggle';
 import SearchOverlay from './SearchOverlay';
 import Icon from './Icon';
 import TasksPanel from './TasksPanel';
+import NotificationCenter from './NotificationCenter';
+import UserMenu from './UserMenu';
 
 interface NavLink {
   href: string;
@@ -47,19 +49,11 @@ export default function Navbar({ isSidebarOpen, setIsSidebarOpen }: { isSidebarO
     <>
       {/* Desktop Sidebar */}
       <nav
-        className={`
-          hidden lg:fixed lg:inset-y-0 lg:left-0 lg:w-60 lg:flex lg:flex-col
-          justify-between bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm
-          border-r border-gray-200/20 dark:border-gray-700/20
-          p-4 z-50 transition-all duration-300
-          ${scrolled ? 'shadow-lg' : 'shadow-sm'}
-          ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}
-        `}
+        className={`hidden lg:flex fixed inset-y-0 left-0 w-64 z-50 transform transition-transform duration-300 bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm border-r border-gray-200/20 dark:border-gray-700/20 ${scrolled ? 'shadow-lg' : 'shadow-sm'} ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}
       >
-        <div className="space-y-6">
-          {/* Logo */}
-          <Link href="/" className="flex items-center gap-2 group">
-            <div className="p-1.5 bg-gradient-to-br from-[#b53133]/20 to-[#b53133]/40 rounded-lg group-hover:scale-105 transition-transform duration-200">
+        <div className="flex flex-col h-full p-4">
+          <div>
+            <Link href="/" className="flex items-center gap-2">
               <Image
                 src="https://cdn.proovia.uk/pd/images/logo/logo-default.svg"
                 alt="Proovia Logo"
@@ -68,75 +62,58 @@ export default function Navbar({ isSidebarOpen, setIsSidebarOpen }: { isSidebarO
                 className="h-8 w-auto"
                 onError={(e) => (e.currentTarget.src = '/fallback-logo.png')}
               />
+            </Link>
+            <div className="mt-6 space-y-1">
+              {navLinks.map(({ href, icon, label }) => (
+                <Link
+                  key={href}
+                  href={href}
+                  aria-current={isActiveLink(href) ? 'page' : undefined}
+                  className={`flex items-center gap-3 px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200 ${isActiveLink(href) ? 'text-[#b53133] bg-[#b53133]/10' : 'text-gray-700 dark:text-gray-200 hover:text-[#b53133] hover:bg-[#b53133]/10 dark:hover:bg-[#b53133]/20'}`}
+                >
+                  <Icon
+                    name={icon}
+                    className={`w-5 h-5 ${isActiveLink(href) ? 'text-[#b53133]' : 'text-gray-500 dark:text-gray-400'}`}
+                  />
+                  <span>{label}</span>
+                </Link>
+              ))}
             </div>
-          </Link>
-
-          {/* Navigation Links */}
-          <div className="space-y-1">
-            {navLinks.map(({ href, icon, label }) => (
-              <Link
-                key={href}
-                href={href}
-                aria-current={isActiveLink(href) ? 'page' : undefined}
-                className={`
-                  flex items-center gap-3 px-4 py-2 rounded-lg text-sm font-medium
-                  transition-colors duration-200
-                  ${isActiveLink(href)
-                    ? 'text-[#b53133] bg-[#b53133]/10'
-                    : 'text-gray-700 dark:text-gray-200 hover:text-[#b53133] hover:bg-[#b53133]/10 dark:hover:bg-[#b53133]/20'}
-                `}
-              >
-                <Icon
-                  name={icon}
-                  className={`w-5 h-5 ${isActiveLink(href) ? 'text-[#b53133]' : 'text-gray-500 dark:text-gray-400'}`}
-                />
-                <span>{label}</span>
-                {isActiveLink(href) && (
-                  <span className="absolute inset-y-0 right-0 w-1 rounded-l bg-[#b53133]" />
-                )}
-              </Link>
-            ))}
           </div>
-        </div>
 
-        {/* Action Buttons */}
-        <div className="flex flex-col gap-2 pt-4 border-t border-gray-200/20 dark:border-gray-700/20">
-          <ThemeToggle />
-          <button
-            onClick={() => setSearchOpen(true)}
-            className="p-2 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-[#b53133]/10 dark:hover:bg-[#b53133]/20 transition-colors duration-200"
-            aria-label="Open search"
-          >
-            <Icon name="search" className="w-5 h-5" />
-          </button>
-          <button
-            onClick={() => setTasksOpen(true)}
-            className="p-2 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-[#b53133]/10 dark:hover:bg-[#b53133]/20 transition-colors duration-200"
-            aria-label="Open tasks"
-          >
-            <Icon name="check" className="w-5 h-5" />
-          </button>
-          <button
-            onClick={() => setIsSidebarOpen(false)}
-            className="p-2 mt-2 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-[#b53133]/10 dark:hover:bg-[#b53133]/20 transition-colors duration-200"
-            aria-label="Hide sidebar"
-          >
-            <Icon name="chevron-left" className="w-5 h-5" />
-          </button>
+          <div className="mt-auto flex flex-col gap-2 pt-4 border-t border-gray-200/20 dark:border-gray-700/20">
+            <button
+              onClick={() => setSearchOpen(true)}
+              className="p-2 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-[#b53133]/10 dark:hover:bg-[#b53133]/20 transition-colors duration-200"
+              aria-label="Open search"
+            >
+              <Icon name="search" className="w-5 h-5" />
+            </button>
+            <button
+              onClick={() => setTasksOpen(true)}
+              className="p-2 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-[#b53133]/10 dark:hover:bg-[#b53133]/20 transition-colors duration-200"
+              aria-label="Open tasks"
+            >
+              <Icon name="check" className="w-5 h-5" />
+            </button>
+            <NotificationCenter />
+            <UserMenu />
+            <ThemeToggle />
+            <button
+              onClick={() => setIsSidebarOpen(false)}
+              className="p-2 mt-2 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-[#b53133]/10 dark:hover:bg-[#b53133]/20 transition-colors duration-200"
+              aria-label="Hide sidebar"
+            >
+              <Icon name="chevron-left" className="w-5 h-5" />
+            </button>
+          </div>
         </div>
       </nav>
 
-      {/* Sidebar Toggle Button (when sidebar is hidden) */}
+      {/* Sidebar Toggle Button */}
       <button
         onClick={() => setIsSidebarOpen(true)}
-        className={`
-          hidden lg:block fixed top-4 left-4 z-50 p-2 rounded-lg
-          bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm
-          border border-gray-200/20 dark:border-gray-700/20
-          text-gray-600 dark:text-gray-300 hover:bg-[#b53133]/10 dark:hover:bg-[#b53133]/20
-          transition-all duration-300
-          ${isSidebarOpen ? 'opacity-0 pointer-events-none' : 'opacity-100'}
-        `}
+        className={`hidden lg:block fixed top-4 left-4 z-50 p-2 rounded-lg bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm border border-gray-200/20 dark:border-gray-700/20 text-gray-600 dark:text-gray-300 hover:bg-[#b53133]/10 dark:hover:bg-[#b53133]/20 transition-all duration-300 ${isSidebarOpen ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}
         aria-label="Show sidebar"
       >
         <Icon name="chevron-right" className="w-5 h-5" />
@@ -144,12 +121,7 @@ export default function Navbar({ isSidebarOpen, setIsSidebarOpen }: { isSidebarO
 
       {/* Mobile Top Bar */}
       <div
-        className={`
-          lg:hidden sticky top-0 z-40 flex items-center justify-between
-          px-4 py-3 bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm
-          border-b border-gray-200/20 dark:border-gray-700/20
-          ${scrolled ? 'shadow-lg' : 'shadow-sm'}
-        `}
+        className={`lg:hidden sticky top-0 z-40 flex items-center justify-between px-4 py-3 bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm border-b border-gray-200/20 dark:border-gray-700/20 ${scrolled ? 'shadow-lg' : 'shadow-sm'}`}
       >
         <button
           onClick={() => setMobileMenuOpen(true)}
@@ -158,7 +130,6 @@ export default function Navbar({ isSidebarOpen, setIsSidebarOpen }: { isSidebarO
         >
           <Icon name="list" className="w-5 h-5" />
         </button>
-
         <Link href="/" className="flex items-center gap-2">
           <Image
             src="https://cdn.proovia.uk/pd/images/logo/logo-default.svg"
@@ -169,7 +140,6 @@ export default function Navbar({ isSidebarOpen, setIsSidebarOpen }: { isSidebarO
             onError={(e) => (e.currentTarget.src = '/fallback-logo.png')}
           />
         </Link>
-
         <div className="flex items-center gap-2">
           <button
             onClick={() => setSearchOpen(true)}
@@ -185,52 +155,69 @@ export default function Navbar({ isSidebarOpen, setIsSidebarOpen }: { isSidebarO
           >
             <Icon name="check" className="w-5 h-5" />
           </button>
+          <NotificationCenter />
+          <UserMenu />
         </div>
       </div>
 
-      {/* Mobile Menu Overlay */}
+      {/* Mobile Sidebar */}
       <div
-        className={`
-          lg:hidden fixed inset-0 z-40 transition-opacity duration-300
-          ${mobileMenuOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}
-        `}
+        className={`lg:hidden fixed inset-0 z-40 transition-opacity duration-300 ${mobileMenuOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
       >
+        <div className="absolute inset-0 bg-black/40" onClick={() => setMobileMenuOpen(false)} />
         <div
-          className="absolute inset-0 bg-black/40"
-          onClick={() => setMobileMenuOpen(false)}
-        />
-        <div
-          className={`
-            absolute left-0 top-0 bottom-0 w-60 bg-white dark:bg-gray-800
-            rounded-r-2xl border-r border-gray-200/20 dark:border-gray-700/20
-            shadow-xl p-4 space-y-2 transform transition-transform duration-300
-            ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}
-          `}
+          className={`absolute left-0 top-0 bottom-0 w-64 bg-white dark:bg-gray-800 rounded-r-2xl border-r border-gray-200/20 dark:border-gray-700/20 shadow-xl p-4 transform transition-transform duration-300 ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}`}
         >
-          {navLinks.map(({ href, icon, label }) => (
-            <Link
-              key={href}
-              href={href}
-              onClick={() => setMobileMenuOpen(false)}
-              aria-current={isActiveLink(href) ? 'page' : undefined}
-              className={`
-                flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium
-                transition-colors duration-200
-                ${isActiveLink(href)
-                  ? 'text-[#b53133] bg-[#b53133]/10'
-                  : 'text-gray-700 dark:text-gray-200 hover:text-[#b53133] hover:bg-[#b53133]/10 dark:hover:bg-[#b53133]/20'}
-              `}
-            >
-              <Icon
-                name={icon}
-                className={`w-5 h-5 ${isActiveLink(href) ? 'text-[#b53133]' : 'text-gray-500 dark:text-gray-400'}`}
-              />
-              <span>{label}</span>
-              {isActiveLink(href) && (
-                <span className="ml-auto w-2 h-2 bg-[#b53133] rounded-full" />
-              )}
-            </Link>
-          ))}
+          <div className="flex flex-col h-full">
+            <div>
+              <Link href="/" className="flex items-center gap-2">
+                <Image
+                  src="https://cdn.proovia.uk/pd/images/logo/logo-default.svg"
+                  alt="Proovia Logo"
+                  width={120}
+                  height={32}
+                  className="h-8 w-auto"
+                  onError={(e) => (e.currentTarget.src = '/fallback-logo.png')}
+                />
+              </Link>
+              <div className="mt-6 space-y-1">
+                {navLinks.map(({ href, icon, label }) => (
+                  <Link
+                    key={href}
+                    href={href}
+                    onClick={() => setMobileMenuOpen(false)}
+                    aria-current={isActiveLink(href) ? 'page' : undefined}
+                    className={`flex items-center gap-3 px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200 ${isActiveLink(href) ? 'text-[#b53133] bg-[#b53133]/10' : 'text-gray-700 dark:text-gray-200 hover:text-[#b53133] hover:bg-[#b53133]/10 dark:hover:bg-[#b53133]/20'}`}
+                  >
+                    <Icon
+                      name={icon}
+                      className={`w-5 h-5 ${isActiveLink(href) ? 'text-[#b53133]' : 'text-gray-500 dark:text-gray-400'}`}
+                    />
+                    <span>{label}</span>
+                  </Link>
+                ))}
+              </div>
+            </div>
+            <div className="mt-auto flex flex-col gap-2 pt-4 border-t border-gray-200/20 dark:border-gray-700/20">
+              <button
+                onClick={() => setSearchOpen(true)}
+                className="p-2 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-[#b53133]/10 dark:hover:bg-[#b53133]/20 transition-colors duration-200"
+                aria-label="Open search"
+              >
+                <Icon name="search" className="w-5 h-5" />
+              </button>
+              <button
+                onClick={() => setTasksOpen(true)}
+                className="p-2 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-[#b53133]/10 dark:hover:bg-[#b53133]/20 transition-colors duration-200"
+                aria-label="Open tasks"
+              >
+                <Icon name="check" className="w-5 h-5" />
+              </button>
+              <NotificationCenter />
+              <UserMenu />
+              <ThemeToggle />
+            </div>
+          </div>
         </div>
       </div>
 

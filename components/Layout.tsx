@@ -2,8 +2,6 @@ import { ReactNode, useState } from 'react';
 import Head from 'next/head';
 import Navbar from './Navbar';
 import ToastNotifications from './ToastNotifications';
-import NotificationCenter from './NotificationCenter';
-import UserMenu from './UserMenu';
 
 interface LayoutProps {
   children: ReactNode;
@@ -24,10 +22,6 @@ export default function Layout({ children, title, fullWidth }: LayoutProps) {
         <div
           className={`flex-1 flex flex-col min-h-0 transition-all duration-300 ${isSidebarOpen ? 'lg:ml-60' : 'lg:ml-0'}`}
         >
-          <div className="fixed top-4 right-4 z-40 flex items-center gap-2">
-            <NotificationCenter />
-            <UserMenu />
-          </div>
           <ToastNotifications />
           <main
             className={
