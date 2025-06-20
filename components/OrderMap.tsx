@@ -1,65 +1,57 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useState } from 'react';
+import dynamic from 'next/dynamic';
+
+const Plot = dynamic(() => import('react-plotly.js'), { ssr: false });
 
 interface RegionStats {
   [name: string]: { total: number; complete: number; failed: number };
 }
 
 export default function OrderMap() {
-  const ref = useRef<HTMLDivElement>(null);
+  const [geo, setGeo] = useState<any>(null);
+  const [stats, setStats] = useState<RegionStats | null>(null);
 
   useEffect(() => {
-    if (typeof window === 'undefined' || !ref.current) return;
-
-    let map: any;
-
-    const init = () => {
-      const L = (window as any).L;
-      if (!L || !ref.current) return false;
-
-      map = L.map(ref.current).setView([54, -2], 6);
-      L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
-        attribution: '© OpenStreetMap contributors © CARTO'
-      }).addTo(map);
-
-      Promise.all([
-        fetch('/regions.geojson').then(r => r.json()),
-        fetch('/api/region-stats').then(r => r.json())
-      ]).then(([geo, stats]: [any, RegionStats]) => {
-        L.geoJSON(geo, {
-          style: (feature: any) => {
-            const name = feature.properties.name;
-            const total = stats[name]?.total || 0;
-            const color = total ? '#b53133' : '#888888';
-            return { color, weight: 1, fillOpacity: 0.4 };
-          },
-          onEachFeature: (feature: any, layer: any) => {
-            const name = feature.properties.name;
-            const s = stats[name];
-            const html = s
-              ? `<strong>${name}</strong><br/>Total: ${s.total}<br/>Complete: ${s.complete}<br/>Failed: ${s.failed}`
-              : `<strong>${name}</strong><br/>No data`;
-            layer.bindPopup(html);
-          }
-        }).addTo(map);
-      });
-
-      return true;
-    };
-
-    if (!init()) {
-      const id = setInterval(() => {
-        if (init()) clearInterval(id);
-      }, 100);
-      return () => {
-        clearInterval(id);
-        if (map) map.remove();
-      };
-    }
-
-    return () => {
-      if (map) map.remove();
-    };
+    Promise.all([
+      fetch('/regions.geojson').then(r => r.json()),
+      fetch('/api/region-stats').then(r => r.json())
+    ]).then(([g, s]) => {
+      setGeo(g);
+      setStats(s as RegionStats);
+    }).catch(() => { });
   }, []);
 
-  return <div ref={ref} className="w-full h-full min-h-[200px]" />;
+  if (!geo || !stats) return <div className="w-full h-full min-h-[200px]" />;
+
+  const regions = geo.features.map((f: any) => f.properties.name);
+  const z = regions.map((n: string) => stats[n]?.total || 0);
+  const max = Math.max(...z, 1);
+
+  return (
+    <Plot
+      data={[{
+        type: 'choroplethmapbox',
+        geojson: geo,
+        locations: regions,
+        z,
+        featureidkey: 'properties.name',
+        colorscale: 'Reds',
+        zmin: 0,
+        zmax: max,
+        marker: { line: { width: 1, color: '#888' } },
+        hovertemplate: '%{location}<br>Total: %{z}<extra></extra>'
+      }]}
+      layout={{
+        mapbox: {
+          style: 'open-street-map',
+          center: { lat: 54, lon: -2 },
+          zoom: 5
+        },
+        margin: { t: 0, b: 0, l: 0, r: 0 }
+      }}
+      useResizeHandler
+      className="w-full h-full min-h-[200px]"
+      config={{ displayModeBar: false }}
+    />
+  );
 }

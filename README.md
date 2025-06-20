@@ -10,6 +10,9 @@ This project uses **Next.js** with UnoCSS and a small SQLite database.
    npm install
    ```
 
+   This project uses Plotly for the dashboard map, so make sure
+   `react-plotly.js` and `plotly.js-dist` are installed.
+
 2. Run the development server:
 
  ```bash
