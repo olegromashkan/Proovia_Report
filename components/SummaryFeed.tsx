@@ -51,7 +51,7 @@ export default function SummaryFeed() {
   return (
     <div className="flex flex-col h-[calc(100vh-220px)] space-y-4">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 flex-none">
-        <div className="h-96 md:h-auto min-h-[500px] bg-white dark:bg-gray-800 rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700 shadow-sm">
+        <div className="h-[600px] md:h-auto min-h-[600px] bg-white dark:bg-gray-800 rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700 shadow-sm">
           <OrderMap />
         </div>
         {topContractors.length > 0 && (
