@@ -20,10 +20,8 @@
     "lodash": "^4.17.21",
     "lucide-react": "^0.514.0",
     "next": "latest",
-    "plotly.js-dist": "^2.30.0",
     "react": "latest",
     "react-dom": "latest",
-    "react-plotly.js": "^2.6.0",
     "swr": "^2.3.3",
     "ts-node": "^10.9.2",
     "zustand": "^5.0.5"

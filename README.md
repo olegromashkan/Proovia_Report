@@ -10,8 +10,8 @@ This project uses **Next.js** with UnoCSS and a small SQLite database.
    npm install
    ```
 
-   This project uses Plotly for the dashboard map, so make sure
-   `react-plotly.js` and `plotly.js-dist` are installed.
+   The dashboard map is built with Leaflet and the Leaflet.heat plugin,
+   so your environment must allow loading these scripts from the CDN.
 
 2. Run the development server:
 

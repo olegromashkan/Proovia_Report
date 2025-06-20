@@ -1,62 +1,48 @@
-import { useEffect, useState } from 'react';
-import dynamic from 'next/dynamic';
-
-const Plot = dynamic(() => import('react-plotly.js'), { ssr: false });
-
-interface RegionStats {
-  [name: string]: { total: number; complete: number; failed: number };
-}
+import { useEffect, useRef } from 'react';
 
 export default function OrderMap() {
-  const [geo, setGeo] = useState<any>(null);
-  const [stats, setStats] = useState<RegionStats | null>(null);
+  const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    Promise.all([
-      fetch('/regions.geojson').then(r => r.json()),
-      fetch('/api/region-stats').then(r => r.json())
-    ]).then(async ([g, s]) => {
-      if (g.type === 'Topology') {
-        const topojson = await import('topojson-client');
-        const key = Object.keys(g.objects)[0];
-        g = topojson.feature(g, g.objects[key]);
-      }
-      setGeo(g);
-      setStats(s as RegionStats);
-    }).catch(() => { });
+    if (typeof window === 'undefined' || !ref.current) return;
+
+    let map: any;
+
+    const init = () => {
+      const L = (window as any).L;
+      const heat = (L as any).heatLayer;
+      if (!L || !heat || !ref.current) return false;
+
+      map = L.map(ref.current).setView([54, -2], 6);
+      L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+        attribution: '© OpenStreetMap contributors © CARTO'
+      }).addTo(map);
+
+      fetch('/api/order-locations')
+        .then(res => (res.ok ? res.json() : []))
+        .then((pts: { lat: number; lon: number }[]) => {
+          const data = pts.map(p => [p.lat, p.lon, 1]) as [number, number, number][];
+          heat(data, { radius: 15, blur: 20 }).addTo(map);
+        })
+        .catch(() => {});
+
+      return true;
+    };
+
+    if (!init()) {
+      const id = setInterval(() => {
+        if (init()) clearInterval(id);
+      }, 100);
+      return () => {
+        clearInterval(id);
+        if (map) map.remove();
+      };
+    }
+
+    return () => {
+      if (map) map.remove();
+    };
   }, []);
 
-  if (!geo || !stats) return <div className="w-full h-full min-h-[500px]" />;
-
-  const regions = geo.features.map((f: any) => f.properties.name);
-  const z = regions.map((n: string) => stats[n]?.total || 0);
-  const max = Math.max(...z, 1);
-
-  return (
-    <Plot
-      data={[{
-        type: 'choroplethmapbox',
-        geojson: geo,
-        locations: regions,
-        z,
-        featureidkey: 'properties.name',
-        colorscale: 'Reds',
-        zmin: 0,
-        zmax: max,
-        marker: { line: { width: 1, color: '#888' } },
-        hovertemplate: '%{location}<br>Total: %{z}<extra></extra>'
-      }]}
-      layout={{
-        mapbox: {
-          style: 'open-street-map',
-          center: { lat: 54, lon: -2 },
-          zoom: 5
-        },
-        margin: { t: 0, b: 0, l: 0, r: 0 }
-      }}
-      useResizeHandler
-      className="w-full h-full min-h-[500px]"
-      config={{ displayModeBar: false }}
-    />
-  );
+  return <div ref={ref} className="w-full h-full min-h-[650px]" />;
 }
