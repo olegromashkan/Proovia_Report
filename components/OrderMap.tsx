@@ -15,7 +15,12 @@ export default function OrderMap() {
     Promise.all([
       fetch('/regions.geojson').then(r => r.json()),
       fetch('/api/region-stats').then(r => r.json())
-    ]).then(([g, s]) => {
+    ]).then(async ([g, s]) => {
+      if (g.type === 'Topology') {
+        const topojson = await import('topojson-client');
+        const key = Object.keys(g.objects)[0];
+        g = topojson.feature(g, g.objects[key]);
+      }
       setGeo(g);
       setStats(s as RegionStats);
     }).catch(() => { });
