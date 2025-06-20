@@ -21,7 +21,7 @@ export default function OrderMap() {
     }).catch(() => { });
   }, []);
 
-  if (!geo || !stats) return <div className="w-full h-full min-h-[300px]" />;
+  if (!geo || !stats) return <div className="w-full h-full min-h-[500px]" />;
 
   const regions = geo.features.map((f: any) => f.properties.name);
   const z = regions.map((n: string) => stats[n]?.total || 0);
@@ -50,7 +50,7 @@ export default function OrderMap() {
         margin: { t: 0, b: 0, l: 0, r: 0 }
       }}
       useResizeHandler
-      className="w-full h-full min-h-[300px]"
+      className="w-full h-full min-h-[500px]"
       config={{ displayModeBar: false }}
     />
   );
