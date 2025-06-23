@@ -367,73 +367,25 @@ export default function SummaryFeed() {
         </div>
       </div>
 
-      {/* Compact Posts Section */}
-      <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200/60 dark:border-gray-700/60 shadow-md overflow-hidden">
-        <div className="p-4">
-          {/* Latest End */}
-          {latest && (
-            <div className="flex items-center justify-between mb-4 p-3 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-gray-700 dark:to-gray-750 rounded-lg border border-green-200/60 dark:border-gray-600/60">
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 bg-gradient-to-br from-green-500 to-emerald-500 rounded-lg flex items-center justify-center">
-                  <Icon name="clock" className="text-white text-sm" />
-                </div>
-                <div>
-                  <h3 className="text-sm font-bold text-gray-800 dark:text-gray-100">Latest End</h3>
-                  <span className="text-xs font-medium text-gray-700 dark:text-gray-300">{latest.driver}</span>
-                </div>
+      {/* Latest End Section */}
+      {latest && (
+        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200/60 dark:border-gray-700/60 shadow-md overflow-hidden p-4">
+          <div className="flex items-center justify-between bg-gradient-to-r from-green-50 to-emerald-50 dark:from-gray-700 dark:to-gray-750 rounded-lg p-3">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 bg-gradient-to-br from-green-500 to-emerald-500 rounded-lg flex items-center justify-center">
+                <Icon name="clock" className="text-white text-sm" />
               </div>
-              <span className="text-sm text-gray-600 dark:text-gray-400 bg-white/60 dark:bg-gray-600/60 px-2 py-1 rounded font-mono">
-                {latest.time}
-              </span>
+              <div>
+                <h3 className="text-sm font-bold text-gray-800 dark:text-gray-100">Latest End</h3>
+                <span className="text-xs font-medium text-gray-700 dark:text-gray-300">{latest.driver}</span>
+              </div>
             </div>
-          )}
-
-          {/* Posts */}
-          <div className="flex items-center gap-2 mb-3">
-            <Icon name="inbox" className="text-lg text-gray-600 dark:text-gray-400" />
-            <h3 className="text-sm font-bold text-gray-800 dark:text-gray-100">Recent Posts</h3>
+            <span className="text-sm text-gray-600 dark:text-gray-400 bg-white/60 dark:bg-gray-600/60 px-2 py-1 rounded font-mono">
+              {latest.time}
+            </span>
           </div>
-
-          {isLoading ? (
-            <div className="flex gap-4 overflow-x-auto pb-2">
-              {[...Array(3)].map((_, i) => (
-                <div
-                  key={i}
-                  className="flex-shrink-0 w-80 bg-gray-100 dark:bg-gray-700 p-4 rounded-lg animate-pulse"
-                >
-                  <div className="h-4 bg-gray-200 dark:bg-gray-600 rounded mb-2"></div>
-                  <div className="h-3 bg-gray-200 dark:bg-gray-600 rounded w-1/2"></div>
-                </div>
-              ))}
-            </div>
-          ) : posts.length === 0 ? (
-            <div className="text-center py-6 text-gray-500 dark:text-gray-400">
-              <p className="text-sm">No posts available</p>
-            </div>
-          ) : (
-            <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600 scrollbar-track-transparent">
-              {posts.slice(0, 5).map((p) => (
-                <div
-                  key={p.id}
-                  className="flex-shrink-0 w-80 bg-gray-50 dark:bg-gray-700 p-4 rounded-lg border border-gray-200/60 dark:border-gray-600/60 hover:shadow-md transition-all duration-200"
-                >
-                  <p className="text-sm text-gray-800 dark:text-gray-200 mb-2 line-clamp-3">
-                    {p.content}
-                  </p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">
-                    {new Date(p.created_at).toLocaleDateString('en-US', {
-                      month: 'short',
-                      day: 'numeric',
-                      hour: '2-digit',
-                      minute: '2-digit',
-                    })}
-                  </p>
-                </div>
-              ))}
-            </div>
-          )}
         </div>
-      </div>
+      )}
     </div>
   );
 }
