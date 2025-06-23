@@ -1,16 +1,5 @@
 import db from './db';
-
-const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-
-function parseDate(value: string | undefined): string | null {
-  if (!value) return null;
-  const [d, mon, rest] = value.split('-');
-  if (!d || !mon || !rest) return null;
-  const [y] = rest.split(' ');
-  const mIndex = MONTHS.indexOf(mon);
-  if (mIndex === -1) return null;
-  return `${y}-${String(mIndex + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
-}
+import { parseDate } from './dateUtils';
 
 function parseMinutes(str: string | undefined): number | null {
   if (!str) return null;
