@@ -4,6 +4,7 @@ import Modal from '../components/Modal';
 import Icon from '../components/Icon';
 import { motion, AnimatePresence } from 'framer-motion';
 import { debounce } from 'lodash';
+import { parseDate } from '../lib/dateUtils';
 
 interface Item {
   driver: string;
@@ -20,17 +21,6 @@ function formatDate(d: Date): string {
   return d.toISOString().slice(0, 10);
 }
 
-const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-
-function parseDate(value: string | undefined): string | null {
-  if (!value) return null;
-  const [d, mon, rest] = value.split('-');
-  if (!d || !mon || !rest) return null;
-  const [y] = rest.split(' ');
-  const mIndex = MONTHS.indexOf(mon);
-  if (mIndex === -1) return null;
-  return `${y}-${String(mIndex + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
-}
 
 function getRouteColorClass(route: string): string {
   const upper = route.toUpperCase();

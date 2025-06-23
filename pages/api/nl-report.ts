@@ -1,21 +1,11 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import db from '../../lib/db';
-
-const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+import { parseDate } from '../../lib/dateUtils';
 
 // Cache for driverMap
 let driverMapCache: Record<string, string> | null = null;
 
 // Parse date (e.g., "01-Jan-2025" to "2025-01-01")
-function parseDate(value: string | undefined): string | null {
-  if (!value) return null;
-  const [d, mon, rest] = value.split('-');
-  if (!d || !mon || !rest) return null;
-  const [y] = rest.split(' ');
-  const mIndex = MONTHS.indexOf(mon);
-  if (mIndex === -1) return null;
-  return `${y}-${String(mIndex + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
-}
 
 // Parse time (e.g., "14:30" or "01-Jan-2025 14:30")
 function parseTime(str: string | undefined): Date | null {

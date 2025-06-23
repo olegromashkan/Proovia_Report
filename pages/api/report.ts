@@ -1,5 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import db from '../../lib/db';
+import { parseDate } from '../../lib/dateUtils';
 
 export default function handler(req: NextApiRequest, res: NextApiResponse) {
   const { start, end } = req.query;
@@ -8,27 +9,6 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
 
   const rows = db.prepare('SELECT data FROM copy_of_tomorrow_trips').all();
 
-  const parseDate = (str: string) => {
-    const [d, mon, rest] = str.split('-');
-    if (!d || !mon || !rest) return '';
-    const [year] = rest.split(' ');
-    const months = [
-      'Jan',
-      'Feb',
-      'Mar',
-      'Apr',
-      'May',
-      'Jun',
-      'Jul',
-      'Aug',
-      'Sep',
-      'Oct',
-      'Nov',
-      'Dec',
-    ];
-    const month = String(months.indexOf(mon) + 1).padStart(2, '0');
-    return `${year}-${month}-${d.padStart(2, '0')}`;
-  };
 
   const items = rows
     .map((r: any) => JSON.parse(r.data))
