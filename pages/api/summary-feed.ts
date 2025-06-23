@@ -38,7 +38,7 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
     )
     .all(startDate, endDate);
 
-  const tripRows = db.prepare('SELECT data FROM schedule_trips').all();
+  const tripRows = db.prepare('SELECT data FROM copy_of_tomorrow_trips').all();
   const driverRows = db.prepare('SELECT data FROM drivers_report').all();
 
   const driverToContractor: Record<string, string> = {};
