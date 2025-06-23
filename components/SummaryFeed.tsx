@@ -79,56 +79,32 @@ export default function SummaryFeed() {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Mock data for demonstration
-    const mockData: FeedData = {
-      posts: [
-        {
-          id: 1,
-          content: "Successful delivery completed in record time! Great teamwork from all contractors today.",
-          created_at: "2025-06-18T10:30:00Z"
-        },
-        {
-          id: 2,
-          content: "New efficiency improvements implemented across all routes. Expecting 15% performance boost.",
-          created_at: "2025-06-18T08:15:00Z"
-        },
-        {
-          id: 3,
-          content: "Weather conditions optimal for delivery operations. All systems running smoothly.",
-          created_at: "2025-06-17T16:45:00Z"
+    fetch('/api/summary-feed')
+      .then((res) => (res.ok ? res.json() : Promise.reject()))
+      .then((json: FeedData) => {
+        let extra: Partial<FeedData> = {};
+        const first = json.posts && json.posts[0];
+        if (first) {
+          try {
+            const summary = JSON.parse(first.content);
+            if (summary && typeof summary === 'object') {
+              extra = {
+                date: summary.date,
+                total: summary.total,
+                complete: summary.complete,
+                failed: summary.failed,
+                earliestDrivers: summary.earliestDrivers,
+                latestDrivers: summary.latestDrivers,
+              };
+            }
+          } catch {
+            // content was plain text; ignore
+          }
         }
-      ],
-      topContractors: [
-        { contractor: "Express Logistics Ltd", avgPrice: 145.50 },
-        { contractor: "Swift Transport Co", avgPrice: 132.75 },
-        { contractor: "Premier Delivery", avgPrice: 128.90 }
-      ],
-      topDrivers: [
-        { driver: "John Smith", contractor: "Express Logistics", avgPrice: 98.25 },
-        { driver: "Maria Rodriguez", contractor: "Swift Transport", avgPrice: 95.80 },
-        { driver: "Ahmed Hassan", contractor: "Premier Delivery", avgPrice: 92.15 }
-      ],
-      latestEnd: { driver: "Ion Marius", time: "21:53" },
-      date: "2025-06-18",
-      total: 1688,
-      complete: 1607,
-      failed: 81,
-      earliestDrivers: [
-        { driver: "Busulea Sorin", time: 360 },
-        { driver: "Marinescu Claudiu-Constantin", time: 360 },
-        { driver: "Sandu Ionut Robert", time: 360 }
-      ],
-      latestDrivers: [
-        { driver: "Ion Marius", time: 1313.93 },
-        { driver: "Dragoi David", time: 1310.8 },
-        { driver: "Vasile Fernando", time: 1306.5 }
-      ]
-    };
-
-    setTimeout(() => {
-      setData(mockData);
-      setIsLoading(false);
-    }, 1000);
+        setData({ ...json, ...extra });
+      })
+      .catch(() => { })
+      .finally(() => setIsLoading(false));
   }, []);
 
   const posts = data?.posts || [];
