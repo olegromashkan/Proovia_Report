@@ -173,7 +173,7 @@ export function init() {
     }
   }
 
-  addColumnIfMissing('users', 'role', "TEXT DEFAULT 'user'");
+  addColumnIfMissing('users', 'role', "TEXT DEFAULT 'admin'");
   addColumnIfMissing('users', 'status', "TEXT DEFAULT 'offline'");
   addColumnIfMissing('users', 'status_message', 'TEXT');
   addColumnIfMissing('users', 'last_seen', 'TEXT DEFAULT CURRENT_TIMESTAMP');
