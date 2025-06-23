@@ -32,16 +32,32 @@ export default function SummaryFeed() {
   const [isLoading, setIsLoading] = useState(true);
   const endDefault = new Date().toISOString().slice(0, 10);
   const startDefault = (() => {
-    const d = new Date(endDefault);
+    const d = new Date();
     d.setDate(d.getDate() - 6);
     return d.toISOString().slice(0, 10);
   })();
   const [start, setStart] = useState(startDefault);
   const [end, setEnd] = useState(endDefault);
 
-  const loadData = () => {
+  const handleStartChange = (e) => {
+    const value = e.target.value;
+    setStart(value);
+    if (new Date(value) > new Date(end)) {
+      setEnd(value);
+    }
+  };
+
+  const handleEndChange = (e) => {
+    const value = e.target.value;
+    setEnd(value);
+    if (new Date(value) < new Date(start)) {
+      setStart(value);
+    }
+  };
+
+  const loadData = (s = start, e = end) => {
     setIsLoading(true);
-    fetch(`/api/summary-feed?start=${start}&end=${end}`)
+    fetch(`/api/summary-feed?start=${encodeURIComponent(s)}&end=${encodeURIComponent(e)}`)
       .then((res) => (res.ok ? res.json() : Promise.reject()))
       .then((json) => {
         let extra = {};
@@ -93,14 +109,14 @@ export default function SummaryFeed() {
         <input
           type="date"
           value={start}
-          onChange={(e) => setStart(e.target.value)}
+          onChange={handleStartChange}
           className="border rounded px-1 py-0.5"
         />
         <span>-</span>
         <input
           type="date"
           value={end}
-          onChange={(e) => setEnd(e.target.value)}
+          onChange={handleEndChange}
           className="border rounded px-1 py-0.5"
         />
       </div>
