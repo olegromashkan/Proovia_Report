@@ -9,10 +9,29 @@ function parseMinutes(value: string | undefined): number | null {
   return isFinite(n) ? n : null;
 }
 
+const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+function parseDate(value: string | undefined): string | null {
+  if (!value) return null;
+  const [d, mon, rest] = value.split('-');
+  if (!d || !mon || !rest) return null;
+  const [y] = rest.split(' ');
+  const mIndex = MONTHS.indexOf(mon);
+  if (mIndex === -1) return null;
+  return `${y}-${String(mIndex + 1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+}
+
 export default function handler(req: NextApiRequest, res: NextApiResponse) {
+  const { start, end } = req.query;
+  const endStr = typeof end === 'string' ? end : new Date().toISOString().slice(0,10);
+  const startStr = typeof start === 'string' ? start : (() => {
+    const d = new Date(endStr);
+    d.setDate(d.getDate() - 6);
+    return d.toISOString().slice(0,10);
+  })();
+
   const posts = db
-    .prepare("SELECT id, content, created_at FROM posts WHERE type = 'summary' ORDER BY COALESCE(updated_at, created_at) DESC")
-    .all();
+    .prepare("SELECT id, content, created_at FROM posts WHERE type = 'summary' AND date(created_at) BETWEEN date(?) AND date(?) ORDER BY COALESCE(updated_at, created_at) DESC")
+    .all(startStr, endStr);
 
   const tripRows = db.prepare('SELECT data FROM schedule_trips').all();
   const driverRows = db.prepare('SELECT data FROM drivers_report').all();
@@ -34,6 +53,9 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
 
   tripRows.forEach((r: any) => {
     const item = JSON.parse(r.data);
+    const rawDate = item.Start_Time || item['Start_Time'] || item['Trip.Start_Time'];
+    const iso = parseDate(String(rawDate).split(' ')[0]);
+    if (!iso || iso < startStr || iso > endStr) return;
     const driver = item.Driver1 || item.Driver || item['Trip.Driver1'] || 'Unknown';
     const contractor = driverToContractor[driver] || 'Unknown';
     const priceVal =
@@ -94,5 +116,5 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
     }
   });
 
-  res.status(200).json({ posts, topContractors, topDrivers, latestEnd });
+  res.status(200).json({ posts, topContractors, topDrivers, latestEnd, start: startStr, end: endStr });
 }

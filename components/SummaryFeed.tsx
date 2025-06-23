@@ -17,15 +17,6 @@ const Icon = ({ name, className = '' }) => {
   return <span className={className}>{icons[name] || '📋'}</span>;
 };
 
-// Mock OrderMap component
-const OrderMap = () => (
-  <div className="w-full h-full bg-gradient-to-br from-blue-100 to-blue-200 dark:from-gray-700 dark:to-gray-800 flex items-center justify-center rounded-lg">
-    <div className="text-center">
-      <div className="text-4xl mb-2">🗺️</div>
-      <p className="text-sm text-gray-600 dark:text-gray-400">Interactive Order Map</p>
-    </div>
-  </div>
-);
 
 interface Post {
   id: number;
@@ -59,6 +50,8 @@ interface FeedData {
   topContractors: ContractorInfo[];
   topDrivers: DriverInfo[];
   latestEnd: { driver: string; time: string } | null;
+  start?: string;
+  end?: string;
   date?: string;
   total?: number;
   complete?: number;
@@ -77,9 +70,18 @@ const minutesToTime = (minutes: number): string => {
 export default function SummaryFeed() {
   const [data, setData] = useState<FeedData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const endDefault = new Date().toISOString().slice(0, 10);
+  const startDefault = (() => {
+    const d = new Date(endDefault);
+    d.setDate(d.getDate() - 6);
+    return d.toISOString().slice(0, 10);
+  })();
+  const [start, setStart] = useState(startDefault);
+  const [end, setEnd] = useState(endDefault);
 
-  useEffect(() => {
-    fetch('/api/summary-feed')
+  const loadData = () => {
+    setIsLoading(true);
+    fetch(`/api/summary-feed?start=${start}&end=${end}`)
       .then((res) => (res.ok ? res.json() : Promise.reject()))
       .then((json: FeedData) => {
         let extra: Partial<FeedData> = {};
@@ -105,7 +107,11 @@ export default function SummaryFeed() {
       })
       .catch(() => { })
       .finally(() => setIsLoading(false));
-  }, []);
+  };
+
+  useEffect(() => {
+    loadData();
+  }, [start, end]);
 
   const posts = data?.posts || [];
   const topContractors = data?.topContractors || [];
@@ -119,7 +125,23 @@ export default function SummaryFeed() {
   };
 
   return (
-    <div className="flex flex-col h-[calc(100vh-180px)] space-y-4 p-4  ">
+    <div className="flex flex-col max-h-[calc(100vh-280px)] space-y-4 p-4 overflow-y-auto">
+      <div className="flex items-center gap-2 text-sm">
+        <input
+          type="date"
+          value={start}
+          onChange={(e) => setStart(e.target.value)}
+          className="border rounded px-1 py-0.5"
+        />
+        <span>-</span>
+        <input
+          type="date"
+          value={end}
+          onChange={(e) => setEnd(e.target.value)}
+          className="border rounded px-1 py-0.5"
+        />
+      </div>
+      <p className="text-xs text-gray-500">Showing {start} to {end}</p>
       {/* Compact Statistics Bar */}
       {data && (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -165,25 +187,8 @@ export default function SummaryFeed() {
         </div>
       )}
   
-      {/* Main Grid Layout - более компактное размещение */}
-      <div className="grid grid-cols-1 lg:grid-cols-6 gap-4 flex-1 min-h-0">
-        {/* Map Section - занимает 3 колонки */}
-        <div className="lg:col-span-3 bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 rounded-xl overflow-hidden border border-gray-200/60 dark:border-gray-700/60 shadow-lg">
-          <div className="h-full relative">
-            <div className="absolute top-3 left-3 z-10 bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm rounded-lg px-2 py-1 shadow-sm">
-              <div className="flex items-center gap-2">
-                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                <span className="text-xs font-medium text-gray-700 dark:text-gray-200">Live Orders</span>
-              </div>
-            </div>
-            <OrderMap />
-          </div>
-        </div>
-  
-        {/* Right Side Panel - 3 колонки для компактных секций */}
-        <div className="lg:col-span-3 grid grid-rows-2 gap-4">
-          {/* Top Row - Rankings */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      {/* Sections */}
+      <div className="grid grid-cols-1 gap-4 flex-1">
             {/* Top Contractors - компактная версия */}
             {topContractors.length > 0 && (
               <div className="bg-gradient-to-br from-amber-50 to-orange-50 dark:from-gray-800 dark:to-gray-850 rounded-xl border border-amber-200/60 dark:border-gray-700/60 shadow-md overflow-hidden">
@@ -281,7 +286,7 @@ export default function SummaryFeed() {
   
           {/* Bottom Row - Driver Times */}
           {data?.earliestDrivers && data?.latestDrivers && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <>
               {/* Early Birds - компактная версия */}
               <div className="bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-gray-800 dark:to-gray-850 rounded-xl border border-emerald-200/60 dark:border-gray-700/60 shadow-md overflow-hidden">
                 <div className="p-3">
@@ -339,7 +344,7 @@ export default function SummaryFeed() {
                   </div>
                 </div>
               </div>
-            </div>
+              </>
           )}
         </div>
       </div>
