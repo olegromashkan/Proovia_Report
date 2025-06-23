@@ -118,7 +118,7 @@ export default function SummaryFeed() {
   };
 
   const containerClass =
-    'flex flex-col h-[calc(100vh-280px)] space-y-4 p-4 overflow-y-auto';
+    'flex flex-col  space-y-4 p-4 overflow-y-auto';
 
   return (
     <div className={containerClass}>

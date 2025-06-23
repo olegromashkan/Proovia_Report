@@ -122,10 +122,10 @@ export default function Home() {
       </motion.div>
 
       <div className="flex flex-col md:flex-row gap-6">
-        <div className="flex-[4] min-w-[900px]">
+        <div className="flex-[3] w-full md:w-62">
           <Calendar />
         </div>
-        <div className="flex-[1] w-full md:w-72">
+        <div className="flex-[5] min-w-[900px] ">
           <SummaryFeed />
         </div>
       </div>
