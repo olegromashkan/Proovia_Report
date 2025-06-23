@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
 
-// Mock Icon component since we don't have the actual one
-const Icon = ({ name, className = '' }) => {
-  const icons = {
+// Mock Icon component
+const Icon = ({ name, className = '' }: { name: string; className?: string }) => {
+  const icons: { [key: string]: string } = {
     star: '⭐',
     users: '👥',
     clock: '🕐',
@@ -12,38 +12,80 @@ const Icon = ({ name, className = '' }) => {
     trending: '📈',
     award: '🏆',
     calendar: '📅',
-    activity: '📊'
+    activity: '📊',
   };
   return <span className={className}>{icons[name] || '📋'}</span>;
 };
 
+// Mock OrderMap component
+const OrderMap = () => (
+  <div className="w-full h-full bg-gradient-to-br from-blue-100 to-blue-200 dark:from-gray-700 dark:to-gray-800 flex items-center justify-center rounded-lg">
+    <div className="text-center">
+      <div className="text-4xl mb-2">🗺️</div>
+      <p className="text-sm text-gray-600 dark:text-gray-400">Interactive Order Map</p>
+    </div>
+  </div>
+);
 
-// Type definitions removed for JS build compatibility
+// Type definitions
+interface Post {
+  id: number;
+  content: string;
+  created_at: string;
+}
+
+interface ContractorInfo {
+  contractor: string;
+  avgPrice: number;
+}
+
+interface DriverInfo {
+  driver: string;
+  contractor: string;
+  avgPrice: number;
+}
+
+interface EarliestDriver {
+  driver: string;
+  time: number;
+}
+
+interface LatestDriver {
+  driver: string;
+  time: number;
+}
+
+interface FeedData {
+  posts: Post[];
+  topContractors: ContractorInfo[];
+  topDrivers: DriverInfo[];
+  latestEnd: { driver: string; time: string } | null;
+  date?: string;
+  total?: number;
+  complete?: number;
+  failed?: number;
+  earliestDrivers?: EarliestDriver[];
+  latestDrivers?: LatestDriver[];
+}
 
 // Helper function to convert minutes to time format
-const minutesToTime = (minutes) => {
+const minutesToTime = (minutes: number) => {
   const hours = Math.floor(minutes / 60);
   const mins = Math.round(minutes % 60);
   return `${hours.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}`;
 };
 
 export default function SummaryFeed() {
-  const [data, setData] = useState(null);
+  const [data, setData] = useState<FeedData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const endDefault = new Date().toISOString().slice(0, 10);
-  const startDefault = (() => {
-    const d = new Date(endDefault);
-    d.setDate(d.getDate() - 6);
-    return d.toISOString().slice(0, 10);
-  })();
-  const [start, setStart] = useState(startDefault);
-  const [end, setEnd] = useState(endDefault);
+  const [start, setStart] = useState<string>(new Date().toISOString().split('T')[0]);
+  const [end, setEnd] = useState<string>(new Date().toISOString().split('T')[0]);
 
-  const loadData = () => {
+  useEffect(() => {
     setIsLoading(true);
     fetch(`/api/summary-feed?start=${start}&end=${end}`)
       .then((res) => (res.ok ? res.json() : Promise.reject()))
-      .then((json) => {
+      .then((json: FeedData) => {
         let extra = {};
         const first = json.posts && json.posts[0];
         if (first) {
@@ -65,12 +107,8 @@ export default function SummaryFeed() {
         }
         setData({ ...json, ...extra });
       })
-      .catch(() => { })
+      .catch(() => {})
       .finally(() => setIsLoading(false));
-  };
-
-  useEffect(() => {
-    loadData();
   }, [start, end]);
 
   const posts = data?.posts || [];
@@ -81,14 +119,15 @@ export default function SummaryFeed() {
     total: data?.total || 0,
     complete: data?.complete || 0,
     failed: data?.failed || 0,
-    successRate: data?.total ? ((data.complete / data.total) * 100).toFixed(1) : '0'
+    successRate: data?.total ? ((data.complete / data.total) * 100).toFixed(1) : '0',
   };
 
   const containerClass =
-    'flex flex-col max-h-[calc(100vh-280px)] space-y-4 p-4 overflow-y-auto';
+    'flex flex-col h-[calc(100vh-280px)] space-y-4 p-4 overflow-y-auto';
 
   return (
     <div className={containerClass}>
+      {/* Date Picker */}
       <div className="flex items-center gap-2 text-sm">
         <input
           type="date"
@@ -105,6 +144,7 @@ export default function SummaryFeed() {
         />
       </div>
       <p className="text-xs text-gray-500">Showing {start} to {end}</p>
+
       {/* Compact Statistics Bar */}
       {data && (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -117,7 +157,7 @@ export default function SummaryFeed() {
               <Icon name="chart" className="text-2xl opacity-80" />
             </div>
           </div>
-          
+
           <div className="bg-gradient-to-r from-green-500 to-green-600 rounded-xl p-3 text-white shadow-md">
             <div className="flex items-center justify-between">
               <div>
@@ -127,7 +167,7 @@ export default function SummaryFeed() {
               <Icon name="activity" className="text-2xl opacity-80" />
             </div>
           </div>
-  
+
           <div className="bg-gradient-to-r from-red-500 to-red-600 rounded-xl p-3 text-white shadow-md">
             <div className="flex items-center justify-between">
               <div>
@@ -137,7 +177,7 @@ export default function SummaryFeed() {
               <Icon name="trending" className="text-2xl opacity-80" />
             </div>
           </div>
-  
+
           <div className="bg-gradient-to-r from-purple-500 to-purple-600 rounded-xl p-3 text-white shadow-md">
             <div className="flex items-center justify-between">
               <div>
@@ -149,10 +189,27 @@ export default function SummaryFeed() {
           </div>
         </div>
       )}
-  
-      {/* Sections */}
-      <div className="grid grid-cols-1 gap-4 flex-1">
-            {/* Top Contractors - компактная версия */}
+
+      {/* Main Grid Layout */}
+      <div className="grid grid-cols-1 lg:grid-cols-6 gap-4 flex-1 min-h-0">
+        {/* Map Section */}
+        <div className="lg:col-span-3 bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 rounded-xl overflow-hidden border border-gray-200/60 dark:border-gray-700/60 shadow-lg">
+          <div className="h-full relative">
+            <div className="absolute top-3 left-3 z-10 bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm rounded-lg px-2 py-1 shadow-sm">
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                <span className="text-xs font-medium text-gray-700 dark:text-gray-200">Live Orders</span>
+              </div>
+            </div>
+            <OrderMap />
+          </div>
+        </div>
+
+        {/* Right Side Panel */}
+        <div className="lg:col-span-3 grid grid-rows-2 gap-4">
+          {/* Top Row - Rankings */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Top Contractors */}
             {topContractors.length > 0 && (
               <div className="bg-gradient-to-br from-amber-50 to-orange-50 dark:from-gray-800 dark:to-gray-850 rounded-xl border border-amber-200/60 dark:border-gray-700/60 shadow-md overflow-hidden">
                 <div className="p-3 h-full flex flex-col">
@@ -167,20 +224,25 @@ export default function SummaryFeed() {
                   </div>
                   <div className="flex-1 overflow-y-auto space-y-2 scrollbar-thin scrollbar-thumb-amber-300 dark:scrollbar-thumb-gray-600 scrollbar-track-transparent">
                     {topContractors.slice(0, 4).map((c, index) => {
-                      const getRankBadge = (pos) => {
-                        if (pos === 0) return { icon: "🥇", bg: "from-yellow-400 to-yellow-600" };
-                        if (pos === 1) return { icon: "🥈", bg: "from-gray-300 to-gray-500" };
-                        if (pos === 2) return { icon: "🥉", bg: "from-orange-400 to-orange-600" };
-                        return { icon: (pos + 1).toString(), bg: "from-amber-400 to-orange-400" };
+                      const getRankBadge = (pos: number) => {
+                        if (pos === 0) return { icon: '🥇', bg: 'from-yellow-400 to-yellow-600' };
+                        if (pos === 1) return { icon: '🥈', bg: 'from-gray-300 to-gray-500' };
+                        if (pos === 2) return { icon: '🥉', bg: 'from-orange-400 to-orange-600' };
+                        return { icon: (pos + 1).toString(), bg: 'from-amber-400 to-orange-400' };
                       };
-                      
+
                       const badge = getRankBadge(index);
-                      
+
                       return (
-                        <div key={c.contractor} className="bg-white/70 dark:bg-gray-700/50 rounded-lg p-2 border border-amber-200/40 dark:border-gray-600/40 hover:bg-white/90 dark:hover:bg-gray-700/70 transition-all duration-200">
+                        <div
+                          key={c.contractor}
+                          className="bg-white/70 dark:bg-gray-700/50 rounded-lg p-2 border border-amber-200/40 dark:border-gray-600/40 hover:bg-white/90 dark:hover:bg-gray-700/70 transition-all duration-200"
+                        >
                           <div className="flex items-center justify-between">
                             <div className="flex items-center gap-2 flex-1 min-w-0">
-                              <div className={`w-6 h-6 bg-gradient-to-br ${badge.bg} rounded-md flex items-center justify-center text-xs font-bold text-white`}>
+                              <div
+                                className={`w-6 h-6 bg-gradient-to-br ${badge.bg} rounded-md flex items-center justify-center text-xs font-bold text-white`}
+                              >
                                 {badge.icon}
                               </div>
                               <span className="text-xs font-medium text-gray-800 dark:text-gray-200 truncate">
@@ -198,8 +260,8 @@ export default function SummaryFeed() {
                 </div>
               </div>
             )}
-  
-            {/* Top Drivers - компактная версия */}
+
+            {/* Top Drivers */}
             {topDrivers.length > 0 && (
               <div className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-gray-800 dark:to-gray-850 rounded-xl border border-blue-200/60 dark:border-gray-700/60 shadow-md overflow-hidden">
                 <div className="p-3 h-full flex flex-col">
@@ -214,20 +276,25 @@ export default function SummaryFeed() {
                   </div>
                   <div className="flex-1 overflow-y-auto space-y-2 scrollbar-thin scrollbar-thumb-blue-300 dark:scrollbar-thumb-gray-600 scrollbar-track-transparent">
                     {topDrivers.slice(0, 4).map((d, index) => {
-                      const getRankBadge = (pos) => {
-                        if (pos === 0) return { icon: "🥇", bg: "from-yellow-400 to-yellow-600" };
-                        if (pos === 1) return { icon: "🥈", bg: "from-gray-300 to-gray-500" };
-                        if (pos === 2) return { icon: "🥉", bg: "from-orange-400 to-orange-600" };
-                        return { icon: (pos + 1).toString(), bg: "from-blue-400 to-indigo-400" };
+                      const getRankBadge = (pos: number) => {
+                        if (pos === 0) return { icon: '🥇', bg: 'from-yellow-400 to-yellow-600' };
+                        if (pos === 1) return { icon: '🥈', bg: 'from-gray-300 to-gray-500' };
+                        if (pos === 2) return { icon: '🥉', bg: 'from-orange-400 to-orange-600' };
+                        return { icon: (pos + 1).toString(), bg: 'from-blue-400 to-indigo-400' };
                       };
-                      
+
                       const badge = getRankBadge(index);
-                      
+
                       return (
-                        <div key={d.driver} className="bg-white/70 dark:bg-gray-700/50 rounded-lg p-2 border border-blue-200/40 dark:border-gray-600/40 hover:bg-white/90 dark:hover:bg-gray-700/70 transition-all duration-200">
+                        <div
+                          key={d.driver}
+                          className="bg-white/70 dark:bg-gray-700/50 rounded-lg p-2 border border-blue-200/40 dark:border-gray-600/40 hover:bg-white/90 dark:hover:bg-gray-700/70 transition-all duration-200"
+                        >
                           <div className="flex items-center justify-between">
                             <div className="flex items-center gap-2 flex-1 min-w-0">
-                              <div className={`w-6 h-6 bg-gradient-to-br ${badge.bg} rounded-md flex items-center justify-center text-xs font-bold text-white`}>
+                              <div
+                                className={`w-6 h-6 bg-gradient-to-br ${badge.bg} rounded-md flex items-center justify-center text-xs font-bold text-white`}
+                              >
                                 {badge.icon}
                               </div>
                               <span className="text-xs font-medium text-gray-800 dark:text-gray-200 truncate">
@@ -246,11 +313,11 @@ export default function SummaryFeed() {
               </div>
             )}
           </div>
-  
+
           {/* Bottom Row - Driver Times */}
           {data?.earliestDrivers && data?.latestDrivers && (
-              <>
-              {/* Early Birds - компактная версия */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Early Birds */}
               <div className="bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-gray-800 dark:to-gray-850 rounded-xl border border-emerald-200/60 dark:border-gray-700/60 shadow-md overflow-hidden">
                 <div className="p-3">
                   <div className="flex items-center gap-2 mb-3">
@@ -264,7 +331,10 @@ export default function SummaryFeed() {
                   </div>
                   <div className="space-y-1">
                     {data.earliestDrivers.slice(0, 3).map((driver) => (
-                      <div key={driver.driver} className="bg-white/70 dark:bg-gray-700/50 rounded-lg p-2 border border-emerald-200/40 dark:border-gray-600/40">
+                      <div
+                        key={driver.driver}
+                        className="bg-white/70 dark:bg-gray-700/50 rounded-lg p-2 border border-emerald-200/40 dark:border-gray-600/40"
+                      >
                         <div className="flex items-center justify-between">
                           <span className="text-xs font-medium text-gray-800 dark:text-gray-200 truncate pr-2">
                             {driver.driver}
@@ -278,8 +348,8 @@ export default function SummaryFeed() {
                   </div>
                 </div>
               </div>
-  
-              {/* Night Owls - компактная версия */}
+
+              {/* Night Owls */}
               <div className="bg-gradient-to-br from-purple-50 to-pink-50 dark:from-gray-800 dark:to-gray-850 rounded-xl border border-purple-200/60 dark:border-gray-700/60 shadow-md overflow-hidden">
                 <div className="p-3">
                   <div className="flex items-center gap-2 mb-3">
@@ -293,7 +363,10 @@ export default function SummaryFeed() {
                   </div>
                   <div className="space-y-1">
                     {data.latestDrivers.slice(0, 3).map((driver) => (
-                      <div key={driver.driver} className="bg-white/70 dark:bg-gray-700/50 rounded-lg p-2 border border-purple-200/40 dark:border-gray-600/40">
+                      <div
+                        key={driver.driver}
+                        className="bg-white/70 dark:bg-gray-700/50 rounded-lg p-2 border border-purple-200/40 dark:border-gray-600/40"
+                      >
                         <div className="flex items-center justify-between">
                           <span className="text-xs font-medium text-gray-800 dark:text-gray-200 truncate pr-2">
                             {driver.driver}
@@ -307,15 +380,15 @@ export default function SummaryFeed() {
                   </div>
                 </div>
               </div>
-              </>
+            </div>
           )}
         </div>
       </div>
-  
+
       {/* Compact Posts Section */}
       <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200/60 dark:border-gray-700/60 shadow-md overflow-hidden">
         <div className="p-4">
-          {/* Latest End - компактный заголовок */}
+          {/* Latest End */}
           {latest && (
             <div className="flex items-center justify-between mb-4 p-3 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-gray-700 dark:to-gray-750 rounded-lg border border-green-200/60 dark:border-gray-600/60">
               <div className="flex items-center gap-3">
@@ -323,7 +396,7 @@ export default function SummaryFeed() {
                   <Icon name="clock" className="text-white text-sm" />
                 </div>
                 <div>
-                  <h4 className="text-sm font-bold text-gray-800 dark:text-gray-100">Latest End</h4>
+                  <h3 className="text-sm font-bold text-gray-800 dark:text-gray-100">Latest End</h3>
                   <span className="text-xs font-medium text-gray-700 dark:text-gray-300">{latest.driver}</span>
                 </div>
               </div>
@@ -332,17 +405,20 @@ export default function SummaryFeed() {
               </span>
             </div>
           )}
-  
-          {/* Posts - горизонтальный скролл для экономии места */}
+
+          {/* Posts */}
           <div className="flex items-center gap-2 mb-3">
             <Icon name="inbox" className="text-lg text-gray-600 dark:text-gray-400" />
             <h3 className="text-sm font-bold text-gray-800 dark:text-gray-100">Recent Posts</h3>
           </div>
-          
+
           {isLoading ? (
             <div className="flex gap-4 overflow-x-auto pb-2">
               {[...Array(3)].map((_, i) => (
-                <div key={i} className="flex-shrink-0 w-80 bg-gray-100 dark:bg-gray-700 p-4 rounded-lg animate-pulse">
+                <div
+                  key={i}
+                  className="flex-shrink-0 w-80 bg-gray-100 dark:bg-gray-700 p-4 rounded-lg animate-pulse"
+                >
                   <div className="h-4 bg-gray-200 dark:bg-gray-600 rounded mb-2"></div>
                   <div className="h-3 bg-gray-200 dark:bg-gray-600 rounded w-1/2"></div>
                 </div>
@@ -354,8 +430,11 @@ export default function SummaryFeed() {
             </div>
           ) : (
             <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600 scrollbar-track-transparent">
-              {posts.slice(0, 5).map(p => (
-                <div key={p.id} className="flex-shrink-0 w-80 bg-gray-50 dark:bg-gray-700 p-4 rounded-lg border border-gray-200/60 dark:border-gray-600/60 hover:shadow-md transition-all duration-200">
+              {posts.slice(0, 5).map((p) => (
+                <div
+                  key={p.id}
+                  className="flex-shrink-0 w-80 bg-gray-50 dark:bg-gray-700 p-4 rounded-lg border border-gray-200/60 dark:border-gray-600/60 hover:shadow-md transition-all duration-200"
+                >
                   <p className="text-sm text-gray-800 dark:text-gray-200 mb-2 line-clamp-3">
                     {p.content}
                   </p>
