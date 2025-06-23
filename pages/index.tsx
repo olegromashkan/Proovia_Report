@@ -88,6 +88,13 @@ export default function Home() {
                     <Icon name="person" className="w-4 h-4" />
                     Profile
                   </Link>
+                  <Link
+                    href="/settings"
+                    className="flex items-center gap-1 text-white hover:text-[#b53133] transition"
+                  >
+                    <Icon name="gear" className="w-4 h-4" />
+                    Settings
+                  </Link>
                 </div>
               ) : (
                 <Link
