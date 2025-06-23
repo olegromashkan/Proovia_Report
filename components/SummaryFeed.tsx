@@ -17,16 +17,6 @@ const Icon = ({ name, className = '' }: { name: string; className?: string }) =>
   return <span className={className}>{icons[name] || '📋'}</span>;
 };
 
-// Mock OrderMap component
-const OrderMap = () => (
-  <div className="w-full h-full bg-gradient-to-br from-blue-100 to-blue-200 dark:from-gray-700 dark:to-gray-800 flex items-center justify-center rounded-lg">
-    <div className="text-center">
-      <div className="text-4xl mb-2">🗺️</div>
-      <p className="text-sm text-gray-600 dark:text-gray-400">Interactive Order Map</p>
-    </div>
-  </div>
-);
-
 // Type definitions
 interface Post {
   id: number;
@@ -78,8 +68,13 @@ const minutesToTime = (minutes: number) => {
 export default function SummaryFeed() {
   const [data, setData] = useState<FeedData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [start, setStart] = useState<string>(new Date().toISOString().split('T')[0]);
-  const [end, setEnd] = useState<string>(new Date().toISOString().split('T')[0]);
+  const today = new Date();
+  const defaultEnd = today.toISOString().split('T')[0];
+  const defaultStartDate = new Date(today);
+  defaultStartDate.setDate(defaultStartDate.getDate() - 6);
+  const defaultStart = defaultStartDate.toISOString().split('T')[0];
+  const [start, setStart] = useState<string>(defaultStart);
+  const [end, setEnd] = useState<string>(defaultEnd);
 
   useEffect(() => {
     setIsLoading(true);
@@ -191,22 +186,9 @@ export default function SummaryFeed() {
       )}
 
       {/* Main Grid Layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-6 gap-4 flex-1 min-h-0">
-        {/* Map Section */}
-        <div className="lg:col-span-3 bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 rounded-xl overflow-hidden border border-gray-200/60 dark:border-gray-700/60 shadow-lg">
-          <div className="h-full relative">
-            <div className="absolute top-3 left-3 z-10 bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm rounded-lg px-2 py-1 shadow-sm">
-              <div className="flex items-center gap-2">
-                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                <span className="text-xs font-medium text-gray-700 dark:text-gray-200">Live Orders</span>
-              </div>
-            </div>
-            <OrderMap />
-          </div>
-        </div>
-
-        {/* Right Side Panel */}
-        <div className="lg:col-span-3 grid grid-rows-2 gap-4">
+      <div className="grid grid-cols-1 gap-4 flex-1 min-h-0">
+        {/* Stats Panel */}
+        <div className="grid grid-rows-2 gap-4">
           {/* Top Row - Rankings */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Top Contractors */}
