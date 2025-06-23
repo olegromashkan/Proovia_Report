@@ -119,340 +119,291 @@ export default function SummaryFeed() {
   };
 
   return (
-    <div className="flex flex-col h-[calc(100vh-180px)] space-y-6 p-4 bg-gray-50 dark:bg-gray-900">
-      {/* Daily Statistics Bar */}
+    <div className="flex flex-col h-[calc(100vh-180px)] space-y-4 p-4  ">
+      {/* Compact Statistics Bar */}
       {data && (
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <div className="bg-gradient-to-r from-blue-500 to-blue-600 rounded-2xl p-4 text-white shadow-lg">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <div className="bg-gradient-to-r from-blue-500 to-blue-600 rounded-xl p-3 text-white shadow-md">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-blue-100 text-sm font-medium">Total Orders</p>
-                <p className="text-2xl font-bold">{stats.total.toLocaleString()}</p>
+                <p className="text-blue-100 text-xs font-medium">Total Orders</p>
+                <p className="text-xl font-bold">{stats.total.toLocaleString()}</p>
               </div>
-              <Icon name="chart" className="text-3xl opacity-80" />
+              <Icon name="chart" className="text-2xl opacity-80" />
             </div>
           </div>
           
-          <div className="bg-gradient-to-r from-green-500 to-green-600 rounded-2xl p-4 text-white shadow-lg">
+          <div className="bg-gradient-to-r from-green-500 to-green-600 rounded-xl p-3 text-white shadow-md">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-green-100 text-sm font-medium">Completed</p>
-                <p className="text-2xl font-bold">{stats.complete.toLocaleString()}</p>
+                <p className="text-green-100 text-xs font-medium">Completed</p>
+                <p className="text-xl font-bold">{stats.complete.toLocaleString()}</p>
               </div>
-              <Icon name="activity" className="text-3xl opacity-80" />
+              <Icon name="activity" className="text-2xl opacity-80" />
             </div>
           </div>
-
-          <div className="bg-gradient-to-r from-red-500 to-red-600 rounded-2xl p-4 text-white shadow-lg">
+  
+          <div className="bg-gradient-to-r from-red-500 to-red-600 rounded-xl p-3 text-white shadow-md">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-red-100 text-sm font-medium">Failed</p>
-                <p className="text-2xl font-bold">{stats.failed}</p>
+                <p className="text-red-100 text-xs font-medium">Failed</p>
+                <p className="text-xl font-bold">{stats.failed}</p>
               </div>
-              <Icon name="trending" className="text-3xl opacity-80" />
+              <Icon name="trending" className="text-2xl opacity-80" />
             </div>
           </div>
-
-          <div className="bg-gradient-to-r from-purple-500 to-purple-600 rounded-2xl p-4 text-white shadow-lg">
+  
+          <div className="bg-gradient-to-r from-purple-500 to-purple-600 rounded-xl p-3 text-white shadow-md">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-purple-100 text-sm font-medium">Success Rate</p>
-                <p className="text-2xl font-bold">{stats.successRate}%</p>
+                <p className="text-purple-100 text-xs font-medium">Success Rate</p>
+                <p className="text-xl font-bold">{stats.successRate}%</p>
               </div>
-              <Icon name="award" className="text-3xl opacity-80" />
+              <Icon name="award" className="text-2xl opacity-80" />
             </div>
           </div>
         </div>
       )}
-
-      {/* Main content grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 flex-1">
-        {/* Map - takes 2 columns */}
-        <div className="lg:col-span-2 bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 rounded-2xl overflow-hidden border border-gray-200/60 dark:border-gray-700/60 shadow-lg hover:shadow-xl transition-all duration-300">
+  
+      {/* Main Grid Layout - более компактное размещение */}
+      <div className="grid grid-cols-1 lg:grid-cols-6 gap-4 flex-1 min-h-0">
+        {/* Map Section - занимает 3 колонки */}
+        <div className="lg:col-span-3 bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 rounded-xl overflow-hidden border border-gray-200/60 dark:border-gray-700/60 shadow-lg">
           <div className="h-full relative">
-            <div className="absolute top-4 left-4 z-10 bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm rounded-lg px-3 py-2 shadow-md">
+            <div className="absolute top-3 left-3 z-10 bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm rounded-lg px-2 py-1 shadow-sm">
               <div className="flex items-center gap-2">
                 <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                <span className="text-sm font-medium text-gray-700 dark:text-gray-200">Live Orders</span>
+                <span className="text-xs font-medium text-gray-700 dark:text-gray-200">Live Orders</span>
               </div>
             </div>
             <OrderMap />
           </div>
         </div>
-
-        {/* Top Contractors */}
-        {topContractors.length > 0 && (
-          <div className="bg-gradient-to-br from-amber-50 to-orange-50 dark:from-gray-800 dark:to-gray-850 rounded-2xl border border-amber-200/60 dark:border-gray-700/60 shadow-lg overflow-hidden">
-            <div className="p-5 h-full flex flex-col">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-10 h-10 bg-gradient-to-br from-amber-500 to-orange-500 rounded-xl flex items-center justify-center shadow-md">
-                  <Icon name="star" className="text-white text-lg" />
-                </div>
-                <div>
-                  <h3 className="text-lg font-bold text-gray-800 dark:text-gray-100">Top Contractors</h3>
-                  <p className="text-xs text-gray-600 dark:text-gray-400">Best performing contractors</p>
-                </div>
-              </div>
-              <div className="flex-1 overflow-y-auto space-y-3 scrollbar-thin scrollbar-thumb-amber-300 dark:scrollbar-thumb-gray-600 scrollbar-track-transparent pr-2">
-                {topContractors.map((c, index) => {
-                  const getRankIcon = (position: number) => {
-                    if (position === 0) return { icon: "🥇", bg: "from-yellow-400 to-yellow-600", text: "text-yellow-900" };
-                    if (position === 1) return { icon: "🥈", bg: "from-gray-300 to-gray-500", text: "text-gray-900" };
-                    if (position === 2) return { icon: "🥉", bg: "from-orange-400 to-orange-600", text: "text-orange-900" };
-                    return { icon: (index + 1).toString(), bg: "from-amber-400 to-orange-400", text: "text-white" };
-                  };
-                  
-                  const rank = getRankIcon(index);
-                  
-                  return (
-                    <div key={c.contractor} className="bg-white/70 dark:bg-gray-700/50 backdrop-blur-sm rounded-xl p-3 border border-amber-200/40 dark:border-gray-600/40 hover:bg-white/90 dark:hover:bg-gray-700/70 transition-all duration-200 hover:scale-105">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <div className={`w-10 h-10 bg-gradient-to-br ${rank.bg} rounded-xl flex items-center justify-center shadow-md ${rank.text} font-bold text-sm`}>
-                            <span className="text-lg">{rank.icon}</span>
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <span className="text-sm font-semibold text-gray-800 dark:text-gray-200 block truncate">
-                              {c.contractor}
-                            </span>
-                            <div className="text-xs text-gray-600 dark:text-gray-400">
-                              {index < 3 ? (
-                                <span className="font-medium">
-                                  {index === 0 ? "Gold Medal" : index === 1 ? "Silver Medal" : "Bronze Medal"}
-                                </span>
-                              ) : (
-                                "Contractor"
-                              )}
+  
+        {/* Right Side Panel - 3 колонки для компактных секций */}
+        <div className="lg:col-span-3 grid grid-rows-2 gap-4">
+          {/* Top Row - Rankings */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Top Contractors - компактная версия */}
+            {topContractors.length > 0 && (
+              <div className="bg-gradient-to-br from-amber-50 to-orange-50 dark:from-gray-800 dark:to-gray-850 rounded-xl border border-amber-200/60 dark:border-gray-700/60 shadow-md overflow-hidden">
+                <div className="p-3 h-full flex flex-col">
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="w-8 h-8 bg-gradient-to-br from-amber-500 to-orange-500 rounded-lg flex items-center justify-center">
+                      <Icon name="star" className="text-white text-sm" />
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-bold text-gray-800 dark:text-gray-100">Top Contractors</h3>
+                      <p className="text-xs text-gray-600 dark:text-gray-400">Best performers</p>
+                    </div>
+                  </div>
+                  <div className="flex-1 overflow-y-auto space-y-2 scrollbar-thin scrollbar-thumb-amber-300 dark:scrollbar-thumb-gray-600 scrollbar-track-transparent">
+                    {topContractors.slice(0, 4).map((c, index) => {
+                      const getRankBadge = (pos) => {
+                        if (pos === 0) return { icon: "🥇", bg: "from-yellow-400 to-yellow-600" };
+                        if (pos === 1) return { icon: "🥈", bg: "from-gray-300 to-gray-500" };
+                        if (pos === 2) return { icon: "🥉", bg: "from-orange-400 to-orange-600" };
+                        return { icon: (pos + 1).toString(), bg: "from-amber-400 to-orange-400" };
+                      };
+                      
+                      const badge = getRankBadge(index);
+                      
+                      return (
+                        <div key={c.contractor} className="bg-white/70 dark:bg-gray-700/50 rounded-lg p-2 border border-amber-200/40 dark:border-gray-600/40 hover:bg-white/90 dark:hover:bg-gray-700/70 transition-all duration-200">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2 flex-1 min-w-0">
+                              <div className={`w-6 h-6 bg-gradient-to-br ${badge.bg} rounded-md flex items-center justify-center text-xs font-bold text-white`}>
+                                {badge.icon}
+                              </div>
+                              <span className="text-xs font-medium text-gray-800 dark:text-gray-200 truncate">
+                                {c.contractor}
+                              </span>
+                            </div>
+                            <div className="text-xs font-bold text-amber-600 dark:text-amber-400">
+                              £{c.avgPrice.toFixed(0)}
                             </div>
                           </div>
                         </div>
-                        <div className="text-right flex-shrink-0">
-                          <div className="text-lg font-bold text-amber-600 dark:text-amber-400">
-                            £{c.avgPrice.toFixed(2)}
-                          </div>
-                        </div>
-                      </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            )}
+  
+            {/* Top Drivers - компактная версия */}
+            {topDrivers.length > 0 && (
+              <div className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-gray-800 dark:to-gray-850 rounded-xl border border-blue-200/60 dark:border-gray-700/60 shadow-md overflow-hidden">
+                <div className="p-3 h-full flex flex-col">
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-indigo-500 rounded-lg flex items-center justify-center">
+                      <Icon name="users" className="text-white text-sm" />
                     </div>
-                  );
-                })}
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Top Drivers */}
-        {topDrivers.length > 0 && (
-          <div className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-gray-800 dark:to-gray-850 rounded-2xl border border-blue-200/60 dark:border-gray-700/60 shadow-lg overflow-hidden">
-            <div className="p-5 h-full flex flex-col">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-500 rounded-xl flex items-center justify-center shadow-md">
-                  <Icon name="users" className="text-white text-lg" />
-                </div>
-                <div>
-                  <h3 className="text-lg font-bold text-gray-800 dark:text-gray-100">Top Drivers</h3>
-                  <p className="text-xs text-gray-600 dark:text-gray-400">Best performing drivers</p>
-                </div>
-              </div>
-              <div className="flex-1 overflow-y-auto space-y-3 scrollbar-thin scrollbar-thumb-blue-300 dark:scrollbar-thumb-gray-600 scrollbar-track-transparent pr-2">
-                {topDrivers.map((d, index) => {
-                  const getRankIcon = (position: number) => {
-                    if (position === 0) return { icon: "🥇", bg: "from-yellow-400 to-yellow-600", text: "text-yellow-900" };
-                    if (position === 1) return { icon: "🥈", bg: "from-gray-300 to-gray-500", text: "text-gray-900" };
-                    if (position === 2) return { icon: "🥉", bg: "from-orange-400 to-orange-600", text: "text-orange-900" };
-                    return { icon: (index + 1).toString(), bg: "from-blue-400 to-indigo-400", text: "text-white" };
-                  };
-                  
-                  const rank = getRankIcon(index);
-                  
-                  return (
-                    <div key={d.driver} className="bg-white/70 dark:bg-gray-700/50 backdrop-blur-sm rounded-xl p-3 border border-blue-200/40 dark:border-gray-600/40 hover:bg-white/90 dark:hover:bg-gray-700/70 transition-all duration-200 hover:scale-105">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <div className={`w-10 h-10 bg-gradient-to-br ${rank.bg} rounded-xl flex items-center justify-center shadow-md ${rank.text} font-bold text-sm`}>
-                            <span className="text-lg">{rank.icon}</span>
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <span className="text-sm font-semibold text-gray-800 dark:text-gray-200 block truncate">
-                              {d.driver}
-                            </span>
-                            <div className="text-xs text-gray-600 dark:text-gray-400 truncate">
-                              {index < 3 ? (
-                                <span className="font-medium">
-                                  {index === 0 ? "Gold Medal" : index === 1 ? "Silver Medal" : "Bronze Medal"}
-                                </span>
-                              ) : (
-                                d.contractor
-                              )}
+                    <div>
+                      <h3 className="text-sm font-bold text-gray-800 dark:text-gray-100">Top Drivers</h3>
+                      <p className="text-xs text-gray-600 dark:text-gray-400">Best performers</p>
+                    </div>
+                  </div>
+                  <div className="flex-1 overflow-y-auto space-y-2 scrollbar-thin scrollbar-thumb-blue-300 dark:scrollbar-thumb-gray-600 scrollbar-track-transparent">
+                    {topDrivers.slice(0, 4).map((d, index) => {
+                      const getRankBadge = (pos) => {
+                        if (pos === 0) return { icon: "🥇", bg: "from-yellow-400 to-yellow-600" };
+                        if (pos === 1) return { icon: "🥈", bg: "from-gray-300 to-gray-500" };
+                        if (pos === 2) return { icon: "🥉", bg: "from-orange-400 to-orange-600" };
+                        return { icon: (pos + 1).toString(), bg: "from-blue-400 to-indigo-400" };
+                      };
+                      
+                      const badge = getRankBadge(index);
+                      
+                      return (
+                        <div key={d.driver} className="bg-white/70 dark:bg-gray-700/50 rounded-lg p-2 border border-blue-200/40 dark:border-gray-600/40 hover:bg-white/90 dark:hover:bg-gray-700/70 transition-all duration-200">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2 flex-1 min-w-0">
+                              <div className={`w-6 h-6 bg-gradient-to-br ${badge.bg} rounded-md flex items-center justify-center text-xs font-bold text-white`}>
+                                {badge.icon}
+                              </div>
+                              <span className="text-xs font-medium text-gray-800 dark:text-gray-200 truncate">
+                                {d.driver}
+                              </span>
+                            </div>
+                            <div className="text-xs font-bold text-blue-600 dark:text-blue-400">
+                              £{d.avgPrice.toFixed(0)}
                             </div>
                           </div>
                         </div>
-                        <div className="text-right flex-shrink-0">
-                          <div className="text-lg font-bold text-blue-600 dark:text-blue-400">
-                            £{d.avgPrice.toFixed(2)}
-                          </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+  
+          {/* Bottom Row - Driver Times */}
+          {data?.earliestDrivers && data?.latestDrivers && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Early Birds - компактная версия */}
+              <div className="bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-gray-800 dark:to-gray-850 rounded-xl border border-emerald-200/60 dark:border-gray-700/60 shadow-md overflow-hidden">
+                <div className="p-3">
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="w-8 h-8 bg-gradient-to-br from-emerald-500 to-teal-500 rounded-lg flex items-center justify-center">
+                      <span className="text-white text-sm">🌅</span>
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-bold text-gray-800 dark:text-gray-100">Early Birds</h3>
+                      <p className="text-xs text-gray-600 dark:text-gray-400">First starts</p>
+                    </div>
+                  </div>
+                  <div className="space-y-1">
+                    {data.earliestDrivers.slice(0, 3).map((driver) => (
+                      <div key={driver.driver} className="bg-white/70 dark:bg-gray-700/50 rounded-lg p-2 border border-emerald-200/40 dark:border-gray-600/40">
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-medium text-gray-800 dark:text-gray-200 truncate pr-2">
+                            {driver.driver}
+                          </span>
+                          <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400 font-mono">
+                            {minutesToTime(driver.time)}
+                          </span>
                         </div>
                       </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* Bottom section with posts and driver times */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 min-h-[300px]">
-        {/* Posts section - takes 2 columns */}
-        <div className="lg:col-span-2 overflow-y-auto space-y-4 scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600 scrollbar-track-transparent pr-2">
-          {/* Latest End Card */}
-          {latest && (
-            <div className="bg-gradient-to-r from-green-50 to-emerald-50 dark:from-gray-800 dark:to-gray-850 rounded-2xl p-4 border border-green-200/60 dark:border-gray-700/60 shadow-md hover:shadow-lg transition-all duration-300">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-emerald-500 rounded-xl flex items-center justify-center shadow-md">
-                  <Icon name="clock" className="text-white text-xl" />
+                    ))}
+                  </div>
                 </div>
-                <div className="flex-1">
-                  <h4 className="text-lg font-bold text-gray-800 dark:text-gray-100">Latest End</h4>
-                  <div className="flex items-center justify-between mt-1">
-                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300">{latest.driver}</span>
-                    <span className="text-sm text-gray-600 dark:text-gray-400 bg-white/60 dark:bg-gray-700/60 px-3 py-1 rounded-lg font-mono">
-                      {latest.time}
-                    </span>
+              </div>
+  
+              {/* Night Owls - компактная версия */}
+              <div className="bg-gradient-to-br from-purple-50 to-pink-50 dark:from-gray-800 dark:to-gray-850 rounded-xl border border-purple-200/60 dark:border-gray-700/60 shadow-md overflow-hidden">
+                <div className="p-3">
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-pink-500 rounded-lg flex items-center justify-center">
+                      <span className="text-white text-sm">🌙</span>
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-bold text-gray-800 dark:text-gray-100">Night Owls</h3>
+                      <p className="text-xs text-gray-600 dark:text-gray-400">Latest ends</p>
+                    </div>
+                  </div>
+                  <div className="space-y-1">
+                    {data.latestDrivers.slice(0, 3).map((driver) => (
+                      <div key={driver.driver} className="bg-white/70 dark:bg-gray-700/50 rounded-lg p-2 border border-purple-200/40 dark:border-gray-600/40">
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-medium text-gray-800 dark:text-gray-200 truncate pr-2">
+                            {driver.driver}
+                          </span>
+                          <span className="text-xs font-bold text-purple-600 dark:text-purple-400 font-mono">
+                            {minutesToTime(driver.time)}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 </div>
               </div>
             </div>
           )}
-
-          {/* Posts */}
+        </div>
+      </div>
+  
+      {/* Compact Posts Section */}
+      <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200/60 dark:border-gray-700/60 shadow-md overflow-hidden">
+        <div className="p-4">
+          {/* Latest End - компактный заголовок */}
+          {latest && (
+            <div className="flex items-center justify-between mb-4 p-3 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-gray-700 dark:to-gray-750 rounded-lg border border-green-200/60 dark:border-gray-600/60">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 bg-gradient-to-br from-green-500 to-emerald-500 rounded-lg flex items-center justify-center">
+                  <Icon name="clock" className="text-white text-sm" />
+                </div>
+                <div>
+                  <h4 className="text-sm font-bold text-gray-800 dark:text-gray-100">Latest End</h4>
+                  <span className="text-xs font-medium text-gray-700 dark:text-gray-300">{latest.driver}</span>
+                </div>
+              </div>
+              <span className="text-sm text-gray-600 dark:text-gray-400 bg-white/60 dark:bg-gray-600/60 px-2 py-1 rounded font-mono">
+                {latest.time}
+              </span>
+            </div>
+          )}
+  
+          {/* Posts - горизонтальный скролл для экономии места */}
+          <div className="flex items-center gap-2 mb-3">
+            <Icon name="inbox" className="text-lg text-gray-600 dark:text-gray-400" />
+            <h3 className="text-sm font-bold text-gray-800 dark:text-gray-100">Recent Posts</h3>
+          </div>
+          
           {isLoading ? (
-            <div className="space-y-4">
+            <div className="flex gap-4 overflow-x-auto pb-2">
               {[...Array(3)].map((_, i) => (
-                <div
-                  key={i}
-                  className="bg-white dark:bg-gray-800 p-6 rounded-2xl border border-gray-200 dark:border-gray-700 animate-pulse shadow-md"
-                >
-                  <div className="flex gap-4">
-                    <div className="w-12 h-12 bg-gray-200 dark:bg-gray-700 rounded-xl"></div>
-                    <div className="flex-1 space-y-3">
-                      <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-3/4"></div>
-                      <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-1/4"></div>
-                    </div>
-                  </div>
+                <div key={i} className="flex-shrink-0 w-80 bg-gray-100 dark:bg-gray-700 p-4 rounded-lg animate-pulse">
+                  <div className="h-4 bg-gray-200 dark:bg-gray-600 rounded mb-2"></div>
+                  <div className="h-3 bg-gray-200 dark:bg-gray-600 rounded w-1/2"></div>
                 </div>
               ))}
             </div>
           ) : posts.length === 0 ? (
-            <div className="text-center py-12 bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-850 rounded-2xl border border-gray-200/60 dark:border-gray-700/60">
-              <div className="w-16 h-16 bg-gray-200 dark:bg-gray-700 rounded-2xl mx-auto mb-4 flex items-center justify-center">
-                <Icon name="inbox" className="text-4xl text-gray-400" />
-              </div>
-              <p className="text-lg font-semibold text-gray-600 dark:text-gray-400 mb-2">No posts available</p>
-              <p className="text-sm text-gray-500 dark:text-gray-500">Check back later for updates!</p>
+            <div className="text-center py-6 text-gray-500 dark:text-gray-400">
+              <p className="text-sm">No posts available</p>
             </div>
           ) : (
-            <div className="space-y-4">
-              {posts.map(p => (
-                <div
-                  key={p.id}
-                  className="bg-white dark:bg-gray-800 p-6 rounded-2xl border border-gray-200/60 dark:border-gray-700/60 shadow-md hover:shadow-lg transition-all duration-300 hover:border-[#b53133]/40 group hover:scale-[1.02]"
-                >
-                  <div className="flex items-start gap-4">
-                    <div className="flex-shrink-0">
-                      <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#b53133]/20 to-[#b53133]/40 flex items-center justify-center group-hover:from-[#b53133]/30 group-hover:to-[#b53133]/50 transition-all duration-300">
-                        <svg className="w-6 h-6 text-[#b53133]" fill="currentColor" viewBox="0 0 20 20">
-                          <path d="M18 3a1 1 0 00-1.196-.98L5 4l.002 7 11.804-2.018A1 1 0 0018 8V3z"/>
-                          <path d="M5 11V4L2 3a1 1 0 00-1 .98v10.04A1 1 0 002 15l3-1z"/>
-                        </svg>
-                      </div>
-                    </div>
-                    <div className="flex-1">
-                      <p className="text-base text-gray-800 dark:text-gray-200 break-words leading-relaxed mb-3">
-                        {p.content}
-                      </p>
-                      <div className="flex items-center gap-2">
-                        <div className="w-2 h-2 bg-gray-400 rounded-full"></div>
-                        <p className="text-sm text-gray-500 dark:text-gray-400">
-                          {new Date(p.created_at).toLocaleDateString('en-US', {
-                            year: 'numeric',
-                            month: 'short',
-                            day: 'numeric',
-                            hour: '2-digit',
-                            minute: '2-digit',
-                          })}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
+            <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600 scrollbar-track-transparent">
+              {posts.slice(0, 5).map(p => (
+                <div key={p.id} className="flex-shrink-0 w-80 bg-gray-50 dark:bg-gray-700 p-4 rounded-lg border border-gray-200/60 dark:border-gray-600/60 hover:shadow-md transition-all duration-200">
+                  <p className="text-sm text-gray-800 dark:text-gray-200 mb-2 line-clamp-3">
+                    {p.content}
+                  </p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                    {new Date(p.created_at).toLocaleDateString('en-US', {
+                      month: 'short',
+                      day: 'numeric',
+                      hour: '2-digit',
+                      minute: '2-digit',
+                    })}
+                  </p>
                 </div>
               ))}
             </div>
           )}
         </div>
-
-        {/* Driver Times section */}
-        {data?.earliestDrivers && data?.latestDrivers && (
-          <div className="space-y-4">
-            {/* Earliest Drivers */}
-            <div className="bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-gray-800 dark:to-gray-850 rounded-2xl border border-emerald-200/60 dark:border-gray-700/60 shadow-lg overflow-hidden">
-              <div className="p-4">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="w-10 h-10 bg-gradient-to-br from-emerald-500 to-teal-500 rounded-xl flex items-center justify-center shadow-md">
-                    <span className="text-white text-lg">🌅</span>
-                  </div>
-                  <div>
-                    <h3 className="text-lg font-bold text-gray-800 dark:text-gray-100">Early Birds</h3>
-                    <p className="text-xs text-gray-600 dark:text-gray-400">Earliest start times</p>
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  {data.earliestDrivers.slice(0, 3).map((driver, index) => (
-                    <div key={driver.driver} className="bg-white/70 dark:bg-gray-700/50 backdrop-blur-sm rounded-lg p-3 border border-emerald-200/40 dark:border-gray-600/40">
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm font-medium text-gray-800 dark:text-gray-200 truncate pr-2">
-                          {driver.driver}
-                        </span>
-                        <span className="text-sm font-bold text-emerald-600 dark:text-emerald-400 font-mono">
-                          {minutesToTime(driver.time)}
-                        </span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            {/* Latest Drivers */}
-            <div className="bg-gradient-to-br from-purple-50 to-pink-50 dark:from-gray-800 dark:to-gray-850 rounded-2xl border border-purple-200/60 dark:border-gray-700/60 shadow-lg overflow-hidden">
-              <div className="p-4">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl flex items-center justify-center shadow-md">
-                    <span className="text-white text-lg">🌙</span>
-                  </div>
-                  <div>
-                    <h3 className="text-lg font-bold text-gray-800 dark:text-gray-100">Night Owls</h3>
-                    <p className="text-xs text-gray-600 dark:text-gray-400">Latest end times</p>
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  {data.latestDrivers.slice(0, 3).map((driver, index) => (
-                    <div key={driver.driver} className="bg-white/70 dark:bg-gray-700/50 backdrop-blur-sm rounded-lg p-3 border border-purple-200/40 dark:border-gray-600/40">
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm font-medium text-gray-800 dark:text-gray-200 truncate pr-2">
-                          {driver.driver}
-                        </span>
-                        <span className="text-sm font-bold text-purple-600 dark:text-purple-400 font-mono">
-                          {minutesToTime(driver.time)}
-                        </span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
       </div>
     </div>
   );
