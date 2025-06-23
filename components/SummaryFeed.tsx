@@ -18,57 +18,17 @@ const Icon = ({ name, className = '' }) => {
 };
 
 
-interface Post {
-  id: number;
-  content: string;
-  created_at: string;
-}
-
-interface ContractorInfo {
-  contractor: string;
-  avgPrice: number;
-}
-
-interface DriverInfo {
-  driver: string;
-  contractor: string;
-  avgPrice: number;
-}
-
-interface EarliestDriver {
-  driver: string;
-  time: number;
-}
-
-interface LatestDriver {
-  driver: string;
-  time: number;
-}
-
-interface FeedData {
-  posts: Post[];
-  topContractors: ContractorInfo[];
-  topDrivers: DriverInfo[];
-  latestEnd: { driver: string; time: string } | null;
-  start?: string;
-  end?: string;
-  date?: string;
-  total?: number;
-  complete?: number;
-  failed?: number;
-  earliestDrivers?: EarliestDriver[];
-  latestDrivers?: LatestDriver[];
-}
+// Type definitions removed for JS build compatibility
 
 // Helper function to convert minutes to time format
-const minutesToTime = (minutes: number): string => {
+const minutesToTime = (minutes) => {
   const hours = Math.floor(minutes / 60);
   const mins = Math.round(minutes % 60);
   return `${hours.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}`;
 };
 
 export default function SummaryFeed() {
-  const [data, setData] = useState<FeedData | null>(null);
+  const [data, setData] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const endDefault = new Date().toISOString().slice(0, 10);
   const startDefault = (() => {
@@ -83,8 +43,8 @@ export default function SummaryFeed() {
     setIsLoading(true);
     fetch(`/api/summary-feed?start=${start}&end=${end}`)
       .then((res) => (res.ok ? res.json() : Promise.reject()))
-      .then((json: FeedData) => {
-        let extra: Partial<FeedData> = {};
+      .then((json) => {
+        let extra = {};
         const first = json.posts && json.posts[0];
         if (first) {
           try {
@@ -124,8 +84,11 @@ export default function SummaryFeed() {
     successRate: data?.total ? ((data.complete / data.total) * 100).toFixed(1) : '0'
   };
 
+  const containerClass =
+    'flex flex-col max-h-[calc(100vh-280px)] space-y-4 p-4 overflow-y-auto';
+
   return (
-    <div className="flex flex-col max-h-[calc(100vh-280px)] space-y-4 p-4 overflow-y-auto">
+    <div className={containerClass}>
       <div className="flex items-center gap-2 text-sm">
         <input
           type="date"
