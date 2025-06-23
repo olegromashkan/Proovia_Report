@@ -1,5 +1,22 @@
 import React, { useEffect, useMemo, useState, useCallback } from 'react';
-import { Database, Search, RefreshCw, Plus, Download, Save, X, Trash2, Edit, ExternalLink, RotateCcw, AlertCircle, ChevronUp, ChevronDown } from 'lucide-react';
+import {
+  Database,
+  Search,
+  RefreshCw,
+  Plus,
+  Download,
+  Save,
+  X,
+  Trash2,
+  Edit,
+  ExternalLink,
+  RotateCcw,
+  AlertCircle,
+  ChevronUp,
+  ChevronDown,
+  Copy,
+  EyeOff
+} from 'lucide-react';
 
 const TABLES = [
   'copy_of_tomorrow_trips',
@@ -49,6 +66,7 @@ export default function DatabasePanel() {
   const [pending, setPending] = useState<PendingChange[]>([]);
   const [sortColumn, setSortColumn] = useState<string | null>(null);
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
+  const [selected, setSelected] = useState<Set<string | number>>(new Set());
 
   const loadItems = useCallback(async () => {
     setLoading(true);
@@ -102,6 +120,20 @@ export default function DatabasePanel() {
         const valB = getVal(b);
         if (valA == null) return 1;
         if (valB == null) return -1;
+
+        const parseDate = (v: any) => {
+          if (typeof v !== 'string') return NaN;
+          const d = new Date(v);
+          return isNaN(d.getTime()) ? NaN : d.getTime();
+        };
+
+        const dateA = parseDate(valA);
+        const dateB = parseDate(valB);
+
+        if (!isNaN(dateA) && !isNaN(dateB)) {
+          return sortDir === 'asc' ? dateA - dateB : dateB - dateA;
+        }
+
         if (typeof valA === 'number' && typeof valB === 'number') {
           return sortDir === 'asc' ? valA - valB : valB - valA;
         }
@@ -173,6 +205,40 @@ export default function DatabasePanel() {
       setPending(p => [...p.filter(ch => ch.id !== id), { id, action: 'delete' }]);
       setItems(items => items.filter(it => it.id !== id));
     }
+  };
+
+  const toggleSelect = (id: string | number) => {
+    setSelected(s => {
+      const next = new Set(s);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
+
+  const selectAll = () => {
+    if (selected.size === sorted.length) {
+      setSelected(new Set());
+    } else {
+      setSelected(new Set(sorted.map(it => it.id)));
+    }
+  };
+
+  const deleteSelected = () => {
+    if (selected.size === 0) return;
+    if (!confirm(`Delete ${selected.size} selected item(s)?`)) return;
+    selected.forEach(id => handleDelete(id));
+    setSelected(new Set());
+  };
+
+  const copySelected = () => {
+    const rows = items.filter(it => selected.has(it.id));
+    if (rows.length)
+      navigator.clipboard.writeText(JSON.stringify(rows, null, 2));
+  };
+
+  const hideSelected = () => {
+    setItems(items => items.filter(it => !selected.has(it.id)));
+    setSelected(new Set());
   };
 
   const addItem = async () => {
@@ -311,6 +377,21 @@ export default function DatabasePanel() {
         </div>
       </div>
 
+      {selected.size > 0 && (
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-2 mb-4 flex items-center gap-2">
+          <span className="text-sm">{selected.size} selected</span>
+          <button onClick={deleteSelected} className="btn btn-xs btn-error flex items-center gap-1">
+            <Trash2 className="w-3 h-3" /> Delete
+          </button>
+          <button onClick={copySelected} className="btn btn-xs btn-neutral flex items-center gap-1">
+            <Copy className="w-3 h-3" /> Copy
+          </button>
+          <button onClick={hideSelected} className="btn btn-xs btn-ghost flex items-center gap-1">
+            <EyeOff className="w-3 h-3" /> Hide
+          </button>
+        </div>
+      )}
+
       {/* Table */}
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
         {loading ? (
@@ -322,6 +403,23 @@ export default function DatabasePanel() {
             <table className="w-full text-sm">
               <thead className="bg-gray-50 dark:bg-gray-700 sticky top-0 z-10">
                 <tr>
+                  <th className="px-2 py-2 text-center border-b border-gray-200 dark:border-gray-600">
+                    <input type="checkbox" checked={selected.size === sorted.length && sorted.length > 0} onChange={selectAll} />
+                  </th>
+                  <th
+                    className="px-3 py-2 text-left font-medium text-gray-900 dark:text-gray-100 border-b border-gray-200 dark:border-gray-600 cursor-pointer"
+                    onClick={() => handleSort('created_at')}
+                  >
+                    <div className="flex items-center gap-1">
+                      <span>Created</span>
+                      {sortColumn === 'created_at' && (
+                        sortDir === 'asc' ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />
+                      )}
+                    </div>
+                  </th>
+                  <th className="px-3 py-2 text-center font-medium text-gray-900 dark:text-gray-100 border-b border-gray-200 dark:border-gray-600 w-20">
+                    Actions
+                  </th>
                   <th
                     className="px-3 py-2 text-left font-medium text-gray-900 dark:text-gray-100 border-b border-gray-200 dark:border-gray-600 cursor-pointer"
                     onClick={() => handleSort('id')}
@@ -347,18 +445,6 @@ export default function DatabasePanel() {
                       </div>
                     </th>
                   ))}
-                  <th
-                    className="px-3 py-2 text-left font-medium text-gray-900 dark:text-gray-100 border-b border-gray-200 dark:border-gray-600 cursor-pointer"
-                    onClick={() => handleSort('created_at')}
-                  >
-                    <div className="flex items-center gap-1">
-                      <span>Created</span>
-                      {sortColumn === 'created_at' && (
-                        sortDir === 'asc' ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />
-                      )}
-                    </div>
-                  </th>
-                  <th className="px-3 py-2 text-center font-medium text-gray-900 dark:text-gray-100 border-b border-gray-200 dark:border-gray-600 w-20">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
@@ -368,6 +454,40 @@ export default function DatabasePanel() {
                       onDoubleClick={() => openEdit(item.id)}
                       className="hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer transition-colors"
                     >
+                      <td className="px-2 py-1.5 text-center">
+                        <input
+                          type="checkbox"
+                          checked={selected.has(item.id)}
+                          onChange={() => toggleSelect(item.id)}
+                        />
+                      </td>
+                      <td className="px-3 py-1.5 text-xs text-gray-500 dark:text-gray-400">
+                        {new Date(item.created_at).toLocaleDateString()} {new Date(item.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </td>
+                      <td className="px-3 py-1.5 text-center">
+                        <div className="flex items-center justify-center gap-1">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              openEdit(item.id);
+                            }}
+                            className="p-1 text-[#b53133] hover:bg-[#b53133]/10 dark:hover:bg-[#b53133]/20 rounded transition-colors"
+                            title="Edit JSON"
+                          >
+                            <Edit className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDelete(item.id);
+                            }}
+                            className="p-1 text-red-600 hover:bg-red-100 dark:hover:bg-red-900/40 rounded transition-colors"
+                            title="Delete"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </td>
                       <td className="px-3 py-1.5 font-mono text-xs text-gray-600 dark:text-gray-400">{item.id}</td>
                       {columns.map(col => (
                         <td
@@ -402,37 +522,10 @@ export default function DatabasePanel() {
                           )}
                         </td>
                       ))}
-                      <td className="px-3 py-1.5 text-xs text-gray-500 dark:text-gray-400">
-                        {new Date(item.created_at).toLocaleDateString()} {new Date(item.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                      </td>
-                      <td className="px-3 py-1.5 text-center">
-                        <div className="flex items-center justify-center gap-1">
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              openEdit(item.id);
-                            }}
-                            className="p-1 text-[#b53133] hover:bg-[#b53133]/10 dark:hover:bg-[#b53133]/20 rounded transition-colors"
-                            title="Edit JSON"
-                          >
-                            <Edit className="w-3.5 h-3.5" />
-                          </button>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleDelete(item.id);
-                            }}
-                            className="p-1 text-red-600 hover:bg-red-100 dark:hover:bg-red-900/40 rounded transition-colors"
-                            title="Delete"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
-                      </td>
                     </tr>
                     {editing?.id === item.id && (
                       <tr className="bg-[#b53133]/10 dark:bg-[#b53133]/20">
-                        <td colSpan={columns.length + 3} className="p-4">
+                        <td colSpan={columns.length + 4} className="p-4">
                           <div className="space-y-3">
                             <div className="flex items-center gap-2">
                               <Edit className="w-4 h-4 text-[#b53133]" />
