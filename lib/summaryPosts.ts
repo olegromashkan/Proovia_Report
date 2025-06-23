@@ -178,13 +178,13 @@ export function generateSummaryPosts(): number {
     const earliestDrivers = Object.entries(stats.drivers)
       .filter(([, d]) => d.earliest !== undefined)
       .sort((a, b) => (a[1].earliest! - b[1].earliest!))
-      .slice(0, 3)
+      .slice(0, 5)
       .map(([driver, d]) => ({ driver, time: d.earliest! }));
 
     const latestDrivers = Object.entries(stats.drivers)
       .filter(([, d]) => d.latest !== undefined)
       .sort((a, b) => (b[1].latest! - a[1].latest!))
-      .slice(0, 3)
+      .slice(0, 5)
       .map(([driver, d]) => ({ driver, time: d.latest! }));
 
     const summary = {

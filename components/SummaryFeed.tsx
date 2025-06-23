@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import Modal from './Modal';
 
 // Mock Icon component
 const Icon = ({ name, className = '' }: { name: string; className?: string }) => {
@@ -15,6 +16,35 @@ const Icon = ({ name, className = '' }: { name: string; className?: string }) =>
     activity: '📊',
   };
   return <span className={className}>{icons[name] || '📋'}</span>;
+};
+
+const DriverListModal = ({
+  open,
+  onClose,
+  title,
+  drivers,
+}: {
+  open: boolean;
+  onClose: () => void;
+  title: string;
+  drivers: { driver: string; label: string }[];
+}) => {
+  return (
+    <Modal open={open} onClose={onClose} className="max-w-md">
+      <h2 className="text-lg font-semibold mb-4">{title}</h2>
+      <div className="space-y-1 max-h-80 overflow-y-auto">
+        {drivers.map((d) => (
+          <div
+            key={d.driver + d.label}
+            className="flex items-center justify-between border-b last:border-0 py-1"
+          >
+            <span className="text-sm truncate pr-2">{d.driver}</span>
+            <span className="text-sm font-mono">{d.label}</span>
+          </div>
+        ))}
+      </div>
+    </Modal>
+  );
 };
 
 // Type definitions
@@ -70,6 +100,8 @@ const minutesToTime = (minutes: number) => {
 export default function SummaryFeed() {
   const [data, setData] = useState<FeedData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [modalType, setModalType] = useState<'' | 'early' | 'night' | 'latest'>('');
+  const [modalDrivers, setModalDrivers] = useState<{ driver: string; label: string; time: number }[]>([]);
   const today = new Date();
   const defaultEnd = today.toISOString().split('T')[0];
   const defaultStartDate = new Date(today);
@@ -119,6 +151,39 @@ export default function SummaryFeed() {
     positiveTimeCompleted: data?.positiveTimeCompleted || 0,
     positiveArrivalTime: data?.positiveArrivalTime || 0,
     successRate: data?.total ? ((data.complete / data.total) * 100).toFixed(1) : '0',
+  };
+
+  const parseMinutes = (str: string | null) => {
+    if (!str) return 0;
+    const [h = '0', m = '0'] = str.split(':');
+    return Number(h) * 60 + Number(m);
+  };
+
+  const openDriverModal = async (type: 'early' | 'night' | 'latest') => {
+    if (!data?.date) return;
+    try {
+      const res = await fetch(`/api/driver-routes?start=${data.date}&end=${data.date}`);
+      if (!res.ok) return;
+      const json = await res.json();
+      const map: Record<string, { time: number; label: string }> = {};
+      json.items.forEach((it: any) => {
+        const driver = it.driver || 'Unknown';
+        const start = it.start_time as string | null;
+        const end = it.end_time as string | null;
+        if (type === 'early' && start) {
+          const t = parseMinutes(start);
+          if (!map[driver] || t < map[driver].time) map[driver] = { time: t, label: start };
+        }
+        if ((type === 'night' || type === 'latest') && end) {
+          const t = parseMinutes(end);
+          if (!map[driver] || t > map[driver].time) map[driver] = { time: t, label: end };
+        }
+      });
+      let arr = Object.entries(map).map(([driver, v]) => ({ driver, time: v.time, label: v.label }));
+      arr.sort((a, b) => (type === 'early' ? a.time - b.time : b.time - a.time));
+      setModalDrivers(arr);
+      setModalType(type);
+    } catch {}
   };
 
   const containerClass =
@@ -324,7 +389,10 @@ export default function SummaryFeed() {
           {data?.earliestDrivers && data?.latestDrivers && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* Early Birds */}
-              <div className="bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-gray-800 dark:to-gray-850 rounded-xl border border-emerald-200/60 dark:border-gray-700/60 shadow-md overflow-hidden">
+              <div
+                className="bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-gray-800 dark:to-gray-850 rounded-xl border border-emerald-200/60 dark:border-gray-700/60 shadow-md overflow-hidden cursor-pointer"
+                onClick={() => openDriverModal('early')}
+              >
                 <div className="p-3">
                   <div className="flex items-center gap-2 mb-3">
                     <div className="w-8 h-8 bg-gradient-to-br from-emerald-500 to-teal-500 rounded-lg flex items-center justify-center">
@@ -336,7 +404,7 @@ export default function SummaryFeed() {
                     </div>
                   </div>
                   <div className="space-y-1">
-                    {data.earliestDrivers.slice(0, 3).map((driver) => (
+                    {data.earliestDrivers.slice(0, 5).map((driver) => (
                       <div
                         key={driver.driver}
                         className="bg-white/70 dark:bg-gray-700/50 rounded-lg p-2 border border-emerald-200/40 dark:border-gray-600/40"
@@ -356,7 +424,10 @@ export default function SummaryFeed() {
               </div>
 
               {/* Night Owls */}
-              <div className="bg-gradient-to-br from-purple-50 to-pink-50 dark:from-gray-800 dark:to-gray-850 rounded-xl border border-purple-200/60 dark:border-gray-700/60 shadow-md overflow-hidden">
+              <div
+                className="bg-gradient-to-br from-purple-50 to-pink-50 dark:from-gray-800 dark:to-gray-850 rounded-xl border border-purple-200/60 dark:border-gray-700/60 shadow-md overflow-hidden cursor-pointer"
+                onClick={() => openDriverModal('night')}
+              >
                 <div className="p-3">
                   <div className="flex items-center gap-2 mb-3">
                     <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-pink-500 rounded-lg flex items-center justify-center">
@@ -368,7 +439,7 @@ export default function SummaryFeed() {
                     </div>
                   </div>
                   <div className="space-y-1">
-                    {data.latestDrivers.slice(0, 3).map((driver) => (
+                    {data.latestDrivers.slice(0, 5).map((driver) => (
                       <div
                         key={driver.driver}
                         className="bg-white/70 dark:bg-gray-700/50 rounded-lg p-2 border border-purple-200/40 dark:border-gray-600/40"
@@ -393,7 +464,10 @@ export default function SummaryFeed() {
 
       {/* Latest End Section */}
       {latest && (
-        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200/60 dark:border-gray-700/60 shadow-md overflow-hidden p-4">
+        <div
+          className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200/60 dark:border-gray-700/60 shadow-md overflow-hidden p-4 cursor-pointer"
+          onClick={() => openDriverModal('latest')}
+        >
           <div className="flex items-center justify-between bg-gradient-to-r from-green-50 to-emerald-50 dark:from-gray-700 dark:to-gray-750 rounded-lg p-3">
             <div className="flex items-center gap-3">
               <div className="w-8 h-8 bg-gradient-to-br from-green-500 to-emerald-500 rounded-lg flex items-center justify-center">
@@ -409,6 +483,21 @@ export default function SummaryFeed() {
             </span>
           </div>
         </div>
+      )}
+
+      {modalType && (
+        <DriverListModal
+          open={!!modalType}
+          onClose={() => setModalType('')}
+          title={
+            modalType === 'early'
+              ? 'Early Birds'
+              : modalType === 'night'
+              ? 'Night Owls'
+              : 'Latest End'
+          }
+          drivers={modalDrivers.map((d) => ({ driver: d.driver, label: d.label }))}
+        />
       )}
     </div>
   );
