@@ -233,9 +233,11 @@ export default function SummaryFeed() {
             className="border rounded px-1 py-0.5"
           />
         </div>
-        <div className="text-right">
-          <h2 className="text-sm font-semibold">{header}</h2>
-          {subheader && <p className="text-xs text-gray-500">{subheader}</p>}
+        <div className="text-right leading-tight">
+          <h2 className="text-base font-semibold text-gray-800 dark:text-gray-200">{header}</h2>
+          {subheader && (
+            <p className="text-xs text-gray-500 dark:text-gray-400">{subheader}</p>
+          )}
         </div>
       </div>
 
