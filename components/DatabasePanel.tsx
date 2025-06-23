@@ -47,6 +47,8 @@ export default function DatabasePanel() {
   const [adding, setAdding] = useState(false);
   const [newText, setNewText] = useState('{}');
   const [pending, setPending] = useState<PendingChange[]>([]);
+  const [sortColumn, setSortColumn] = useState<string | null>(null);
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
 
   const loadItems = useCallback(async () => {
     setLoading(true);
@@ -86,6 +88,30 @@ export default function DatabasePanel() {
     filtered.forEach(it => Object.keys(it.data || {}).forEach(k => set.add(k)));
     return Array.from(set).sort();
   }, [filtered]);
+
+  const sorted = useMemo(() => {
+    const arr = [...filtered];
+    if (sortColumn) {
+      arr.sort((a, b) => {
+        const getVal = (item: Item) => {
+          if (sortColumn === 'id') return item.id;
+          if (sortColumn === 'created_at') return item.created_at;
+          return item.data[sortColumn as string];
+        };
+        const valA = getVal(a);
+        const valB = getVal(b);
+        if (valA == null) return 1;
+        if (valB == null) return -1;
+        if (typeof valA === 'number' && typeof valB === 'number') {
+          return sortDir === 'asc' ? valA - valB : valB - valA;
+        }
+        return sortDir === 'asc'
+          ? String(valA).localeCompare(String(valB))
+          : String(valB).localeCompare(String(valA));
+      });
+    }
+    return arr;
+  }, [filtered, sortColumn, sortDir]);
 
   const openEdit = async (id: string | number) => {
     if (editing?.id === id) {
@@ -192,6 +218,15 @@ export default function DatabasePanel() {
     window.open(`/api/export?table=${table}`);
   };
 
+  const handleSort = (col: string) => {
+    if (sortColumn === col) {
+      setSortDir(d => (d === 'asc' ? 'desc' : 'asc'));
+    } else {
+      setSortColumn(col);
+      setSortDir('asc');
+    }
+  };
+
   const pageCount = Math.ceil(total / PAGE_LIMIT);
 
   const getTableDisplayName = (name: string) =>
@@ -220,14 +255,14 @@ export default function DatabasePanel() {
       </div>
 
       {/* Controls */}
-      <div className="bg-white rounded-lg shadow-sm border p-4 mb-4">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4 mb-4">
         <div className="flex flex-wrap gap-3 items-end">
           <div className="min-w-[180px]">
-            <label className="block text-xs font-medium text-gray-700 mb-1">Table</label>
+            <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Table</label>
             <select
               value={table}
               onChange={e => setTable(e.target.value as (typeof TABLES)[number])}
-              className="w-full h-9 rounded-md border-gray-300 text-sm focus:border-[#b53133] focus:ring-[#b53133]"
+              className="w-full h-9 rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 text-sm focus:border-[#b53133] focus:ring-[#b53133]"
             >
               {TABLES.map(t => (
                 <option key={t} value={t}>{getTableDisplayName(t)}</option>
@@ -236,7 +271,7 @@ export default function DatabasePanel() {
           </div>
 
           <div className="flex-1 min-w-[200px]">
-            <label className="block text-xs font-medium text-gray-700 mb-1">Search</label>
+            <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Search</label>
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
               <input
@@ -244,7 +279,7 @@ export default function DatabasePanel() {
                 value={search}
                 onChange={e => setSearch(e.target.value)}
                 placeholder="Search records..."
-                className="w-full h-9 pl-10 pr-4 rounded-md border-gray-300 text-sm focus:border-[#b53133] focus:ring-[#b53133]"
+                className="w-full h-9 pl-10 pr-4 rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 text-sm focus:border-[#b53133] focus:ring-[#b53133]"
               />
             </div>
           </div>
@@ -277,7 +312,7 @@ export default function DatabasePanel() {
       </div>
 
       {/* Table */}
-      <div className="bg-white rounded-lg shadow-sm border overflow-hidden">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
         {loading ? (
           <div className="flex justify-center items-center h-64">
             <RefreshCw className="w-8 h-8 animate-spin text-[#b53133]" />
@@ -285,30 +320,59 @@ export default function DatabasePanel() {
         ) : (
           <div className="overflow-auto" style={{ maxHeight: '70vh' }}>
             <table className="w-full text-sm">
-              <thead className="bg-gray-50 sticky top-0 z-10">
+              <thead className="bg-gray-50 dark:bg-gray-700 sticky top-0 z-10">
                 <tr>
-                  <th className="px-3 py-2 text-left font-medium text-gray-900 border-b">ID</th>
+                  <th
+                    className="px-3 py-2 text-left font-medium text-gray-900 dark:text-gray-100 border-b border-gray-200 dark:border-gray-600 cursor-pointer"
+                    onClick={() => handleSort('id')}
+                  >
+                    <div className="flex items-center gap-1">
+                      <span>ID</span>
+                      {sortColumn === 'id' && (
+                        sortDir === 'asc' ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />
+                      )}
+                    </div>
+                  </th>
                   {columns.map(col => (
-                    <th key={col} className="px-3 py-2 text-left font-medium text-gray-900 border-b min-w-[120px]">
-                      {col}
+                    <th
+                      key={col}
+                      className="px-3 py-2 text-left font-medium text-gray-900 dark:text-gray-100 border-b border-gray-200 dark:border-gray-600 min-w-[120px] cursor-pointer"
+                      onClick={() => handleSort(col)}
+                    >
+                      <div className="flex items-center gap-1">
+                        <span>{col}</span>
+                        {sortColumn === col && (
+                          sortDir === 'asc' ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />
+                        )}
+                      </div>
                     </th>
                   ))}
-                  <th className="px-3 py-2 text-left font-medium text-gray-900 border-b">Created</th>
-                  <th className="px-3 py-2 text-center font-medium text-gray-900 border-b w-20">Actions</th>
+                  <th
+                    className="px-3 py-2 text-left font-medium text-gray-900 dark:text-gray-100 border-b border-gray-200 dark:border-gray-600 cursor-pointer"
+                    onClick={() => handleSort('created_at')}
+                  >
+                    <div className="flex items-center gap-1">
+                      <span>Created</span>
+                      {sortColumn === 'created_at' && (
+                        sortDir === 'asc' ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />
+                      )}
+                    </div>
+                  </th>
+                  <th className="px-3 py-2 text-center font-medium text-gray-900 dark:text-gray-100 border-b border-gray-200 dark:border-gray-600 w-20">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-100">
-                {filtered.map(item => (
+              <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
+                {sorted.map(item => (
                   <React.Fragment key={item.id}>
-                    <tr 
-                      onDoubleClick={() => openEdit(item.id)} 
-                      className="hover:bg-gray-50 cursor-pointer transition-colors"
+                    <tr
+                      onDoubleClick={() => openEdit(item.id)}
+                      className="hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer transition-colors"
                     >
-                      <td className="px-3 py-1.5 font-mono text-xs text-gray-600">{item.id}</td>
+                      <td className="px-3 py-1.5 font-mono text-xs text-gray-600 dark:text-gray-400">{item.id}</td>
                       {columns.map(col => (
                         <td
                           key={col}
-                          className="px-3 py-1.5 text-gray-900 hover:bg-[#b53133]/10 cursor-text transition-colors"
+                          className="px-3 py-1.5 text-gray-900 dark:text-gray-100 hover:bg-[#b53133]/10 dark:hover:bg-[#b53133]/20 cursor-text transition-colors"
                           onClick={() =>
                             setCellEdit({
                               id: item.id,
@@ -333,12 +397,12 @@ export default function DatabasePanel() {
                             />
                           ) : (
                             <div className="truncate max-w-[200px]" title={formatCellValue(item.data[col])}>
-                              {formatCellValue(item.data[col]) || <span className="text-gray-400">—</span>}
+                              {formatCellValue(item.data[col]) || <span className="text-gray-400 dark:text-gray-500">—</span>}
                             </div>
                           )}
                         </td>
                       ))}
-                      <td className="px-3 py-1.5 text-xs text-gray-500">
+                      <td className="px-3 py-1.5 text-xs text-gray-500 dark:text-gray-400">
                         {new Date(item.created_at).toLocaleDateString()} {new Date(item.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                       </td>
                       <td className="px-3 py-1.5 text-center">
@@ -348,7 +412,7 @@ export default function DatabasePanel() {
                               e.stopPropagation();
                               openEdit(item.id);
                             }}
-                            className="p-1 text-[#b53133] hover:bg-[#b53133]/10 rounded transition-colors"
+                            className="p-1 text-[#b53133] hover:bg-[#b53133]/10 dark:hover:bg-[#b53133]/20 rounded transition-colors"
                             title="Edit JSON"
                           >
                             <Edit className="w-3.5 h-3.5" />
@@ -358,7 +422,7 @@ export default function DatabasePanel() {
                               e.stopPropagation();
                               handleDelete(item.id);
                             }}
-                            className="p-1 text-red-600 hover:bg-red-100 rounded transition-colors"
+                            className="p-1 text-red-600 hover:bg-red-100 dark:hover:bg-red-900/40 rounded transition-colors"
                             title="Delete"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
@@ -367,7 +431,7 @@ export default function DatabasePanel() {
                       </td>
                     </tr>
                     {editing?.id === item.id && (
-                      <tr className="bg-[#b53133]/10">
+                      <tr className="bg-[#b53133]/10 dark:bg-[#b53133]/20">
                         <td colSpan={columns.length + 3} className="p-4">
                           <div className="space-y-3">
                             <div className="flex items-center gap-2">
@@ -375,7 +439,7 @@ export default function DatabasePanel() {
                               <span className="text-sm font-medium text-[#b53133]">JSON Editor</span>
                             </div>
                             <textarea
-                              className="w-full h-32 rounded-md border-gray-300 shadow-sm focus:border-[#b53133] focus:ring-[#b53133] font-mono text-xs leading-relaxed"
+                              className="w-full h-32 rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 shadow-sm focus:border-[#b53133] focus:ring-[#b53133] font-mono text-xs leading-relaxed"
                               value={editing.text}
                               onChange={e => setEditing({ ...editing, text: e.target.value })}
                             />
@@ -415,20 +479,20 @@ export default function DatabasePanel() {
       </div>
 
       {/* Pagination */}
-      <div className="flex items-center justify-between mt-4 bg-white px-4 py-2 rounded-lg shadow-sm border">
+      <div className="flex items-center justify-between mt-4 bg-white dark:bg-gray-800 px-4 py-2 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
         <button
-          className="px-3 py-1.5 text-sm text-gray-600 hover:text-gray-900 disabled:opacity-50"
+          className="px-3 py-1.5 text-sm text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white disabled:opacity-50"
           onClick={() => setPage(p => Math.max(0, p - 1))}
           disabled={page === 0}
         >
           ← Previous
         </button>
-        <div className="flex items-center gap-4 text-sm text-gray-600">
+        <div className="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-300">
           <span>Page {page + 1} of {pageCount || 1}</span>
           <span>({filtered.length} of {total} records)</span>
         </div>
         <button
-          className="px-3 py-1.5 text-sm text-gray-600 hover:text-gray-900 disabled:opacity-50"
+          className="px-3 py-1.5 text-sm text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white disabled:opacity-50"
           onClick={() => setPage(p => (p + 1 < pageCount ? p + 1 : p))}
           disabled={page + 1 >= pageCount}
         >
@@ -439,13 +503,13 @@ export default function DatabasePanel() {
       {/* Add Item Modal */}
       {adding && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-2xl">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 w-full max-w-2xl">
             <div className="flex items-center gap-2 mb-4">
               <Plus className="w-5 h-5 text-green-600" />
-              <h2 className="text-lg font-semibold text-gray-900">Add New Item</h2>
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Add New Item</h2>
             </div>
             <textarea
-              className="w-full h-48 rounded-md border-gray-300 shadow-sm focus:border-[#b53133] focus:ring-[#b53133] font-mono text-sm"
+              className="w-full h-48 rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 shadow-sm focus:border-[#b53133] focus:ring-[#b53133] font-mono text-sm"
               value={newText}
               onChange={e => setNewText(e.target.value)}
               placeholder='{"key": "value"}'
@@ -473,11 +537,11 @@ export default function DatabasePanel() {
       {/* Pending Changes */}
       {pending.length > 0 && (
         <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 w-full max-w-md px-4">
-          <div className="bg-amber-50 border border-amber-200 rounded-lg shadow-lg p-4">
+          <div className="bg-amber-50 dark:bg-amber-900/40 border border-amber-200 dark:border-amber-700 rounded-lg shadow-lg p-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <AlertCircle className="w-5 h-5 text-amber-600" />
-                <span className="font-medium text-amber-800">
+                <span className="font-medium text-amber-800 dark:text-amber-200">
                   {pending.length} unsaved change{pending.length > 1 ? 's' : ''}
                 </span>
               </div>
