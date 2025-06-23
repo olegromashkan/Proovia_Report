@@ -3,7 +3,11 @@ import db from '../../lib/db';
 import { parseDate } from '../../lib/dateUtils';
 
 export default function handler(req: NextApiRequest, res: NextApiResponse) {
-  const { start, end } = req.query;
+  const { start, end, table } = req.query as {
+    start?: string;
+    end?: string;
+    table?: string;
+  };
   const today = new Date();
   const defaultEnd = today.toISOString().slice(0,10);
   const defaultStartDate = new Date(today);
@@ -12,7 +16,9 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
   const startDate = typeof start === 'string' ? start : defaultStart;
   const endDate = typeof end === 'string' ? end : defaultEnd;
 
-  const rows = db.prepare('SELECT data FROM schedule_trips').all();
+  const tableName =
+    table === 'copy_of_tomorrow_trips' ? 'copy_of_tomorrow_trips' : 'schedule_trips';
+  const rows = db.prepare(`SELECT data FROM ${tableName}`).all();
   const driverRows = db.prepare('SELECT data FROM drivers_report').all();
   const driverMap: Record<string, string> = {};
   driverRows.forEach((r: any) => {

@@ -175,7 +175,11 @@ export default function SummaryFeed() {
 
   const openDriverModal = async (type: 'early' | 'night' | 'latest') => {
     try {
-      const res = await fetch(`/api/driver-routes?start=${start}&end=${end}`);
+      const table =
+        type === 'latest' ? 'copy_of_tomorrow_trips' : 'schedule_trips';
+      const res = await fetch(
+        `/api/driver-routes?start=${start}&end=${end}&table=${table}`
+      );
       if (!res.ok) return;
       const json = await res.json();
       const map: Record<string, Record<string, { time: number; label: string }>> = {};
