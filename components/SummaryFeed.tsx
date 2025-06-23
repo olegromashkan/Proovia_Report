@@ -54,6 +54,8 @@ interface FeedData {
   total?: number;
   complete?: number;
   failed?: number;
+  positiveTimeCompleted?: number;
+  positiveArrivalTime?: number;
   earliestDrivers?: EarliestDriver[];
   latestDrivers?: LatestDriver[];
 }
@@ -114,6 +116,8 @@ export default function SummaryFeed() {
     total: data?.total || 0,
     complete: data?.complete || 0,
     failed: data?.failed || 0,
+    positiveTimeCompleted: data?.positiveTimeCompleted || 0,
+    positiveArrivalTime: data?.positiveArrivalTime || 0,
     successRate: data?.total ? ((data.complete / data.total) * 100).toFixed(1) : '0',
   };
 
@@ -142,7 +146,7 @@ export default function SummaryFeed() {
 
       {/* Compact Statistics Bar */}
       {data && (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
           <div className="bg-gradient-to-r from-blue-500 to-blue-600 rounded-xl p-3 text-white shadow-md">
             <div className="flex items-center justify-between">
               <div>
@@ -170,6 +174,26 @@ export default function SummaryFeed() {
                 <p className="text-xl font-bold">{stats.failed}</p>
               </div>
               <Icon name="trending" className="text-2xl opacity-80" />
+            </div>
+          </div>
+
+          <div className="bg-gradient-to-r from-yellow-500 to-yellow-600 rounded-xl p-3 text-white shadow-md">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-yellow-100 text-xs font-medium">Late TC</p>
+                <p className="text-xl font-bold">{stats.positiveTimeCompleted}</p>
+              </div>
+              <Icon name="clock" className="text-2xl opacity-80" />
+            </div>
+          </div>
+
+          <div className="bg-gradient-to-r from-orange-500 to-orange-600 rounded-xl p-3 text-white shadow-md">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-orange-100 text-xs font-medium">Late Arr</p>
+                <p className="text-xl font-bold">{stats.positiveArrivalTime}</p>
+              </div>
+              <Icon name="clock" className="text-2xl opacity-80" />
             </div>
           </div>
 

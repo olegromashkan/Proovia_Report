@@ -49,6 +49,12 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
     }
   });
 
+  let total = 0;
+  let complete = 0;
+  let failed = 0;
+  let positiveTimeCompleted = 0;
+  let positiveArrivalTime = 0;
+
   interface ContractorStat { sum: number; count: number; }
   const contractorStats: Record<string, ContractorStat> = {};
   interface DriverStat { contractor: string; sum: number; count: number }
@@ -58,9 +64,15 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
 
   tripRows.forEach((r: any) => {
     const item = JSON.parse(r.data);
-    const rawDate = item.Start_Time || item['Start_Time'] || item['Trip.Start_Time'];
+    const rawDate =
+      item.Start_Time || item['Start_Time'] || item['Trip.Start_Time'];
     const iso = parseDate(String(rawDate).split(' ')[0]);
     if (!iso || iso < startDate || iso > endDate) return;
+
+    total += 1;
+    const status = String(item.Status || '').toLowerCase();
+    if (status === 'complete') complete += 1;
+    if (status === 'failed') failed += 1;
     const driver = item.Driver1 || item.Driver || item['Trip.Driver1'] || 'Unknown';
     const contractor = driverToContractor[driver] || 'Unknown';
     const priceVal =
@@ -96,6 +108,32 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
         times.labelEnd = endRaw;
       }
     }
+
+    const wh =
+      item['Address.Working_Hours'] ||
+      item.Address_Working_Hours ||
+      item['Address.Working_Hours'];
+    const timeCompleted =
+      item.Time_Completed || item['Time_Completed'] || item['Trip.Time_Completed'];
+    const arrival =
+      item.Arrival_Time || item['Arrival_Time'] || item['Trip.Arrival_Time'];
+
+    if (wh && timeCompleted && arrival) {
+      const matches = String(wh).match(/\d{2}:\d{2}/g);
+      const endTime = matches?.[1];
+      if (endTime) {
+        const [h, m] = endTime.split(':').map(Number);
+        const tcDate = new Date(timeCompleted);
+        const whEndForTC = new Date(tcDate);
+        whEndForTC.setHours(h, m, 0, 0);
+        const arrDate = new Date(arrival);
+        const whEndForArr = new Date(arrDate);
+        whEndForArr.setHours(h, m, 0, 0);
+
+        if (tcDate >= whEndForTC) positiveTimeCompleted++;
+        if (arrDate >= whEndForArr) positiveArrivalTime++;
+      }
+    }
   });
 
   const topContractors = Object.entries(contractorStats)
@@ -121,5 +159,15 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
     }
   });
 
-  res.status(200).json({ posts, topContractors, topDrivers, latestEnd });
+  res.status(200).json({
+    posts,
+    topContractors,
+    topDrivers,
+    latestEnd,
+    total,
+    complete,
+    failed,
+    positiveTimeCompleted,
+    positiveArrivalTime,
+  });
 }
