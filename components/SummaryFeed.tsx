@@ -97,6 +97,17 @@ const minutesToTime = (minutes: number) => {
   return `${hours.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}`;
 };
 
+const getWeekNumber = (date: Date) => {
+  const tmp = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+  const day = tmp.getUTCDay() || 7;
+  tmp.setUTCDate(tmp.getUTCDate() + 4 - day);
+  const yearStart = new Date(Date.UTC(tmp.getUTCFullYear(), 0, 1));
+  return Math.ceil(((tmp.getTime() - yearStart.getTime()) / 86400000 + 1) / 7);
+};
+
+const formatDisplayDate = (date: Date) =>
+  date.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+
 export default function SummaryFeed() {
   const [data, setData] = useState<FeedData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -186,28 +197,47 @@ export default function SummaryFeed() {
     } catch {}
   };
 
+  const startDate = new Date(start);
+  const endDate = new Date(end);
+
+  let header = '';
+  let subheader = '';
+  if (start === end) {
+    header = formatDisplayDate(startDate);
+  } else {
+    const sw = getWeekNumber(startDate);
+    const ew = getWeekNumber(endDate);
+    header = sw === ew ? `Week ${sw}` : `Week ${sw}-${ew}`;
+    subheader = `${formatDisplayDate(startDate)} - ${formatDisplayDate(endDate)}`;
+  }
+
   const containerClass =
     'flex flex-col  space-y-4 p-4 overflow-y-auto';
 
   return (
     <div className={containerClass}>
       {/* Date Picker */}
-      <div className="flex items-center gap-2 text-sm">
-        <input
-          type="date"
-          value={start}
-          onChange={(e) => setStart(e.target.value)}
-          className="border rounded px-1 py-0.5"
-        />
-        <span>-</span>
-        <input
-          type="date"
-          value={end}
-          onChange={(e) => setEnd(e.target.value)}
-          className="border rounded px-1 py-0.5"
-        />
+      <div className="flex items-start justify-between">
+        <div className="flex items-center gap-2 text-sm">
+          <input
+            type="date"
+            value={start}
+            onChange={(e) => setStart(e.target.value)}
+            className="border rounded px-1 py-0.5"
+          />
+          <span>-</span>
+          <input
+            type="date"
+            value={end}
+            onChange={(e) => setEnd(e.target.value)}
+            className="border rounded px-1 py-0.5"
+          />
+        </div>
+        <div className="text-right">
+          <h2 className="text-sm font-semibold">{header}</h2>
+          {subheader && <p className="text-xs text-gray-500">{subheader}</p>}
+        </div>
       </div>
-      <p className="text-xs text-gray-500">Showing {start} to {end}</p>
 
       {/* Compact Statistics Bar */}
       {data && (
