@@ -22,31 +22,39 @@ const DriverListModal = ({
   open,
   onClose,
   title,
+  dates,
   drivers,
 }: {
   open: boolean;
   onClose: () => void;
   title: string;
-  drivers: { driver: string; label: string; date: string }[];
+  dates: string[];
+  drivers: { driver: string; times: string[] }[];
 }) => {
   return (
-    <Modal open={open} onClose={onClose} className="max-w-md">
+    <Modal open={open} onClose={onClose} className="max-w-lg">
       <h2 className="text-lg font-semibold mb-4">{title}</h2>
       <div className="max-h-80 overflow-y-auto">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b">
               <th className="text-left py-1">Driver</th>
-              <th className="text-left py-1">Date</th>
-              <th className="text-right py-1">Time</th>
+              {dates.map((d) => (
+                <th key={d} className="text-right py-1">
+                  {d.slice(5)}
+                </th>
+              ))}
             </tr>
           </thead>
           <tbody>
             {drivers.map((d) => (
-              <tr key={d.driver + d.label + d.date} className="border-b last:border-b-0">
+              <tr key={d.driver} className="border-b last:border-b-0">
                 <td className="pr-2 whitespace-nowrap">{d.driver}</td>
-                <td className="pr-2 whitespace-nowrap">{d.date}</td>
-                <td className="text-right font-mono whitespace-nowrap">{d.label}</td>
+                {d.times.map((t, idx) => (
+                  <td key={idx} className="text-right font-mono whitespace-nowrap">
+                    {t || '-'}
+                  </td>
+                ))}
               </tr>
             ))}
           </tbody>
@@ -95,8 +103,8 @@ interface FeedData {
   failed?: number;
   positiveTimeCompleted?: number;
   positiveArrivalTime?: number;
-  earliestDrivers?: EarliestDriver[];
-  latestDrivers?: LatestDriver[];
+  earliestDrivers: EarliestDriver[];
+  latestDrivers: LatestDriver[];
 }
 
 // Helper function to convert minutes to time format
@@ -123,10 +131,10 @@ export default function SummaryFeed() {
   const [modalType, setModalType] = useState<'' | 'early' | 'night' | 'latest'>('');
   const [modalDrivers, setModalDrivers] = useState<{
     driver: string;
-    label: string;
-    time: number;
-    date: string;
+    times: string[];
+    sortVal: number;
   }[]>([]);
+  const [modalDates, setModalDates] = useState<string[]>([]);
   const today = new Date();
   const defaultEnd = today.toISOString().split('T')[0];
   const defaultStartDate = new Date(today);
@@ -140,26 +148,7 @@ export default function SummaryFeed() {
     fetch(`/api/summary-feed?start=${start}&end=${end}`)
       .then((res) => (res.ok ? res.json() : Promise.reject()))
       .then((json: FeedData) => {
-        let extra = {};
-        const first = json.posts && json.posts[0];
-        if (first) {
-          try {
-            const summary = JSON.parse(first.content);
-            if (summary && typeof summary === 'object') {
-              extra = {
-                date: summary.date,
-                total: summary.total,
-                complete: summary.complete,
-                failed: summary.failed,
-                earliestDrivers: summary.earliestDrivers,
-                latestDrivers: summary.latestDrivers,
-              };
-            }
-          } catch {
-            // content was plain text; ignore
-          }
-        }
-        setData({ ...json, ...extra });
+        setData(json);
       })
       .catch(() => {})
       .finally(() => setIsLoading(false));
@@ -185,29 +174,49 @@ export default function SummaryFeed() {
   };
 
   const openDriverModal = async (type: 'early' | 'night' | 'latest') => {
-    if (!data?.date) return;
     try {
-      const res = await fetch(`/api/driver-routes?start=${data.date}&end=${data.date}`);
+      const res = await fetch(`/api/driver-routes?start=${start}&end=${end}`);
       if (!res.ok) return;
       const json = await res.json();
-      const map: Record<string, { time: number; label: string; date: string }> = {};
+      const map: Record<string, Record<string, { time: number; label: string }>> = {};
       json.items.forEach((it: any) => {
         const driver = it.driver || 'Unknown';
-        const start = it.start_time as string | null;
-        const end = it.end_time as string | null;
-        if (type === 'early' && start) {
-          const t = parseMinutes(start);
-          if (!map[driver] || t < map[driver].time)
-            map[driver] = { time: t, label: start, date: it.date };
+        const date = it.date;
+        const startStr = it.start_time as string | null;
+        const endStr = it.end_time as string | null;
+        if (type === 'early' && startStr) {
+          const t = parseMinutes(startStr);
+          if (!map[driver]) map[driver] = {};
+          if (!map[driver][date] || t < map[driver][date].time) {
+            map[driver][date] = { time: t, label: startStr };
+          }
         }
-        if ((type === 'night' || type === 'latest') && end) {
-          const t = parseMinutes(end);
-          if (!map[driver] || t > map[driver].time)
-            map[driver] = { time: t, label: end, date: it.date };
+        if ((type === 'night' || type === 'latest') && endStr) {
+          const t = parseMinutes(endStr);
+          if (!map[driver]) map[driver] = {};
+          if (!map[driver][date] || t > map[driver][date].time) {
+            map[driver][date] = { time: t, label: endStr };
+          }
         }
       });
-      let arr = Object.entries(map).map(([driver, v]) => ({ driver, time: v.time, label: v.label, date: v.date }));
-      arr.sort((a, b) => (type === 'early' ? a.time - b.time : b.time - a.time));
+
+      const dates: string[] = [];
+      const sDate = new Date(start);
+      const eDate = new Date(end);
+      for (let d = new Date(sDate); d <= eDate; d.setDate(d.getDate() + 1)) {
+        dates.push(d.toISOString().split('T')[0]);
+      }
+
+      let arr = Object.entries(map).map(([driver, byDate]) => {
+        const times = dates.map((dt) => byDate[dt]?.label || '');
+        const vals = Object.values(byDate).map((v) => v.time);
+        const sortVal = type === 'early' ? Math.min(...vals) : Math.max(...vals);
+        return { driver, times, sortVal };
+      });
+
+      arr.sort((a, b) => (type === 'early' ? a.sortVal - b.sortVal : b.sortVal - a.sortVal));
+
+      setModalDates(dates);
       setModalDrivers(arr);
       setModalType(type);
     } catch {}
@@ -434,7 +443,7 @@ export default function SummaryFeed() {
           </div>
 
           {/* Bottom Row - Driver Times */}
-          {data?.earliestDrivers && data?.latestDrivers && (
+          {data && data.earliestDrivers.length > 0 && data.latestDrivers.length > 0 && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* Early Birds */}
               <div
@@ -544,6 +553,7 @@ export default function SummaryFeed() {
               ? 'Night Owls'
               : 'Latest End'
           }
+          dates={modalDates}
           drivers={modalDrivers}
         />
       )}

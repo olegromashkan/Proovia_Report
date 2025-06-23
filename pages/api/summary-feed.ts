@@ -159,11 +159,25 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
     }
   });
 
+  const earliestDrivers = Object.entries(driverTimes)
+    .filter(([, t]) => t.earliest !== null)
+    .map(([driver, t]) => ({ driver, time: t.earliest! }))
+    .sort((a, b) => a.time - b.time)
+    .slice(0, 5);
+
+  const latestDrivers = Object.entries(driverTimes)
+    .filter(([, t]) => t.latest !== null)
+    .map(([driver, t]) => ({ driver, time: t.latest! }))
+    .sort((a, b) => b.time - a.time)
+    .slice(0, 5);
+
   res.status(200).json({
     posts,
     topContractors,
     topDrivers,
     latestEnd,
+    earliestDrivers,
+    latestDrivers,
     total,
     complete,
     failed,
