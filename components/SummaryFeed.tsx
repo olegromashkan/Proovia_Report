@@ -159,6 +159,32 @@ export default function SummaryFeed() {
     return Number(h) * 60 + Number(m);
   };
 
+  // Calculate ISO week number
+  const getWeek = (dateStr: string) => {
+    const date = new Date(dateStr);
+    const target = new Date(date.valueOf());
+    const dayNr = (date.getDay() + 6) % 7; // Monday=0
+    target.setDate(target.getDate() - dayNr + 3);
+    const firstThursday = new Date(target.getFullYear(), 0, 4);
+    const diff = target.getTime() - firstThursday.getTime();
+    return 1 + Math.round(diff / (7 * 24 * 60 * 60 * 1000));
+  };
+
+  const formatDate = (dateStr: string) => {
+    const options: Intl.DateTimeFormatOptions = {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+    };
+    return new Date(dateStr).toLocaleDateString('en-GB', options);
+  };
+
+  const startWeek = getWeek(start);
+  const endWeek = getWeek(end);
+  const weekLabel = startWeek === endWeek ? `Week ${startWeek}` : `Week ${startWeek}-${endWeek}`;
+  const dateLabel =
+    start === end ? formatDate(start) : `${formatDate(start)} - ${formatDate(end)}`;
+
   const openDriverModal = async (type: 'early' | 'night' | 'latest') => {
     if (!data?.date) return;
     try {
@@ -207,7 +233,10 @@ export default function SummaryFeed() {
           className="border rounded px-1 py-0.5"
         />
       </div>
-      <p className="text-xs text-gray-500">Showing {start} to {end}</p>
+      <div className="text-xs">
+        <h3 className="font-semibold">{weekLabel}</h3>
+        <p className="text-gray-500">{dateLabel}</p>
+      </div>
 
       {/* Compact Statistics Bar */}
       {data && (
