@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState, useCallback } from 'react';
-import { Database, Search, RefreshCw, Plus, Download, Save, X, Trash2, Edit, ExternalLink, RotateCcw, AlertCircle } from 'lucide-react';
+import { Database, Search, RefreshCw, Plus, Download, Save, X, Trash2, Edit, ExternalLink, RotateCcw, AlertCircle, ChevronUp, ChevronDown } from 'lucide-react';
 
 const TABLES = [
   'copy_of_tomorrow_trips',
