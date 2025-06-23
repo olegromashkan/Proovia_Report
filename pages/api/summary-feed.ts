@@ -1,6 +1,18 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import db from '../../lib/db';
 
+const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+function parseDate(value: string | undefined): string | null {
+  if (!value) return null;
+  const [d, mon, rest] = value.split('-');
+  if (!d || !mon || !rest) return null;
+  const [y] = rest.split(' ');
+  const mIndex = MONTHS.indexOf(mon);
+  if (mIndex === -1) return null;
+  return `${y}-${String(mIndex + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+}
+
 function parseMinutes(value: string | undefined): number | null {
   if (!value) return null;
   const time = value.split(' ')[1] || value;
@@ -10,9 +22,21 @@ function parseMinutes(value: string | undefined): number | null {
 }
 
 export default function handler(req: NextApiRequest, res: NextApiResponse) {
+  const { start, end } = req.query as { start?: string; end?: string };
+  const today = new Date();
+  const defaultEnd = today.toISOString().slice(0, 10);
+  const defaultStartDate = new Date(today);
+  defaultStartDate.setDate(defaultStartDate.getDate() - 6);
+  const defaultStart = defaultStartDate.toISOString().slice(0, 10);
+
+  const startDate = typeof start === 'string' ? start : defaultStart;
+  const endDate = typeof end === 'string' ? end : defaultEnd;
+
   const posts = db
-    .prepare("SELECT id, content, created_at FROM posts WHERE type = 'summary' ORDER BY COALESCE(updated_at, created_at) DESC")
-    .all();
+    .prepare(
+      "SELECT id, content, created_at FROM posts WHERE type = 'summary' AND date(created_at) BETWEEN date(?) AND date(?) ORDER BY COALESCE(updated_at, created_at) DESC",
+    )
+    .all(startDate, endDate);
 
   const tripRows = db.prepare('SELECT data FROM schedule_trips').all();
   const driverRows = db.prepare('SELECT data FROM drivers_report').all();
@@ -34,6 +58,9 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
 
   tripRows.forEach((r: any) => {
     const item = JSON.parse(r.data);
+    const rawDate = item.Start_Time || item['Start_Time'] || item['Trip.Start_Time'];
+    const iso = parseDate(String(rawDate).split(' ')[0]);
+    if (!iso || iso < startDate || iso > endDate) return;
     const driver = item.Driver1 || item.Driver || item['Trip.Driver1'] || 'Unknown';
     const contractor = driverToContractor[driver] || 'Unknown';
     const priceVal =
