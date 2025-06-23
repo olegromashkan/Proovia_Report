@@ -27,21 +27,30 @@ const DriverListModal = ({
   open: boolean;
   onClose: () => void;
   title: string;
-  drivers: { driver: string; label: string }[];
+  drivers: { driver: string; label: string; date: string }[];
 }) => {
   return (
     <Modal open={open} onClose={onClose} className="max-w-md">
       <h2 className="text-lg font-semibold mb-4">{title}</h2>
-      <div className="space-y-1 max-h-80 overflow-y-auto">
-        {drivers.map((d) => (
-          <div
-            key={d.driver + d.label}
-            className="flex items-center justify-between border-b last:border-0 py-1"
-          >
-            <span className="text-sm truncate pr-2">{d.driver}</span>
-            <span className="text-sm font-mono">{d.label}</span>
-          </div>
-        ))}
+      <div className="max-h-80 overflow-y-auto">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="border-b">
+              <th className="text-left py-1">Driver</th>
+              <th className="text-left py-1">Date</th>
+              <th className="text-right py-1">Time</th>
+            </tr>
+          </thead>
+          <tbody>
+            {drivers.map((d) => (
+              <tr key={d.driver + d.label + d.date} className="border-b last:border-b-0">
+                <td className="pr-2 whitespace-nowrap">{d.driver}</td>
+                <td className="pr-2 whitespace-nowrap">{d.date}</td>
+                <td className="text-right font-mono whitespace-nowrap">{d.label}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
     </Modal>
   );
@@ -112,7 +121,12 @@ export default function SummaryFeed() {
   const [data, setData] = useState<FeedData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [modalType, setModalType] = useState<'' | 'early' | 'night' | 'latest'>('');
-  const [modalDrivers, setModalDrivers] = useState<{ driver: string; label: string; time: number }[]>([]);
+  const [modalDrivers, setModalDrivers] = useState<{
+    driver: string;
+    label: string;
+    time: number;
+    date: string;
+  }[]>([]);
   const today = new Date();
   const defaultEnd = today.toISOString().split('T')[0];
   const defaultStartDate = new Date(today);
@@ -176,21 +190,23 @@ export default function SummaryFeed() {
       const res = await fetch(`/api/driver-routes?start=${data.date}&end=${data.date}`);
       if (!res.ok) return;
       const json = await res.json();
-      const map: Record<string, { time: number; label: string }> = {};
+      const map: Record<string, { time: number; label: string; date: string }> = {};
       json.items.forEach((it: any) => {
         const driver = it.driver || 'Unknown';
         const start = it.start_time as string | null;
         const end = it.end_time as string | null;
         if (type === 'early' && start) {
           const t = parseMinutes(start);
-          if (!map[driver] || t < map[driver].time) map[driver] = { time: t, label: start };
+          if (!map[driver] || t < map[driver].time)
+            map[driver] = { time: t, label: start, date: it.date };
         }
         if ((type === 'night' || type === 'latest') && end) {
           const t = parseMinutes(end);
-          if (!map[driver] || t > map[driver].time) map[driver] = { time: t, label: end };
+          if (!map[driver] || t > map[driver].time)
+            map[driver] = { time: t, label: end, date: it.date };
         }
       });
-      let arr = Object.entries(map).map(([driver, v]) => ({ driver, time: v.time, label: v.label }));
+      let arr = Object.entries(map).map(([driver, v]) => ({ driver, time: v.time, label: v.label, date: v.date }));
       arr.sort((a, b) => (type === 'early' ? a.time - b.time : b.time - a.time));
       setModalDrivers(arr);
       setModalType(type);
@@ -528,7 +544,7 @@ export default function SummaryFeed() {
               ? 'Night Owls'
               : 'Latest End'
           }
-          drivers={modalDrivers.map((d) => ({ driver: d.driver, label: d.label }))}
+          drivers={modalDrivers}
         />
       )}
     </div>
