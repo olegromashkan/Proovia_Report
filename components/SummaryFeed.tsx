@@ -271,7 +271,7 @@ export default function SummaryFeed() {
       {/* Compact Statistics Bar */}
       {data && (
         <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
-          <div className="bg-gradient-to-r from-black-200 to-blue-600 rounded-xl p-3 text-white shadow-md">
+          <div className="bg-gradient-to-r from-black-200 to-black-600 rounded-xl p-3 text-white shadow-md ">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-blue-100 text-xs font-medium">Total Orders</p>
@@ -458,7 +458,7 @@ export default function SummaryFeed() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* Early Birds */}
               <div
-                className="bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-gray-800 dark:to-gray-850 rounded-xl border border-orange-200/60 dark:border-gray-700/60 shadow-md overflow-hidden cursor-pointer"
+                className=" rounded-2xl bg-white/70 dark:bg-black/50 backdrop-blur-md border border-white/20 dark:border-black/20 shadow-lg"
                 onClick={() => openDriverModal('early')}
               >
                 <div className="p-3">
@@ -493,7 +493,7 @@ export default function SummaryFeed() {
 
               {/* Night Owls */}
               <div
-                className="bg-gradient-to-br from-purple-50 to-pink-50 dark:from-gray-800 dark:to-gray-850 rounded-xl border border-purple-200/60 dark:border-gray-700/60 shadow-md overflow-hidden cursor-pointer"
+                className=" rounded-2xl bg-white/70 dark:bg-black/50 backdrop-blur-md border border-white/20 dark:border-black/20 shadow-lg"
                 onClick={() => openDriverModal('night')}
               >
                 <div className="p-3">
@@ -533,10 +533,10 @@ export default function SummaryFeed() {
       {/* Latest End Section */}
       {latest && (
         <div
-          className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200/60 dark:border-gray-700/60 shadow-md overflow-hidden p-4 cursor-pointer"
+          className=" rounded-2xl bg-white/70 dark:bg-black/50 backdrop-blur-md border border-white/20 dark:border-black/20 shadow-lg"
           onClick={() => openDriverModal('latest')}
         >
-          <div className="flex items-center justify-between bg-gradient-to-r from-green-50 to-emerald-50 dark:from-gray-700 dark:to-gray-750 rounded-lg p-3">
+          <div className="flex items-center justify-between  rounded-2xl bg-white/70 dark:bg-black/50 backdrop-blur-md border border-white/20 dark:border-black/20 shadow-lg">
             <div className="flex items-center gap-3">
               <div className="w-8 h-8 bg-gradient-to-br from-green-500 to-emerald-500 rounded-lg flex items-center justify-center">
                 <Icon name="clock" className="text-white text-sm" />

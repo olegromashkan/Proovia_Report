@@ -7,6 +7,9 @@ import useUser from '../lib/useUser';
 import useFetch from '../lib/useFetch';
 import useNotifications from '../lib/useNotifications';
 import useUserMenu from '../lib/useUserMenu';
+import ThemeToggle from './ThemeToggle';
+
+
 
 interface UserMenuProps {
   /**
@@ -95,6 +98,8 @@ export default function UserMenu({ showButton = true }: UserMenuProps) {
                   {userInfo?.name || userInfo?.displayName || username}
                 </p>
                 <p className="text-xs text-gray-500 dark:text-gray-400 truncate">@{username}</p>
+                <ThemeToggle />
+
               </div>
             </div>
           </div>

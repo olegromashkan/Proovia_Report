@@ -92,8 +92,8 @@ export default function Calendar() {
   };
 
   return (
-    <div className="rounded-2xl shadow-lg border border-gray-200/60 dark:border-gray-700/60 bg-white/70 dark:bg-gray-800/70 backdrop-blur-md">
-      <div className="p-4">
+    <div className="">
+      <div className="p-4  rounded-2xl bg-white/70 dark:bg-black/50 backdrop-blur-md border border-white/20 dark:border-black/20 shadow-lg">
         {/* Header */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 mb-4">
           <h2 className="text-xl font-bold">
