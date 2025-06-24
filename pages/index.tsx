@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import Layout from '../components/Layout';
-import Card from '../components/Card';
 import Modal from '../components/Modal';
 import Calendar from '../components/Calendar';
 import SummaryFeed from '../components/SummaryFeed';
@@ -118,6 +117,22 @@ export default function Home() {
 
           {/* Кнопки навигации */}
           <div className="flex flex-wrap justify-center gap-2 flex-1">
+          <button
+              onClick={() => setSearchOpen(true)}
+              className="p-2 rounded-lg border border-white/10 bg-white/20 hover:bg-white/30 text-white"
+
+              aria-label="Open search"
+            >
+              <Icon name="search" className="w-4 h-4" />
+            </button>
+            <button
+              onClick={() => setTasksOpen(true)}
+              className="p-2 rounded-lg border border-white/10 bg-white/20 hover:bg-white/30 text-white"
+              aria-label="Open tasks"
+            >
+              <Icon name="star" className="w-4 h-4" />
+              
+            </button>
             {navLinks.map(({ href, icon, label }) => (
               <Link
                 key={href}
@@ -131,14 +146,7 @@ export default function Home() {
               </Link>
               
             ))}
-                        <button
-              onClick={() => setTasksOpen(true)}
-              className="p-2 rounded-lg border border-white/10 bg-white/20 hover:bg-white/30 text-white"
-              aria-label="Open tasks"
-            >
-              <Icon name="star" className="w-4 h-4" />
-              
-            </button>
+
           </div>
 
           {/* Карточки */}
@@ -162,16 +170,6 @@ export default function Home() {
             ))}
           </motion.div>
 
-          {/* Дополнительные кнопки */}
-          <div className="flex items-center gap-2 flex-shrink-0">
-            <button
-              onClick={() => setSearchOpen(true)}
-              aria-label="Open search"
-            >
-              <Icon name="search" className="w-4 h-4" />
-            </button>
-
-          </div>
         </div>
       </motion.div>
 
