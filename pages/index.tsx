@@ -16,6 +16,7 @@ import TasksPanel from '../components/TasksPanel';
 import { useRouter } from 'next/router';
 import useUser from '../lib/useUser';
 import useFetch from '../lib/useFetch';
+import useUserMenu from '../lib/useUserMenu';
 
 type Summary = { total: number; complete: number; failed: number; avgPunctuality: number };
 
@@ -28,6 +29,7 @@ export default function Home() {
   const { data: userData } = useFetch<{ user: any }>(username ? '/api/user' : null);
   const user = userData?.user;
   const loadingUser = !!username && userData === undefined;
+  const { setOpen: setUserMenuOpen } = useUserMenu();
   const router = useRouter();
 
   useEffect(() => {
@@ -87,10 +89,14 @@ export default function Home() {
               <img
                 src={user.photo}
                 alt="avatar"
-                className="w-28 h-28 rounded-full object-cover border-4 border-white shadow-xl transition-transform duration-300 hover:scale-105"
+                onClick={() => setUserMenuOpen(true)}
+                className="w-28 h-28 cursor-pointer rounded-full object-cover border-4 border-white shadow-xl transition-transform duration-300 hover:scale-105"
               />
             ) : (
-              <div className="w-28 h-28 rounded-full bg-white/30 flex items-center justify-center text-5xl font-extrabold text-white border-4 border-white shadow-xl">
+              <div
+                onClick={() => setUserMenuOpen(true)}
+                className="w-28 h-28 cursor-pointer rounded-full bg-white/30 flex items-center justify-center text-5xl font-extrabold text-white border-4 border-white shadow-xl"
+              >
                 {(user?.username || 'G').charAt(0).toUpperCase()}
               </div>
             )}

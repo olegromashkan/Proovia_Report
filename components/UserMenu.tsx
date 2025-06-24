@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useRef, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import Icon from './Icon';
@@ -6,11 +6,12 @@ import NotificationsPanel from './NotificationsPanel';
 import useUser from '../lib/useUser';
 import useFetch from '../lib/useFetch';
 import useNotifications from '../lib/useNotifications';
+import useUserMenu from '../lib/useUserMenu';
 
 export default function UserMenu() {
   const router = useRouter();
   const menuRef = useRef<HTMLDivElement>(null);
-  const [open, setOpen] = useState(false);
+  const { open, setOpen } = useUserMenu();
   const [imageError, setImageError] = useState(false);
 
   const { items } = useNotifications();
