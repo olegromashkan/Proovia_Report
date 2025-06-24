@@ -8,8 +8,6 @@ import Calendar from '../components/Calendar';
 import SummaryFeed from '../components/SummaryFeed';
 import Skeleton from '../components/Skeleton';
 import Icon from '../components/Icon';
-import ThemeToggle from '../components/ThemeToggle';
-import NotificationCenter from '../components/NotificationCenter';
 import SearchOverlay from '../components/SearchOverlay';
 import UserMenu from '../components/UserMenu';
 import TasksPanel from '../components/TasksPanel';
@@ -107,26 +105,7 @@ export default function Home() {
               </h2>
               {loadingUser ? (
                 <Skeleton className="mt-2 w-24 h-4" />
-              ) : user ? (
-                <div className="flex gap-4 mt-2">
-                  <Link
-                    href={`/profile/${user.username}`}
-                    className="flex items-center gap-1 text-white hover:text-[#b53133] transition"
-                  >
-                    <Icon name="person" className="w-4 h-4" />
-                    Profile
-                  </Link>
-                  <Link
-                    href="/settings"
-                    className="flex items-center gap-1 text-white hover:text-[#b53133] transition"
-                  >
-                    <Icon name="gear" className="w-4 h-4" />
-                    Settings
-                  </Link>
-                  <NotificationCenter /> 
-
-                </div>
-              ) : (
+              ) : user ? null : (
                 <Link
                   href="/auth/login"
                   className="text-sm text-white hover:text-[#b53133] transition"
@@ -213,6 +192,7 @@ export default function Home() {
       </Modal>
       <SearchOverlay open={searchOpen} onClose={() => setSearchOpen(false)} />
       <TasksPanel open={tasksOpen} onClose={() => setTasksOpen(false)} />
+      <UserMenu />
     </Layout>
   );
 }
