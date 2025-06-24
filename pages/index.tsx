@@ -9,6 +9,7 @@ import SummaryFeed from '../components/SummaryFeed';
 import Skeleton from '../components/Skeleton';
 import Icon from '../components/Icon';
 import ThemeToggle from '../components/ThemeToggle';
+import NotificationCenter from '../components/NotificationCenter';
 import SearchOverlay from '../components/SearchOverlay';
 import UserMenu from '../components/UserMenu';
 import TasksPanel from '../components/TasksPanel';
@@ -35,7 +36,7 @@ export default function Home() {
     fetch('/api/summary')
       .then((res) => (res.ok ? res.json() : Promise.reject()))
       .then(setSummary)
-      .catch(() => { });
+      .catch(() => {});
   }, []);
 
   const cards = [
@@ -75,9 +76,10 @@ export default function Home() {
           <div className="absolute inset-0 bg-gradient-to-br from-[#b53133] via-gray-800 to-gray-900" />
         )}
         <div className="absolute inset-0 bg-black/60" />
-        <div className="relative flex flex-col sm:flex-row items-center p-8 gap-6">
+        <div className="relative flex flex-col sm:flex-row items-center justify-between p-4 gap-4">
+          {/* Информация о пользователе */}
           <motion.div
-            className="flex items-center gap-4 flex-1"
+            className="flex items-center gap-4 flex-shrink-0"
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.2, type: 'spring', stiffness: 80, damping: 15 }}
@@ -105,67 +107,91 @@ export default function Home() {
               </h2>
               {loadingUser ? (
                 <Skeleton className="mt-2 w-24 h-4" />
-              ) : !user ? (
+              ) : user ? (
+                <div className="flex gap-4 mt-2">
+                  <Link
+                    href={`/profile/${user.username}`}
+                    className="flex items-center gap-1 text-white hover:text-[#b53133] transition"
+                  >
+                    <Icon name="person" className="w-4 h-4" />
+                    Profile
+                  </Link>
+                  <Link
+                    href="/settings"
+                    className="flex items-center gap-1 text-white hover:text-[#b53133] transition"
+                  >
+                    <Icon name="gear" className="w-4 h-4" />
+                    Settings
+                  </Link>
+                  <NotificationCenter /> 
+
+                </div>
+              ) : (
                 <Link
                   href="/auth/login"
                   className="text-sm text-white hover:text-[#b53133] transition"
                 >
                   Sign in to your account
                 </Link>
-              ) : null}
+              )}
             </div>
           </motion.div>
+
+          {/* Кнопки навигации */}
+          <div className="flex flex-wrap justify-center gap-2 flex-1">
+            {navLinks.map(({ href, icon, label }) => (
+              <Link
+                key={href}
+                href={href}
+                className={`flex items-center gap-2 px-3 py-2 rounded-lg border border-white/10 bg-white/20 hover:bg-white/30 text-white transition ${
+                  isActive(href) ? 'bg-white/40' : ''
+                }`}
+              >
+                <Icon name={icon} className="w-4 h-4" />
+                <span className="text-sm">{label}</span>
+              </Link>
+              
+            ))}
+                        <button
+              onClick={() => setTasksOpen(true)}
+              className="p-2 rounded-lg border border-white/10 bg-white/20 hover:bg-white/30 text-white"
+              aria-label="Open tasks"
+            >
+              <Icon name="star" className="w-4 h-4" />
+              
+            </button>
+          </div>
+
+          {/* Карточки */}
           <motion.div
             className="grid grid-cols-2 sm:grid-cols-4 gap-4 w-full sm:w-auto"
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.4, type: 'spring', stiffness: 80, damping: 15 }}
           >
-          {cards.map((c) => (
-            <motion.div
-              key={c.id}
-              className="bg-white/20 backdrop-blur-sm rounded-xl p-4 text-center border border-white/10 hover:bg-white/40 transition cursor-pointer"
-              whileHover={{ scale: 1.05, rotate: 2, boxShadow: '0 4px 16px rgba(0, 0, 0, 0.2)' }}
-              whileTap={{ scale: 0.95 }}
-              onClick={() => setOpen(c.id)}
-            >
-              <h3 className="text-sm font-semibold text-white">{c.title}</h3>
-              <p className="text-2xl font-bold text-white">{c.value}</p>
-            </motion.div>
-          ))}
-        </motion.div>
-        </div>
-
-        <div className="relative px-8 pb-8 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="flex flex-wrap justify-center gap-2 flex-1">
-            {navLinks.map(({ href, icon, label }) => (
-              <Link
-                key={href}
-                href={href}
-                className={`flex items-center gap-2 px-3 py-2 rounded-lg border border-white/10 bg-white/20 hover:bg-white/30 text-white transition ${isActive(href) ? 'bg-white/40' : ''}`}
+            {cards.map((c) => (
+              <motion.div
+                key={c.id}
+                className="bg-white/20 backdrop-blur-sm rounded-xl p-4 text-center border border-white/10 hover:bg-white/40 transition cursor-pointer"
+                whileHover={{ scale: 1.05, rotate: 2, boxShadow: '0 4px 16px rgba(0, 0, 0, 0.2)' }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => setOpen(c.id)}
               >
-                <Icon name={icon} className="w-4 h-4" />
-                <span className="text-sm">{label}</span>
-              </Link>
+                <h3 className="text-sm font-semibold text-white">{c.title}</h3>
+                <p className="text-2xl font-bold text-white">{c.value}</p>
+              </motion.div>
             ))}
-          </div>
-          <div className="flex items-center gap-2">
-            <ThemeToggle />
+          </motion.div>
+
+          {/* Дополнительные кнопки */}
+          <div className="flex items-center gap-2 flex-shrink-0">
             <button
               onClick={() => setSearchOpen(true)}
-              className="p-2 rounded-lg border border-white/10 bg-white/20 hover:bg-white/30 text-white"
               aria-label="Open search"
             >
               <Icon name="search" className="w-4 h-4" />
             </button>
-            <button
-              onClick={() => setTasksOpen(true)}
-              className="p-2 rounded-lg border border-white/10 bg-white/20 hover:bg-white/30 text-white"
-              aria-label="Open tasks"
-            >
-              <Icon name="check" className="w-4 h-4" />
-            </button>
-            <UserMenu hideButton />
+
           </div>
         </div>
       </motion.div>

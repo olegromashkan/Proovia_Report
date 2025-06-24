@@ -262,18 +262,16 @@ export default function SummaryFeed() {
             className="border rounded px-1 py-0.5"
           />
         </div>
-        <div className="text-right leading-tight">
-          <h2 className="text-base font-semibold text-gray-800 dark:text-gray-200">{header}</h2>
-          {subheader && (
-            <p className="text-xs text-gray-500 dark:text-gray-400">{subheader}</p>
-          )}
+        <div className="text-right">
+          <h2 className="text-sm font-semibold">{header}</h2>
+          {subheader && <p className="text-xs text-gray-500">{subheader}</p>}
         </div>
       </div>
 
       {/* Compact Statistics Bar */}
       {data && (
         <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
-          <div className="bg-gradient-to-r from-blue-500 to-blue-600 rounded-xl p-3 text-white shadow-md">
+          <div className="bg-gradient-to-r from-black-200 to-blue-600 rounded-xl p-3 text-white shadow-md">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-blue-100 text-xs font-medium">Total Orders</p>
@@ -283,7 +281,17 @@ export default function SummaryFeed() {
             </div>
           </div>
 
-          <div className="bg-gradient-to-r from-green-500 to-green-600 rounded-xl p-3 text-white shadow-md">
+          <div className="bg-gradient-to-r from-black-500 to-purple-600 rounded-xl p-3 text-white shadow-md">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-purple-100 text-xs font-medium">Success Rate</p>
+                <p className="text-xl font-bold">{stats.successRate}%</p>
+              </div>
+              <Icon name="award" className="text-2xl opacity-80" />
+            </div>
+          </div>
+
+          <div className="bg-gradient-to-r from-green-500 to-black-600 rounded-xl p-3 text-white shadow-md">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-green-100 text-xs font-medium">Completed</p>
@@ -293,7 +301,9 @@ export default function SummaryFeed() {
             </div>
           </div>
 
-          <div className="bg-gradient-to-r from-red-500 to-red-600 rounded-xl p-3 text-white shadow-md">
+
+
+          <div className="bg-gradient-to-r from-orange-500 to-red-600 rounded-xl p-3 text-white shadow-md">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-red-100 text-xs font-medium">Failed</p>
@@ -302,18 +312,7 @@ export default function SummaryFeed() {
               <Icon name="trending" className="text-2xl opacity-80" />
             </div>
           </div>
-
-          <div className="bg-gradient-to-r from-yellow-500 to-yellow-600 rounded-xl p-3 text-white shadow-md">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-yellow-100 text-xs font-medium">Late TC</p>
-                <p className="text-xl font-bold">{stats.positiveTimeCompleted}</p>
-              </div>
-              <Icon name="clock" className="text-2xl opacity-80" />
-            </div>
-          </div>
-
-          <div className="bg-gradient-to-r from-orange-500 to-orange-600 rounded-xl p-3 text-white shadow-md">
+          <div className="bg-gradient-to-r from-blue-500 to-black-600 rounded-xl p-3 text-white shadow-md">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-orange-100 text-xs font-medium">Late Arr</p>
@@ -323,15 +322,23 @@ export default function SummaryFeed() {
             </div>
           </div>
 
-          <div className="bg-gradient-to-r from-purple-500 to-purple-600 rounded-xl p-3 text-white shadow-md">
+
+
+          <div className="bg-gradient-to-r from-blue-500 to-black-600 rounded-xl p-3 text-white shadow-md">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-purple-100 text-xs font-medium">Success Rate</p>
-                <p className="text-xl font-bold">{stats.successRate}%</p>
+                <p className="text-yellow-100 text-xs font-medium">Late TC</p>
+                <p className="text-xl font-bold">{stats.positiveTimeCompleted}</p>
               </div>
-              <Icon name="award" className="text-2xl opacity-80" />
+              <Icon name="clock" className="text-2xl opacity-80" />
             </div>
           </div>
+
+
+
+
+
+
         </div>
       )}
 
@@ -451,7 +458,7 @@ export default function SummaryFeed() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* Early Birds */}
               <div
-                className="bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-gray-800 dark:to-gray-850 rounded-xl border border-emerald-200/60 dark:border-gray-700/60 shadow-md overflow-hidden cursor-pointer"
+                className="bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-gray-800 dark:to-gray-850 rounded-xl border border-orange-200/60 dark:border-gray-700/60 shadow-md overflow-hidden cursor-pointer"
                 onClick={() => openDriverModal('early')}
               >
                 <div className="p-3">
