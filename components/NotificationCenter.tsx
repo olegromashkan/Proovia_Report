@@ -1,12 +1,6 @@
 import { useEffect, useState, useMemo } from 'react';
 import Icon from './Icon';
-
-interface Notification {
-  id: number;
-  type: string;
-  message: string;
-  created_at: string;
-}
+import useNotifications, { Notification } from '../lib/useNotifications';
 
 // Хелпер для отображения относительного времени
 function timeAgo(dateString: string): string {
@@ -54,35 +48,14 @@ const getNotificationStyle = (type: string) => {
 }
 
 export default function NotificationCenter() {
-  const [items, setItems] = useState<Notification[]>([]);
   const [open, setOpen] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-
-  const load = async () => {
-    setIsLoading(true);
-    const res = await fetch('/api/notifications');
-    if (res.ok) {
-      const data = await res.json();
-      setItems(data.items as Notification[]);
-    }
-    setIsLoading(false);
-  };
-
-  const remove = async (id: number) => {
-    await fetch(`/api/notifications?id=${id}`, { method: 'DELETE' });
-    load();
-  };
-  
-  const removeAll = async () => {
-    await Promise.all(items.map(i => fetch(`/api/notifications?id=${i.id}`, { method: 'DELETE' })));
-    load();
-  }
+  const { items, loading, load, remove, removeAll } = useNotifications();
 
   useEffect(() => {
     if (open) {
       load();
     }
-  }, [open]);
+  }, [open, load]);
   
   const unreadCount = useMemo(() => items.length, [items]);
 
@@ -110,7 +83,7 @@ export default function NotificationCenter() {
             )}
           </div>
           <div className="space-y-2 max-h-96 overflow-y-auto">
-            {isLoading ? (
+            {loading ? (
               <div className="flex justify-center items-center h-24">
                 <span className="animate-spin w-5 h-5 border-2 border-current border-t-transparent rounded-full" />
               </div>

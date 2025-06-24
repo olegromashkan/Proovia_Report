@@ -2,14 +2,19 @@ import { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import Icon from './Icon';
+import NotificationsPanel from './NotificationsPanel';
 import useUser from '../lib/useUser';
 import useFetch from '../lib/useFetch';
+import useNotifications from '../lib/useNotifications';
 
 export default function UserMenu() {
   const router = useRouter();
   const menuRef = useRef<HTMLDivElement>(null);
   const [open, setOpen] = useState(false);
   const [imageError, setImageError] = useState(false);
+
+  const { items } = useNotifications();
+  const unreadCount = items.length;
   
   const username = useUser();
   // Check that username is not empty string and not null/undefined
@@ -110,7 +115,7 @@ export default function UserMenu() {
     <div className="relative" ref={menuRef}>
       <button
         onClick={() => setOpen(!open)}
-        className="p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-[#b53133] focus:ring-offset-2"
+        className="relative p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-[#b53133] focus:ring-offset-2"
         aria-label="User menu"
         aria-expanded={open}
         type="button"
@@ -125,11 +130,16 @@ export default function UserMenu() {
         ) : (
           <Icon name="person-circle" className="w-8 h-8 text-gray-600 dark:text-gray-400" />
         )}
+        {unreadCount > 0 && (
+          <span className="absolute -top-1 -right-1 bg-red-600 text-white rounded-full text-xs px-1">
+            {unreadCount}
+          </span>
+        )}
       </button>
 
       {/* Dropdown menu */}
       {open && (
-        <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-gray-900 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-50 py-1">
+        <div className="absolute right-0 mt-2 w-96 bg-white dark:bg-gray-900 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-50 py-1">
           {/* User information */}
           <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700">
             <div className="flex items-center space-x-3">
@@ -188,6 +198,9 @@ export default function UserMenu() {
             <Icon name="box-arrow-right" className="w-4 h-4 mr-3" />
             Sign Out
           </button>
+
+          <div className="border-t border-gray-200 dark:border-gray-700 mt-3" />
+          <NotificationsPanel />
         </div>
       )}
     </div>
