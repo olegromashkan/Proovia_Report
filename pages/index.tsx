@@ -81,19 +81,23 @@ export default function Home() {
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.2, type: 'spring', stiffness: 80, damping: 15 }}
           >
-            {loadingUser ? (
-              <Skeleton className="w-28 h-28 rounded-full border-4 border-white shadow-xl" />
-            ) : user?.photo ? (
-              <img
-                src={user.photo}
-                alt="avatar"
-                className="w-28 h-28 rounded-full object-cover border-4 border-white shadow-xl transition-transform duration-300 hover:scale-105"
-              />
-            ) : (
-              <div className="w-28 h-28 rounded-full bg-white/30 flex items-center justify-center text-5xl font-extrabold text-white border-4 border-white shadow-xl">
-                {(user?.username || 'G').charAt(0).toUpperCase()}
-              </div>
-            )}
+            <UserMenu
+              trigger={
+                loadingUser ? (
+                  <Skeleton className="w-28 h-28 rounded-full border-4 border-white shadow-xl" />
+                ) : user?.photo ? (
+                  <img
+                    src={user.photo}
+                    alt="avatar"
+                    className="w-28 h-28 rounded-full object-cover border-4 border-white shadow-xl transition-transform duration-300 hover:scale-105 cursor-pointer"
+                  />
+                ) : (
+                  <div className="w-28 h-28 rounded-full bg-white/30 flex items-center justify-center text-5xl font-extrabold text-white border-4 border-white shadow-xl cursor-pointer">
+                    {(user?.username || 'G').charAt(0).toUpperCase()}
+                  </div>
+                )
+              }
+            />
             <div className="text-white">
               <h2 className="text-3xl font-extrabold">
                 {loadingUser ? <Skeleton className="w-40 h-8" /> : user?.username || 'Guest'}

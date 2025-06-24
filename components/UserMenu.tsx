@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, ReactElement, cloneElement } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import Icon from './Icon';
@@ -7,7 +7,15 @@ import useUser from '../lib/useUser';
 import useFetch from '../lib/useFetch';
 import useNotifications from '../lib/useNotifications';
 
-export default function UserMenu() {
+interface Props {
+  /**
+   * Optional element to use as the menu trigger. It will receive an
+   * onClick handler to toggle the menu open state.
+   */
+  trigger?: ReactElement;
+}
+
+export default function UserMenu({ trigger }: Props = {}) {
   const router = useRouter();
   const menuRef = useRef<HTMLDivElement>(null);
   const [open, setOpen] = useState(false);
@@ -119,31 +127,38 @@ export default function UserMenu() {
   }
 
   // Main interface for authenticated user
+  const defaultTrigger = (
+    <button
+      className="p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-[#b53133] focus:ring-offset-2"
+      aria-label="User menu"
+      aria-expanded={open}
+      type="button"
+    >
+      {userInfo?.photo && !imageError ? (
+        <img
+          src={userInfo.photo}
+          alt={`Avatar of ${userInfo.name || username}`}
+          className="w-8 h-8 rounded-full object-cover border-2 border-gray-200 dark:border-gray-600"
+          onError={handleImageError}
+        />
+      ) : (
+        <Icon name="person-circle" className="w-8 h-8 text-gray-600 dark:text-gray-400" />
+      )}
+    </button>
+  );
+
+  const triggerElement = trigger ? cloneElement(trigger, { onClick: () => setOpen(!open) }) : cloneElement(defaultTrigger, { onClick: () => setOpen(!open) });
+
   return (
     <>
-      <button
-        onClick={() => setOpen(!open)}
-        className="relative p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-[#b53133] focus:ring-offset-2"
-        aria-label="User menu"
-        aria-expanded={open}
-        type="button"
-      >
-        {userInfo?.photo && !imageError ? (
-          <img
-            src={userInfo.photo}
-            alt={`Avatar of ${userInfo.name || username}`}
-            className="w-8 h-8 rounded-full object-cover border-2 border-gray-200 dark:border-gray-600"
-            onError={handleImageError}
-          />
-        ) : (
-          <Icon name="person-circle" className="w-8 h-8 text-gray-600 dark:text-gray-400" />
-        )}
+      <div className="relative inline-block">
+        {triggerElement}
         {unreadCount > 0 && (
           <span className="absolute -top-1 -right-1 bg-red-600 text-white rounded-full text-xs px-1">
             {unreadCount}
           </span>
         )}
-      </button>
+      </div>
 
       {open && (
         <div
