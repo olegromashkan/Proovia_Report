@@ -92,7 +92,7 @@ export default function Calendar() {
   };
 
   return (
-    <div className="rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
+    <div className="rounded-2xl shadow-lg border border-gray-200/60 dark:border-gray-700/60 bg-white/70 dark:bg-gray-800/70 backdrop-blur-md">
       <div className="p-4">
         {/* Header */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 mb-4">
