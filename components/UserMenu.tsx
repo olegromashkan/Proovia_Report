@@ -8,7 +8,11 @@ import useFetch from '../lib/useFetch';
 import useNotifications from '../lib/useNotifications';
 import useUserMenu from '../lib/useUserMenu';
 
-export default function UserMenu() {
+interface UserMenuProps {
+  hideButton?: boolean;
+}
+
+export default function UserMenu({ hideButton = false }: UserMenuProps) {
   const router = useRouter();
   const menuRef = useRef<HTMLDivElement>(null);
   const { open, setOpen } = useUserMenu();
@@ -59,12 +63,13 @@ export default function UserMenu() {
     setImageError(true);
   };
 
-  // If user is not authenticated - show login button
+  // If user is not authenticated - show login button unless the trigger is hidden
   if (!isAuthenticated) {
+    if (hideButton) return null;
     return (
-      <Link 
-        href="/auth/login" 
-        className="inline-flex items-center justify-center p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors duration-200" 
+      <Link
+        href="/auth/login"
+        className="inline-flex items-center justify-center p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors duration-200"
         title="Sign In"
       >
         <Icon name="box-arrow-in-right" className="w-6 h-6 text-gray-600 dark:text-gray-400" />
@@ -76,13 +81,15 @@ export default function UserMenu() {
   if (error) {
     return (
       <>
-        <button
-          onClick={() => setOpen(!open)}
-          className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors duration-200 bg-red-50 border border-red-200"
-          title="Error loading user data"
-        >
-          <Icon name="exclamation-triangle" className="w-6 h-6 text-red-500" />
-        </button>
+        {!hideButton && (
+          <button
+            onClick={() => setOpen(!open)}
+            className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors duration-200 bg-red-50 border border-red-200"
+            title="Error loading user data"
+          >
+            <Icon name="exclamation-triangle" className="w-6 h-6 text-red-500" />
+          </button>
+        )}
 
         {open && (
           <div
@@ -112,6 +119,7 @@ export default function UserMenu() {
 
   // Show loading indicator if data is not loaded yet
   if (!data) {
+    if (hideButton) return null;
     return (
       <div className="p-2 rounded-full" title="Loading user data...">
         <div className="w-6 h-6 animate-spin rounded-full border-2 border-gray-300 border-t-[#b53133] dark:border-gray-600"></div>
@@ -122,29 +130,31 @@ export default function UserMenu() {
   // Main interface for authenticated user
   return (
     <>
-      <button
-        onClick={() => setOpen(!open)}
-        className="relative p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-[#b53133] focus:ring-offset-2"
-        aria-label="User menu"
-        aria-expanded={open}
-        type="button"
-      >
-        {userInfo?.photo && !imageError ? (
-          <img
-            src={userInfo.photo}
-            alt={`Avatar of ${userInfo.name || username}`}
-            className="w-8 h-8 rounded-full object-cover border-2 border-gray-200 dark:border-gray-600"
-            onError={handleImageError}
-          />
-        ) : (
-          <Icon name="person-circle" className="w-8 h-8 text-gray-600 dark:text-gray-400" />
-        )}
-        {unreadCount > 0 && (
-          <span className="absolute -top-1 -right-1 bg-red-600 text-white rounded-full text-xs px-1">
-            {unreadCount}
-          </span>
-        )}
-      </button>
+      {!hideButton && (
+        <button
+          onClick={() => setOpen(!open)}
+          className="relative p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-[#b53133] focus:ring-offset-2"
+          aria-label="User menu"
+          aria-expanded={open}
+          type="button"
+        >
+          {userInfo?.photo && !imageError ? (
+            <img
+              src={userInfo.photo}
+              alt={`Avatar of ${userInfo.name || username}`}
+              className="w-8 h-8 rounded-full object-cover border-2 border-gray-200 dark:border-gray-600"
+              onError={handleImageError}
+            />
+          ) : (
+            <Icon name="person-circle" className="w-8 h-8 text-gray-600 dark:text-gray-400" />
+          )}
+          {unreadCount > 0 && (
+            <span className="absolute -top-1 -right-1 bg-red-600 text-white rounded-full text-xs px-1">
+              {unreadCount}
+            </span>
+          )}
+        </button>
+      )}
 
       {open && (
         <div

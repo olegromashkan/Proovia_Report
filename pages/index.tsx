@@ -9,7 +9,6 @@ import SummaryFeed from '../components/SummaryFeed';
 import Skeleton from '../components/Skeleton';
 import Icon from '../components/Icon';
 import ThemeToggle from '../components/ThemeToggle';
-import NotificationCenter from '../components/NotificationCenter';
 import SearchOverlay from '../components/SearchOverlay';
 import UserMenu from '../components/UserMenu';
 import TasksPanel from '../components/TasksPanel';
@@ -106,31 +105,14 @@ export default function Home() {
               </h2>
               {loadingUser ? (
                 <Skeleton className="mt-2 w-24 h-4" />
-              ) : user ? (
-                <div className="flex gap-4 mt-2">
-                  <Link
-                    href={`/profile/${user.username}`}
-                    className="flex items-center gap-1 text-white hover:text-[#b53133] transition"
-                  >
-                    <Icon name="person" className="w-4 h-4" />
-                    Profile
-                  </Link>
-                  <Link
-                    href="/settings"
-                    className="flex items-center gap-1 text-white hover:text-[#b53133] transition"
-                  >
-                    <Icon name="gear" className="w-4 h-4" />
-                    Settings
-                  </Link>
-                </div>
-              ) : (
+              ) : !user ? (
                 <Link
                   href="/auth/login"
                   className="text-sm text-white hover:text-[#b53133] transition"
                 >
                   Sign in to your account
                 </Link>
-              )}
+              ) : null}
             </div>
           </motion.div>
           <motion.div
@@ -169,7 +151,6 @@ export default function Home() {
           </div>
           <div className="flex items-center gap-2">
             <ThemeToggle />
-            <NotificationCenter />
             <button
               onClick={() => setSearchOpen(true)}
               className="p-2 rounded-lg border border-white/10 bg-white/20 hover:bg-white/30 text-white"
@@ -184,7 +165,7 @@ export default function Home() {
             >
               <Icon name="check" className="w-4 h-4" />
             </button>
-            <UserMenu />
+            <UserMenu hideButton />
           </div>
         </div>
       </motion.div>
