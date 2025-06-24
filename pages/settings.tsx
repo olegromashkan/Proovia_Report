@@ -6,7 +6,7 @@ import UsersPanel from '../components/UsersPanel';
 import UploadSettingsPanel from '../components/UploadSettingsPanel';
 
 // Fallback Layout component if the import fails
-const FallbackLayout = ({ children, title, fullWidth }: { children: React.ReactNode; title?: string; fullWidth?: boolean }) => (
+const FallbackLayout = ({ children, title, fullWidth }: { children: React.ReactNode; title?: string; fullWidth?: boolean; hideNavbar?: boolean }) => (
   <div className={fullWidth ? 'w-full' : 'container mx-auto'} style={{ minHeight: '100vh' }}>
     {title && <h1 className="sr-only">{title}</h1>}
     {children}

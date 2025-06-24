@@ -8,6 +8,12 @@ import Calendar from '../components/Calendar';
 import SummaryFeed from '../components/SummaryFeed';
 import Skeleton from '../components/Skeleton';
 import Icon from '../components/Icon';
+import ThemeToggle from '../components/ThemeToggle';
+import NotificationCenter from '../components/NotificationCenter';
+import SearchOverlay from '../components/SearchOverlay';
+import UserMenu from '../components/UserMenu';
+import TasksPanel from '../components/TasksPanel';
+import { useRouter } from 'next/router';
 import useUser from '../lib/useUser';
 import useFetch from '../lib/useFetch';
 
@@ -16,10 +22,13 @@ type Summary = { total: number; complete: number; failed: number; avgPunctuality
 export default function Home() {
   const [summary, setSummary] = useState<Summary | null>(null);
   const [open, setOpen] = useState<string | null>(null);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [tasksOpen, setTasksOpen] = useState(false);
   const username = useUser();
   const { data: userData } = useFetch<{ user: any }>(username ? '/api/user' : null);
   const user = userData?.user;
   const loadingUser = !!username && userData === undefined;
+  const router = useRouter();
 
   useEffect(() => {
     fetch('/api/summary')
@@ -35,8 +44,20 @@ export default function Home() {
     { id: 'avg', title: 'Avg Punctuality (m)', value: summary?.avgPunctuality ?? 0 },
   ];
 
+  const navLinks = [
+    { href: '/feed', icon: 'chat', label: 'Feed' },
+    { href: '/upload', icon: 'upload', label: 'Upload' },
+    { href: '/driver-routes', icon: 'signpost', label: 'Driver Routes' },
+    { href: '/full-report', icon: 'table-list', label: 'Full Report' },
+    { href: '/van-state', icon: 'truck', label: 'Van State' },
+    { href: '/users', icon: 'people', label: 'Users' },
+    { href: '/messages', icon: 'chat-left', label: 'Messages' },
+  ];
+
+  const isActive = (href: string) => router.pathname === href;
+
   return (
-    <Layout title="Home" fullWidth>
+    <Layout title="Home" fullWidth hideNavbar>
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -112,19 +133,53 @@ export default function Home() {
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.4, type: 'spring', stiffness: 80, damping: 15 }}
           >
-            {cards.map((c) => (
-              <motion.div
-                key={c.id}
-                className="bg-white/20 backdrop-blur-sm rounded-xl p-4 text-center border border-white/10 hover:bg-white/40 transition cursor-pointer"
-                whileHover={{ scale: 1.05, rotate: 2, boxShadow: '0 4px 16px rgba(0, 0, 0, 0.2)' }}
-                whileTap={{ scale: 0.95 }}
-                onClick={() => setOpen(c.id)}
+          {cards.map((c) => (
+            <motion.div
+              key={c.id}
+              className="bg-white/20 backdrop-blur-sm rounded-xl p-4 text-center border border-white/10 hover:bg-white/40 transition cursor-pointer"
+              whileHover={{ scale: 1.05, rotate: 2, boxShadow: '0 4px 16px rgba(0, 0, 0, 0.2)' }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => setOpen(c.id)}
+            >
+              <h3 className="text-sm font-semibold text-white">{c.title}</h3>
+              <p className="text-2xl font-bold text-white">{c.value}</p>
+            </motion.div>
+          ))}
+        </motion.div>
+        </div>
+
+        <div className="relative px-8 pb-8 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="flex flex-wrap justify-center gap-2 flex-1">
+            {navLinks.map(({ href, icon, label }) => (
+              <Link
+                key={href}
+                href={href}
+                className={`flex items-center gap-2 px-3 py-2 rounded-lg border border-white/10 bg-white/20 hover:bg-white/30 text-white transition ${isActive(href) ? 'bg-white/40' : ''}`}
               >
-                <h3 className="text-sm font-semibold text-white">{c.title}</h3>
-                <p className="text-2xl font-bold text-white">{c.value}</p>
-              </motion.div>
+                <Icon name={icon} className="w-4 h-4" />
+                <span className="text-sm">{label}</span>
+              </Link>
             ))}
-          </motion.div>
+          </div>
+          <div className="flex items-center gap-2">
+            <ThemeToggle />
+            <NotificationCenter />
+            <button
+              onClick={() => setSearchOpen(true)}
+              className="p-2 rounded-lg border border-white/10 bg-white/20 hover:bg-white/30 text-white"
+              aria-label="Open search"
+            >
+              <Icon name="search" className="w-4 h-4" />
+            </button>
+            <button
+              onClick={() => setTasksOpen(true)}
+              className="p-2 rounded-lg border border-white/10 bg-white/20 hover:bg-white/30 text-white"
+              aria-label="Open tasks"
+            >
+              <Icon name="check" className="w-4 h-4" />
+            </button>
+            <UserMenu />
+          </div>
         </div>
       </motion.div>
 
@@ -143,6 +198,8 @@ export default function Home() {
           <div className="h-40 flex items-center justify-center text-gray-500">Graph Placeholder</div>
         </div>
       </Modal>
+      <SearchOverlay open={searchOpen} onClose={() => setSearchOpen(false)} />
+      <TasksPanel open={tasksOpen} onClose={() => setTasksOpen(false)} />
     </Layout>
   );
 }
