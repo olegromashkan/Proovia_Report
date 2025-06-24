@@ -11,9 +11,19 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
   const rows = db.prepare('SELECT data FROM copy_of_tomorrow_trips').all();
   const items = rows.map((r: any) => JSON.parse(r.data));
 
-  let total = items.length;
-  let complete = 0;
-  let failed = 0;
+  const legacy = db
+    .prepare('SELECT total_orders, collection_complete, collection_failed, delivery_complete, delivery_failed FROM legacy_totals WHERE id = 1')
+    .get() || {
+      total_orders: 0,
+      collection_complete: 0,
+      collection_failed: 0,
+      delivery_complete: 0,
+      delivery_failed: 0,
+    };
+
+  let total = items.length + (legacy.total_orders || 0);
+  let complete = legacy.collection_complete + legacy.delivery_complete;
+  let failed = legacy.collection_failed + legacy.delivery_failed;
   let totalDiff = 0;
 
   items.forEach((t: any) => {
@@ -27,6 +37,8 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
     }
   });
 
-  const avgPunctuality = total ? Math.round(totalDiff / total) : 0;
+  const avgPunctuality = items.length
+    ? Math.round(totalDiff / items.length)
+    : 0;
   res.status(200).json({ total, complete, failed, avgPunctuality });
 }
