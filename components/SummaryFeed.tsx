@@ -241,7 +241,7 @@ export default function SummaryFeed() {
   }
 
   const containerClass =
-    'flex flex-col  space-y-4 p-4 overflow-y-auto';
+    'flex flex-col space-y-4 p-4 overflow-y-auto rounded-2xl bg-white/70 dark:bg-black/50 backdrop-blur-md border border-white/20 dark:border-black/20 shadow-lg';
 
   return (
     <div className={containerClass}>

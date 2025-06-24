@@ -57,22 +57,23 @@ export default function Home() {
 
   return (
     <Layout title="Home" fullWidth hideNavbar>
+      {user?.header ? (
+        <div className="fixed inset-0 -z-10">
+          <img
+            src={user.header}
+            alt="background"
+            className="w-full h-full object-cover blur-2xl brightness-75 dark:brightness-50"
+          />
+        </div>
+      ) : (
+        <div className="fixed inset-0 -z-10 bg-gradient-to-br from-[#b53133] via-gray-800 to-gray-900" />
+      )}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ type: 'spring', stiffness: 80, damping: 15 }}
-        className="relative rounded-2xl overflow-hidden shadow-xl mb-8"
+        className="relative rounded-2xl overflow-hidden shadow-xl mb-8 bg-white/70 dark:bg-black/50 backdrop-blur-md"
       >
-        {user?.header ? (
-          <img
-            src={user.header}
-            alt="header"
-            className="absolute inset-0 w-full h-full object-cover"
-          />
-        ) : (
-          <div className="absolute inset-0 bg-gradient-to-br from-[#b53133] via-gray-800 to-gray-900" />
-        )}
-        <div className="absolute inset-0 bg-black/60" />
         <div className="relative flex flex-col sm:flex-row items-center justify-between p-4 gap-4">
           {/* Информация о пользователе */}
           <motion.div
@@ -174,10 +175,10 @@ export default function Home() {
       </motion.div>
 
       <div className="flex flex-col md:flex-row gap-6">
-        <div className="flex-[3] w-full md:w-62">
+        <div className="flex-[3] w-full md:w-62 bg-white/70 dark:bg-black/50 backdrop-blur-md rounded-2xl p-4">
           <Calendar />
         </div>
-        <div className="flex-[5] min-w-[900px] ">
+        <div className="flex-[5] min-w-[900px] bg-white/70 dark:bg-black/50 backdrop-blur-md rounded-2xl p-4">
           <SummaryFeed />
         </div>
       </div>
