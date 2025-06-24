@@ -135,6 +135,16 @@ export function init() {
       text TEXT,
       created_at TEXT DEFAULT CURRENT_TIMESTAMP
     );
+    CREATE TABLE IF NOT EXISTS legacy_totals (
+      id INTEGER PRIMARY KEY,
+      total_orders INTEGER,
+      collection_total INTEGER,
+      collection_complete INTEGER,
+      collection_failed INTEGER,
+      delivery_total INTEGER,
+      delivery_complete INTEGER,
+      delivery_failed INTEGER
+    );
   `);
 
   // ensure legacy databases have the created_at column
@@ -188,6 +198,25 @@ export function init() {
   addColumnIfMissing('messages', 'deleted', 'INTEGER DEFAULT 0');
   addColumnIfMissing('chats', 'photo', 'TEXT');
   addColumnIfMissing('chats', 'pinned', 'INTEGER DEFAULT 0');
+
+  // seed legacy totals if not already present
+  const legacyRow = db
+    .prepare('SELECT 1 FROM legacy_totals WHERE id = 1')
+    .get();
+  if (!legacyRow) {
+    db.prepare(
+      `INSERT INTO legacy_totals (
+        id,
+        total_orders,
+        collection_total,
+        collection_complete,
+        collection_failed,
+        delivery_total,
+        delivery_complete,
+        delivery_failed
+      ) VALUES (1, 457766, 232168, 217055, 15113, 222004, 217919, 4085)`,
+    ).run();
+  }
 }
 
 init();
