@@ -6,7 +6,7 @@ declare global {
 }
 
 const db: Database =
-  global.sqliteDb || new Database('database.db', { timeout: 600000 });
+  global.sqliteDb || new Database('database.db', { timeout: 5000 });
 if (!global.sqliteDb) {
   try {
     db.pragma('journal_mode = WAL');
@@ -14,7 +14,7 @@ if (!global.sqliteDb) {
     console.error('Failed to set journal_mode to WAL', err);
   }
   try {
-    db.pragma('busy_timeout = 600000');
+    db.pragma('busy_timeout = 5000');
   } catch (err) {
     console.error('Failed to set busy_timeout', err);
   }
