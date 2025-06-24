@@ -192,7 +192,7 @@ export default function Home() {
       </Modal>
       <SearchOverlay open={searchOpen} onClose={() => setSearchOpen(false)} />
       <TasksPanel open={tasksOpen} onClose={() => setTasksOpen(false)} />
-      <UserMenu />
+      <UserMenu showButton={false} />
     </Layout>
   );
 }
