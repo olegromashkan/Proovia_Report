@@ -13,6 +13,8 @@ import Layout from "../components/Layout";
 import TripModal from "../components/TripModal";
 import Icon from "../components/Icon";
 import VanCheck from "../components/VanCheck";
+import DriverStatsModal from "../components/DriverStatsModal";
+import { parseDate } from "../lib/dateUtils";
 
 // --- Helpers ---
 interface Trip {
@@ -52,9 +54,11 @@ const diffTime = (t1: string, t2: string) => {
 const ScrollingStats = ({
   trips,
   driverToContractor,
+  onDriversClick,
 }: {
   trips: Trip[];
   driverToContractor: Record<string, string>;
+  onDriversClick: () => void;
 }) => {
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -152,10 +156,15 @@ const ScrollingStats = ({
 
   const TopDriversCard = ({
     data,
+    onClick,
   }: {
     data: { driver: string; complete: number; failed: number }[];
+    onClick: () => void;
   }) => (
-    <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-4 shadow-lg min-w-[250px] text-white">
+    <div
+      className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-4 shadow-lg min-w-[250px] text-white cursor-pointer"
+      onClick={onClick}
+    >
       <h3 className="font-bold text-lg mb-3 opacity-90">🏆 Top Drivers</h3>
       <div className="space-y-1">
         {data.map((d, idx) => (
@@ -179,7 +188,7 @@ const ScrollingStats = ({
         className="flex gap-4 px-4 overflow-x-hidden"
         style={{ scrollBehavior: "smooth" }}
       >
-        <TopDriversCard data={stats.topDrivers} />
+        <TopDriversCard data={stats.topDrivers} onClick={onDriversClick} />
         <StatCard
           title="📍 Top Postcodes"
           data={stats.topPostcodes}
@@ -266,6 +275,7 @@ export default function FullReport() {
   const [vanChecks, setVanChecks] = useState<any[]>([]);
   const [selected, setSelected] = useState<Trip | null>(null);
   const [isDrawerOpen, setDrawerOpen] = useState(false);
+  const [showDriverStats, setShowDriverStats] = useState(false);
 
   // Filters
   const [filters, setFilters] = useState({
@@ -509,6 +519,46 @@ export default function FullReport() {
     });
   }, [vanChecks, filters, driverToContractor]);
 
+  const driverStatsData = useMemo(() => {
+    const dateSet = new Set<string>();
+    const map: Record<string, Record<string, { complete: number; failed: number; total: number }>> = {};
+
+    trips.forEach((t) => {
+      const driver = t["Trip.Driver1"];
+      if (!driver) return;
+      const raw = t["Trip.Start_Time"] || t["Start_Time"] || t.Start_Time;
+      const date = parseDate(String(raw || "").split(" ")[0] || "");
+      if (!date) return;
+      dateSet.add(date);
+      if (!map[driver]) map[driver] = {};
+      if (!map[driver][date]) map[driver][date] = { complete: 0, failed: 0, total: 0 };
+      if (t.Status === "Complete") map[driver][date].complete++;
+      else if (t.Status === "Failed") map[driver][date].failed++;
+      map[driver][date].total++;
+    });
+
+    const dates = Array.from(dateSet).sort();
+    const stats = Object.keys(map).map((driver) => {
+      const daily = dates.map((d) => map[driver][d] || { complete: 0, failed: 0, total: 0 });
+      const total = daily.reduce(
+        (acc, cur) => ({
+          complete: acc.complete + cur.complete,
+          failed: acc.failed + cur.failed,
+          total: acc.total + cur.total,
+        }),
+        { complete: 0, failed: 0, total: 0 },
+      );
+      return {
+        driver,
+        contractor: driverToContractor[driver] || "Unknown",
+        daily,
+        total,
+      };
+    }).sort((a, b) => b.total.total - a.total.total);
+
+    return { dates, stats };
+  }, [trips, driverToContractor]);
+
   // --- Handlers ---
   const setDateRange = useCallback((start: Date, end: Date) => {
     setFilters((prev) => ({
@@ -648,6 +698,7 @@ export default function FullReport() {
           <ScrollingStats
             trips={trips}
             driverToContractor={driverToContractor}
+            onDriversClick={() => setShowDriverStats(true)}
           />
 
           {/* Header */}
@@ -1152,6 +1203,12 @@ export default function FullReport() {
         trip={selected}
         onClose={() => setSelected(null)}
         allTrips={trips}
+      />
+      <DriverStatsModal
+        open={showDriverStats}
+        onClose={() => setShowDriverStats(false)}
+        dates={driverStatsData.dates}
+        stats={driverStatsData.stats}
       />
     </Layout>
   );
