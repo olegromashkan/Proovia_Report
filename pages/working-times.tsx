@@ -30,6 +30,13 @@ export default function WorkingTimes() {
   const [info, setInfo] = useState<ApiData | null>(null);
   const [sortKey, setSortKey] = useState('driver');
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
+  const [dark, setDark] = useState(false);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      setDark(document.documentElement.classList.contains('dark'));
+    }
+  }, []);
 
   const parseTime = (val: string): number => {
     const parts = val.split('.');
@@ -203,7 +210,9 @@ export default function WorkingTimes() {
                             const num = parseTime(val);
                             const ratio = range.max > range.min ? (num - range.min) / (range.max - range.min) : 1;
                             const hue = 0 + ratio * 120; // red to green
-                            style = { backgroundColor: `hsl(${hue}, 60%, 85%)` };
+                            const lightness = dark ? 30 : 85;
+                            const textColor = dark ? '#fff' : '#000';
+                            style = { backgroundColor: `hsl(${hue}, 60%, ${lightness}%)`, color: textColor };
                           }
                           return (
                             <td key={row.driver + w.start + d} className="border px-2 py-1 text-center" style={style}>
