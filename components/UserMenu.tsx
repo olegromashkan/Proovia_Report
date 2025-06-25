@@ -52,12 +52,15 @@ export default function UserMenu({ showButton = true }: UserMenuProps) {
 
   const handleLogout = async () => {
     try {
-      await fetch('/api/logout', { 
+      await fetch('/api/logout', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         }
       });
+      try {
+        localStorage.removeItem('current-user');
+      } catch {}
       // Close menu and redirect
       setOpen(false);
       router.push('/auth/login');

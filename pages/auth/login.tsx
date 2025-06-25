@@ -23,6 +23,10 @@ export default function Login() {
       if (res.ok) {
         const data = await res.json();
         setUserData({ photo: data.user?.photo, header: data.user?.header });
+        try {
+          const payload = { ts: Date.now(), data: { user: data.user } };
+          localStorage.setItem('current-user', JSON.stringify(payload));
+        } catch {}
         setTimeout(() => {
           router.push('/');
         }, 2000); // Delay for animation

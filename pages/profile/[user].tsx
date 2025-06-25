@@ -2,10 +2,11 @@ import { useRouter } from 'next/router';
 import { useState, ChangeEvent, useEffect } from 'react';
 import Link from 'next/link';
 import ChatPanel from '../../components/ChatPanel';
-import useFetch from '../../lib/useFetch';
 import Layout from '../../components/Layout';
 import Icon from '../../components/Icon';
+import useFetch from '../../lib/useFetch';
 import useUser from '../../lib/useUser';
+import useCurrentUser from '../../lib/useCurrentUser';
 import UserHoverCard from '../../components/UserHoverCard';
 
 export default function Profile() {
@@ -14,8 +15,8 @@ export default function Profile() {
   const { data } = useFetch<{ users: any[] }>(user ? '/api/users' : null);
   const info = data?.users.find((u: any) => u.username === user);
   const current = useUser();
-  const { data: me } = useFetch<{ user: any }>(current ? '/api/user' : null);
-  const canEdit = current === user || me?.user?.role === 'admin';
+  const me = useCurrentUser();
+  const canEdit = current === user || me?.role === 'admin';
 
   const [editing, setEditing] = useState(false);
   const [photo, setPhoto] = useState('');
