@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import Layout from '../components/Layout';
+import AnalogClock from '../components/AnalogClock';
 
 function weekNumber(dateStr: string): number {
   const d = new Date(dateStr);
@@ -31,6 +32,7 @@ export default function WorkingTimes() {
   const [sortKey, setSortKey] = useState('driver');
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
   const [dark, setDark] = useState(false);
+  const [contractors, setContractors] = useState<{ contractor: string; avgStart: number; avgEnd: number; avgHours: number; }[]>([]);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -43,6 +45,12 @@ export default function WorkingTimes() {
     const h = parseInt(parts[0] || '0', 10);
     const m = parseInt(parts[1] || '0', 10);
     return h + m / 60;
+  };
+
+  const formatHM = (val: number): string => {
+    const h = Math.floor(val);
+    const m = Math.round((val - h) * 60);
+    return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`;
   };
 
   const getValue = (row: ApiWeekData, key: string): number | string => {
@@ -100,9 +108,33 @@ export default function WorkingTimes() {
       .catch(() => setInfo(null));
   }, []);
 
+  useEffect(() => {
+    fetch('/api/contractor-hours')
+      .then(res => (res.ok ? res.json() : Promise.reject()))
+      .then(data => setContractors(data.items || []))
+      .catch(() => setContractors([]));
+  }, []);
+
   return (
     <Layout title="Working Times" fullWidth>
       <h1 className="text-2xl font-bold mb-4">Working Times</h1>
+      {contractors.length > 0 && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mb-4">
+          {contractors.map(c => (
+            <div
+              key={c.contractor}
+              className="p-4 rounded-xl shadow bg-white dark:bg-gray-800 flex flex-col items-center"
+            >
+              <div className="text-sm font-semibold mb-1">{c.contractor}</div>
+              <AnalogClock start={c.avgStart} end={c.avgEnd} />
+              <div className="text-xs mt-1">
+                {formatHM(c.avgStart)} - {formatHM(c.avgEnd)}
+              </div>
+              <div className="text-xs">Avg: {c.avgHours.toFixed(2)}</div>
+            </div>
+          ))}
+        </div>
+      )}
       <div className="overflow-auto">
         {info ? (
           <table className="table-auto border-collapse text-sm w-full">
