@@ -1,9 +1,19 @@
 import { useEffect, useState } from 'react';
 import Layout from '../components/Layout';
 
-interface ApiData {
+interface ApiWeek {
+  start: string;
   dates: string[];
-  data: { driver: string; times: Record<string, string> }[];
+}
+
+interface ApiWeekData {
+  driver: string;
+  weeks: Record<string, { days: Record<string, string>; avg: number; total: number; prevAvg: number }>;
+}
+
+interface ApiData {
+  weeks: ApiWeek[];
+  data: ApiWeekData[];
 }
 
 export default function WorkingTimes() {
@@ -24,11 +34,37 @@ export default function WorkingTimes() {
           <table className="table-auto border-collapse text-sm">
             <thead>
               <tr>
-                <th className="border px-2 py-1 text-left">Driver</th>
-                {info.dates.map(d => (
-                  <th key={d} className="border px-2 py-1 text-center">
-                    {d}
+                <th className="border px-2 py-1 text-left" rowSpan={2}>
+                  Driver
+                </th>
+                {info.weeks.map(w => (
+                  <th
+                    key={w.start}
+                    colSpan={w.dates.length + 3}
+                    className="border px-2 py-1 text-center"
+                  >
+                    {w.start}
                   </th>
+                ))}
+              </tr>
+              <tr>
+                {info.weeks.map(w => (
+                  <>
+                    {w.dates.map(d => (
+                      <th key={w.start + d} className="border px-2 py-1 text-center">
+                        {d.slice(5)}
+                      </th>
+                    ))}
+                    <th key={w.start + 'avg'} className="border px-2 py-1 text-center">
+                      Avg
+                    </th>
+                    <th key={w.start + 'tot'} className="border px-2 py-1 text-center">
+                      Total
+                    </th>
+                    <th key={w.start + 'prev'} className="border px-2 py-1 text-center">
+                      Prev Avg
+                    </th>
+                  </>
                 ))}
               </tr>
             </thead>
@@ -36,11 +72,27 @@ export default function WorkingTimes() {
               {info.data.map(row => (
                 <tr key={row.driver}>
                   <td className="border px-2 py-1 whitespace-nowrap">{row.driver}</td>
-                  {info.dates.map(date => (
-                    <td key={date} className="border px-2 py-1 text-center">
-                      {row.times[date] || '0'}
-                    </td>
-                  ))}
+                  {info.weeks.map(w => {
+                    const wd = row.weeks[w.start] || { days: {}, avg: 0, total: 0, prevAvg: 0 };
+                    return (
+                      <>
+                        {w.dates.map(d => (
+                          <td key={row.driver + w.start + d} className="border px-2 py-1 text-center">
+                            {wd.days[d] || '-'}
+                          </td>
+                        ))}
+                        <td key={row.driver + w.start + 'avg'} className="border px-2 py-1 text-center">
+                          {wd.avg ? wd.avg.toFixed(2) : '-'}
+                        </td>
+                        <td key={row.driver + w.start + 'tot'} className="border px-2 py-1 text-center">
+                          {wd.total ? wd.total.toFixed(2) : '-'}
+                        </td>
+                        <td key={row.driver + w.start + 'prev'} className="border px-2 py-1 text-center">
+                          {wd.prevAvg ? wd.prevAvg.toFixed(2) : '-'}
+                        </td>
+                      </>
+                    );
+                  })}
                 </tr>
               ))}
             </tbody>
