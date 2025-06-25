@@ -10,6 +10,7 @@ interface LayoutProps {
   hideNavbar?: boolean;
 }
 export default function Layout({ children, title, fullWidth, hideNavbar }: LayoutProps) {
+  const showNavbar = !(hideNavbar === true || hideNavbar === 'true');
   return (
     <>
       <Head>
@@ -17,7 +18,7 @@ export default function Layout({ children, title, fullWidth, hideNavbar }: Layou
         <meta name="viewport" content="width=device-width, initial-scale=1" />
       </Head>
       <div className="min-h-screen flex flex-col bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 text-base-content">
-        {!hideNavbar && <Navbar />}
+        {showNavbar && <Navbar />}
         <div className="flex-1 flex flex-col min-h-0">
           <ToastNotifications />
           <main
