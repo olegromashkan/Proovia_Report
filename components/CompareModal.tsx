@@ -83,7 +83,7 @@ export default function CompareModal({
       options: {
         responsive: true,
         maintainAspectRatio: false,
-        scales: { y: { beginAtZero: true, max: 100 } },
+        scales: { y: { beginAtZero: true, min:90, max: 100 } },
         plugins: {
           tooltip: {
             callbacks: {
