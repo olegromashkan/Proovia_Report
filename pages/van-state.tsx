@@ -2,13 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import Layout from '../components/Layout';
 import VanCheck from '../components/VanCheck';
 import Modal from '../components/Modal';
-
-interface VanCheckData {
-  van_id: string;
-  driver_id?: string;
-  date: string;
-  [key: string]: any;
-}
+import type { VanCheckData } from '../types/van';
 
 export default function VanState() {
   const formatDate = (d: Date) => d.toISOString().slice(0, 10);
