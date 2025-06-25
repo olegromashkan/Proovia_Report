@@ -2,6 +2,20 @@ import type { NextApiRequest, NextApiResponse } from 'next';
 import db from '../../lib/db';
 import { parseDate } from '../../lib/dateUtils';
 
+function weekStart(dateStr: string): string {
+  const d = new Date(dateStr);
+  const day = d.getUTCDay();
+  const diff = day === 0 ? 6 : day - 1; // Monday start
+  d.setUTCDate(d.getUTCDate() - diff);
+  return d.toISOString().slice(0, 10);
+}
+
+function addDays(dateStr: string, days: number): string {
+  const d = new Date(dateStr);
+  d.setUTCDate(d.getUTCDate() + days);
+  return d.toISOString().slice(0, 10);
+}
+
 function parseDateTime(value: any): Date | null {
   if (!value) return null;
   const str = String(value).trim();
@@ -78,14 +92,60 @@ export default function handler(_req: NextApiRequest, res: NextApiResponse) {
       results.push({ driver, date, time });
     });
 
-    const uniqueDates = Array.from(new Set(results.map(r => r.date))).slice(0,6);
-    const map: Record<string, Record<string, string>> = {};
+    const weekSet = new Set(results.map(r => weekStart(r.date)));
+    const weekStarts = Array.from(weekSet).sort();
+    const lastWeeks = weekStarts.slice(-4);
+
+    const weeks = lastWeeks.map(start => ({
+      start,
+      dates: Array.from({ length: 7 }, (_, i) => addDays(start, i)),
+    }));
+
+    const map: Record<string, Record<string, Record<string, string>>> = {};
     results.forEach(r => {
+      const w = weekStart(r.date);
+      if (!lastWeeks.includes(w)) return;
       if (!map[r.driver]) map[r.driver] = {};
-      if (!map[r.driver][r.date]) map[r.driver][r.date] = r.time;
+      if (!map[r.driver][w]) map[r.driver][w] = {};
+      if (!map[r.driver][w][r.date]) map[r.driver][w][r.date] = r.time;
     });
-    const data = Object.entries(map).map(([driver, times]) => ({ driver, times }));
-    res.status(200).json({ dates: uniqueDates, data });
+
+    const data = Object.entries(map).map(([driver, weeksMap]) => {
+      const weekData: Record<string, { days: Record<string, string>; avg: number; total: number; prevAvg: number }> = {};
+      let prevAvg = 0;
+      lastWeeks.forEach(wStart => {
+        const info = weeksMap[wStart] || {};
+        const days: Record<string, string> = {};
+        let sumWithFour = 0;
+        let sum = 0;
+        weeks
+          .find(w => w.start === wStart)!
+          .dates.forEach(d => {
+            const val = info[d];
+            let num = 0;
+            if (val) {
+              const parts = val.split('.');
+              const h = parseInt(parts[0] || '0', 10);
+              const m = parseInt(parts[1] || '0', 10);
+              num = h + m / 60;
+              days[d] = val;
+            }
+            sum += num;
+            sumWithFour += val ? num : 4;
+          });
+        const avg = (sumWithFour + prevAvg) / 7;
+        weekData[wStart] = {
+          days,
+          avg: Math.round(avg * 100) / 100,
+          total: Math.round(sum * 100) / 100,
+          prevAvg: Math.round(prevAvg * 100) / 100,
+        };
+        prevAvg = avg;
+      });
+      return { driver, weeks: weekData };
+    });
+
+    res.status(200).json({ weeks, data });
   } catch (err) {
     console.error('working-times error', err);
     res.status(500).json({ message: 'Server error' });
