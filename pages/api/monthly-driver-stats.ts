@@ -75,5 +75,21 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
     })
     .sort((a, b) => b.total.total - a.total.total);
 
-  res.status(200).json({ dates, stats });
+  const contractorMap: Record<string, { complete: number; failed: number; total: number }> = {};
+  stats.forEach((s) => {
+    const name = s.contractor;
+    if (!contractorMap[name]) contractorMap[name] = { complete: 0, failed: 0, total: 0 };
+    contractorMap[name].complete += s.total.complete;
+    contractorMap[name].failed += s.total.failed;
+    contractorMap[name].total += s.total.total;
+  });
+
+  const contractorStats = Object.entries(contractorMap)
+    .map(([contractor, totals]) => ({
+      contractor,
+      ...totals,
+    }))
+    .sort((a, b) => b.total - a.total);
+
+  res.status(200).json({ dates, stats, contractorStats });
 }
