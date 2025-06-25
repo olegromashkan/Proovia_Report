@@ -12,8 +12,8 @@ import UserMenu from '../components/UserMenu';
 import TasksPanel from '../components/TasksPanel';
 import { useRouter } from 'next/router';
 import useUser from '../lib/useUser';
-import useFetch from '../lib/useFetch';
 import useCachedFetch from '../lib/useCachedFetch';
+import useCurrentUser from '../lib/useCurrentUser';
 import useUserMenu from '../lib/useUserMenu';
 
 type Summary = { total: number; complete: number; failed: number; avgPunctuality: number };
@@ -24,9 +24,8 @@ export default function Home() {
   const [searchOpen, setSearchOpen] = useState(false);
   const [tasksOpen, setTasksOpen] = useState(false);
   const username = useUser();
-  const { data: userData } = useFetch<{ user: any }>(username ? '/api/user' : null);
-  const user = userData?.user;
-  const loadingUser = !!username && userData === undefined;
+  const user = useCurrentUser();
+  const loadingUser = !!username && user === undefined;
   const { setOpen: setUserMenuOpen } = useUserMenu();
   const router = useRouter();
 

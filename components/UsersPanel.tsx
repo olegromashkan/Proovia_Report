@@ -1,13 +1,12 @@
 import Link from 'next/link';
 import useFetch from '../lib/useFetch';
-import useUser from '../lib/useUser';
+import useCurrentUser from '../lib/useCurrentUser';
 
 export default function UsersPanel() {
-  const user = useUser();
   const { data } = useFetch<{ users: any[] }>('/api/users');
   const users = data?.users || [];
-  const { data: info } = useFetch<{ user: any }>(user ? '/api/user' : null);
-  const isAdmin = info?.user?.role === 'admin';
+  const me = useCurrentUser();
+  const isAdmin = me?.role === 'admin';
 
   const remove = async (name: string) => {
     await fetch(`/api/user?username=${name}`, { method: 'DELETE' });
