@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import Layout from '../components/Layout';
@@ -13,12 +13,13 @@ import TasksPanel from '../components/TasksPanel';
 import { useRouter } from 'next/router';
 import useUser from '../lib/useUser';
 import useFetch from '../lib/useFetch';
+import useCachedFetch from '../lib/useCachedFetch';
 import useUserMenu from '../lib/useUserMenu';
 
 type Summary = { total: number; complete: number; failed: number; avgPunctuality: number };
 
 export default function Home() {
-  const [summary, setSummary] = useState<Summary | null>(null);
+  const { data: summary } = useCachedFetch<Summary>('summary', '/api/summary');
   const [open, setOpen] = useState<string | null>(null);
   const [searchOpen, setSearchOpen] = useState(false);
   const [tasksOpen, setTasksOpen] = useState(false);
@@ -28,13 +29,6 @@ export default function Home() {
   const loadingUser = !!username && userData === undefined;
   const { setOpen: setUserMenuOpen } = useUserMenu();
   const router = useRouter();
-
-  useEffect(() => {
-    fetch('/api/summary')
-      .then((res) => (res.ok ? res.json() : Promise.reject()))
-      .then(setSummary)
-      .catch(() => {});
-  }, []);
 
   const cards = [
     { id: 'total', title: 'Total Tasks', value: summary?.total ?? 0 },
