@@ -44,6 +44,7 @@ export default function Home() {
   ];
 
   const navLinks = [
+    { href: '/', icon: 'house', label: 'Home' },
     { href: '/feed', icon: 'chat', label: 'Feed' },
     { href: '/upload', icon: 'upload', label: 'Upload' },
     { href: '/driver-routes', icon: 'signpost', label: 'Driver Routes' },
