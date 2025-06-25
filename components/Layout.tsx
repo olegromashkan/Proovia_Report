@@ -12,7 +12,9 @@ interface LayoutProps {
   hideNavbar?: boolean;
 }
 export default function Layout({ children, title, fullWidth, hideNavbar }: LayoutProps) {
-  const showNavbar = !(hideNavbar === true || hideNavbar === 'true');
+  // `hideNavbar` is a boolean flag, so the navbar should be shown when it is
+  // not explicitly set to `true`.
+  const showNavbar = !hideNavbar;
   return (
     <>
       <Head>
