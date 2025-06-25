@@ -11,8 +11,8 @@ export default function Upload() {
 
   const limit =
     (typeof window !== 'undefined'
-      ? parseInt(localStorage.getItem('uploadLimit') || '10', 10)
-      : 10) * 1024 * 1024;
+      ? parseInt(localStorage.getItem('uploadLimit') || '500', 10)
+      : 500) * 1024 * 1024;
   const allowed: string[] =
     typeof window !== 'undefined'
       ? JSON.parse(localStorage.getItem('uploadTypes') || '["json","csv"]')

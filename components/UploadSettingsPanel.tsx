@@ -10,11 +10,11 @@ const TABLES = [
 ] as const;
 
 export default function UploadSettingsPanel() {
-  const [limit, setLimit] = useState(10);
+  const [limit, setLimit] = useState(500);
   const [types, setTypes] = useState<string[]>(['json', 'csv']);
 
   useEffect(() => {
-    const l = parseInt(localStorage.getItem('uploadLimit') || '10', 10);
+    const l = parseInt(localStorage.getItem('uploadLimit') || '500', 10);
     const t = JSON.parse(localStorage.getItem('uploadTypes') || '["json","csv"]');
     setLimit(l);
     setTypes(Array.isArray(t) ? t : ['json', 'csv']);
