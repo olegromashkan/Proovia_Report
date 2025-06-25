@@ -51,6 +51,15 @@ export default function handler(_req: NextApiRequest, res: NextApiResponse) {
   try {
     const scheduleRows = db.prepare('SELECT data FROM schedule_trips').all();
     const todayRows = db.prepare('SELECT data FROM copy_of_tomorrow_trips').all();
+    const driverRows = db.prepare('SELECT data FROM drivers_report').all();
+
+    const driverMap: Record<string, string> = {};
+    driverRows.forEach((r: any) => {
+      const d = JSON.parse(r.data);
+      if (d.Full_Name) {
+        driverMap[d.Full_Name.trim()] = d.Contractor_Name || 'Unknown';
+      }
+    });
 
     const schedule = scheduleRows.map((r: any) => JSON.parse(r.data));
     const today = todayRows.map((r: any) => JSON.parse(r.data));
@@ -73,7 +82,7 @@ export default function handler(_req: NextApiRequest, res: NextApiResponse) {
       Object.values(map).forEach(arr => arr.sort((a,b) => b.seq - a.seq));
     });
 
-    const results: { driver: string; date: string; time: string }[] = [];
+    const results: { driver: string; contractor: string; date: string; time: string }[] = [];
     schedule.forEach(trip => {
       const driver = trip.Driver1 || trip.Driver || trip['Trip.Driver1'];
       const start = trip.Start_Time || trip['Start_Time'] || trip['Trip.Start_Time'];
@@ -89,7 +98,8 @@ export default function handler(_req: NextApiRequest, res: NextApiResponse) {
         }
       }
       const time = calculateWorkingTime(start, end, punctuality);
-      results.push({ driver, date, time });
+      const contractor = driverMap[driver] || 'Unknown';
+      results.push({ driver, contractor, date, time });
     });
 
     const weekSet = new Set(results.map(r => weekStart(r.date)));
@@ -146,7 +156,7 @@ export default function handler(_req: NextApiRequest, res: NextApiResponse) {
           };
           prevAvg = avg;
         });
-        return { driver, weeks: weekData };
+        return { driver, contractor: driverMap[driver] || 'Unknown', weeks: weekData };
       })
       .sort((a, b) => a.driver.localeCompare(b.driver));
 

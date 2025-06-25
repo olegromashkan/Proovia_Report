@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import Layout from '../components/Layout';
 
 function weekNumber(dateStr: string): number {
@@ -17,6 +17,7 @@ interface ApiWeek {
 
 interface ApiWeekData {
   driver: string;
+  contractor: string;
   weeks: Record<string, { days: Record<string, string>; avg: number; total: number; prevAvg: number }>;
 }
 
@@ -39,6 +40,7 @@ export default function WorkingTimes() {
 
   const getValue = (row: ApiWeekData, key: string): number | string => {
     if (key === 'driver') return row.driver;
+    if (key === 'contractor') return row.contractor;
     const [week, field] = key.split('|');
     const wd = row.weeks[week] || { days: {}, avg: 0, total: 0, prevAvg: 0 };
     if (field === 'avg') return wd.avg;
@@ -59,6 +61,30 @@ export default function WorkingTimes() {
       return sortDir === 'asc' ? cmp : -cmp;
     });
   }, [info, sortKey, sortDir]);
+
+  const columnRange = useMemo(() => {
+    if (!info) return {} as Record<string, Record<string, { min: number; max: number }>>;
+    const ranges: Record<string, Record<string, { min: number; max: number }>> = {};
+    info.weeks.forEach(w => {
+      ranges[w.start] = {};
+      w.dates.forEach(d => {
+        let min = Infinity;
+        let max = -Infinity;
+        info.data.forEach(row => {
+          const val = row.weeks[w.start]?.days[d];
+          if (val) {
+            const num = parseTime(val);
+            if (num < min) min = num;
+            if (num > max) max = num;
+          }
+        });
+        if (min === Infinity) min = 0;
+        if (max === -Infinity) max = 0;
+        ranges[w.start][d] = { min, max };
+      });
+    });
+    return ranges;
+  }, [info]);
 
   useEffect(() => {
     fetch('/api/working-times')
@@ -85,6 +111,17 @@ export default function WorkingTimes() {
                   }}
                 >
                   Driver{sortKey === 'driver' && (sortDir === 'asc' ? ' ▲' : ' ▼')}
+                </th>
+                <th
+                  className="border px-2 py-1 text-left cursor-pointer select-none"
+                  rowSpan={2}
+                  onClick={() => {
+                    const key = 'contractor';
+                    setSortKey(key);
+                    setSortDir(sortKey === key && sortDir === 'asc' ? 'desc' : 'asc');
+                  }}
+                >
+                  Contractor{sortKey === 'contractor' && (sortDir === 'asc' ? ' ▲' : ' ▼')}
                 </th>
                 {info.weeks.map(w => (
                   <th
@@ -153,15 +190,27 @@ export default function WorkingTimes() {
               {sortedData.map(row => (
                 <tr key={row.driver}>
                   <td className="border px-2 py-1 whitespace-nowrap">{row.driver}</td>
+                  <td className="border px-2 py-1 whitespace-nowrap">{row.contractor}</td>
                   {info.weeks.map(w => {
                     const wd = row.weeks[w.start] || { days: {}, avg: 0, total: 0, prevAvg: 0 };
                     return (
                       <>
-                        {w.dates.map(d => (
-                          <td key={row.driver + w.start + d} className="border px-2 py-1 text-center">
-                            {wd.days[d] || '-'}
-                          </td>
-                        ))}
+                        {w.dates.map(d => {
+                          const val = wd.days[d];
+                          const range = columnRange[w.start]?.[d];
+                          let style: React.CSSProperties | undefined;
+                          if (val && range) {
+                            const num = parseTime(val);
+                            const ratio = range.max > range.min ? (num - range.min) / (range.max - range.min) : 1;
+                            const hue = 0 + ratio * 120; // red to green
+                            style = { backgroundColor: `hsl(${hue}, 60%, 85%)` };
+                          }
+                          return (
+                            <td key={row.driver + w.start + d} className="border px-2 py-1 text-center" style={style}>
+                              {val || '-'}
+                            </td>
+                          );
+                        })}
                         <td key={row.driver + w.start + 'avg'} className="border px-2 py-1 text-center">
                           {wd.avg ? wd.avg.toFixed(2) : '-'}
                         </td>
