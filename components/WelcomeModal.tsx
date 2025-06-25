@@ -45,8 +45,19 @@ export default function WelcomeModal({ open, onClose }: Props) {
 
   return (
     <Modal open={open} onClose={save} className="max-w-3xl">
-      <h2 className="text-2xl font-bold mb-4">Welcome{user ? `, ${user.username}` : ''}!</h2>
-      <p className="mb-4 text-sm">Use the navigation below to explore reports and upload data.</p>
+      <div className="flex items-center gap-4 mb-4">
+        {user?.photo && (
+          <img
+            src={user.photo}
+            alt="Profile"
+            className="w-16 h-16 rounded-full object-cover shadow-md"
+          />
+        )}
+        <div>
+          <h2 className="text-2xl font-bold">Welcome{user ? `, ${user.username}` : ''}!</h2>
+          <p className="text-sm">Use the navigation below to explore reports and upload data.</p>
+        </div>
+      </div>
       <h3 className="text-lg font-semibold mb-2">Changelog</h3>
       <ul className="list-disc list-inside text-sm mb-4">
         <li>Added background customization</li>
