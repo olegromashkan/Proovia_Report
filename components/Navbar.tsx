@@ -50,6 +50,7 @@ const Navbar = memo(() => {
   const resizeTimeoutRef = useRef<NodeJS.Timeout>();
 
   const navLinks: NavLink[] = useMemo(() => [
+    { href: '/', icon: 'house', label: 'Home' },
     { href: '/feed', icon: 'chat', label: 'Feed' },
     { href: '/upload', icon: 'upload', label: 'Upload' },
     { href: '/driver-routes', icon: 'signpost', label: 'Driver Routes' },
