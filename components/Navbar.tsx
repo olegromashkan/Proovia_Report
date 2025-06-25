@@ -238,7 +238,7 @@ const Navbar = memo(() => {
         dragConstraints={{ left: MARGIN, right: windowSize.width - BUBBLE_SIZE - MARGIN, top: MARGIN, bottom: windowSize.height - BUBBLE_SIZE - MARGIN }}
         onDragStart={() => setIsDragging(true)}
         onDragEnd={handleDragEnd}
-        animate={position}
+        animate={{ x: position.x, y: position.y }}
         transition={{ type: 'spring', stiffness: 200, damping: 25 }}
         className="fixed z-50 select-none"
         style={{ touchAction: 'none' }}
