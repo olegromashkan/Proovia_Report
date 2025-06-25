@@ -113,40 +113,42 @@ export default function handler(_req: NextApiRequest, res: NextApiResponse) {
       if (!map[r.driver][w][r.date]) map[r.driver][w][r.date] = r.time;
     });
 
-    const data = Object.entries(map).map(([driver, weeksMap]) => {
-      const weekData: Record<string, { days: Record<string, string>; avg: number; total: number; prevAvg: number }> = {};
-      let prevAvg = 0;
-      lastWeeksAsc.forEach(wStart => {
-        const info = weeksMap[wStart] || {};
-        const days: Record<string, string> = {};
-        let sumWithFour = 0;
-        let sum = 0;
-        weeks
-          .find(w => w.start === wStart)!
-          .dates.forEach(d => {
-            const val = info[d];
-            let num = 0;
-            if (val) {
-              const parts = val.split('.');
-              const h = parseInt(parts[0] || '0', 10);
-              const m = parseInt(parts[1] || '0', 10);
-              num = h + m / 60;
-              days[d] = val;
-            }
-            sum += num;
-            sumWithFour += val ? num : 4;
-          });
-        const avg = (sumWithFour + prevAvg) / 7;
-        weekData[wStart] = {
-          days,
-          avg: Math.round(avg * 100) / 100,
-          total: Math.round(sum * 100) / 100,
-          prevAvg: Math.round(prevAvg * 100) / 100,
-        };
-        prevAvg = avg;
-      });
-      return { driver, weeks: weekData };
-    });
+    const data = Object.entries(map)
+      .map(([driver, weeksMap]) => {
+        const weekData: Record<string, { days: Record<string, string>; avg: number; total: number; prevAvg: number }> = {};
+        let prevAvg = 0;
+        lastWeeksAsc.forEach(wStart => {
+          const info = weeksMap[wStart] || {};
+          const days: Record<string, string> = {};
+          let sumWithFour = 0;
+          let sum = 0;
+          weeks
+            .find(w => w.start === wStart)!
+            .dates.forEach(d => {
+              const val = info[d];
+              let num = 0;
+              if (val) {
+                const parts = val.split('.');
+                const h = parseInt(parts[0] || '0', 10);
+                const m = parseInt(parts[1] || '0', 10);
+                num = h + m / 60;
+                days[d] = val;
+              }
+              sum += num;
+              sumWithFour += val ? num : 4;
+            });
+          const avg = (sumWithFour + prevAvg) / 7;
+          weekData[wStart] = {
+            days,
+            avg: Math.round(avg * 100) / 100,
+            total: Math.round(sum * 100) / 100,
+            prevAvg: Math.round(prevAvg * 100) / 100,
+          };
+          prevAvg = avg;
+        });
+        return { driver, weeks: weekData };
+      })
+      .sort((a, b) => a.driver.localeCompare(b.driver));
 
     res.status(200).json({ weeks, data });
   } catch (err) {

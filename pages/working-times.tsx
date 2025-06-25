@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Layout from '../components/Layout';
 
 function weekNumber(dateStr: string): number {
@@ -27,6 +27,38 @@ interface ApiData {
 
 export default function WorkingTimes() {
   const [info, setInfo] = useState<ApiData | null>(null);
+  const [sortKey, setSortKey] = useState('driver');
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
+
+  const parseTime = (val: string): number => {
+    const parts = val.split('.');
+    const h = parseInt(parts[0] || '0', 10);
+    const m = parseInt(parts[1] || '0', 10);
+    return h + m / 60;
+  };
+
+  const getValue = (row: ApiWeekData, key: string): number | string => {
+    if (key === 'driver') return row.driver;
+    const [week, field] = key.split('|');
+    const wd = row.weeks[week] || { days: {}, avg: 0, total: 0, prevAvg: 0 };
+    if (field === 'avg') return wd.avg;
+    if (field === 'total') return wd.total;
+    if (field === 'prev') return wd.prevAvg;
+    const val = wd.days[field];
+    return val ? parseTime(val) : 0;
+  };
+
+  const sortedData = useMemo(() => {
+    if (!info) return [] as ApiWeekData[];
+    return [...info.data].sort((a, b) => {
+      const va = getValue(a, sortKey);
+      const vb = getValue(b, sortKey);
+      const cmp = typeof va === 'number' && typeof vb === 'number'
+        ? va - vb
+        : String(va).localeCompare(String(vb), undefined, { numeric: true });
+      return sortDir === 'asc' ? cmp : -cmp;
+    });
+  }, [info, sortKey, sortDir]);
 
   useEffect(() => {
     fetch('/api/working-times')
@@ -43,8 +75,16 @@ export default function WorkingTimes() {
           <table className="table-auto border-collapse text-sm w-full">
             <thead>
               <tr>
-                <th className="border px-2 py-1 text-left" rowSpan={2}>
-                  Driver
+                <th
+                  className="border px-2 py-1 text-left cursor-pointer select-none"
+                  rowSpan={2}
+                  onClick={() => {
+                    const key = 'driver';
+                    setSortKey(key);
+                    setSortDir(sortKey === key && sortDir === 'asc' ? 'desc' : 'asc');
+                  }}
+                >
+                  Driver{sortKey === 'driver' && (sortDir === 'asc' ? ' ▲' : ' ▼')}
                 </th>
                 {info.weeks.map(w => (
                   <th
@@ -60,25 +100,57 @@ export default function WorkingTimes() {
                 {info.weeks.map(w => (
                   <>
                     {w.dates.map(d => (
-                      <th key={w.start + d} className="border px-2 py-1 text-center">
-                        {d.slice(5)}
+                      <th
+                        key={w.start + d}
+                        className="border px-2 py-1 text-center cursor-pointer select-none"
+                        onClick={() => {
+                          const key = `${w.start}|${d}`;
+                          setSortKey(key);
+                          setSortDir(sortKey === key && sortDir === 'asc' ? 'desc' : 'asc');
+                        }}
+                      >
+                        {d.slice(5)}{sortKey === `${w.start}|${d}` && (sortDir === 'asc' ? ' ▲' : ' ▼')}
                       </th>
                     ))}
-                    <th key={w.start + 'avg'} className="border px-2 py-1 text-center">
-                      Avg
+                    <th
+                      key={w.start + 'avg'}
+                      className="border px-2 py-1 text-center cursor-pointer select-none"
+                      onClick={() => {
+                        const key = `${w.start}|avg`;
+                        setSortKey(key);
+                        setSortDir(sortKey === key && sortDir === 'asc' ? 'desc' : 'asc');
+                      }}
+                    >
+                      Avg{sortKey === `${w.start}|avg` && (sortDir === 'asc' ? ' ▲' : ' ▼')}
                     </th>
-                    <th key={w.start + 'tot'} className="border px-2 py-1 text-center">
-                      Total
+                    <th
+                      key={w.start + 'tot'}
+                      className="border px-2 py-1 text-center cursor-pointer select-none"
+                      onClick={() => {
+                        const key = `${w.start}|total`;
+                        setSortKey(key);
+                        setSortDir(sortKey === key && sortDir === 'asc' ? 'desc' : 'asc');
+                      }}
+                    >
+                      Total{sortKey === `${w.start}|total` && (sortDir === 'asc' ? ' ▲' : ' ▼')}
                     </th>
-                    <th key={w.start + 'prev'} className="border px-2 py-1 text-center">
-                      Prev Avg
+                    <th
+                      key={w.start + 'prev'}
+                      className="border px-2 py-1 text-center cursor-pointer select-none"
+                      onClick={() => {
+                        const key = `${w.start}|prev`;
+                        setSortKey(key);
+                        setSortDir(sortKey === key && sortDir === 'asc' ? 'desc' : 'asc');
+                      }}
+                    >
+                      Prev Avg{sortKey === `${w.start}|prev` && (sortDir === 'asc' ? ' ▲' : ' ▼')}
                     </th>
                   </>
                 ))}
               </tr>
             </thead>
             <tbody>
-              {info.data.map(row => (
+              {sortedData.map(row => (
                 <tr key={row.driver}>
                   <td className="border px-2 py-1 whitespace-nowrap">{row.driver}</td>
                   {info.weeks.map(w => {
