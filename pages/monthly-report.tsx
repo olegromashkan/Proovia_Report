@@ -1,3 +1,4 @@
+import React from 'react'; // Add this import
 import { useEffect, useState } from 'react';
 import Layout from '../components/Layout';
 
@@ -41,7 +42,7 @@ export default function MonthlyReport() {
   }, [start, end]);
 
   return (
-    <Layout title="Monthly Report" fullWidth>
+    <Layout title="MonthlyReport" fullWidth>
       <div className="space-x-2 mb-4">
         <input
           type="date"
@@ -67,25 +68,25 @@ export default function MonthlyReport() {
                 <th rowSpan={2} className="whitespace-nowrap px-2 py-1 text-left">
                   Contractor
                 </th>
-                {data.dates.map((d) => (
-                  <th key={d} colSpan={3} className="whitespace-nowrap px-2 py-1">
+                <th colSpan={3} className="whitespace-nowrap px-2 py-1 border-l-4 border-gray-600">
+                  Total
+                </th>
+                {data.dates.map((d, index) => (
+                  <th key={d} colSpan={3} className={`whitespace-nowrap px-2 py-1 ${index > 0 ? 'border-l-2 border-gray-400' : ''}`}>
                     {d.slice(5)}
                   </th>
                 ))}
-                <th colSpan={3} className="whitespace-nowrap px-2 py-1">
-                  Total
-                </th>
               </tr>
               <tr>
-                {data.dates.map((d) => (
+                {data.dates.map((d, index) => (
                   <>
-                    <th key={d + 'c'} className="font-normal">C</th>
-                    <th key={d + 'f'} className="font-normal">F</th>
+                    <th key={d + 'c'} className={`font-normal text-green-600 ${index > 0 ? 'border-l-2 border-gray-400' : ''}`}>C</th>
+                    <th key={d + 'f'} className="font-normal text-red-600">F</th>
                     <th key={d + 't'} className="font-normal">T</th>
                   </>
                 ))}
-                <th className="font-normal">C</th>
-                <th className="font-normal">F</th>
+                <th className="font-normal text-green-600 border-l-4 border-gray-600">C</th>
+                <th className="font-normal text-red-600">F</th>
                 <th className="font-normal">T</th>
               </tr>
             </thead>
@@ -94,12 +95,15 @@ export default function MonthlyReport() {
                 <tr key={s.driver} className="border-t border-base-300">
                   <td className="pr-2 text-left whitespace-nowrap">{s.driver}</td>
                   <td className="pr-2 text-left whitespace-nowrap">{s.contractor}</td>
+                  <td className="font-mono text-green-600 font-semibold border-l-4 border-gray-600">{s.total.complete || '-'}</td>
+                  <td className="font-mono text-red-600 font-semibold">{s.total.failed || '-'}</td>
+                  <td className="font-mono font-semibold">{s.total.total || '-'}</td>
                   {s.daily.map((d, idx) => (
                     <>
-                      <td key={idx + 'c'} className="font-mono">
+                      <td key={idx + 'c'} className={`font-mono text-green-600 ${idx > 0 ? 'border-l-2 border-gray-400' : ''}`}>
                         {d.complete || '-'}
                       </td>
-                      <td key={idx + 'f'} className="font-mono">
+                      <td key={idx + 'f'} className="font-mono text-red-600">
                         {d.failed || '-'}
                       </td>
                       <td key={idx + 't'} className="font-mono">
@@ -107,9 +111,6 @@ export default function MonthlyReport() {
                       </td>
                     </>
                   ))}
-                  <td className="font-mono">{s.total.complete || '-'}</td>
-                  <td className="font-mono">{s.total.failed || '-'}</td>
-                  <td className="font-mono">{s.total.total || '-'}</td>
                 </tr>
               ))}
             </tbody>
