@@ -1,6 +1,15 @@
 import { useEffect, useState } from 'react';
 import Layout from '../components/Layout';
 
+function weekNumber(dateStr: string): number {
+  const d = new Date(dateStr);
+  d.setUTCHours(0, 0, 0, 0);
+  const dayNum = d.getUTCDay() || 7;
+  d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+  const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+  return Math.ceil(((d.getTime() - yearStart.getTime()) / 86400000 + 1) / 7);
+}
+
 interface ApiWeek {
   start: string;
   dates: string[];
@@ -27,11 +36,11 @@ export default function WorkingTimes() {
   }, []);
 
   return (
-    <Layout title="Working Times">
+    <Layout title="Working Times" fullWidth>
       <h1 className="text-2xl font-bold mb-4">Working Times</h1>
       <div className="overflow-auto">
         {info ? (
-          <table className="table-auto border-collapse text-sm">
+          <table className="table-auto border-collapse text-sm w-full">
             <thead>
               <tr>
                 <th className="border px-2 py-1 text-left" rowSpan={2}>
@@ -43,7 +52,7 @@ export default function WorkingTimes() {
                     colSpan={w.dates.length + 3}
                     className="border px-2 py-1 text-center"
                   >
-                    {w.start}
+                    Week {weekNumber(w.start)}
                   </th>
                 ))}
               </tr>
