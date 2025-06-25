@@ -3,11 +3,11 @@ import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import Layout from '../components/Layout';
 import Icon from '../components/Icon';
-import useUser from '../lib/useUser';
+import useCurrentUser from '../lib/useCurrentUser';
 import UserHoverCard from '../components/UserHoverCard';
 
 export default function Feed() {
-  const me = useUser();
+  const me = useCurrentUser();
   const [posts, setPosts] = useState<any[]>([]);
   const [postText, setPostText] = useState('');
   const [postImage, setPostImage] = useState('');
@@ -327,7 +327,7 @@ export default function Feed() {
                 <Icon name="chat-left" className="w-4 h-4 text-gray-500" />
                 <span>{p.comments}</span>
               </motion.button>
-              {me === p.username && (
+              {me?.username === p.username && (
                 <>
                   <motion.button
                     onClick={() => startEdit(p)}
