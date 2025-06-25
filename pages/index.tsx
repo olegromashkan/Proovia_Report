@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import Layout from '../components/Layout';
@@ -10,6 +10,7 @@ import Icon from '../components/Icon';
 import SearchOverlay from '../components/SearchOverlay';
 import UserMenu from '../components/UserMenu';
 import TasksPanel from '../components/TasksPanel';
+import WelcomeModal from '../components/WelcomeModal';
 import { useRouter } from 'next/router';
 import useUser from '../lib/useUser';
 import useCachedFetch from '../lib/useCachedFetch';
@@ -23,11 +24,17 @@ export default function Home() {
   const [open, setOpen] = useState<string | null>(null);
   const [searchOpen, setSearchOpen] = useState(false);
   const [tasksOpen, setTasksOpen] = useState(false);
+  const [welcomeOpen, setWelcomeOpen] = useState(false);
   const username = useUser();
   const user = useCurrentUser();
   const loadingUser = !!username && user === undefined;
   const { setOpen: setUserMenuOpen } = useUserMenu();
   const router = useRouter();
+
+  useEffect(() => {
+    const seen = localStorage.getItem('welcomeSeen');
+    if (!seen) setWelcomeOpen(true);
+  }, []);
 
   const cards = [
     { id: 'total', title: 'Total Tasks', value: summary?.total ?? 0 },
@@ -184,6 +191,7 @@ export default function Home() {
           <div className="h-40 flex items-center justify-center text-gray-500">Graph Placeholder</div>
         </div>
       </Modal>
+      <WelcomeModal open={welcomeOpen} onClose={() => setWelcomeOpen(false)} />
       <SearchOverlay open={searchOpen} onClose={() => setSearchOpen(false)} />
       <TasksPanel open={tasksOpen} onClose={() => setTasksOpen(false)} />
       <UserMenu showButton={false} />
