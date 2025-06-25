@@ -5,7 +5,7 @@ import { generateSummaryPosts } from '../../lib/summaryPosts';
 export const config = {
   api: {
     bodyParser: {
-      sizeLimit: '10mb',
+      sizeLimit: '500mb',
     },
   },
 };
