@@ -56,20 +56,7 @@ export default function MonthlyReport() {
 
   return (
     <Layout title="MonthlyReport" fullWidth>
-      <div className="space-x-2 mb-4">
-        <input
-          type="date"
-          value={start}
-          onChange={(e) => setStart(e.target.value)}
-          className="border px-2 py-1 rounded"
-        />
-        <input
-          type="date"
-          value={end}
-          onChange={(e) => setEnd(e.target.value)}
-          className="border px-2 py-1 rounded"
-        />
-      </div>
+
       {contractorCards.length > 0 && (
         <div className="flex overflow-x-auto space-x-4 pb-2 mb-4">
           {contractorCards.map((c) => (
@@ -81,15 +68,32 @@ export default function MonthlyReport() {
                 {c.contractor}
               </h3>
               <div className="text-xs text-gray-600 dark:text-gray-300 mt-1 space-y-0.5">
-                <div>C {c.complete}</div>
-                <div>F {c.failed}</div>
-                <div>T {c.total}</div>
-                <div className="font-semibold">{c.success.toFixed(1)}%</div>
-              </div>
+                <div><span className="font-medium text-green-600">C </span>{c.complete}</div>
+                <div><span className="font-medium text-red-600">F </span> {c.failed}</div>
+                <div><span className="font-medium ">T </span> {c.total}</div>
+                <div className="font-semibold text-blue-600">{c.success.toFixed(1)}% Success</div>              </div>
             </div>
           ))}
         </div>
+
       )}
+               <div className="flex flex-wrap gap-2 items-center">
+            <input
+              type="date"
+              value={start}
+              onChange={(e) => setStart(e.target.value)}
+              className="px-2 py-1 text-sm bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg border border-gray-300 dark:border-gray-600 focus:ring-1 focus:ring-blue-500"
+              aria-label="Start date"
+            />
+            <input
+              type="date"
+              value={end}
+              onChange={(e) => setEnd(e.target.value)}
+              className="px-2 py-1 text-sm bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg border border-gray-300 dark:border-gray-600 focus:ring-1 focus:ring-blue-500"
+              aria-label="End date"
+            />
+            
+          </div>
       <div className="overflow-auto">
         {data && data.stats.length > 0 ? (
           <table className="w-full text-center border-collapse text-xs">

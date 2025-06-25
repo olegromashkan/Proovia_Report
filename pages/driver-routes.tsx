@@ -374,8 +374,8 @@ export default function DriverRoutes() {
 
         {/* Table Section */}
         <div className="flex-1 overflow-auto">
-          <table className="w-full text-center border-collapse text-xs">
-            <colgroup>
+        <table className="w-full text-center border-collapse text-xs">
+        <colgroup>
               <col style={{ width: '150px', minWidth: '150px' }} />
               <col style={{ width: '120px', minWidth: '120px' }} />
               {dates.flatMap(() =>
