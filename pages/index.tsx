@@ -57,7 +57,7 @@ export default function Home() {
   const isActive = (href: string) => router.pathname === href;
 
   return (
-    <Layout title="Home" fullWidth hideNavbar>
+    <Layout title="Home" fullWidth hideNavbar={true}>
       {user?.header ? (
         <div className="fixed inset-0 -z-10">
         <img
