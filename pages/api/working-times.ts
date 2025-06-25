@@ -94,17 +94,20 @@ export default function handler(_req: NextApiRequest, res: NextApiResponse) {
 
     const weekSet = new Set(results.map(r => weekStart(r.date)));
     const weekStarts = Array.from(weekSet).sort();
-    const lastWeeks = weekStarts.slice(-4);
+    const lastWeeksAsc = weekStarts.slice(-4);
+    // weeks should be displayed newest first
+    const displayWeeks = lastWeeksAsc.slice().reverse();
 
-    const weeks = lastWeeks.map(start => ({
+    // build week info without Sunday (only Monday-Saturday)
+    const weeks = displayWeeks.map(start => ({
       start,
-      dates: Array.from({ length: 7 }, (_, i) => addDays(start, i)),
+      dates: Array.from({ length: 6 }, (_, i) => addDays(start, i)),
     }));
 
     const map: Record<string, Record<string, Record<string, string>>> = {};
     results.forEach(r => {
       const w = weekStart(r.date);
-      if (!lastWeeks.includes(w)) return;
+      if (!lastWeeksAsc.includes(w)) return;
       if (!map[r.driver]) map[r.driver] = {};
       if (!map[r.driver][w]) map[r.driver][w] = {};
       if (!map[r.driver][w][r.date]) map[r.driver][w][r.date] = r.time;
@@ -113,7 +116,7 @@ export default function handler(_req: NextApiRequest, res: NextApiResponse) {
     const data = Object.entries(map).map(([driver, weeksMap]) => {
       const weekData: Record<string, { days: Record<string, string>; avg: number; total: number; prevAvg: number }> = {};
       let prevAvg = 0;
-      lastWeeks.forEach(wStart => {
+      lastWeeksAsc.forEach(wStart => {
         const info = weeksMap[wStart] || {};
         const days: Record<string, string> = {};
         let sumWithFour = 0;
