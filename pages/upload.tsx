@@ -9,14 +9,18 @@ export default function Upload() {
   const [logs, setLogs] = useState<string[]>([]);
   const [message, setMessage] = useState('');
 
-  const limit =
-    (typeof window !== 'undefined'
-      ? parseInt(localStorage.getItem('uploadLimit') || '500', 10)
-      : 500) * 1024 * 1024;
-  const allowed: string[] =
-    typeof window !== 'undefined'
-      ? JSON.parse(localStorage.getItem('uploadTypes') || '["json","csv"]')
-      : ['json', 'csv'];
+  const [limit, setLimit] = useState(500 * 1024 * 1024);
+  const [allowed, setAllowed] = useState<string[]>(['json', 'csv']);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const lim = parseInt(localStorage.getItem('uploadLimit') || '500', 10);
+      setLimit(lim * 1024 * 1024);
+      setAllowed(
+        JSON.parse(localStorage.getItem('uploadTypes') || '["json","csv"]')
+      );
+    }
+  }, []);
 
   const accept = allowed.map((t) => '.' + t).join(',');
 
