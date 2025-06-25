@@ -58,11 +58,17 @@ export default function CompareModal({
 
     const success1 = data.totals1.map((d) => (d.total ? (d.complete / d.total) * 100 : 0));
     const success2 = data.totals2.map((d) => (d.total ? (d.complete / d.total) * 100 : 0));
+    const diff = success2.map((s2, i) => s2 - success1[i]);
+
+    const labels = data.dates1.map((d1, i) => {
+      const d2 = data.dates2[i];
+      return d2 ? `${d1.slice(5)}/${d2.slice(5)}` : d1.slice(5);
+    });
 
     chartInst.current = new Chart(chartRef.current, {
       type: 'line',
       data: {
-        labels: data.dates1.map((d) => d.slice(5)),
+        labels,
         datasets: [
           {
             label: `${start1} to ${end1}`,
@@ -78,6 +84,14 @@ export default function CompareModal({
             fill: false,
             tension: 0.1,
           },
+          {
+            label: 'Difference',
+            data: diff,
+            borderColor: '#f87171',
+            fill: false,
+            tension: 0.1,
+            borderDash: [5, 5],
+          },
         ],
       },
       options: {
@@ -89,8 +103,15 @@ export default function CompareModal({
             callbacks: {
               afterLabel: (ctx: any) => {
                 const i = ctx.dataIndex;
-                const d = ctx.datasetIndex === 0 ? data.totals1[i] : data.totals2[i];
-                return `C ${d.complete} F ${d.failed} T ${d.total}`;
+                if (ctx.datasetIndex === 0) {
+                  const d = data.totals1[i];
+                  return `C ${d.complete} F ${d.failed} T ${d.total}`;
+                }
+                if (ctx.datasetIndex === 1) {
+                  const d = data.totals2[i];
+                  return `C ${d.complete} F ${d.failed} T ${d.total}`;
+                }
+                return `Δ ${diff[i].toFixed(2)}%`;
               },
             },
           },
