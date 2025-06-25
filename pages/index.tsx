@@ -50,6 +50,7 @@ export default function Home() {
     { href: '/driver-routes', icon: 'signpost', label: 'Driver Routes' },
     { href: '/full-report', icon: 'table-list', label: 'Full Report' },
     { href: '/monthly-report', icon: 'calendar', label: 'Monthly' },
+    { href: '/working-times', icon: 'clock', label: 'Working Times' },
     { href: '/van-state', icon: 'truck', label: 'Van State' },
     { href: '/users', icon: 'people', label: 'Users' },
     { href: '/messages', icon: 'chat-left', label: 'Messages' },
