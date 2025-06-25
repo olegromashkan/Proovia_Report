@@ -45,9 +45,9 @@ const Navbar = memo(() => {
   const [windowSize, setWindowSize] = useState({ width: 0, height: 0 });
   const [currentEdge, setCurrentEdge] = useState<'left' | 'right' | 'top' | 'bottom'>('left');
   
-  const timeoutRef = useRef<NodeJS.Timeout>();
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   const panelRef = useRef<HTMLDivElement>(null);
-  const resizeTimeoutRef = useRef<NodeJS.Timeout>();
+  const resizeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const navLinks: NavLink[] = useMemo(() => [
     { href: '/', icon: 'house', label: 'Home' },
