@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/router';
 import Icon from './Icon';
 import NotificationsPanel from './NotificationsPanel';
+import WelcomeModal from './WelcomeModal';
 import useUser from '../lib/useUser';
 import useFetch from '../lib/useFetch';
 import useNotifications from '../lib/useNotifications';
@@ -24,6 +25,7 @@ export default function UserMenu({ showButton = true }: UserMenuProps) {
   const menuRef = useRef<HTMLDivElement>(null);
   const { open, setOpen } = useUserMenu();
   const [imageError, setImageError] = useState(false);
+  const [welcomeOpen, setWelcomeOpen] = useState(false);
 
   const { items } = useNotifications();
   const unreadCount = items.length;
@@ -123,6 +125,17 @@ export default function UserMenu({ showButton = true }: UserMenuProps) {
               <Icon name="gear" className="w-4 h-4 mr-3 text-gray-400" />
               Settings
             </Link>
+            <button
+              onClick={() => {
+                setOpen(false);
+                setWelcomeOpen(true);
+              }}
+              className="flex items-center w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+              type="button"
+            >
+              <Icon name="info-circle" className="w-4 h-4 mr-3 text-gray-400" />
+              Welcome Page
+            </button>
           </div>
           <div className="border-t border-gray-200 dark:border-gray-700 my-1" />
           <button
@@ -216,6 +229,7 @@ export default function UserMenu({ showButton = true }: UserMenuProps) {
     <>
       {trigger}
       {panel}
+      <WelcomeModal open={welcomeOpen} onClose={() => setWelcomeOpen(false)} />
     </>
   );
 }

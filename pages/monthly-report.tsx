@@ -147,10 +147,10 @@ export default function MonthlyReport() {
               <col style={{ width: '60px', minWidth: '60px' }} />
               <col style={{ width: '60px', minWidth: '60px' }} />
               <col style={{ width: '60px', minWidth: '60px' }} />
-              {data.dates.flatMap(() => [
-                <col key={Math.random()} style={{ width: '60px', minWidth: '60px' }} />,
-                <col key={Math.random()} style={{ width: '60px', minWidth: '60px' }} />,
-                <col key={Math.random()} style={{ width: '60px', minWidth: '60px' }} />,
+              {data.dates.flatMap((_, idx) => [
+                <col key={`date-${idx}-a`} style={{ width: '60px', minWidth: '60px' }} />,
+                <col key={`date-${idx}-b`} style={{ width: '60px', minWidth: '60px' }} />,
+                <col key={`date-${idx}-c`} style={{ width: '60px', minWidth: '60px' }} />,
               ])}
             </colgroup>
             <thead>

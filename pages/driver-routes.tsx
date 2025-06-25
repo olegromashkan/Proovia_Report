@@ -378,8 +378,10 @@ export default function DriverRoutes() {
         <colgroup>
               <col style={{ width: '150px', minWidth: '150px' }} />
               <col style={{ width: '120px', minWidth: '120px' }} />
-              {dates.flatMap(() =>
-                visibleKeys.map(() => <col key={Math.random()} style={{ width: '60px', minWidth: '60px' }} />)
+              {dates.flatMap((_, dateIdx) =>
+                visibleKeys.map((_, colIdx) => (
+                  <col key={`d${dateIdx}-${colIdx}`} style={{ width: '60px', minWidth: '60px' }} />
+                ))
               )}
             </colgroup>
             <thead>
