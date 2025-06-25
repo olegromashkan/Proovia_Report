@@ -132,9 +132,20 @@ export default function Profile() {
   useEffect(() => { loadPosts(); }, [user]);
 
   const vars = ['--p','--a','--b1','--b2','--card-bg','--section-bg','--rounded-btn','--rounded-box','--rounded-badge','--shadow-strength'];
-  const custom = typeof window !== 'undefined' && current === user
-    ? vars.reduce((acc,v)=>{const val=localStorage.getItem('style'+v);if(val)acc[v]=val;return acc;},{} as Record<string,string>)
-    : {};
+  const [custom, setCustom] = useState<Record<string,string>>({});
+
+  useEffect(() => {
+    if (typeof window !== 'undefined' && current === user) {
+      const data = vars.reduce((acc, v) => {
+        const val = localStorage.getItem('style' + v);
+        if (val) acc[v] = val;
+        return acc;
+      }, {} as Record<string, string>);
+      setCustom(data);
+    } else {
+      setCustom({});
+    }
+  }, [current, user]);
 
   if (!info) return <Layout title="Profile">Loading...</Layout>;
 
