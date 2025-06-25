@@ -1,6 +1,7 @@
-import React from 'react'; // Add this import
-import { useEffect, useState } from 'react';
+import React from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import Layout from '../components/Layout';
+import CompareModal from '../components/CompareModal';
 
 interface DailyStat {
   complete: number;
@@ -40,6 +41,9 @@ export default function MonthlyReport() {
   const [start, setStart] = useState(defaultStart);
   const [end, setEnd] = useState(defaultEnd);
   const [data, setData] = useState<StatsResponse | null>(null);
+  const [sortField, setSortField] = useState('driver');
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
+  const [compareOpen, setCompareOpen] = useState(false);
 
   useEffect(() => {
     const params = new URLSearchParams({ start, end }).toString();
@@ -53,6 +57,40 @@ export default function MonthlyReport() {
     ...c,
     success: c.total ? (c.complete / c.total) * 100 : 0,
   })) || [];
+
+  const sortedStats = useMemo(() => {
+    if (!data) return [] as DriverStat[];
+    const getVal = (s: DriverStat) => {
+      if (sortField === 'driver') return s.driver;
+      if (sortField === 'contractor') return s.contractor;
+      if (sortField === 'total.complete') return s.total.complete;
+      if (sortField === 'total.failed') return s.total.failed;
+      if (sortField === 'total.total') return s.total.total;
+      const [date, field] = sortField.split('|');
+      const idx = data.dates.indexOf(date);
+      if (idx >= 0) return (s.daily[idx] as any)?.[field] || 0;
+      return 0;
+    };
+    return [...data.stats].sort((a, b) => {
+      const valA = getVal(a);
+      const valB = getVal(b);
+      const cmp = typeof valA === 'number' && typeof valB === 'number'
+        ? valA - valB
+        : String(valA).localeCompare(String(valB));
+      return sortDir === 'asc' ? cmp : -cmp;
+    });
+  }, [data, sortField, sortDir]);
+
+  const handleSort = (field: string) => {
+    setSortField((prev) => {
+      if (prev === field) {
+        setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
+        return prev;
+      }
+      setSortDir('asc');
+      return field;
+    });
+  };
 
   return (
     <Layout title="MonthlyReport" fullWidth>
@@ -93,6 +131,12 @@ export default function MonthlyReport() {
               aria-label="End date"
             />
             
+            <button
+              className="btn btn-sm btn-primary"
+              onClick={() => setCompareOpen(true)}
+            >
+              Compare
+            </button>
           </div>
       <div className="overflow-auto">
         {data && data.stats.length > 0 ? (
@@ -113,17 +157,19 @@ export default function MonthlyReport() {
               <tr className="bg-gray-50 dark:bg-gray-700 sticky top-0 z-20">
                 <th
                   rowSpan={2}
-                  className="sticky left-0 z-30 bg-gray-50 dark:bg-gray-700 border-b border-r border-gray-200 dark:border-gray-600 px-2 py-1 text-left text-gray-900 dark:text-white font-semibold text-xs"
+                  onClick={() => handleSort('driver')}
+                  className="sticky left-0 z-30 bg-gray-50 dark:bg-gray-700 border-b border-r border-gray-200 dark:border-gray-600 px-2 py-1 text-left text-gray-900 dark:text-white font-semibold text-xs cursor-pointer"
                   style={{ position: 'sticky', left: 0 }}
                 >
-                  Driver
+                  Driver {sortField === 'driver' ? (sortDir === 'asc' ? '▲' : '▼') : ''}
                 </th>
                 <th
                   rowSpan={2}
-                  className="sticky left-[150px] z-30 bg-gray-50 dark:bg-gray-700 border-b border-r border-gray-200 dark:border-gray-600 px-2 py-1 text-left text-gray-900 dark:text-white font-semibold text-xs"
+                  onClick={() => handleSort('contractor')}
+                  className="sticky left-[150px] z-30 bg-gray-50 dark:bg-gray-700 border-b border-r border-gray-200 dark:border-gray-600 px-2 py-1 text-left text-gray-900 dark:text-white font-semibold text-xs cursor-pointer"
                   style={{ position: 'sticky', left: '150px' }}
                 >
-                  Contractor
+                  Contractor {sortField === 'contractor' ? (sortDir === 'asc' ? '▲' : '▼') : ''}
                 </th>
                 <th
                   colSpan={3}
@@ -147,40 +193,52 @@ export default function MonthlyReport() {
                   <>
                     <th
                       key={d + 'c'}
-                      className={`font-normal text-green-600 px-1 py-0.5 text-[10px] ${index > 0 ? 'border-l-2 border-gray-400' : ''}`}
+                      onClick={() => handleSort(`${d}|complete`)}
+                      className={`font-normal text-green-600 px-1 py-0.5 text-[10px] ${index > 0 ? 'border-l-2 border-gray-400' : ''} cursor-pointer`}
                     >
-                      C
+                      C {sortField === `${d}|complete` ? (sortDir === 'asc' ? '▲' : '▼') : ''}
                     </th>
-                    <th key={d + 'f'} className="font-normal text-red-600 px-1 py-0.5 text-[10px]">
-                      F
+                    <th
+                      key={d + 'f'}
+                      onClick={() => handleSort(`${d}|failed`)}
+                      className="font-normal text-red-600 px-1 py-0.5 text-[10px] cursor-pointer"
+                    >
+                      F {sortField === `${d}|failed` ? (sortDir === 'asc' ? '▲' : '▼') : ''}
                     </th>
-                    <th key={d + 't'} className="font-normal px-1 py-0.5 text-[10px]">
-                      T
+                    <th
+                      key={d + 't'}
+                      onClick={() => handleSort(`${d}|total`)}
+                      className="font-normal px-1 py-0.5 text-[10px] cursor-pointer"
+                    >
+                      T {sortField === `${d}|total` ? (sortDir === 'asc' ? '▲' : '▼') : ''}
                     </th>
                   </>
                 ))}
                 <th
-                  className="sticky left-[270px] z-30 bg-gray-50 dark:bg-gray-700 border-b border-r border-gray-200 dark:border-gray-600 font-normal text-green-600"
+                  onClick={() => handleSort('total.complete')}
+                  className="sticky left-[270px] z-30 bg-gray-50 dark:bg-gray-700 border-b border-r border-gray-200 dark:border-gray-600 font-normal text-green-600 cursor-pointer"
                   style={{ position: 'sticky', left: '270px' }}
                 >
-                  C
+                  C {sortField === 'total.complete' ? (sortDir === 'asc' ? '▲' : '▼') : ''}
                 </th>
                 <th
-                  className="sticky left-[330px] z-30 bg-gray-50 dark:bg-gray-700 border-b border-r border-gray-200 dark:border-gray-600 font-normal text-red-600"
+                  onClick={() => handleSort('total.failed')}
+                  className="sticky left-[330px] z-30 bg-gray-50 dark:bg-gray-700 border-b border-r border-gray-200 dark:border-gray-600 font-normal text-red-600 cursor-pointer"
                   style={{ position: 'sticky', left: '330px' }}
                 >
-                  F
+                  F {sortField === 'total.failed' ? (sortDir === 'asc' ? '▲' : '▼') : ''}
                 </th>
                 <th
-                  className="sticky left-[390px] z-30 bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600 font-normal"
+                  onClick={() => handleSort('total.total')}
+                  className="sticky left-[390px] z-30 bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600 font-normal cursor-pointer"
                   style={{ position: 'sticky', left: '390px' }}
                 >
-                  T
+                  T {sortField === 'total.total' ? (sortDir === 'asc' ? '▲' : '▼') : ''}
                 </th>
               </tr>
             </thead>
             <tbody>
-              {data.stats.map((s, idx) => (
+              {sortedStats.map((s, idx) => (
                 <tr
                   key={s.driver}
                   className={`${idx % 2 === 0 ? 'bg-white dark:bg-gray-800' : 'bg-gray-50 dark:bg-gray-700'} hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors`}
@@ -239,6 +297,7 @@ export default function MonthlyReport() {
           <p>No data</p>
         )}
       </div>
+      <CompareModal open={compareOpen} onClose={() => setCompareOpen(false)} />
     </Layout>
   );
 }
