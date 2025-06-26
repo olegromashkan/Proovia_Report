@@ -1,6 +1,7 @@
 import { useEffect, useRef, useMemo } from 'react';
 import Modal from './Modal';
 import Icon from './Icon';
+import { getFailureReason } from '../lib/failureReason';
 
 interface Trip {
   ID: string;
@@ -171,6 +172,13 @@ export default function TripModal({ trip, onClose, allTrips }: Props) {
                         <InfoItem icon="up-right-from-square" label="Vehicle" value={trip['Vehicle.Reg']} />
                         <InfoItem icon="clock" label="Punctuality" value={punctuality !== null ? `${punctuality} min` : 'N/A'} />
                         <InfoItem icon="up-right-from-square" label="Auction" value={trip['Order.Auction']} />
+                        {trip.Status === 'Failed' && (
+                          <InfoItem
+                            icon="triangle-exclamation"
+                            label="Fail Reason"
+                            value={getFailureReason(trip.Notes)}
+                          />
+                        )}
                     </div>
                 </div>
                 
