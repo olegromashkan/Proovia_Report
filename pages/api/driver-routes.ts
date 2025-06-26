@@ -2,7 +2,7 @@ import type { NextApiRequest, NextApiResponse } from 'next';
 import db from '../../lib/db';
 import { parseDate } from '../../lib/dateUtils';
 
-export default function handler(req: NextApiRequest, res: NextApiResponse) {
+export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   const { start, end, table } = req.query as {
     start?: string;
     end?: string;
@@ -18,8 +18,8 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
 
   const tableName =
     table === 'copy_of_tomorrow_trips' ? 'copy_of_tomorrow_trips' : 'schedule_trips';
-  const rows = db.prepare(`SELECT data FROM ${tableName}`).all();
-  const driverRows = db.prepare('SELECT data FROM drivers_report').all();
+  const rows = await db.prepare(`SELECT data FROM ${tableName}`).all();
+  const driverRows = await db.prepare('SELECT data FROM drivers_report').all();
   const driverMap: Record<string, string> = {};
   driverRows.forEach((r: any) => {
     const d = JSON.parse(r.data);

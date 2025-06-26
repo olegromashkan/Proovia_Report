@@ -2,7 +2,7 @@ import type { NextApiRequest, NextApiResponse } from 'next';
 import db from '../../lib/db';
 import { parseDate } from '../../lib/dateUtils';
 
-export default function handler(req: NextApiRequest, res: NextApiResponse) {
+export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') {
     return res.status(405).json({ message: 'Method not allowed' });
   }
@@ -13,14 +13,14 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
       return res.status(400).json({ message: 'Invalid body' });
     }
 
-    const rows = db.prepare('SELECT id, data FROM schedule_trips').all();
+    const rows = await db.prepare('SELECT id, data FROM schedule_trips').all();
     const delStmt = db.prepare('DELETE FROM schedule_trips WHERE id = ?');
     rows.forEach((r: any) => {
       const obj = JSON.parse(r.data);
       const raw = obj.Start_Time || obj['Start_Time'] || obj['Trip.Start_Time'];
       const iso = parseDate(String(raw).split(' ')[0]);
       if (iso === date) {
-        delStmt.run(r.id);
+        await delStmt.run(r.id);
       }
     });
 
@@ -31,7 +31,7 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
       if (!item) continue;
       const id = item.ID || item.id;
       if (!id) continue;
-      insStmt.run(id, JSON.stringify(item));
+      await insStmt.run(id, JSON.stringify(item));
     }
 
     res.status(200).json({ message: 'Updated' });

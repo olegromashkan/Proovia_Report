@@ -17,10 +17,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   let user: any;
   try {
     user = await withRetry(() =>
-      db.prepare('SELECT id, username, photo, header FROM users WHERE username = ? AND password = ?').get(
-        username,
-        hashed,
-      ),
+      db
+        .prepare('SELECT id, username, photo, header FROM users WHERE username = ? AND password = ?')
+        .get(username, hashed),
     );
   } catch (err: any) {
     if (err.code === 'SQLITE_BUSY') {
@@ -35,10 +34,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
   try {
     await withRetry(() =>
-      db.prepare('UPDATE users SET status = ?, last_seen = CURRENT_TIMESTAMP WHERE username = ?').run(
-        'online',
-        username,
-      ),
+      db
+        .prepare('UPDATE users SET status = ?, last_seen = CURRENT_TIMESTAMP WHERE username = ?')
+        .run('online', username),
     );
   } catch (err: any) {
     if (err.code === 'SQLITE_BUSY') {

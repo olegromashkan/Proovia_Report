@@ -17,7 +17,7 @@ function isValidTable(name: string | string[] | undefined): name is Table {
   return typeof name === 'string' && TABLES.includes(name as Table);
 }
 
-export default function handler(req: NextApiRequest, res: NextApiResponse) {
+export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   const { table, id, date, limit, offset } = req.query;
   if (!isValidTable(table)) {
     return res.status(400).json({ message: 'Invalid table' });
@@ -28,7 +28,7 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
     const off = parseInt(String(offset ?? '0'), 10);
 
     if (typeof id === 'string') {
-      const row = db
+      const row = await db
         .prepare(`SELECT id, created_at, data FROM ${table} WHERE id = ?`)
         .get(id);
       if (!row) {
@@ -46,10 +46,10 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
     query += ' ORDER BY created_at DESC LIMIT ? OFFSET ?';
     params.push(lim, off);
 
-    const rows = db.prepare(query).all(...params);
+    const rows = await db.prepare(query).all(...params);
     const totalRow = typeof date === 'string'
-      ? db.prepare(`SELECT COUNT(*) as c FROM ${table} WHERE date(created_at) = date(?)`).get(date)
-      : db.prepare(`SELECT COUNT(*) as c FROM ${table}`).get();
+      ? await db.prepare(`SELECT COUNT(*) as c FROM ${table} WHERE date(created_at) = date(?)`).get(date)
+      : await db.prepare(`SELECT COUNT(*) as c FROM ${table}`).get();
 
     const items = rows.map((row: any) => ({
       id: row.id,
@@ -65,7 +65,7 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
       return res.status(400).json({ message: 'Invalid body' });
     }
     const newId = req.body.id ? String(req.body.id) : randomUUID();
-    db.prepare(`INSERT INTO ${table} (id, data) VALUES (?, ?)`).run(
+    await db.prepare(`INSERT INTO ${table} (id, data) VALUES (?, ?)`).run(
       newId,
       JSON.stringify(req.body)
     );
@@ -81,7 +81,7 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
       return res.status(400).json({ message: 'Invalid body' });
     }
 
-    db.prepare(`UPDATE ${table} SET data = ? WHERE id = ?`).run(
+    await db.prepare(`UPDATE ${table} SET data = ? WHERE id = ?`).run(
       JSON.stringify(req.body),
       id
     );
@@ -91,12 +91,12 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
 
   if (req.method === 'DELETE') {
     if (typeof id === 'string') {
-      db.prepare(`DELETE FROM ${table} WHERE id = ?`).run(id);
+      await db.prepare(`DELETE FROM ${table} WHERE id = ?`).run(id);
       addNotification('delete', `Deleted ${id} from ${table}`);
       return res.status(200).json({ message: 'Deleted' });
     }
     if (typeof date === 'string') {
-      db.prepare(`DELETE FROM ${table} WHERE date(created_at) = date(?)`).run(date);
+      await db.prepare(`DELETE FROM ${table} WHERE date(created_at) = date(?)`).run(date);
       addNotification('delete', `Deleted ${table} items for ${date}`);
       return res.status(200).json({ message: 'Deleted' });
     }

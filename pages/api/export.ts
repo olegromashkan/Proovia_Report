@@ -16,13 +16,13 @@ function isValidTable(name: string | string[] | undefined): name is Table {
   return typeof name === 'string' && TABLES.includes(name as Table);
 }
 
-export default function handler(req: NextApiRequest, res: NextApiResponse) {
+export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   const { table } = req.query;
   if (!isValidTable(table)) {
     return res.status(400).json({ message: 'Invalid table' });
   }
 
-  const rows = db
+  const rows = await db
     .prepare(`SELECT id, created_at, data FROM ${table} ORDER BY created_at DESC`)
     .all();
 

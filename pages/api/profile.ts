@@ -6,12 +6,14 @@ export const config = {
   api: { bodyParser: { sizeLimit: '5mb' } }
 };
 
-export default function handler(req: NextApiRequest, res: NextApiResponse) {
+export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   const username = req.cookies.user;
   if (!username) return res.status(401).end();
 
   if (req.method === 'GET') {
-    const user = db.prepare('SELECT id, username, photo, header, role, status, status_message, last_seen FROM users WHERE username = ?').get(username);
+    const user = await db
+      .prepare('SELECT id, username, photo, header, role, status, status_message, last_seen FROM users WHERE username = ?')
+      .get(username);
     if (!user) return res.status(404).end();
     return res.status(200).json({ user });
   }
@@ -34,7 +36,9 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
     }
     if (!updates.length) return res.status(400).json({ message: 'No data' });
     params.push(username);
-    db.prepare(`UPDATE users SET ${updates.join(', ')} WHERE username = ?`).run(...params);
+    await db
+      .prepare(`UPDATE users SET ${updates.join(', ')} WHERE username = ?`)
+      .run(...params);
     return res.status(200).json({ message: 'Updated' });
   }
 

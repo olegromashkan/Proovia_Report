@@ -1,6 +1,6 @@
 # Proovia Report
 
-This project uses **Next.js** with UnoCSS and a small SQLite database.
+This project uses **Next.js** with UnoCSS and a ClickHouse database.
 
 ## Development
 
@@ -26,10 +26,20 @@ npm run unocss
 npm run build
 ```
 
+### Running ClickHouse locally
+
+You can start a ClickHouse server with Docker:
+
+```bash
+docker run -d --name clickhouse -p 8123:8123 clickhouse/clickhouse-server
+```
+
+The API expects the database to be available at `http://localhost:8123`.
+
 The application exposes an API route at `/api/upload` which accepts JSON data
-and saves it into an SQLite database (`database.db`). If the server is running
-on a machine connected to your local network or via Tailscale, the API will be
-reachable on that network as well.
+and stores it in ClickHouse. If the server is running on a machine connected to
+your local network or via Tailscale, the API will be reachable on that network
+as well.
 
 Daily summary posts are generated automatically from the uploaded data. A post
 for a specific day is created only when all four sources—`event_stream`,

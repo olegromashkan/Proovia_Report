@@ -3,7 +3,7 @@ import db, { addNotification } from '../../lib/db';
 
 export const config = { api: { bodyParser: { sizeLimit: '5mb' } } };
 
-export default function handler(req: NextApiRequest, res: NextApiResponse) {
+export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   const username = req.cookies.user;
   if (!username) return res.status(401).end();
   const chatId = req.query.chat as string;
@@ -11,21 +11,21 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
 
   if (req.method === 'GET') {
     if (chatId) {
-      const messages = db
+      const messages = await db
         .prepare('SELECT * FROM messages WHERE chat_id = ? ORDER BY created_at ASC')
         .all(chatId);
-      const pinned = db
+      const pinned = await db
         .prepare('SELECT * FROM messages WHERE chat_id = ? AND pinned = 1 ORDER BY created_at DESC')
         .all(chatId);
       return res.status(200).json({ messages, pinned });
     }
     if (!target) return res.status(400).end();
-    const messages = db
+    const messages = await db
       .prepare(
         'SELECT * FROM messages WHERE (sender = ? AND receiver = ?) OR (sender = ? AND receiver = ?) ORDER BY created_at ASC'
       )
       .all(username, target, target, username);
-    const pinned = db
+    const pinned = await db
       .prepare(
         'SELECT * FROM messages WHERE ((sender = ? AND receiver = ?) OR (sender = ? AND receiver = ?)) AND pinned = 1 ORDER BY created_at DESC'
       )
@@ -37,22 +37,26 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
     const { to, text, chatId: cid, replyTo, image } = req.body || {};
     if (!(cid || to) || (!text && !image)) return res.status(400).json({ message: 'Missing fields' });
     if (cid) {
-      db.prepare('INSERT INTO messages (chat_id, sender, text, image, reply_to) VALUES (?, ?, ?, ?, ?)').run(
+      await db
+        .prepare('INSERT INTO messages (chat_id, sender, text, image, reply_to) VALUES (?, ?, ?, ?, ?)')
+        .run(
         cid,
         username,
         text || '',
         image || null,
         replyTo || null
-      );
+        );
       addNotification('message', `${username} messaged chat ${cid}`);
     } else {
-      db.prepare('INSERT INTO messages (sender, receiver, text, image, reply_to) VALUES (?, ?, ?, ?, ?)').run(
+      await db
+        .prepare('INSERT INTO messages (sender, receiver, text, image, reply_to) VALUES (?, ?, ?, ?, ?)')
+        .run(
         username,
         to,
         text || '',
         image || null,
         replyTo || null
-      );
+        );
       addNotification('message', `${username} messaged ${to}`);
     }
     return res.status(200).json({ message: 'Sent' });
@@ -85,7 +89,7 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
     }
     if (!updates.length) return res.status(400).json({ message: 'No data' });
     params.push(id);
-    db.prepare(`UPDATE messages SET ${updates.join(', ')} WHERE id = ?`).run(...params);
+    await db.prepare(`UPDATE messages SET ${updates.join(', ')} WHERE id = ?`).run(...params);
     return res.status(200).json({ message: 'Updated' });
   }
 

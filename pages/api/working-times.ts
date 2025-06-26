@@ -47,11 +47,11 @@ function calculateWorkingTime(start: string, end: string, punctuality: any): str
   return `${String(hours).padStart(2,'0')}.${String(minutes).padStart(2,'0')}`;
 }
 
-export default function handler(_req: NextApiRequest, res: NextApiResponse) {
+export default async function handler(_req: NextApiRequest, res: NextApiResponse) {
   try {
-    const scheduleRows = db.prepare('SELECT data FROM schedule_trips').all();
-    const todayRows = db.prepare('SELECT data FROM copy_of_tomorrow_trips').all();
-    const driverRows = db.prepare('SELECT data FROM drivers_report').all();
+    const scheduleRows = await db.prepare('SELECT data FROM schedule_trips').all();
+    const todayRows = await db.prepare('SELECT data FROM copy_of_tomorrow_trips').all();
+    const driverRows = await db.prepare('SELECT data FROM drivers_report').all();
 
     const driverMap: Record<string, string> = {};
     driverRows.forEach((r: any) => {

@@ -23,9 +23,9 @@ function getRegion(lat: number, lon: number): string | null {
   return null;
 }
 
-export default function handler(req: NextApiRequest, res: NextApiResponse) {
+export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   try {
-    const rows = db.prepare('SELECT data FROM copy_of_tomorrow_trips').all();
+    const rows = await db.prepare('SELECT data FROM copy_of_tomorrow_trips').all();
     const stats: Record<string, RegionStat> = {};
 
     rows.forEach((r: any) => {

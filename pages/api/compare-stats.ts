@@ -8,14 +8,14 @@ interface Totals {
   total: number;
 }
 
-export default function handler(req: NextApiRequest, res: NextApiResponse) {
+export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   const { start1 = '', end1 = '', start2 = '', end2 = '' } = req.query as Record<string, string>;
 
   if (!start1 || !end1 || !start2 || !end2) {
     return res.status(400).json({ message: 'Missing parameters' });
   }
 
-  const rows = db.prepare('SELECT data FROM copy_of_tomorrow_trips').all();
+  const rows = await db.prepare('SELECT data FROM copy_of_tomorrow_trips').all();
 
   const totals: [Totals, Totals] = [
     { complete: 0, failed: 0, total: 0 },

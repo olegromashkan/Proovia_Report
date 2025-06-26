@@ -7,13 +7,13 @@ function parseMinutes(str: string) {
   return Number(h) * 60 + Number(m) + Number(s) / 60;
 }
 
-export default function handler(req: NextApiRequest, res: NextApiResponse) {
-  const rows = db.prepare('SELECT data FROM copy_of_tomorrow_trips').all();
+export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+  const rows = await db.prepare('SELECT data FROM copy_of_tomorrow_trips').all();
   const items = rows.map((r: any) => JSON.parse(r.data));
 
-  const legacy = db
+  const legacy = (await db
     .prepare('SELECT total_orders, collection_complete, collection_failed, delivery_complete, delivery_failed FROM legacy_totals WHERE id = 1')
-    .get() || {
+    .get()) || {
       total_orders: 0,
       collection_complete: 0,
       collection_failed: 0,

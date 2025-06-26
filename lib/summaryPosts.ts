@@ -19,14 +19,16 @@ function diffMinutes(a: string | undefined, b: string | undefined): number | nul
   return diff;
 }
 
-export function generateSummaryPosts(): number {
+export async function generateSummaryPosts(): Promise<number> {
   // ensure system user exists
-  const user = db.prepare('SELECT username FROM users WHERE username = ?').get('summary_bot');
+  const user = await db.prepare('SELECT username FROM users WHERE username = ?').get('summary_bot');
   if (!user) {
-    db.prepare('INSERT INTO users (username, role, status) VALUES (?, ?, ?)').run('summary_bot', 'admin', 'offline');
+    await db
+      .prepare('INSERT INTO users (username, role, status) VALUES (?, ?, ?)')
+      .run('summary_bot', 'admin', 'offline');
   }
 
-  const rows = db.prepare('SELECT data FROM copy_of_tomorrow_trips').all();
+  const rows = await db.prepare('SELECT data FROM copy_of_tomorrow_trips').all();
   const items = rows.map((r: any) => JSON.parse(r.data));
 
   const getDates = (table: string) =>
@@ -56,7 +58,7 @@ export function generateSummaryPosts(): number {
 
   const groups: Record<string, DayStats> = {};
 
-  const driverRows = db.prepare('SELECT data FROM drivers_report').all();
+  const driverRows = await db.prepare('SELECT data FROM drivers_report').all();
   const driverMap: Record<string, string> = {};
   driverRows.forEach((r: any) => {
     const d = JSON.parse(r.data);
@@ -188,7 +190,9 @@ export function generateSummaryPosts(): number {
       latestDrivers,
     };
 
-    db.prepare('INSERT INTO posts (username, content, created_at, type) VALUES (?, ?, ?, ?)').run('summary_bot', JSON.stringify(summary), ts, 'summary');
+    await db
+      .prepare('INSERT INTO posts (username, content, created_at, type) VALUES (?, ?, ?, ?)')
+      .run('summary_bot', JSON.stringify(summary), ts, 'summary');
     created += 1;
   }
   return created;

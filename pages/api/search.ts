@@ -17,11 +17,11 @@ function levenshtein(a: string, b: string) {
   return dp[a.length][b.length];
 }
 
-export default function handler(req: NextApiRequest, res: NextApiResponse) {
+export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   const q = typeof req.query.q === 'string' ? req.query.q.trim() : '';
   if (!q) return res.status(200).json({ items: [] });
 
-  const rows = db.prepare('SELECT id, data FROM copy_of_tomorrow_trips').all();
+  const rows = await db.prepare('SELECT id, data FROM copy_of_tomorrow_trips').all();
   const items = rows.map((r: any) => ({ id: r.id, ...JSON.parse(r.data) }));
 
   const results = items

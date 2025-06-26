@@ -2,7 +2,7 @@ import type { NextApiRequest, NextApiResponse } from 'next';
 import db from '../../lib/db';
 import { parseDate } from '../../lib/dateUtils';
 
-export default function handler(req: NextApiRequest, res: NextApiResponse) {
+export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   const today = new Date();
   const defaultStart = new Date(today.getFullYear(), today.getMonth(), 1)
     .toISOString()
@@ -15,8 +15,8 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
   const startDate = typeof start === 'string' ? start : defaultStart;
   const endDate = typeof end === 'string' ? end : defaultEnd;
 
-  const tripRows = db.prepare('SELECT data FROM copy_of_tomorrow_trips').all();
-  const driverRows = db.prepare('SELECT data FROM drivers_report').all();
+  const tripRows = await db.prepare('SELECT data FROM copy_of_tomorrow_trips').all();
+  const driverRows = await db.prepare('SELECT data FROM drivers_report').all();
 
   const driverToContractor: Record<string, string> = {};
   driverRows.forEach((r: any) => {

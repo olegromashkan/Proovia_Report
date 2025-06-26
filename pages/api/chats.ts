@@ -1,7 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import db from '../../lib/db';
 
-export default function handler(req: NextApiRequest, res: NextApiResponse) {
+export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   const username = req.cookies.user;
   if (!username) return res.status(401).end();
 
@@ -9,15 +9,15 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
     const { id } = req.query as { id?: string };
 
     if (id) {
-      const chat = db.prepare('SELECT * FROM chats WHERE id = ?').get(id);
-      const members = db
+      const chat = await db.prepare('SELECT * FROM chats WHERE id = ?').get(id);
+      const members = await db
         .prepare('SELECT username FROM chat_members WHERE chat_id = ?')
         .all(id)
         .map((r: any) => r.username);
       return res.status(200).json({ chat, members });
     }
 
-    const rows = db
+    const rows = await db
       .prepare(
         `SELECT c.*, 
           (SELECT text FROM messages WHERE chat_id = c.id ORDER BY created_at DESC LIMIT 1) AS lastMessage,
@@ -34,14 +34,14 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method === 'POST') {
     const { name, members, photo } = req.body || {};
     if (!name || !Array.isArray(members)) return res.status(400).end();
-    const result = db
+    const result = await db
       .prepare('INSERT INTO chats (name, photo) VALUES (?, ?)')
       .run(name, photo || null);
     const id = result.lastInsertRowid as number;
     const stmt = db.prepare('INSERT INTO chat_members (chat_id, username) VALUES (?, ?)');
-    stmt.run(id, username);
+    await stmt.run(id, username);
     for (const m of members) {
-      if (m !== username) stmt.run(id, m);
+      if (m !== username) await stmt.run(id, m);
     }
     return res.status(200).json({ id });
   }
@@ -65,19 +65,21 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
     }
     if (updates.length) {
       params.push(id);
-      db.prepare(`UPDATE chats SET ${updates.join(', ')} WHERE id = ?`).run(...params);
+      await db
+        .prepare(`UPDATE chats SET ${updates.join(', ')} WHERE id = ?`)
+        .run(...params);
     }
 
     if (Array.isArray(addMembers)) {
       const stmt = db.prepare('INSERT INTO chat_members (chat_id, username) VALUES (?, ?)');
       for (const m of addMembers) {
-        stmt.run(id, m);
+        await stmt.run(id, m);
       }
     }
     if (Array.isArray(removeMembers)) {
       const stmt = db.prepare('DELETE FROM chat_members WHERE chat_id = ? AND username = ?');
       for (const m of removeMembers) {
-        stmt.run(id, m);
+        await stmt.run(id, m);
       }
     }
 
@@ -87,9 +89,9 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method === 'DELETE') {
     const { id } = req.query as { id?: string };
     if (!id) return res.status(400).end();
-    db.prepare('DELETE FROM chat_members WHERE chat_id = ?').run(id);
-    db.prepare('DELETE FROM messages WHERE chat_id = ?').run(id);
-    db.prepare('DELETE FROM chats WHERE id = ?').run(id);
+    await db.prepare('DELETE FROM chat_members WHERE chat_id = ?').run(id);
+    await db.prepare('DELETE FROM messages WHERE chat_id = ?').run(id);
+    await db.prepare('DELETE FROM chats WHERE id = ?').run(id);
     return res.status(200).json({ message: 'Deleted' });
   }
 

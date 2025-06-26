@@ -1,18 +1,18 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import db from '../../lib/db';
 
-export default function handler(req: NextApiRequest, res: NextApiResponse) {
+export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method === 'GET') {
     const { type } = req.query as { type?: string };
     let rows;
     if (type) {
-      rows = db
+      rows = await db
         .prepare(
           'SELECT id, type, message, created_at FROM notifications WHERE type = ? ORDER BY created_at DESC'
         )
         .all(type);
     } else {
-      rows = db
+      rows = await db
         .prepare(
           'SELECT id, type, message, created_at FROM notifications ORDER BY created_at DESC'
         )
@@ -26,7 +26,7 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
     if (typeof id !== 'string') {
       return res.status(400).json({ message: 'Missing id' });
     }
-    db.prepare('DELETE FROM notifications WHERE id = ?').run(id);
+    await db.prepare('DELETE FROM notifications WHERE id = ?').run(id);
     return res.status(200).json({ message: 'Deleted' });
   }
 

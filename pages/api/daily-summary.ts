@@ -2,14 +2,14 @@ import type { NextApiRequest, NextApiResponse } from 'next';
 import db from '../../lib/db';
 import { parseDate } from '../../lib/dateUtils';
 
-export default function handler(req: NextApiRequest, res: NextApiResponse) {
+export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   const year = parseInt(String(req.query.year || '')); 
   const month = parseInt(String(req.query.month || '')); // 1-12
   if (!year || !month || month < 1 || month > 12) {
     return res.status(400).json({ message: 'Invalid month or year' });
   }
 
-  const rows = db.prepare('SELECT data FROM copy_of_tomorrow_trips').all();
+  const rows = await db.prepare('SELECT data FROM copy_of_tomorrow_trips').all();
   const items = rows.map((r: any) => JSON.parse(r.data));
 
 

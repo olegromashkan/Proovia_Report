@@ -6,13 +6,13 @@ interface Point { lat: number; lon: number }
 // Cache in-memory for 10 minutes
 let cache: { timestamp: number; points: Point[] } | null = null;
 
-export default function handler(req: NextApiRequest, res: NextApiResponse) {
+export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (cache && Date.now() - cache.timestamp < 10 * 60 * 1000) {
     return res.status(200).json(cache.points);
   }
 
   try {
-    const rows = db.prepare('SELECT data FROM copy_of_tomorrow_trips').all();
+    const rows = await db.prepare('SELECT data FROM copy_of_tomorrow_trips').all();
     const points: Point[] = [];
     rows.forEach((r: any) => {
       const item = JSON.parse(r.data);

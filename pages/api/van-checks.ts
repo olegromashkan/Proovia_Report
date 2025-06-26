@@ -12,16 +12,16 @@ function pick(obj: any, keys: string[]): any {
   return undefined;
 }
 
-export default function handler(req: NextApiRequest, res: NextApiResponse) {
+export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   const { start, end } = req.query;
   const startDate = typeof start === 'string' ? new Date(start) : null;
   const endDate = typeof end === 'string' ? new Date(end + 'T23:59:59') : null;
 
-  const rows = db.prepare('SELECT data FROM van_checks').all();
+  const rows = await db.prepare('SELECT data FROM van_checks').all();
   let items = rows.map((r: any) => JSON.parse(r.data));
 
   // also include entries from the event stream that look like van checks
-  const eventRows = db.prepare('SELECT data FROM event_stream').all();
+  const eventRows = await db.prepare('SELECT data FROM event_stream').all();
   for (const r of eventRows) {
     try {
       const e = JSON.parse(r.data);

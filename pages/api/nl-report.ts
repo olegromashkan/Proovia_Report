@@ -24,10 +24,10 @@ function formatTime(date: Date | null): string {
 }
 
 // Build driver map
-function getDriverMap(): Record<string, string> {
+async function getDriverMap(): Promise<Record<string, string>> {
   if (driverMapCache) return driverMapCache;
   try {
-    const driverRows = db.prepare('SELECT data FROM drivers_report').all();
+    const driverRows = await db.prepare('SELECT data FROM drivers_report').all();
     driverMapCache = {};
     driverRows.forEach((r: any) => {
       const d = JSON.parse(r.data);
@@ -40,7 +40,7 @@ function getDriverMap(): Record<string, string> {
   }
 }
 
-export default function handler(req: NextApiRequest, res: NextApiResponse) {
+export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   // Validate query
   const q = String(req.query.q || '').toLowerCase().trim();
   if (!q || q.length > 100) {
@@ -103,10 +103,10 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
     params.push(pageSize, offset);
 
     // Fetch data
-    const rows = db.prepare(query).all(...params);
+    const rows = await db.prepare(query).all(...params);
     const items = rows.map((r: any) => JSON.parse(r.data));
 
-    const driverMap = getDriverMap();
+    const driverMap = await getDriverMap();
 
     // Calculate summary
     const summary = {

@@ -61,16 +61,16 @@ function calcTimes(rows: any[]) {
   };
 }
 
-export default function handler(req: NextApiRequest, res: NextApiResponse) {
+export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   const { start, end } = req.query;
   const startStr = typeof start === 'string' ? start : '';
   const endStr = typeof end === 'string' ? end : '';
   const startDate = startStr ? new Date(startStr) : null;
   const endDate = endStr ? new Date(endStr + 'T23:59:59') : null;
-  const csvRows = db.prepare('SELECT data FROM csv_trips').all();
-  const events = db.prepare('SELECT data FROM event_stream').all();
-  const schedules = db.prepare('SELECT data FROM schedule_trips').all();
-  const drivers = db.prepare('SELECT data FROM drivers_report').all();
+  const csvRows = await db.prepare('SELECT data FROM csv_trips').all();
+  const events = await db.prepare('SELECT data FROM event_stream').all();
+  const schedules = await db.prepare('SELECT data FROM schedule_trips').all();
+  const drivers = await db.prepare('SELECT data FROM drivers_report').all();
 
   const csv = csvRows.map((r: any) => JSON.parse(r.data));
   const eventData = events.map((r: any) => JSON.parse(r.data));

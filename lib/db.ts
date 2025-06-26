@@ -1,235 +1,87 @@
-import Database from 'better-sqlite3';
+import { createClient } from '@clickhouse/client';
 
 declare global {
   // eslint-disable-next-line no-var
-  var sqliteDb: Database | undefined;
+  var clickhouseClient: ReturnType<typeof createClient> | undefined;
 }
 
-const db: Database =
-  global.sqliteDb || new Database('database.db', { timeout: 3600000 });
-if (!global.sqliteDb) {
-  try {
-    db.pragma('journal_mode = WAL');
-  } catch (err) {
-    console.error('Failed to set journal_mode to WAL', err);
-  }
-  try {
-    db.pragma('busy_timeout = 3600000');
-  } catch (err) {
-    console.error('Failed to set busy_timeout', err);
-  }
-  global.sqliteDb = db;
+const client =
+  global.clickhouseClient ||
+  createClient({
+    host: process.env.CLICKHOUSE_HOST || 'http://localhost:8123',
+    username: process.env.CLICKHOUSE_USERNAME || 'default',
+    password: process.env.CLICKHOUSE_PASSWORD || '',
+  });
+
+if (!global.clickhouseClient) {
+  global.clickhouseClient = client;
 }
 
-export function init() {
-  db.exec(`
-    CREATE TABLE IF NOT EXISTS copy_of_tomorrow_trips (
-      id TEXT PRIMARY KEY,
-      data TEXT,
-      created_at TEXT DEFAULT CURRENT_TIMESTAMP
-    );
-    CREATE TABLE IF NOT EXISTS event_stream (
-      id TEXT PRIMARY KEY,
-      data TEXT,
-      created_at TEXT DEFAULT CURRENT_TIMESTAMP
-    );
-    CREATE TABLE IF NOT EXISTS drivers_report (
-      id TEXT PRIMARY KEY,
-      data TEXT,
-      created_at TEXT DEFAULT CURRENT_TIMESTAMP
-    );
-    CREATE TABLE IF NOT EXISTS van_checks (
-      id TEXT PRIMARY KEY,
-      data TEXT,
-      created_at TEXT DEFAULT CURRENT_TIMESTAMP
-    );
-    CREATE TABLE IF NOT EXISTS schedule_trips (
-      id TEXT PRIMARY KEY,
-      data TEXT,
-      created_at TEXT DEFAULT CURRENT_TIMESTAMP
-    );
-    CREATE TABLE IF NOT EXISTS csv_trips (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      data TEXT,
-      created_at TEXT DEFAULT CURRENT_TIMESTAMP
-    );
-    CREATE TABLE IF NOT EXISTS notifications (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      type TEXT,
-      message TEXT,
-      created_at TEXT DEFAULT CURRENT_TIMESTAMP
-    );
-    CREATE TABLE IF NOT EXISTS users (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      username TEXT UNIQUE,
-      password TEXT,
-      photo TEXT,
-      header TEXT,
-      role TEXT DEFAULT 'user',
-      status TEXT DEFAULT 'offline',
-      status_message TEXT,
-      last_seen TEXT DEFAULT CURRENT_TIMESTAMP,
-      created_at TEXT DEFAULT CURRENT_TIMESTAMP
-    );
+function escapeValue(val: any): string {
+  if (val === null || val === undefined) return 'NULL';
+  if (typeof val === 'number') return String(val);
+  return `'${String(val).replace(/'/g, "''")}'`;
+}
 
-    CREATE TABLE IF NOT EXISTS friends (
-      user_id INTEGER,
-      friend_id INTEGER,
-      created_at TEXT DEFAULT CURRENT_TIMESTAMP
-    );
+function format(sql: string, params: any[]): string {
+  let i = 0;
+  return sql.replace(/\?/g, () => escapeValue(params[i++]));
+}
 
-    CREATE TABLE IF NOT EXISTS tasks (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      creator TEXT,
-      assignee TEXT,
-      text TEXT,
-      due_at TEXT,
-      completed INTEGER DEFAULT 0,
-      created_at TEXT DEFAULT CURRENT_TIMESTAMP
-    );
+async function exec(sql: string) {
+  await client.exec({ query: sql });
+}
 
-    CREATE TABLE IF NOT EXISTS chats (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      name TEXT,
-      photo TEXT,
-      pinned INTEGER DEFAULT 0,
-      created_at TEXT DEFAULT CURRENT_TIMESTAMP
-    );
+async function query(sql: string) {
+  const rs = await client.query({ query: sql, format: 'JSONEachRow' });
+  return (await rs.json()) as any[];
+}
 
-    CREATE TABLE IF NOT EXISTS chat_members (
-      chat_id INTEGER,
-      username TEXT,
-      created_at TEXT DEFAULT CURRENT_TIMESTAMP
-    );
+export function prepare(sql: string) {
+  return {
+    all: async (...params: any[]) => query(format(sql, params)),
+    get: async (...params: any[]) => {
+      const rows = await query(format(sql, params));
+      return rows[0];
+    },
+    run: async (...params: any[]) => exec(format(sql, params)),
+  };
+}
 
-    CREATE TABLE IF NOT EXISTS messages (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      chat_id INTEGER,
-      sender TEXT,
-      receiver TEXT,
-      text TEXT,
-      reply_to INTEGER,
-      pinned INTEGER DEFAULT 0,
-      created_at TEXT DEFAULT CURRENT_TIMESTAMP
-    );
-    CREATE TABLE IF NOT EXISTS posts (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      username TEXT,
-      content TEXT,
-      image TEXT,
-      created_at TEXT DEFAULT CURRENT_TIMESTAMP,
-      updated_at TEXT,
-      type TEXT DEFAULT 'user'
-    );
-    CREATE TABLE IF NOT EXISTS post_likes (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      post_id INTEGER,
-      username TEXT,
-      created_at TEXT DEFAULT CURRENT_TIMESTAMP,
-      UNIQUE(post_id, username)
-    );
-    CREATE TABLE IF NOT EXISTS post_comments (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      post_id INTEGER,
-      username TEXT,
-      text TEXT,
-      created_at TEXT DEFAULT CURRENT_TIMESTAMP
-    );
-    CREATE TABLE IF NOT EXISTS backgrounds (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      url TEXT
-    );
-    CREATE TABLE IF NOT EXISTS legacy_totals (
-      id INTEGER PRIMARY KEY,
-      total_orders INTEGER,
-      collection_total INTEGER,
-      collection_complete INTEGER,
-      collection_failed INTEGER,
-      delivery_total INTEGER,
-      delivery_complete INTEGER,
-      delivery_failed INTEGER
-    );
-  `);
-
-  // ensure legacy databases have the created_at column
-  const tables = [
-    'copy_of_tomorrow_trips',
-    'event_stream',
-    'drivers_report',
-    'schedule_trips',
-    'csv_trips',
-    'van_checks',
-    'users',
-    'posts',
-    'post_likes',
-    'post_comments',
-    'chats',
-    'chat_members',
-    'messages',
+export async function init() {
+  const statements = [
+    `CREATE TABLE IF NOT EXISTS copy_of_tomorrow_trips (id String, data String, created_at DateTime DEFAULT now()) ENGINE = MergeTree() ORDER BY id`,
+    `CREATE TABLE IF NOT EXISTS event_stream (id String, data String, created_at DateTime DEFAULT now()) ENGINE = MergeTree() ORDER BY id`,
+    `CREATE TABLE IF NOT EXISTS drivers_report (id String, data String, created_at DateTime DEFAULT now()) ENGINE = MergeTree() ORDER BY id`,
+    `CREATE TABLE IF NOT EXISTS van_checks (id String, data String, created_at DateTime DEFAULT now()) ENGINE = MergeTree() ORDER BY id`,
+    `CREATE TABLE IF NOT EXISTS schedule_trips (id String, data String, created_at DateTime DEFAULT now()) ENGINE = MergeTree() ORDER BY id`,
+    `CREATE TABLE IF NOT EXISTS csv_trips (id Int64, data String, created_at DateTime DEFAULT now()) ENGINE = MergeTree() ORDER BY id`,
+    `CREATE TABLE IF NOT EXISTS notifications (id Int64, type String, message String, created_at DateTime DEFAULT now()) ENGINE = MergeTree() ORDER BY id`,
+    `CREATE TABLE IF NOT EXISTS users (id Int64, username String, password String, photo String, header String, role String, status String, status_message String, last_seen DateTime, created_at DateTime DEFAULT now()) ENGINE = MergeTree() ORDER BY id`,
+    `CREATE TABLE IF NOT EXISTS friends (user_id Int64, friend_id Int64, created_at DateTime DEFAULT now()) ENGINE = MergeTree() ORDER BY (user_id, friend_id)`,
+    `CREATE TABLE IF NOT EXISTS tasks (id Int64, creator String, assignee String, text String, due_at String, completed UInt8 DEFAULT 0, created_at DateTime DEFAULT now()) ENGINE = MergeTree() ORDER BY id`,
+    `CREATE TABLE IF NOT EXISTS chats (id Int64, name String, photo String, pinned UInt8 DEFAULT 0, created_at DateTime DEFAULT now()) ENGINE = MergeTree() ORDER BY id`,
+    `CREATE TABLE IF NOT EXISTS chat_members (chat_id Int64, username String, created_at DateTime DEFAULT now()) ENGINE = MergeTree() ORDER BY (chat_id, username)`,
+    `CREATE TABLE IF NOT EXISTS messages (id Int64, chat_id Int64, sender String, receiver String, text String, reply_to Int64, pinned UInt8 DEFAULT 0, image String, edited_at String, deleted UInt8 DEFAULT 0, created_at DateTime DEFAULT now()) ENGINE = MergeTree() ORDER BY id`,
+    `CREATE TABLE IF NOT EXISTS posts (id Int64, username String, content String, image String, created_at DateTime DEFAULT now(), updated_at String, type String DEFAULT 'user') ENGINE = MergeTree() ORDER BY id`,
+    `CREATE TABLE IF NOT EXISTS post_likes (id Int64, post_id Int64, username String, created_at DateTime DEFAULT now()) ENGINE = MergeTree() ORDER BY id`,
+    `CREATE TABLE IF NOT EXISTS post_comments (id Int64, post_id Int64, username String, text String, created_at DateTime DEFAULT now()) ENGINE = MergeTree() ORDER BY id`,
+    `CREATE TABLE IF NOT EXISTS backgrounds (id Int64, url String) ENGINE = MergeTree() ORDER BY id`,
+    `CREATE TABLE IF NOT EXISTS legacy_totals (id Int64, total_orders Int64, collection_total Int64, collection_complete Int64, collection_failed Int64, delivery_total Int64, delivery_complete Int64, delivery_failed Int64) ENGINE = MergeTree() ORDER BY id`,
   ];
-  for (const table of tables) {
-    try {
-      db.exec(`ALTER TABLE ${table} ADD COLUMN created_at TEXT`);
-    } catch {
-      // ignore if column already exists
-    }
-  }
-  function addColumnIfMissing(table: string, column: string, definition: string) {
-    const info = db.prepare(`PRAGMA table_info(${table})`).all() as Array<{ name: string }>;
-    if (!info.find((c) => c.name === column)) {
-      if (/current_timestamp/i.test(definition)) {
-        // SQLite cannot add a column with a non-constant default, so create the
-        // column without the default in this case.
-        db.exec(`ALTER TABLE ${table} ADD COLUMN ${column} TEXT`);
-      } else {
-        db.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${definition}`);
-      }
-    }
-  }
-
-  addColumnIfMissing('users', 'role', "TEXT DEFAULT 'admin'");
-  addColumnIfMissing('users', 'status', "TEXT DEFAULT 'offline'");
-  addColumnIfMissing('users', 'status_message', 'TEXT');
-  addColumnIfMissing('users', 'last_seen', 'TEXT DEFAULT CURRENT_TIMESTAMP');
-  addColumnIfMissing('tasks', 'due_at', 'TEXT');
-  addColumnIfMissing('posts', 'updated_at', 'TEXT');
-  addColumnIfMissing('posts', 'type', "TEXT DEFAULT 'user'");
-  addColumnIfMissing('messages', 'chat_id', 'INTEGER');
-  addColumnIfMissing('messages', 'reply_to', 'INTEGER');
-  addColumnIfMissing('messages', 'pinned', 'INTEGER DEFAULT 0');
-  addColumnIfMissing('messages', 'image', 'TEXT');
-  addColumnIfMissing('messages', 'edited_at', 'TEXT');
-  addColumnIfMissing('messages', 'deleted', 'INTEGER DEFAULT 0');
-  addColumnIfMissing('chats', 'photo', 'TEXT');
-  addColumnIfMissing('chats', 'pinned', 'INTEGER DEFAULT 0');
-
-  // seed legacy totals if not already present
-  const legacyRow = db
-    .prepare('SELECT 1 FROM legacy_totals WHERE id = 1')
-    .get();
-  if (!legacyRow) {
-    db.prepare(
-      `INSERT INTO legacy_totals (
-        id,
-        total_orders,
-        collection_total,
-        collection_complete,
-        collection_failed,
-        delivery_total,
-        delivery_complete,
-        delivery_failed
-      ) VALUES (1, 457766, 232168, 217055, 15113, 222004, 217919, 4085)`,
-    ).run();
+  for (const q of statements) {
+    await exec(q);
   }
 }
 
-init();
+init().catch((err) => console.error('Init failed', err));
 
-export function addNotification(type: string, message: string) {
-  db.prepare('INSERT INTO notifications (type, message) VALUES (?, ?)').run(
+export async function addNotification(type: string, message: string) {
+  await prepare('INSERT INTO notifications (type, message, created_at) VALUES (?, ?, now())').run(
     type,
     message,
   );
 }
 
+const db = { prepare };
 export default db;

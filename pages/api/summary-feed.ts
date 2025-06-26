@@ -10,7 +10,7 @@ function parseMinutes(value: string | undefined): number | null {
   return isFinite(n) ? n : null;
 }
 
-export default function handler(req: NextApiRequest, res: NextApiResponse) {
+export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   const { start, end } = req.query as { start?: string; end?: string };
   const today = new Date();
   const defaultEnd = today.toISOString().slice(0, 10);
@@ -21,14 +21,14 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
   const startDate = typeof start === 'string' ? start : defaultStart;
   const endDate = typeof end === 'string' ? end : defaultEnd;
 
-  const posts = db
+  const posts = await db
     .prepare(
       "SELECT id, content, created_at FROM posts WHERE type = 'summary' AND date(created_at) BETWEEN date(?) AND date(?) ORDER BY COALESCE(updated_at, created_at) DESC",
     )
     .all(startDate, endDate);
 
-  const tripRows = db.prepare('SELECT data FROM copy_of_tomorrow_trips').all();
-  const driverRows = db.prepare('SELECT data FROM drivers_report').all();
+  const tripRows = await db.prepare('SELECT data FROM copy_of_tomorrow_trips').all();
+  const driverRows = await db.prepare('SELECT data FROM drivers_report').all();
 
   const driverToContractor: Record<string, string> = {};
   driverRows.forEach((r: any) => {

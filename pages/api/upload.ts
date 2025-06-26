@@ -10,7 +10,7 @@ export const config = {
   },
 };
 
-export default function handler(
+export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
 ) {
@@ -29,7 +29,7 @@ export default function handler(
         'INSERT OR REPLACE INTO copy_of_tomorrow_trips (id, data, created_at) VALUES (?, ?, datetime(\'now\'))'
       );
       for (const item of payload.Copy_of_Tomorrow_trips) {
-        stmt.run(item.ID, JSON.stringify(item));
+        await stmt.run(item.ID, JSON.stringify(item));
       }
       addNotification('upload', `Uploaded ${payload.Copy_of_Tomorrow_trips.length} tomorrow trips`);
     }
@@ -39,7 +39,7 @@ export default function handler(
         'INSERT OR REPLACE INTO event_stream (id, data, created_at) VALUES (?, ?, datetime(\'now\'))'
       );
       for (const item of payload.Event_Stream) {
-        stmt.run(item.ID, JSON.stringify(item));
+        await stmt.run(item.ID, JSON.stringify(item));
       }
       addNotification('upload', `Uploaded ${payload.Event_Stream.length} event stream items`);
     }
@@ -49,7 +49,7 @@ export default function handler(
         'INSERT OR REPLACE INTO drivers_report (id, data, created_at) VALUES (?, ?, datetime(\'now\'))'
       );
       for (const item of payload.Drivers_Report) {
-        stmt.run(item.ID, JSON.stringify(item));
+        await stmt.run(item.ID, JSON.stringify(item));
       }
       addNotification('upload', `Uploaded ${payload.Drivers_Report.length} drivers report items`);
     }
@@ -60,7 +60,7 @@ export default function handler(
       );
       for (const item of payload.Van_Checks) {
         const id = item.id || item.ID || `${item.van_id}-${item.date}`;
-        stmt.run(id, JSON.stringify(item));
+        await stmt.run(id, JSON.stringify(item));
       }
       addNotification('upload', `Uploaded ${payload.Van_Checks.length} van checks`);
     }
@@ -70,7 +70,7 @@ export default function handler(
         'INSERT OR REPLACE INTO schedule_trips (id, data, created_at) VALUES (?, ?, datetime(\'now\'))'
       );
       for (const item of payload.Schedule_Trips) {
-        stmt.run(item.ID, JSON.stringify(item));
+        await stmt.run(item.ID, JSON.stringify(item));
       }
       addNotification('upload', `Uploaded ${payload.Schedule_Trips.length} schedule trips`);
     }
@@ -80,12 +80,12 @@ export default function handler(
         'INSERT INTO csv_trips (data, created_at) VALUES (?, datetime(\'now\'))'
       );
       for (const row of payload.csvTrips) {
-        stmt.run(JSON.stringify(row));
+        await stmt.run(JSON.stringify(row));
       }
       addNotification('upload', `Uploaded ${payload.csvTrips.length} csv trips`);
     }
 
-    generateSummaryPosts();
+    await generateSummaryPosts();
     res.status(200).json({ message: 'Uploaded' });
   } catch (err: any) {
     console.error(err);

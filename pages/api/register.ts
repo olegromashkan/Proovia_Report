@@ -10,7 +10,7 @@ export const config = {
   },
 };
 
-export default function handler(req: NextApiRequest, res: NextApiResponse) {
+export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') return res.status(405).end();
   const { username, password, photo, header } = req.body || {};
   if (!username || !password) {
@@ -18,14 +18,16 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
   }
   const hashed = createHash('sha256').update(password).digest('hex');
   try {
-    db.prepare('INSERT INTO users (username, password, photo, header, role, status) VALUES (?, ?, ?, ?, ?, ?)').run(
-      username,
-      hashed,
-      photo || '',
-      header || '',
-      'user',
-      'online'
-    );
+    await db
+      .prepare('INSERT INTO users (username, password, photo, header, role, status) VALUES (?, ?, ?, ?, ?, ?)')
+      .run(
+        username,
+        hashed,
+        photo || '',
+        header || '',
+        'user',
+        'online'
+      );
     return res.status(200).json({ message: 'Registered' });
   } catch (err: any) {
     return res.status(400).json({ message: err.message });

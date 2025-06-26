@@ -2,12 +2,12 @@ import type { NextApiRequest, NextApiResponse } from 'next';
 import db from '../../lib/db';
 import { parseDate } from '../../lib/dateUtils';
 
-export default function handler(req: NextApiRequest, res: NextApiResponse) {
+export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   const { start, end } = req.query;
   const startDate = typeof start === 'string' ? start : '1970-01-01';
   const endDate = typeof end === 'string' ? end : '2100-01-01';
 
-  const rows = db.prepare('SELECT data FROM copy_of_tomorrow_trips').all();
+  const rows = await db.prepare('SELECT data FROM copy_of_tomorrow_trips').all();
 
 
   const items = rows
