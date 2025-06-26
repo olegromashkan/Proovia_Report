@@ -170,17 +170,25 @@ export default function FailureAnalysisModal({
     [trips],
   );
 
-  // Top drivers with most failures
+  // Top drivers with most failures and reason breakdown
   const topDrivers = useMemo(() => {
-    const map: Record<string, number> = {};
+    const map: Record<string, Record<string, number>> = {};
     trips.forEach((t) => {
-      if (t.Status !== 'Failed') return;
-      const driver = t['Trip.Driver1'] || t.Driver || 'Unknown';
-      map[driver] = (map[driver] || 0) + 1;
+      if (t.Status !== "Failed") return;
+      const driver = t["Trip.Driver1"] || t.Driver || "Unknown";
+      const reason = getFailureReason(t.Notes);
+      if (!map[driver]) map[driver] = {};
+      map[driver][reason] = (map[driver][reason] || 0) + 1;
     });
     return Object.entries(map)
-      .map(([driver, count]) => ({ driver, count }))
-      .sort((a, b) => b.count - a.count)
+      .map(([driver, reasons]) => {
+        const total = Object.values(reasons).reduce((a, b) => a + b, 0);
+        const list = Object.entries(reasons)
+          .sort(([, a], [, b]) => b - a)
+          .map(([reason, count]) => ({ reason, count }));
+        return { driver, total, reasons: list };
+      })
+      .sort((a, b) => b.total - a.total)
       .slice(0, 10);
   }, [trips]);
 
@@ -262,7 +270,7 @@ export default function FailureAnalysisModal({
   const isEmpty = totalFailed === 0;
 
   return (
-    <Modal open={open} onClose={onClose} className="max-w-4xl">
+    <Modal open={open} onClose={onClose} className="max-w-6xl">
       <div className="bg-white rounded-lg shadow-md border border-gray-200 flex flex-col p-4 min-h-[10rem]">
         <h3 className="text-base font-semibold text-gray-800 mb-3">
           Failure Analysis
@@ -297,9 +305,9 @@ export default function FailureAnalysisModal({
           </div>
         ) : (
           <>
-            <div className="flex flex-1 min-w-0 space-x-4">
+            <div className="grid grid-cols-3 gap-4 flex-1 min-w-0">
               {/* Block 1: Key Metric */}
-              <div className="flex-shrink-0 w-36 border-r border-gray-200 pr-4">
+              <div className="border-r border-gray-200 pr-4">
                 <div className="flex items-center space-x-2 mb-3">
                   <StatsIcon />
                   <h4 className="text-sm font-semibold text-gray-600">
@@ -325,7 +333,7 @@ export default function FailureAnalysisModal({
               </div>
 
               {/* Block 2: Distribution */}
-              <div className="flex-1 min-w-0 border-r border-gray-200 pr-4">
+              <div className="border-r border-gray-200 pr-4">
                 <div className="flex items-center space-x-2 mb-3">
                   <ChartIcon />
                   <h4 className="text-sm font-semibold text-gray-600">
@@ -371,7 +379,7 @@ export default function FailureAnalysisModal({
               </div>
 
               {/* Block 3: Top Reasons List */}
-              <div className="flex-shrink-0 w-64">
+              <div className="pl-4">
                 <div className="flex items-center space-x-2 mb-3">
                   <ListIcon />
                   <h4 className="text-sm font-semibold text-gray-600">
@@ -411,8 +419,9 @@ export default function FailureAnalysisModal({
                 </div>
               </div>
             </div>
-            <div className="mt-4 overflow-auto">
-              <table className="w-full text-xs">
+            <div className="mt-4 grid grid-cols-2 gap-6">
+              <div className="overflow-auto">
+                <table className="w-full text-xs">
                 <thead className="bg-gray-50 text-gray-600">
                   <tr>
                     <th className="px-2 py-1 text-left">Reason</th>
@@ -443,21 +452,21 @@ export default function FailureAnalysisModal({
                   ))}
                 </tbody>
               </table>
-            </div>
+              </div>
 
-            <div className="mt-6 overflow-auto">
-              <h4 className="text-sm font-semibold text-gray-600 mb-2">
-                Top Postcodes
-              </h4>
-              <table className="w-full text-xs">
-                <thead className="bg-gray-50 text-gray-600">
-                  <tr>
-                    <th className="px-2 py-1 text-left">Postcode</th>
-                    <th className="px-2 py-1 text-right">Total</th>
-                    <th className="px-2 py-1 text-left">Breakdown</th>
-                  </tr>
-                </thead>
-                <tbody>
+              <div className="overflow-auto">
+                <h4 className="text-sm font-semibold text-gray-600 mb-2">
+                  Top Postcodes
+                </h4>
+                <table className="w-full text-xs">
+                  <thead className="bg-gray-50 text-gray-600">
+                    <tr>
+                      <th className="px-2 py-1 text-left">Postcode</th>
+                      <th className="px-2 py-1 text-right">Total</th>
+                      <th className="px-2 py-1 text-left">Breakdown</th>
+                    </tr>
+                  </thead>
+                  <tbody>
                   {topPostcodes.map((pc, idx) => (
                     <tr
                       key={pc.postcode}
@@ -479,40 +488,45 @@ export default function FailureAnalysisModal({
                   ))}
                 </tbody>
               </table>
-            </div>
+              </div>
 
-            <div className="mt-6 overflow-auto">
-              <h4 className="text-sm font-semibold text-gray-600 mb-2">
-                Top Drivers
-              </h4>
-              <table className="w-full text-xs">
-                <thead className="bg-gray-50 text-gray-600">
-                  <tr>
-                    <th className="px-2 py-1 text-left">Driver</th>
-                    <th className="px-2 py-1 text-right">Failed</th>
-                  </tr>
-                </thead>
-                <tbody>
+              <div className="overflow-auto">
+                <h4 className="text-sm font-semibold text-gray-600 mb-2">
+                  Top Drivers
+                </h4>
+                <table className="w-full text-xs">
+                  <thead className="bg-gray-50 text-gray-600">
+                    <tr>
+                      <th className="px-2 py-1 text-left">Driver</th>
+                      <th className="px-2 py-1 text-right">Total</th>
+                      <th className="px-2 py-1 text-left">Breakdown</th>
+                    </tr>
+                  </thead>
+                  <tbody>
                   {topDrivers.map((d, idx) => (
                     <tr
                       key={d.driver}
                       className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}
                     >
                       <td className="px-2 py-1 text-left font-medium">{d.driver}</td>
-                      <td className="px-2 py-1 text-right">{d.count}</td>
+                      <td className="px-2 py-1 text-right">{d.total}</td>
+                      <td className="px-2 py-1 text-left">
+                        {d.reasons.map((r) => `${r.reason} ${r.count}`).join(', ')}
+                      </td>
                     </tr>
                   ))}
-                </tbody>
-              </table>
-            </div>
-
-            <div className="mt-6">
-              <div className="flex items-center space-x-2 mb-2">
-                <TrendIcon />
-                <h4 className="text-sm font-semibold text-gray-600">Failure Trend</h4>
+                  </tbody>
+                </table>
               </div>
-              <div className="h-40 relative">
-                <canvas ref={chartRef} />
+
+              <div>
+                <div className="flex items-center space-x-2 mb-2">
+                  <TrendIcon />
+                  <h4 className="text-sm font-semibold text-gray-600">Failure Trend</h4>
+                </div>
+                <div className="h-40 relative">
+                  <canvas ref={chartRef} />
+                </div>
               </div>
             </div>
           </>
