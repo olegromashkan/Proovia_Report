@@ -12,23 +12,43 @@ interface Trip {
 export default function FailedReasonsCard({ trips }: { trips: Trip[] }) {
   const [open, setOpen] = useState(false);
 
-  const { failureRate, topReason } = useMemo(() => {
+  const { failureRate, topReason, sortedReasons } = useMemo(() => {
     const map: Record<string, number> = {};
     let failed = 0;
-    trips.forEach(t => {
+    trips.forEach((t) => {
       if (t.Status === 'Failed') {
         failed++;
         const reason = getFailureReason(t.Notes);
         map[reason] = (map[reason] || 0) + 1;
       }
     });
-    const sorted = Object.entries(map).sort(([,a],[,b]) => b-a);
-    const top = sorted[0] || ['N/A',0];
+    const sorted = Object.entries(map).sort(([, a], [, b]) => b - a);
+    const totalFailed = failed;
+    const reasons = sorted.map(([reason, count]) => ({
+      reason,
+      count,
+      percentage: totalFailed > 0 ? (count / totalFailed) * 100 : 0,
+    }));
+    const top = reasons[0] || { reason: 'N/A', count: 0, percentage: 0 };
     return {
       failureRate: trips.length > 0 ? (failed / trips.length) * 100 : 0,
-      topReason: top[0] as string,
+      topReason: top.reason,
+      sortedReasons: reasons,
     };
   }, [trips]);
+
+  const colors = [
+    '#ef4444',
+    '#f97316',
+    '#eab308',
+    '#84cc16',
+    '#22c55e',
+    '#06b6d4',
+    '#3b82f6',
+    '#8b5cf6',
+    '#ec4899',
+    '#f59e0b',
+  ];
 
   return (
     <>
@@ -46,6 +66,20 @@ export default function FailedReasonsCard({ trips }: { trips: Trip[] }) {
             <span>Top Reason</span>
             <span className="font-bold truncate max-w-[120px] text-right">{topReason}</span>
           </div>
+        </div>
+        <div
+          className="w-full h-2 bg-red-300/50 rounded mt-2 overflow-hidden flex"
+          title="Distribution of failure reasons"
+        >
+          {sortedReasons.map((item, index) => (
+            <div
+              key={item.reason}
+              style={{
+                width: `${item.percentage}%`,
+                backgroundColor: colors[index % colors.length],
+              }}
+            />
+          ))}
         </div>
       </div>
       <FailureAnalysisModal open={open} onClose={() => setOpen(false)} trips={trips} />

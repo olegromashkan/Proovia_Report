@@ -17,12 +17,6 @@ interface FailureReason {
 }
 
 // --- Icons (can be moved to a separate file) ---
-const ChartIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-    <path strokeLinecap="round" strokeLinejoin="round" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z" />
-  </svg>
-);
-
 const ListIcon = () => (
     <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
         <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 10h16M4 14h16M4 18h16" />
@@ -126,33 +120,31 @@ export default function FailureAnalysisModal({
             </div>
           </div>
 
-          {/* Block 2: Distribution */}
+          {/* Block 2: Detailed Table */}
           <div className="flex-1 min-w-0 border-r border-gray-200 pr-4">
-             <div className="flex items-center space-x-2 mb-3">
-                <ChartIcon />
-                <h4 className="text-sm font-semibold text-gray-600">Reason Distribution</h4>
+            <div className="flex items-center space-x-2 mb-3">
+              <ListIcon />
+              <h4 className="text-sm font-semibold text-gray-600">Reason Breakdown</h4>
             </div>
-            <div className="w-full h-6 bg-gray-100 rounded-full overflow-hidden flex" title="Distribution of failure reasons">
-              {sortedReasons.map((item, index) => (
-                <div
-                  key={item.reason}
-                  className="h-full group relative"
-                  style={{ width: `${item.percentage}%`, backgroundColor: colors[index % colors.length] }}
-                  role="tooltip"
-                >
-                  <div className="absolute bottom-full mb-2 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-10 shadow-lg">
-                    <span className="font-bold">{item.reason}:</span> {item.count} ({item.percentage.toFixed(1)}%)
-                    <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-x-4 border-x-transparent border-t-4 border-t-gray-800"></div>
-                  </div>
-                </div>
-              ))}
-            </div>
-            <div className="mt-2 text-xs text-gray-500">
-                <p>
-                    <span className="font-semibold text-gray-700">Top Reason: </span> 
-                    <span className="text-orange-600 font-medium">{topReason.name}</span>
-                    <span className="ml-1">({(topReason.count / totalFailed * 100).toFixed(0)}% of all failures)</span>
-                </p>
+            <div className="overflow-auto max-h-60">
+              <table className="table table-xs">
+                <thead>
+                  <tr>
+                    <th className="whitespace-nowrap">Reason</th>
+                    <th className="whitespace-nowrap">Count</th>
+                    <th className="whitespace-nowrap">% of Failures</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {sortedReasons.map((item, index) => (
+                    <tr key={item.reason}>
+                      <td className="whitespace-nowrap">{item.reason}</td>
+                      <td>{item.count}</td>
+                      <td>{item.percentage.toFixed(1)}%</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           </div>
 
