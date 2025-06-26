@@ -15,6 +15,7 @@ import Icon from "../components/Icon";
 import VanCheck from "../components/VanCheck";
 import DriverStatsModal from "../components/DriverStatsModal";
 import FailedTripsModal from "../components/FailedTripsModal";
+import FailedReasonsCard from "../components/FailedReasonsCard";
 import { getFailureReason } from "../lib/failureReason";
 import { parseDate } from "../lib/dateUtils";
 
@@ -206,6 +207,7 @@ const ScrollingStats = ({
           data={stats.topContractors}
           color="from-orange-500 to-orange-600"
         />
+        <FailedReasonsCard trips={trips} />
       </div>
     </div>
   );
