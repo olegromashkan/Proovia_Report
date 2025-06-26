@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useRef, useEffect } from "react";
 import Modal from "./Modal";
 import { getFailureReason } from "../lib/failureReason";
 
@@ -73,6 +73,23 @@ const StatsIcon = () => (
   </svg>
 );
 
+const TrendIcon = () => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    className="h-4 w-4 text-gray-400"
+    fill="none"
+    viewBox="0 0 24 24"
+    stroke="currentColor"
+    strokeWidth={2}
+  >
+    <path
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      d="M3 17l6-6 4 4 8-8"
+    />
+  </svg>
+);
+
 // --- Main Component ---
 export default function FailureAnalysisModal({
   open,
@@ -84,6 +101,8 @@ export default function FailureAnalysisModal({
   trips: Trip[];
 }) {
   if (!open) return null;
+  const chartRef = useRef<HTMLCanvasElement>(null);
+  const chartInstanceRef = useRef<any>(null);
   // Memoized calculations for failure metrics
   const { counts, totalFailed, totalTrips, failureRate, topReason } =
     useMemo(() => {
@@ -150,6 +169,81 @@ export default function FailureAnalysisModal({
     },
     [trips],
   );
+
+  // Top drivers with most failures
+  const topDrivers = useMemo(() => {
+    const map: Record<string, number> = {};
+    trips.forEach((t) => {
+      if (t.Status !== 'Failed') return;
+      const driver = t['Trip.Driver1'] || t.Driver || 'Unknown';
+      map[driver] = (map[driver] || 0) + 1;
+    });
+    return Object.entries(map)
+      .map(([driver, count]) => ({ driver, count }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 10);
+  }, [trips]);
+
+  // Daily failure trend
+  const dailyTrend = useMemo(() => {
+    const map: Record<string, { failed: number; total: number }> = {};
+    trips.forEach((t) => {
+      const raw = t.Start_Time || t['Trip.Start_Time'] || '';
+      const date = raw.split(' ')[0];
+      if (!date) return;
+      if (!map[date]) map[date] = { failed: 0, total: 0 };
+      map[date].total += 1;
+      if (t.Status === 'Failed') map[date].failed += 1;
+    });
+    return Object.entries(map)
+      .map(([date, { failed, total }]) => ({
+        date,
+        failed,
+        rate: total > 0 ? (failed / total) * 100 : 0,
+      }))
+      .sort((a, b) => a.date.localeCompare(b.date));
+  }, [trips]);
+
+  // Create chart for daily trend
+  useEffect(() => {
+    const Chart = (window as any).Chart;
+    if (!Chart || !chartRef.current) return;
+
+    if (chartInstanceRef.current) {
+      chartInstanceRef.current.destroy();
+    }
+
+    const labels = dailyTrend.map((d) => d.date.slice(5));
+    const data = dailyTrend.map((d) => d.failed);
+
+    chartInstanceRef.current = new Chart(chartRef.current, {
+      type: 'line',
+      data: {
+        labels,
+        datasets: [
+          {
+            label: 'Failed',
+            data,
+            borderColor: '#f87171',
+            tension: 0.1,
+            fill: false,
+          },
+        ],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: { y: { beginAtZero: true } },
+      },
+    });
+
+    return () => {
+      if (chartInstanceRef.current) {
+        chartInstanceRef.current.destroy();
+        chartInstanceRef.current = null;
+      }
+    };
+  }, [dailyTrend]);
 
   // Color palette
   const colors = [
@@ -385,6 +479,41 @@ export default function FailureAnalysisModal({
                   ))}
                 </tbody>
               </table>
+            </div>
+
+            <div className="mt-6 overflow-auto">
+              <h4 className="text-sm font-semibold text-gray-600 mb-2">
+                Top Drivers
+              </h4>
+              <table className="w-full text-xs">
+                <thead className="bg-gray-50 text-gray-600">
+                  <tr>
+                    <th className="px-2 py-1 text-left">Driver</th>
+                    <th className="px-2 py-1 text-right">Failed</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {topDrivers.map((d, idx) => (
+                    <tr
+                      key={d.driver}
+                      className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}
+                    >
+                      <td className="px-2 py-1 text-left font-medium">{d.driver}</td>
+                      <td className="px-2 py-1 text-right">{d.count}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            <div className="mt-6">
+              <div className="flex items-center space-x-2 mb-2">
+                <TrendIcon />
+                <h4 className="text-sm font-semibold text-gray-600">Failure Trend</h4>
+              </div>
+              <div className="h-40 relative">
+                <canvas ref={chartRef} />
+              </div>
             </div>
           </>
         )}
