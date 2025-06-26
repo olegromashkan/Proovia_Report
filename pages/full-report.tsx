@@ -14,6 +14,8 @@ import TripModal from "../components/TripModal";
 import Icon from "../components/Icon";
 import VanCheck from "../components/VanCheck";
 import DriverStatsModal from "../components/DriverStatsModal";
+import FailedTripsModal from "../components/FailedTripsModal";
+import { getFailureReason } from "../lib/failureReason";
 import { parseDate } from "../lib/dateUtils";
 
 // --- Helpers ---
@@ -243,6 +245,11 @@ const TripCard = memo(
             <p className="text-sm opacity-70">
               {trip["Trip.Driver1"] || "No Driver"}
             </p>
+            {trip.Status === "Failed" && (
+              <span className="badge badge-warning badge-sm mt-1">
+                {getFailureReason(trip.Notes)}
+              </span>
+            )}
           </div>
           <div className="flex flex-col items-end gap-1 flex-shrink-0">
             {summaryText && (
@@ -276,6 +283,7 @@ export default function FullReport() {
   const [selected, setSelected] = useState<Trip | null>(null);
   const [isDrawerOpen, setDrawerOpen] = useState(false);
   const [showDriverStats, setShowDriverStats] = useState(false);
+  const [showFailed, setShowFailed] = useState(false);
 
   // Filters
   const [filters, setFilters] = useState({
@@ -464,6 +472,11 @@ export default function FullReport() {
       positiveArrivalTime,
     };
   }, [filteredTrips]);
+
+  const failedTrips = useMemo(
+    () => filteredTrips.filter((t) => t.Status === "Failed"),
+    [filteredTrips]
+  );
 
   const startContractors = useMemo(() => {
     const set = new Set<string>();
@@ -974,7 +987,10 @@ export default function FullReport() {
                       {stats.complete}
                     </div>
                   </div>
-                  <div className="bg-error/20 rounded p-2 text-center">
+                  <div
+                    className="bg-error/20 rounded p-2 text-center cursor-pointer"
+                    onClick={() => setShowFailed(true)}
+                  >
                     <div className="text-xs text-error">Failed</div>
                     <div className="text-lg font-bold text-error">
                       {stats.failed}
@@ -1209,6 +1225,11 @@ export default function FullReport() {
         onClose={() => setShowDriverStats(false)}
         dates={driverStatsData.dates}
         stats={driverStatsData.stats}
+      />
+      <FailedTripsModal
+        open={showFailed}
+        onClose={() => setShowFailed(false)}
+        trips={failedTrips}
       />
     </Layout>
   );
