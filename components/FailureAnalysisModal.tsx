@@ -118,43 +118,16 @@ export default function FailureAnalysisModal({
                <StatsIcon />
                <h4 className="text-sm font-semibold text-gray-600">Summary</h4>
             </div>
-            <div className="space-y-2">
-                <div className="text-xs">
+            <div className="space-y-1 text-xs">
+                <div>
                     <p className="text-gray-500">Failure Rate</p>
                     <p className="font-bold text-2xl text-red-600">{failureRate.toFixed(1)}<span className="text-lg">%</span></p>
                 </div>
+                <p className="text-gray-600">{totalFailed} of {totalTrips} trips failed</p>
+                <p className="text-gray-600">Top reason: <span className="font-medium">{topReason.name}</span></p>
             </div>
           </div>
 
-          {/* Block 2: Distribution */}
-          <div className="flex-1 min-w-0 border-r border-gray-200 pr-4">
-             <div className="flex items-center space-x-2 mb-3">
-                <ChartIcon />
-                <h4 className="text-sm font-semibold text-gray-600">Reason Distribution</h4>
-            </div>
-            <div className="w-full h-6 bg-gray-100 rounded-full overflow-hidden flex" title="Distribution of failure reasons">
-              {sortedReasons.map((item, index) => (
-                <div
-                  key={item.reason}
-                  className="h-full group relative"
-                  style={{ width: `${item.percentage}%`, backgroundColor: colors[index % colors.length] }}
-                  role="tooltip"
-                >
-                  <div className="absolute bottom-full mb-2 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-10 shadow-lg">
-                    <span className="font-bold">{item.reason}:</span> {item.count} ({item.percentage.toFixed(1)}%)
-                    <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-x-4 border-x-transparent border-t-4 border-t-gray-800"></div>
-                  </div>
-                </div>
-              ))}
-            </div>
-            <div className="mt-2 text-xs text-gray-500">
-                <p>
-                    <span className="font-semibold text-gray-700">Top Reason: </span> 
-                    <span className="text-orange-600 font-medium">{topReason.name}</span>
-                    <span className="ml-1">({(topReason.count / totalFailed * 100).toFixed(0)}% of all failures)</span>
-                </p>
-            </div>
-          </div>
 
           {/* Block 3: Top Reasons List */}
           <div className="flex-shrink-0 w-64">
@@ -181,6 +154,32 @@ export default function FailureAnalysisModal({
             </div>
           </div>
 
+        </div>
+        <div className="mt-4 overflow-auto">
+          <table className="w-full text-xs">
+            <thead className="bg-gray-50 text-gray-600">
+              <tr>
+                <th className="px-2 py-1 text-left">Reason</th>
+                <th className="px-2 py-1 text-right">Count</th>
+                <th className="px-2 py-1 text-right">Percentage</th>
+              </tr>
+            </thead>
+            <tbody>
+              {sortedReasons.map((r, idx) => (
+                <tr key={r.reason} className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                  <td className="px-2 py-1 text-left">
+                    <span
+                      className="w-2 h-2 rounded-full inline-block mr-2"
+                      style={{ backgroundColor: colors[idx % colors.length] }}
+                    />
+                    {r.reason}
+                  </td>
+                  <td className="px-2 py-1 text-right">{r.count}</td>
+                  <td className="px-2 py-1 text-right">{r.percentage.toFixed(1)}%</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       )}
       </div>
