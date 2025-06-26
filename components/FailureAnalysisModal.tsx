@@ -121,6 +121,36 @@ export default function FailureAnalysisModal({
       }));
   }, [counts, totalFailed]);
 
+  // Top postcodes with failure reasons
+  const topPostcodes = useMemo(
+    () => {
+      const pcMap: Record<string, Record<string, number>> = {};
+      trips.forEach((t) => {
+        if (t.Status !== "Failed") return;
+        const pc = t["Address.Postcode"] || "Unknown";
+        const reason = getFailureReason(t.Notes);
+        if (!pcMap[pc]) pcMap[pc] = {};
+        pcMap[pc][reason] = (pcMap[pc][reason] || 0) + 1;
+      });
+
+      return Object.entries(pcMap)
+        .map(([postcode, reasons]) => {
+          const total = Object.values(reasons).reduce((a, b) => a + b, 0);
+          const sorted = Object.entries(reasons)
+            .sort(([, a], [, b]) => b - a)
+            .map(([reason, count]) => ({
+              reason,
+              count,
+              percentage: total > 0 ? (count / total) * 100 : 0,
+            }));
+          return { postcode, total, reasons: sorted };
+        })
+        .sort((a, b) => b.total - a.total)
+        .slice(0, 20);
+    },
+    [trips],
+  );
+
   // Color palette
   const colors = [
     "#ef4444",
@@ -314,6 +344,42 @@ export default function FailureAnalysisModal({
                       <td className="px-2 py-1 text-right">{r.count}</td>
                       <td className="px-2 py-1 text-right">
                         {r.percentage.toFixed(1)}%
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            <div className="mt-6 overflow-auto">
+              <h4 className="text-sm font-semibold text-gray-600 mb-2">
+                Top Postcodes
+              </h4>
+              <table className="w-full text-xs">
+                <thead className="bg-gray-50 text-gray-600">
+                  <tr>
+                    <th className="px-2 py-1 text-left">Postcode</th>
+                    <th className="px-2 py-1 text-right">Total</th>
+                    <th className="px-2 py-1 text-left">Breakdown</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {topPostcodes.map((pc, idx) => (
+                    <tr
+                      key={pc.postcode}
+                      className={idx % 2 === 0 ? "bg-white" : "bg-gray-50"}
+                    >
+                      <td className="px-2 py-1 text-left font-medium">
+                        {pc.postcode}
+                      </td>
+                      <td className="px-2 py-1 text-right">{pc.total}</td>
+                      <td className="px-2 py-1 text-left">
+                        {pc.reasons
+                          .map(
+                            (r) =>
+                              `${r.reason} ${r.count} (${r.percentage.toFixed(1)}%)`,
+                          )
+                          .join(" ")}
                       </td>
                     </tr>
                   ))}
