@@ -16,6 +16,7 @@ import VanCheck from "../components/VanCheck";
 import DriverStatsModal from "../components/DriverStatsModal";
 import FailedTripsModal from "../components/FailedTripsModal";
 import FailedReasonsCard from "../components/FailedReasonsCard";
+import FailureAnalysisModal from "../components/FailureAnalysisModal";
 import { getFailureReason } from "../lib/failureReason";
 import { parseDate } from "../lib/dateUtils";
 
@@ -58,10 +59,12 @@ const ScrollingStats = ({
   trips,
   driverToContractor,
   onDriversClick,
+  onFailuresClick,
 }: {
   trips: Trip[];
   driverToContractor: Record<string, string>;
   onDriversClick: () => void;
+  onFailuresClick: () => void;
 }) => {
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -207,7 +210,7 @@ const ScrollingStats = ({
           data={stats.topContractors}
           color="from-orange-500 to-orange-600"
         />
-        <FailedReasonsCard trips={trips} />
+        <FailedReasonsCard trips={trips} onClick={onFailuresClick} />
       </div>
     </div>
   );
@@ -286,6 +289,7 @@ export default function FullReport() {
   const [isDrawerOpen, setDrawerOpen] = useState(false);
   const [showDriverStats, setShowDriverStats] = useState(false);
   const [showFailed, setShowFailed] = useState(false);
+  const [showFailureAnalysis, setShowFailureAnalysis] = useState(false);
 
   // Filters
   const [filters, setFilters] = useState({
@@ -714,6 +718,7 @@ export default function FullReport() {
             trips={trips}
             driverToContractor={driverToContractor}
             onDriversClick={() => setShowDriverStats(true)}
+            onFailuresClick={() => setShowFailureAnalysis(true)}
           />
 
           {/* Header */}
@@ -1227,6 +1232,11 @@ export default function FullReport() {
         onClose={() => setShowDriverStats(false)}
         dates={driverStatsData.dates}
         stats={driverStatsData.stats}
+      />
+      <FailureAnalysisModal
+        open={showFailureAnalysis}
+        onClose={() => setShowFailureAnalysis(false)}
+        trips={trips}
       />
       <FailedTripsModal
         open={showFailed}

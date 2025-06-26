@@ -37,7 +37,13 @@ const StatsIcon = () => (
 
 
 // --- Main Component ---
-export default function FailedReasonsCard({ trips }: { trips: Trip[] }) {
+export default function FailedReasonsCard({
+  trips,
+  onClick,
+}: {
+  trips: Trip[];
+  onClick?: () => void;
+}) {
   // Memoized calculations for failure metrics
   const { counts, totalFailed, totalTrips, failureRate, topReason } = useMemo(() => {
     const map: Record<string, number> = {};
@@ -83,7 +89,10 @@ export default function FailedReasonsCard({ trips }: { trips: Trip[] }) {
   const isEmpty = totalFailed === 0;
 
   return (
-    <div className="bg-white rounded-lg shadow-md border border-gray-200 flex flex-col p-4 min-h-[10rem] max-w-4xl mx-auto">
+    <div
+      onClick={onClick}
+      className={`bg-white rounded-lg shadow-md border border-gray-200 flex flex-col p-4 min-h-[10rem] max-w-4xl mx-auto ${onClick ? 'cursor-pointer hover:shadow-lg transition-shadow' : ''}`}
+    >
       <h3 className="text-base font-semibold text-gray-800 mb-3">Failure Analysis</h3>
       
       {isEmpty ? (
