@@ -92,6 +92,23 @@ const TrendIcon = () => (
   </svg>
 );
 
+const ClockIcon = () => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    className="h-5 w-5 text-gray-500 dark:text-gray-400"
+    fill="none"
+    viewBox="0 0 24 24"
+    stroke="currentColor"
+    strokeWidth={2}
+  >
+    <path
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      d="M12 8v4l3 3M12 4a8 8 0 100 16 8 8 0 000-16z"
+    />
+  </svg>
+);
+
 // --- Main Component ---
 export default function FailureAnalysisModal({
   open,
@@ -105,6 +122,8 @@ export default function FailureAnalysisModal({
   if (!open) return null;
   const chartRef = useRef<HTMLCanvasElement>(null);
   const chartInstanceRef = useRef<any>(null);
+  const timeChartRef = useRef<HTMLCanvasElement>(null);
+  const timeChartInstanceRef = useRef<any>(null);
   const [expandedReason, setExpandedReason] = useState<string | null>(null);
   const [expandedDriver, setExpandedDriver] = useState<string | null>(null);
   const [expandedPostcode, setExpandedPostcode] = useState<string | null>(null);
@@ -248,6 +267,28 @@ export default function FailureAnalysisModal({
       .sort((a, b) => a.date.localeCompare(b.date));
   }, [trips]);
 
+  // Failures by time completed (hour of day)
+  const failsByHour = useMemo(() => {
+    const map: Record<number, { count: number; reasons: Record<string, number> }> = {};
+    trips.forEach((t) => {
+      if (t.Status !== 'Failed') return;
+      const raw =
+        t.Time_Completed || t['Time_Completed'] || t['Trip.Time_Completed'];
+      if (!raw) return;
+      const time = String(raw).split(' ')[1] || String(raw);
+      const hour = parseInt(time.split(':')[0] || '0', 10);
+      if (!map[hour]) map[hour] = { count: 0, reasons: {} };
+      map[hour].count += 1;
+      const r = getFailureReason(t.Notes);
+      map[hour].reasons[r] = (map[hour].reasons[r] || 0) + 1;
+    });
+    const res = [] as { hour: number; count: number; reasons: Record<string, number> }[];
+    for (let h = 0; h < 24; h++) {
+      res.push({ hour: h, count: map[h]?.count || 0, reasons: map[h]?.reasons || {} });
+    }
+    return res;
+  }, [trips]);
+
   // Create chart for daily trend
   useEffect(() => {
     const Chart = (window as any).Chart;
@@ -305,6 +346,72 @@ export default function FailureAnalysisModal({
       }
     };
   }, [dailyTrend]);
+
+  // Create chart for failures by hour
+  useEffect(() => {
+    const Chart = (window as any).Chart;
+    if (!Chart || !timeChartRef.current) return;
+
+    if (timeChartInstanceRef.current) {
+      timeChartInstanceRef.current.destroy();
+    }
+
+    const labels = failsByHour.map((d) => `${String(d.hour).padStart(2, '0')}:00`);
+    const data = failsByHour.map((d) => d.count);
+
+    timeChartInstanceRef.current = new Chart(timeChartRef.current, {
+      type: 'bar',
+      data: {
+        labels,
+        datasets: [
+          {
+            label: 'Failed',
+            data,
+            backgroundColor: '#f87171',
+          },
+        ],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          y: {
+            beginAtZero: true,
+            grid: { color: '#e5e7eb', borderColor: '#d1d5db' },
+            ticks: { color: '#374151', font: { size: 12 } },
+          },
+          x: {
+            grid: { display: false },
+            ticks: { color: '#374151', font: { size: 12 } },
+          },
+        },
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            backgroundColor: '#1f2937',
+            titleFont: { size: 12 },
+            bodyFont: { size: 11 },
+            callbacks: {
+              afterLabel: (ctx: any) => {
+                const info = failsByHour[ctx.dataIndex];
+                const sorted = Object.entries(info.reasons)
+                  .sort((a, b) => b[1] - a[1])
+                  .slice(0, 3);
+                return sorted.map(([r, c]) => `${r} ${c}`);
+              },
+            },
+          },
+        },
+      },
+    });
+
+    return () => {
+      if (timeChartInstanceRef.current) {
+        timeChartInstanceRef.current.destroy();
+        timeChartInstanceRef.current = null;
+      }
+    };
+  }, [failsByHour]);
 
   // Color palette
   const colors = [
@@ -643,6 +750,17 @@ export default function FailureAnalysisModal({
               </div>
 
 
+
+              {/* Time of Day Chart */}
+              <div className="col-span-1 flex flex-col">
+                <div className="flex items-center gap-2 mb-3">
+                  <ClockIcon />
+                  <h4 className="text-sm font-semibold text-gray-600 dark:text-gray-300">Fails by Time</h4>
+                </div>
+                <div className="flex-1 bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm border border-gray-200 dark:border-gray-700">
+                  <canvas ref={timeChartRef} />
+                </div>
+              </div>
 
               {/* Trend Chart */}
               <div className="col-span-1 flex flex-col">
