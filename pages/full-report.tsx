@@ -430,8 +430,18 @@ export default function FullReport() {
   const stats = useMemo(() => {
     let positiveTimeCompleted = 0;
     let positiveArrivalTime = 0;
+    let optimo = 0;
+    let other = 0;
+    let complete = 0;
+    let failed = 0;
 
     trips.forEach((trip) => {
+      if (trip["Trip.Route"] === "Optimo") optimo++;
+      else other++;
+
+      if (trip.Status === "Complete") complete++;
+      else if (trip.Status === "Failed") failed++;
+
       if (
         !trip?.["Address.Working_Hours"] ||
         !trip.Time_Completed ||
@@ -460,10 +470,12 @@ export default function FullReport() {
 
     return {
       total: trips.length,
-      complete: trips.filter((t) => t.Status === "Complete").length,
-      failed: trips.filter((t) => t.Status === "Failed").length,
+      complete,
+      failed,
       positiveTimeCompleted,
       positiveArrivalTime,
+      optimo,
+      other,
     };
   }, [trips]);
   const failedTrips = useMemo(
@@ -958,6 +970,25 @@ export default function FullReport() {
                     <div className="text-xs text-warning">Late Arr</div>
                     <div className="text-lg font-bold text-warning">
                       {stats.positiveArrivalTime}
+                    </div>
+                  </div>
+                </div>
+                <div className="mb-3">
+                  <div className="font-semibold mb-1">Trip Type</div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="bg-base-200 rounded p-2 text-center">
+                      <div className="text-xs opacity-70">Optimo</div>
+                      <div className="text-lg font-bold">{stats.optimo}</div>
+                      <div className="text-xs opacity-70">
+                        {(stats.optimo / stats.total * 100).toFixed(1)}%
+                      </div>
+                    </div>
+                    <div className="bg-base-200 rounded p-2 text-center">
+                      <div className="text-xs opacity-70">Other</div>
+                      <div className="text-lg font-bold">{stats.other}</div>
+                      <div className="text-xs opacity-70">
+                        {(stats.other / stats.total * 100).toFixed(1)}%
+                      </div>
                     </div>
                   </div>
                 </div>
