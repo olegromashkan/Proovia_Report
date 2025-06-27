@@ -1,6 +1,18 @@
 import { useEffect, useState } from "react";
 import Modal from "./Modal";
 
+// Helper to get the first existing value for a list of keys
+function getField(obj: Record<string, any> | null, keys: string[]) {
+  if (!obj) return null;
+  for (const k of keys) {
+    const val = obj[k];
+    if (val !== undefined && val !== null && String(val).trim() !== "") {
+      return val;
+    }
+  }
+  return null;
+}
+
 interface Props {
   orderId: string | null;
   open: boolean;
@@ -190,7 +202,9 @@ export default function OrderDetailModal({ orderId, open, onClose }: Props) {
 
   if (!open) return null;
 
-  const punctuality = data ? calculatePunctuality(data.Time_Completed, data.Arrival_Time) : null;
+  const arrivalTime = getField(data, ['Trip.Arrival_Time', 'Arrival_Time']) as string;
+  const completedTime = getField(data, ['Trip.Time_Completed', 'Time_Completed']) as string;
+  const punctuality = data ? calculatePunctuality(completedTime, arrivalTime) : null;
 
   return (
     <Modal open={open} onClose={onClose} className="max-w-6xl w-full max-h-[95vh] overflow-y-auto">
@@ -198,10 +212,14 @@ export default function OrderDetailModal({ orderId, open, onClose }: Props) {
       <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between z-10 shadow-sm">
         <div className="flex items-center space-x-4">
           <h1 className="text-2xl font-bold text-gray-900">
-            Order #{data?.OrderNumber || orderId}
+            Order #{getField(data, ['Order.OrderNumber', 'OrderNumber']) || orderId}
           </h1>
-          {data?.Status && <StatusBadge status={data.Status} />}
-          {data?.Order_Status && <StatusBadge status={data.Order_Status} />}
+          {getField(data, ['Status', 'Order.Status']) && (
+            <StatusBadge status={String(getField(data, ['Status', 'Order.Status']))} />
+          )}
+          {getField(data, ['Order_Status', 'Order.Order_Status']) && (
+            <StatusBadge status={String(getField(data, ['Order_Status', 'Order.Order_Status']))} />
+          )}
         </div>
         <button
           onClick={onClose}
@@ -226,20 +244,20 @@ export default function OrderDetailModal({ orderId, open, onClose }: Props) {
               <InfoCard
                 icon={<svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M8 21h8a2 2 0 002-2v-5a2 2 0 00-2-2H8a2 2 0 00-2 2v5a2 2 0 002 2z" /></svg>}
                 title="Order Number"
-                value={data.OrderNumber}
+                value={getField(data, ['Order.OrderNumber', 'OrderNumber'])}
               />
               
               <InfoCard
                 icon={<svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" /></svg>}
                 title="Total Amount"
-                value={formatCurrency(data.Total)}
-                subtitle={data.Auction ? `Auction: ${data.Auction}` : undefined}
+                value={formatCurrency(getField(data, ['Order.Price', 'Price', 'Order_Value', 'Total']))}
+                subtitle={getField(data, ['Order.Auction', 'Auction']) ? `Auction: ${getField(data, ['Order.Auction', 'Auction'])}` : undefined}
               />
               
               <InfoCard
                 icon={<svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /></svg>}
                 title="Destination"
-                value={getDestination(data.Summary)}
+                value={getDestination(String(getField(data, ['Summary']) || ''))}
               />
               
               <InfoCard
@@ -259,19 +277,19 @@ export default function OrderDetailModal({ orderId, open, onClose }: Props) {
                   Contact Information
                 </h3>
                 <div className="space-y-3">
-                  <DetailRow 
-                    label="Email" 
-                    value={data.Email}
+                  <DetailRow
+                    label="Email"
+                    value={getField(data, ['Email', 'Contact_Email', 'Contact.Email', 'Address.Email'])}
                     icon={<svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>}
                   />
-                  <DetailRow 
-                    label="Working Hours" 
-                    value={data.Working_Hours}
+                  <DetailRow
+                    label="Working Hours"
+                    value={getField(data, ['Address.Working_Hours', 'Working_Hours', 'Address_Working_Hours'])}
                     icon={<svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>}
                   />
-                  <DetailRow 
-                    label="Driver" 
-                    value={data.Driver1}
+                  <DetailRow
+                    label="Driver"
+                    value={getField(data, ['Trip.Driver1', 'Driver1', 'Driver'])}
                     icon={<svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>}
                   />
                 </div>
@@ -285,19 +303,19 @@ export default function OrderDetailModal({ orderId, open, onClose }: Props) {
                   Schedule
                 </h3>
                 <div className="space-y-3">
-                  <DetailRow 
-                    label="Arrival Time" 
-                    value={data.Arrival_Time}
+                  <DetailRow
+                    label="Arrival Time"
+                    value={getField(data, ['Trip.Arrival_Time', 'Arrival_Time'])}
                     icon={<svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>}
                   />
-                  <DetailRow 
-                    label="Time Completed" 
-                    value={data.Time_Completed}
+                  <DetailRow
+                    label="Time Completed"
+                    value={getField(data, ['Trip.Time_Completed', 'Time_Completed'])}
                     icon={<svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>}
                   />
-                  <DetailRow 
-                    label="Task Date" 
-                    value={data.Task_Date}
+                  <DetailRow
+                    label="Task Date"
+                    value={getField(data, ['Trip.Task_Date', 'Task_Date'])}
                     icon={<svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>}
                   />
                 </div>
@@ -309,16 +327,16 @@ export default function OrderDetailModal({ orderId, open, onClose }: Props) {
               <div className="bg-white rounded-lg border border-gray-200 p-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8">
                   <div className="space-y-3">
-                    <DetailRow label="Order Description" value={data.Order_Description} />
-                    <DetailRow label="Payment Status" value={data.Payment_Status} />
-                    <DetailRow label="Payment Type" value={data.Payment_Type} />
-                    <DetailRow label="Track Order" value={data.Track_Order} />
+                    <DetailRow label="Order Description" value={getField(data, ['Order.Description', 'Order_Description'])} />
+                    <DetailRow label="Payment Status" value={getField(data, ['Payment.Status', 'Order.Payment_Status', 'Payment_Status'])} />
+                    <DetailRow label="Payment Type" value={getField(data, ['Payment.Type', 'Order.Payment_Type', 'Payment_Type'])} />
+                    <DetailRow label="Track Order" value={getField(data, ['Track_Order', 'Order.Track_Order'])} />
                   </div>
                   <div className="space-y-3">
-                    <DetailRow label="High Priority" value={data.High_Priority} />
-                    <DetailRow label="Total Volume" value={data.Total_Volume} />
-                    <DetailRow label="Amount Due" value={formatCurrency(data.Amount_Due)} />
-                    <DetailRow label="Payment Reference" value={data.Payment_Reference} />
+                    <DetailRow label="High Priority" value={getField(data, ['High_Priority'])} />
+                    <DetailRow label="Total Volume" value={getField(data, ['Total_Volume'])} />
+                    <DetailRow label="Amount Due" value={formatCurrency(getField(data, ['Amount_Due']))} />
+                    <DetailRow label="Payment Reference" value={getField(data, ['Payment_Reference', 'Payment.Reference'])} />
                   </div>
                 </div>
               </div>
@@ -328,16 +346,16 @@ export default function OrderDetailModal({ orderId, open, onClose }: Props) {
               <div className="bg-white rounded-lg border border-gray-200 p-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8">
                   <div className="space-y-3">
-                    <DetailRow label="Address" value={data.Address} />
-                    <DetailRow label="Postcode" value={data.Postcode} />
-                    <DetailRow label="Contact Name" value={data.Contact_Name} />
-                    <DetailRow label="Company Name" value={data.Company_Name} />
+                    <DetailRow label="Address" value={getField(data, ['Address', 'Address.Full', 'Address.Address'])} />
+                    <DetailRow label="Postcode" value={getField(data, ['Address.Postcode', 'Postcode'])} />
+                    <DetailRow label="Contact Name" value={getField(data, ['Contact_Name'])} />
+                    <DetailRow label="Company Name" value={getField(data, ['Company_Name'])} />
                   </div>
                   <div className="space-y-3">
-                    <DetailRow label="Phone" value={data.Phone} />
-                    <DetailRow label="Level" value={data.Level} />
-                    <DetailRow label="Load Time (mins)" value={data.Load_Time_Mins} />
-                    <DetailRow label="Open at Arrival" value={data.isOpenAtArrivalTime} />
+                    <DetailRow label="Phone" value={getField(data, ['Phone', 'Address.Phone'])} />
+                    <DetailRow label="Level" value={getField(data, ['Address.Level', 'Level'])} />
+                    <DetailRow label="Load Time (mins)" value={getField(data, ['Load_Time_Mins', 'Load_Time'])} />
+                    <DetailRow label="Open at Arrival" value={getField(data, ['isOpenAtArrivalTime', 'Open_at_Arrival'])} />
                   </div>
                 </div>
               </div>
@@ -347,38 +365,38 @@ export default function OrderDetailModal({ orderId, open, onClose }: Props) {
               <div className="bg-white rounded-lg border border-gray-200 p-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8">
                   <div className="space-y-3">
-                    <DetailRow label="Task Type" value={data.Task_Type} />
-                    <DetailRow label="Predicted Time" value={data.Predicted_Time} />
-                    <DetailRow label="Added Time" value={data.Added_Time} />
-                    <DetailRow label="Notification Start" value={data.Notification_Start_Time} />
+                    <DetailRow label="Task Type" value={getField(data, ['Task_Type'])} />
+                    <DetailRow label="Predicted Time" value={getField(data, ['Predicted_Time'])} />
+                    <DetailRow label="Added Time" value={getField(data, ['Added_Time'])} />
+                    <DetailRow label="Notification Start" value={getField(data, ['Notification_Start_Time', 'Notification_Start'])} />
                   </div>
                   <div className="space-y-3">
-                    <DetailRow label="Notification End" value={data.Notification_End_Time} />
-                    <DetailRow label="Notes to Driver" value={data.Notes_to_Driver} />
-                    <DetailRow label="Summary" value={data.Summary} />
+                    <DetailRow label="Notification End" value={getField(data, ['Notification_End_Time', 'Notification_End'])} />
+                    <DetailRow label="Notes to Driver" value={getField(data, ['Notes_to_Driver'])} />
+                    <DetailRow label="Summary" value={getField(data, ['Summary'])} />
                   </div>
                 </div>
               </div>
             </Section>
 
             {/* Notes Section */}
-            {(data.Office_Notes || data.Notes) && (
+            {(getField(data, ['Office_Notes']) || getField(data, ['Notes'])) && (
               <Section title="Notes">
                 <div className="bg-white rounded-lg border border-gray-200 p-6">
-                  {data.Office_Notes && (
+                  {getField(data, ['Office_Notes']) && (
                     <div className="mb-4">
                       <h4 className="font-medium text-gray-900 mb-2">Office Notes</h4>
-                      <div 
+                      <div
                         className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 text-sm"
-                        dangerouslySetInnerHTML={{ __html: data.Office_Notes }}
+                        dangerouslySetInnerHTML={{ __html: String(getField(data, ['Office_Notes'])) }}
                       />
                     </div>
                   )}
-                  {data.Notes && (
+                  {getField(data, ['Notes']) && (
                     <div>
                       <h4 className="font-medium text-gray-900 mb-2">Additional Notes</h4>
                       <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 text-sm whitespace-pre-wrap">
-                        {data.Notes}
+                        {getField(data, ['Notes'])}
                       </div>
                     </div>
                   )}
