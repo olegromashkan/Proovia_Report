@@ -4,9 +4,10 @@ import {
   useMemo,
   useCallback,
   memo,
+  useReducer,
   useRef,
-  Fragment,
 } from "react";
+import { useVirtualizer } from "@tanstack/react-virtual";
 import { useRouter } from "next/router";
 import useSWR from "swr";
 import Layout from "../components/Layout";
@@ -54,6 +55,51 @@ const diffTime = (t1: string, t2: string) => {
   return diff.toString();
 };
 
+// --- Filter state management ---
+interface Filters {
+  start: string;
+  end: string;
+  status: string;
+  contractor: string;
+  auction: string;
+  search: string;
+  startSearch: string;
+  startContractor: string;
+  vanSearch: string;
+  vanContractor: string;
+}
+
+type FilterAction =
+  | { type: "SET_FILTER"; key: keyof Filters; value: string }
+  | { type: "SET_DATE_RANGE"; start: string; end: string }
+  | { type: "RESET" };
+
+const initialFilters: Filters = {
+  start: "",
+  end: "",
+  status: "",
+  contractor: "",
+  auction: "",
+  search: "",
+  startSearch: "",
+  startContractor: "",
+  vanSearch: "",
+  vanContractor: "",
+};
+
+const filterReducer = (state: Filters, action: FilterAction): Filters => {
+  switch (action.type) {
+    case "SET_FILTER":
+      return { ...state, [action.key]: action.value };
+    case "SET_DATE_RANGE":
+      return { ...state, start: action.start, end: action.end };
+    case "RESET":
+      return initialFilters;
+    default:
+      return state;
+  }
+};
+
 // --- Scrolling Stats Component ---
 const ScrollingStats = ({
   trips,
@@ -66,7 +112,6 @@ const ScrollingStats = ({
   onDriversClick: () => void;
   onFailuresClick: () => void;
 }) => {
-  const scrollRef = useRef<HTMLDivElement>(null);
 
   const stats = useMemo(() => {
     // Top Drivers
@@ -120,21 +165,7 @@ const ScrollingStats = ({
     return { topDrivers, topPostcodes, topAuctions, topContractors };
   }, [trips, driverToContractor]);
 
-  useEffect(() => {
-    const interval = setInterval(() => {
-      if (scrollRef.current) {
-        scrollRef.current.scrollLeft += 1;
-        if (
-          scrollRef.current.scrollLeft >=
-          scrollRef.current.scrollWidth - scrollRef.current.clientWidth
-        ) {
-          scrollRef.current.scrollLeft = 0;
-        }
-      }
-    }, 30);
-
-    return () => clearInterval(interval);
-  }, []);
+  // animation handled purely in CSS
 
   const StatCard = ({
     title,
@@ -189,11 +220,7 @@ const ScrollingStats = ({
 
   return (
     <div className="overflow-hidden relative bg-base-200 py-3">
-      <div
-        ref={scrollRef}
-        className="flex gap-4 px-4 overflow-x-hidden"
-        style={{ scrollBehavior: "smooth" }}
-      >
+      <div className="flex gap-4 px-4 marquee">
         <TopDriversCard data={stats.topDrivers} onClick={onDriversClick} />
         <StatCard
           title="📍 Top Postcodes"
@@ -212,6 +239,39 @@ const ScrollingStats = ({
         />
         <FailedReasonsCard trips={trips} onClick={onFailuresClick} />
       </div>
+      <div className="flex gap-4 px-4 marquee" aria-hidden="true">
+        <TopDriversCard data={stats.topDrivers} onClick={onDriversClick} />
+        <StatCard
+          title="📍 Top Postcodes"
+          data={stats.topPostcodes}
+          color="from-purple-500 to-purple-600"
+        />
+        <StatCard
+          title="🏪 Top Auctions"
+          data={stats.topAuctions}
+          color="from-green-500 to-green-600"
+        />
+        <StatCard
+          title="🚛 Top Contractors"
+          data={stats.topContractors}
+          color="from-orange-500 to-orange-600"
+        />
+        <FailedReasonsCard trips={trips} onClick={onFailuresClick} />
+      </div>
+      <style jsx>{`
+        .marquee {
+          width: max-content;
+          animation: scroll 30s linear infinite;
+        }
+        @keyframes scroll {
+          from {
+            transform: translateX(0);
+          }
+          to {
+            transform: translateX(-50%);
+          }
+        }
+      `}</style>
     </div>
   );
 };
@@ -292,17 +352,10 @@ export default function FullReport() {
   const [showFailureAnalysis, setShowFailureAnalysis] = useState(false);
 
   // Filters
-  const [filters, setFilters] = useState({
+  const [filters, dispatchFilters] = useReducer(filterReducer, {
+    ...initialFilters,
     start: today,
     end: today,
-    status: "",
-    contractor: "",
-    auction: "",
-    search: "",
-    startSearch: "",
-    startContractor: "",
-    vanSearch: "",
-    vanContractor: "",
   });
 
   const dateRangeText = useMemo(() => {
@@ -322,6 +375,13 @@ export default function FullReport() {
     | "Last_Mention_Time"
   >("Driver");
   const [startSortDir, setStartSortDir] = useState<"asc" | "desc">("asc");
+
+  const parentRef = useRef<HTMLDivElement>(null);
+  const rowVirtualizer = useVirtualizer({
+    count: trips.length,
+    getScrollElement: () => parentRef.current,
+    estimateSize: () => 100,
+  });
 
   // Derived data
   const { contractors, auctions, driverToContractor } = useMemo(() => {
@@ -352,98 +412,54 @@ export default function FullReport() {
     if (!router.isReady) return;
     const { start: qStart, end: qEnd } = router.query;
     if (typeof qStart === "string") {
-      setFilters((prev) => ({ ...prev, start: qStart }));
+      dispatchFilters({ type: "SET_FILTER", key: "start", value: qStart });
     }
     if (typeof qEnd === "string") {
-      setFilters((prev) => ({ ...prev, end: qEnd }));
+      dispatchFilters({ type: "SET_FILTER", key: "end", value: qEnd });
     }
   }, [router.isReady, router.query]);
 
-  const { data: tripsRes } = useSWR(
-    router.isReady
-      ? `/api/report?start=${filters.start}&end=${filters.end}`
-      : null,
-    fetcher,
-  );
-  const { data: startRes } = useSWR(
-    router.isReady
-      ? `/api/start-times?start=${filters.start}&end=${filters.end}`
-      : null,
-    fetcher,
-  );
-  const { data: vanRes } = useSWR(
-    router.isReady
-      ? `/api/van-checks?start=${filters.start}&end=${filters.end}`
-      : null,
+  const query = useMemo(() => {
+    const params = new URLSearchParams({
+      start: filters.start,
+      end: filters.end,
+      status: filters.status,
+      contractor: filters.contractor,
+      auction: filters.auction,
+      search: filters.search,
+      startSearch: filters.startSearch,
+      startContractor: filters.startContractor,
+      vanSearch: filters.vanSearch,
+      vanContractor: filters.vanContractor,
+      sortField,
+      sortDir,
+      startSortField,
+      startSortDir,
+    });
+    return params.toString();
+  }, [filters, sortField, sortDir, startSortField, startSortDir]);
+
+  const { data: fullRes } = useSWR(
+    router.isReady ? `/api/v2/full-report?${query}` : null,
     fetcher,
   );
 
   useEffect(() => {
-    if (tripsRes) setTrips(tripsRes.items || []);
-  }, [tripsRes]);
-  useEffect(() => {
-    if (startRes) setStartData(startRes.items || []);
-  }, [startRes]);
-  useEffect(() => {
-    if (vanRes) setVanChecks(vanRes.items || []);
-  }, [vanRes]);
+    if (fullRes) {
+      setTrips(fullRes.trips || []);
+      setStartData(fullRes.startData || []);
+      setVanChecks(fullRes.vanChecks || []);
+    }
+  }, [fullRes]);
 
-  const isLoading = !tripsRes || !startRes || !vanRes;
+  const isLoading = !fullRes;
 
-  // --- Filtering ---
-  const filteredTrips = useMemo(() => {
-    return trips
-      .filter((t) => {
-        const matchesStatus =
-          !filters.status ||
-          t.Status?.toLowerCase() === filters.status.toLowerCase();
-        const contractor = driverToContractor[t["Trip.Driver1"]] || "Unknown";
-        const matchesContractor =
-          !filters.contractor || contractor === filters.contractor;
-        const matchesAuction =
-          !filters.auction || t["Order.Auction"] === filters.auction;
-        const matchesSearch =
-          !filters.search ||
-          [
-            t["Order.OrderNumber"],
-            t["Trip.Driver1"],
-            t["Address.Postcode"],
-          ].some((field) =>
-            String(field || "")
-              .toLowerCase()
-              .includes(filters.search.toLowerCase()),
-          );
-
-        return (
-          matchesStatus && matchesContractor && matchesAuction && matchesSearch
-        );
-      })
-      .sort((a, b) => {
-        const valA = a[sortField] ?? "";
-        const valB = b[sortField] ?? "";
-
-        if (sortField === "Seq" || sortField === "Order.OrderNumber") {
-          const numA = parseInt(String(valA), 10);
-          const numB = parseInt(String(valB), 10);
-          if (!isNaN(numA) && !isNaN(numB)) {
-            return sortDir === "asc" ? numA - numB : numB - numA;
-          }
-        }
-
-        const compareResult =
-          typeof valA === "number" && typeof valB === "number"
-            ? valA - valB
-            : String(valA).localeCompare(String(valB));
-
-        return sortDir === "asc" ? compareResult : -compareResult;
-      });
-  }, [trips, filters, sortField, sortDir, driverToContractor]);
 
   const stats = useMemo(() => {
     let positiveTimeCompleted = 0;
     let positiveArrivalTime = 0;
 
-    filteredTrips.forEach((trip) => {
+    trips.forEach((trip) => {
       if (
         !trip?.["Address.Working_Hours"] ||
         !trip.Time_Completed ||
@@ -471,17 +487,17 @@ export default function FullReport() {
     });
 
     return {
-      total: filteredTrips.length,
-      complete: filteredTrips.filter((t) => t.Status === "Complete").length,
-      failed: filteredTrips.filter((t) => t.Status === "Failed").length,
+      total: trips.length,
+      complete: trips.filter((t) => t.Status === "Complete").length,
+      failed: trips.filter((t) => t.Status === "Failed").length,
       positiveTimeCompleted,
       positiveArrivalTime,
     };
-  }, [filteredTrips]);
+  }, [trips]);
 
   const failedTrips = useMemo(
-    () => filteredTrips.filter((t) => t.Status === "Failed"),
-    [filteredTrips]
+    () => trips.filter((t) => t.Status === "Failed"),
+    [trips]
   );
 
   const startContractors = useMemo(() => {
@@ -501,42 +517,7 @@ export default function FullReport() {
     return Array.from(set).sort();
   }, [vanChecks, driverToContractor]);
 
-  const filteredStartData = useMemo(() => {
-    return startData
-      .filter((r) => {
-        const matchContractor =
-          !filters.startContractor ||
-          r.Contractor_Name === filters.startContractor;
-        const matchSearch =
-          !filters.startSearch ||
-          Object.values(r).some((v) =>
-            String(v).toLowerCase().includes(filters.startSearch.toLowerCase()),
-          );
-        return matchContractor && matchSearch;
-      })
-      .sort((a, b) => {
-        const valA = a[startSortField] ?? "";
-        const valB = b[startSortField] ?? "";
-        const cmp = String(valA).localeCompare(String(valB), undefined, {
-          numeric: true,
-        });
-        return startSortDir === "asc" ? cmp : -cmp;
-      });
-  }, [startData, filters, startSortField, startSortDir]);
-
-  const filteredVanChecks = useMemo(() => {
-    return vanChecks.filter((vc) => {
-      const contractor = driverToContractor[vc.driver_id] || "Unknown";
-      const matchContractor =
-        !filters.vanContractor || contractor === filters.vanContractor;
-      const matchSearch =
-        !filters.vanSearch ||
-        [vc.driver_id, vc.van_id].some((field) =>
-          String(field).toLowerCase().includes(filters.vanSearch.toLowerCase()),
-        );
-      return matchContractor && matchSearch;
-    });
-  }, [vanChecks, filters, driverToContractor]);
+  // datasets are already filtered and sorted by the server
 
   const driverStatsData = useMemo(() => {
     const dateSet = new Set<string>();
@@ -580,11 +561,11 @@ export default function FullReport() {
 
   // --- Handlers ---
   const setDateRange = useCallback((start: Date, end: Date) => {
-    setFilters((prev) => ({
-      ...prev,
+    dispatchFilters({
+      type: "SET_DATE_RANGE",
       start: formatDate(start),
       end: formatDate(end),
-    }));
+    });
   }, []);
 
   const dateShortcuts = useMemo(
@@ -625,18 +606,8 @@ export default function FullReport() {
   );
 
   const handleReset = () => {
-    setFilters({
-      start: today,
-      end: today,
-      status: "",
-      contractor: "",
-      auction: "",
-      search: "",
-      startSearch: "",
-      startContractor: "",
-      vanSearch: "",
-      vanContractor: "",
-    });
+    dispatchFilters({ type: "RESET" });
+    dispatchFilters({ type: "SET_DATE_RANGE", start: today, end: today });
     setSortField("Order.OrderNumber");
     setSortDir("asc");
     setStartSortField("Driver");
@@ -644,7 +615,7 @@ export default function FullReport() {
   };
 
   const copyStartTable = useCallback(() => {
-    const rows = filteredStartData.map((r) => {
+    const rows = startData.map((r) => {
       const load = calcLoad(r.Start_Time);
       const diffLoad = diffTime(r.First_Mention_Time, load);
       const diffStart = diffTime(r.Last_Mention_Time, r.Start_Time);
@@ -661,7 +632,7 @@ export default function FullReport() {
       ].join(",");
     });
     navigator.clipboard.writeText(rows.join("\n"));
-  }, [filteredStartData]);
+  }, [startData]);
 
   const downloadStartCSV = useCallback(() => {
     const header = [
@@ -675,7 +646,7 @@ export default function FullReport() {
       "Left WH",
       "Diff Start",
     ];
-    const rows = filteredStartData.map((r) => {
+    const rows = startData.map((r) => {
       const load = calcLoad(r.Start_Time);
       const diffLoad = diffTime(r.First_Mention_Time, load);
       const diffStart = diffTime(r.Last_Mention_Time, r.Start_Time);
@@ -699,7 +670,7 @@ export default function FullReport() {
     a.download = "start_times.csv";
     a.click();
     URL.revokeObjectURL(url);
-  }, [filteredStartData]);
+  }, [startData]);
 
   return (
     <Layout title="Orders Report" fullWidth>
@@ -780,20 +751,22 @@ export default function FullReport() {
                     placeholder="Search..."
                     value={filters.startSearch}
                     onChange={(e) =>
-                      setFilters((prev) => ({
-                        ...prev,
-                        startSearch: e.target.value,
-                      }))
+                      dispatchFilters({
+                        type: "SET_FILTER",
+                        key: "startSearch",
+                        value: e.target.value,
+                      })
                     }
                     className="input input-bordered input-xs w-28"
                   />
                   <select
                     value={filters.startContractor}
                     onChange={(e) =>
-                      setFilters((prev) => ({
-                        ...prev,
-                        startContractor: e.target.value,
-                      }))
+                      dispatchFilters({
+                        type: "SET_FILTER",
+                        key: "startContractor",
+                        value: e.target.value,
+                      })
                     }
                     className="select select-bordered select-xs w-32"
                   >
@@ -865,7 +838,7 @@ export default function FullReport() {
                     </tr>
                   </thead>
                   <tbody>
-                    {filteredStartData.map((r, idx) => {
+                    {startData.map((r, idx) => {
                       const load = calcLoad(r.Start_Time);
                       const diffLoad = diffTime(r.First_Mention_Time, load);
                       const diffStart = diffTime(
@@ -917,20 +890,22 @@ export default function FullReport() {
                     placeholder="Search..."
                     value={filters.vanSearch}
                     onChange={(e) =>
-                      setFilters((prev) => ({
-                        ...prev,
-                        vanSearch: e.target.value,
-                      }))
+                      dispatchFilters({
+                        type: "SET_FILTER",
+                        key: "vanSearch",
+                        value: e.target.value,
+                      })
                     }
                     className="input input-bordered input-xs w-24"
                   />
                   <select
                     value={filters.vanContractor}
                     onChange={(e) =>
-                      setFilters((prev) => ({
-                        ...prev,
-                        vanContractor: e.target.value,
-                      }))
+                      dispatchFilters({
+                        type: "SET_FILTER",
+                        key: "vanContractor",
+                        value: e.target.value,
+                      })
                     }
                     className="select select-bordered select-xs w-28"
                   >
@@ -945,7 +920,7 @@ export default function FullReport() {
               </div>
 
               <div className="overflow-auto max-h-[calc(100vh-220px)] space-y-1">
-                {filteredVanChecks.map((vc, idx) => (
+                {vanChecks.map((vc, idx) => (
                   <VanCheck
                     key={idx}
                     data={vc}
@@ -1018,19 +993,44 @@ export default function FullReport() {
                 </div>
               </div>
 
-              <div className="overflow-auto max-h-[calc(100vh-320px)] space-y-2">
+              <div
+                ref={parentRef}
+                className="overflow-auto max-h-[calc(100vh-320px)]"
+              >
                 {isLoading ? (
                   <div className="flex justify-center items-center h-32">
                     <span className="loading loading-spinner loading-md"></span>
                   </div>
                 ) : (
-                  filteredTrips.map((trip) => (
-                    <TripCard
-                      key={trip.ID}
-                      trip={trip}
-                      onClick={() => setSelected(trip)}
-                    />
-                  ))
+                  <div
+                    style={{
+                      height: rowVirtualizer.getTotalSize(),
+                      position: "relative",
+                    }}
+                  >
+                    {rowVirtualizer.getVirtualItems().map((virtualRow) => {
+                      const trip = trips[virtualRow.index];
+                      return (
+                        <div
+                          key={trip.ID}
+                          ref={rowVirtualizer.measureElement}
+                          className="mb-2"
+                          style={{
+                            position: "absolute",
+                            top: 0,
+                            left: 0,
+                            width: "100%",
+                            transform: `translateY(${virtualRow.start}px)`,
+                          }}
+                        >
+                          <TripCard
+                            trip={trip}
+                            onClick={() => setSelected(trip)}
+                          />
+                        </div>
+                      );
+                    })}
+                  </div>
                 )}
               </div>
             </div>
@@ -1061,7 +1061,11 @@ export default function FullReport() {
                   type="date"
                   value={filters.start}
                   onChange={(e) =>
-                    setFilters((prev) => ({ ...prev, start: e.target.value }))
+                    dispatchFilters({
+                      type: "SET_FILTER",
+                      key: "start",
+                      value: e.target.value,
+                    })
                   }
                   className="input input-bordered input-sm flex-1"
                 />
@@ -1069,7 +1073,11 @@ export default function FullReport() {
                   type="date"
                   value={filters.end}
                   onChange={(e) =>
-                    setFilters((prev) => ({ ...prev, end: e.target.value }))
+                    dispatchFilters({
+                      type: "SET_FILTER",
+                      key: "end",
+                      value: e.target.value,
+                    })
                   }
                   className="input input-bordered input-sm flex-1"
                 />
@@ -1101,7 +1109,11 @@ export default function FullReport() {
                 placeholder="Order, Driver, Postcode..."
                 value={filters.search}
                 onChange={(e) =>
-                  setFilters((prev) => ({ ...prev, search: e.target.value }))
+                  dispatchFilters({
+                    type: "SET_FILTER",
+                    key: "search",
+                    value: e.target.value,
+                  })
                 }
                 className="input input-bordered input-sm"
               />
@@ -1115,7 +1127,11 @@ export default function FullReport() {
               <select
                 value={filters.status}
                 onChange={(e) =>
-                  setFilters((prev) => ({ ...prev, status: e.target.value }))
+                  dispatchFilters({
+                    type: "SET_FILTER",
+                    key: "status",
+                    value: e.target.value,
+                  })
                 }
                 className="select select-bordered select-sm"
               >
@@ -1133,10 +1149,11 @@ export default function FullReport() {
               <select
                 value={filters.contractor}
                 onChange={(e) =>
-                  setFilters((prev) => ({
-                    ...prev,
-                    contractor: e.target.value,
-                  }))
+                  dispatchFilters({
+                    type: "SET_FILTER",
+                    key: "contractor",
+                    value: e.target.value,
+                  })
                 }
                 className="select select-bordered select-sm"
               >
@@ -1157,7 +1174,11 @@ export default function FullReport() {
               <select
                 value={filters.auction}
                 onChange={(e) =>
-                  setFilters((prev) => ({ ...prev, auction: e.target.value }))
+                  dispatchFilters({
+                    type: "SET_FILTER",
+                    key: "auction",
+                    value: e.target.value,
+                  })
                 }
                 className="select select-bordered select-sm"
               >
