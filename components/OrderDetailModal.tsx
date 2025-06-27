@@ -5,12 +5,23 @@ const getField = (data: any, key: string) => {
   if (!data) return null;
   const normalize = (s: string) => s.replace(/[\s_.]/g, '').toLowerCase();
   const target = normalize(key);
+
+  // first try to find an exact match
   for (const k of Object.keys(data)) {
     if (normalize(k) === target) {
       const val = data[k];
       if (val !== undefined && val !== null && val !== '') return val;
     }
   }
+
+  // then try to match by suffix to support keys like "Address.Postcode"
+  for (const k of Object.keys(data)) {
+    if (normalize(k).endsWith(target)) {
+      const val = data[k];
+      if (val !== undefined && val !== null && val !== '') return val;
+    }
+  }
+
   return null;
 };
 
