@@ -1,6 +1,7 @@
 import { useMemo, useRef, useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Modal from "./Modal";
+import OrderDetailModal from "./OrderDetailModal";
 import { getFailureReason } from "../lib/failureReason";
 
 // --- Interfaces ---
@@ -107,6 +108,7 @@ export default function FailureAnalysisModal({
   const [expandedReason, setExpandedReason] = useState<string | null>(null);
   const [expandedDriver, setExpandedDriver] = useState<string | null>(null);
   const [expandedPostcode, setExpandedPostcode] = useState<string | null>(null);
+  const [orderModalId, setOrderModalId] = useState<string | null>(null);
 
   const tripsByReason = useMemo(() => {
     const map: Record<string, Trip[]> = {};
@@ -313,6 +315,7 @@ export default function FailureAnalysisModal({
   const isEmpty = totalFailed === 0;
 
   return (
+    <>
     <Modal open={open} onClose={onClose} className="max-w-7xl w-full">
       <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 p-8 flex flex-col gap-8 min-h-[30rem] transition-colors duration-200">
         <h3 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
@@ -477,6 +480,12 @@ export default function FailureAnalysisModal({
                                       <ul className="pl-5 list-disc text-gray-600 dark:text-gray-300 space-y-1">
                                         {tripsByReason[r.reason]?.map((t) => (
                                           <li key={t.ID}>
+                                            <button
+                                              className="text-blue-600 dark:text-blue-400 hover:underline mr-1"
+                                              onClick={() => setOrderModalId(t.ID)}
+                                            >
+                                              #{t['Order.OrderNumber']}
+                                            </button>
                                             {`${t['Address.Postcode'] || 'Unknown'} (${t['Trip.Driver1'] || t.Driver || 'Unknown'})`}
                                           </li>
                                         ))}
@@ -539,6 +548,12 @@ export default function FailureAnalysisModal({
                                     <ul className="pl-5 list-disc text-gray-600 dark:text-gray-300 space-y-1">
                                       {tripsByDriver[d.driver]?.map((t) => (
                                         <li key={t.ID}>
+                                          <button
+                                            className="text-blue-600 dark:text-blue-400 hover:underline mr-1"
+                                            onClick={() => setOrderModalId(t.ID)}
+                                          >
+                                            #{t['Order.OrderNumber']}
+                                          </button>
                                           {`${t['Address.Postcode'] || 'Unknown'} (${getFailureReason(t.Notes)})`}
                                         </li>
                                       ))}
@@ -604,6 +619,12 @@ export default function FailureAnalysisModal({
                                       <ul className="pl-5 list-disc text-gray-600 dark:text-gray-300 space-y-1">
                                         {tripsByPostcode[pc.postcode]?.map((t) => (
                                           <li key={t.ID}>
+                                            <button
+                                              className="text-blue-600 dark:text-blue-400 hover:underline mr-1"
+                                              onClick={() => setOrderModalId(t.ID)}
+                                            >
+                                              #{t['Order.OrderNumber']}
+                                            </button>
                                             {`${t['Trip.Driver1'] || t.Driver || 'Unknown'} (${getFailureReason(t.Notes)})`}
                                           </li>
                                         ))}
@@ -638,5 +659,11 @@ export default function FailureAnalysisModal({
         )}
       </div>
     </Modal>
+    <OrderDetailModal
+      orderId={orderModalId}
+      open={!!orderModalId}
+      onClose={() => setOrderModalId(null)}
+    />
+    </>
   );
 }
