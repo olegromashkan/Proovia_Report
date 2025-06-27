@@ -1,4 +1,5 @@
-import { useMemo, useRef, useEffect } from "react";
+import { useMemo, useRef, useEffect, useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import Modal from "./Modal";
 import { getFailureReason } from "../lib/failureReason";
 
@@ -103,6 +104,42 @@ export default function FailureAnalysisModal({
   if (!open) return null;
   const chartRef = useRef<HTMLCanvasElement>(null);
   const chartInstanceRef = useRef<any>(null);
+  const [expandedReason, setExpandedReason] = useState<string | null>(null);
+  const [expandedDriver, setExpandedDriver] = useState<string | null>(null);
+  const [expandedPostcode, setExpandedPostcode] = useState<string | null>(null);
+
+  const tripsByReason = useMemo(() => {
+    const map: Record<string, Trip[]> = {};
+    trips.forEach((t) => {
+      if (t.Status !== "Failed") return;
+      const reason = getFailureReason(t.Notes);
+      if (!map[reason]) map[reason] = [];
+      map[reason].push(t);
+    });
+    return map;
+  }, [trips]);
+
+  const tripsByDriver = useMemo(() => {
+    const map: Record<string, Trip[]> = {};
+    trips.forEach((t) => {
+      if (t.Status !== "Failed") return;
+      const driver = t["Trip.Driver1"] || t.Driver || "Unknown";
+      if (!map[driver]) map[driver] = [];
+      map[driver].push(t);
+    });
+    return map;
+  }, [trips]);
+
+  const tripsByPostcode = useMemo(() => {
+    const map: Record<string, Trip[]> = {};
+    trips.forEach((t) => {
+      if (t.Status !== "Failed") return;
+      const pc = t["Address.Postcode"] || "Unknown";
+      if (!map[pc]) map[pc] = [];
+      map[pc].push(t);
+    });
+    return map;
+  }, [trips]);
 
   // Memoized calculations for failure metrics
   const { counts, totalFailed, totalTrips, failureRate, topReason } = useMemo(() => {
@@ -403,22 +440,53 @@ export default function FailureAnalysisModal({
                       </thead>
                       <tbody>
                         {sortedReasons.map((r, idx) => (
-                          <tr
-                            key={r.reason}
-                            className={idx % 2 === 0 ? "bg-white dark:bg-gray-800" : "bg-gray-50 dark:bg-gray-700"}
-                          >
-                            <td className="px-3 py-2 text-left">
-                              <span
-                                className="w-3 h-3 rounded-full inline-block mr-2"
-                                style={{
-                                  backgroundColor: colors[idx % colors.length],
-                                }}
-                              />
-                              {r.reason}
-                            </td>
-                            <td className="px-3 py-2 text-right text-gray-900 dark:text-gray-100">{r.count}</td>
-                            <td className="px-3 py-2 text-right text-gray-600 dark:text-gray-300">{r.percentage.toFixed(1)}%</td>
-                          </tr>
+                          <>
+                            <tr
+                              key={r.reason}
+                              onClick={() =>
+                                setExpandedReason(expandedReason === r.reason ? null : r.reason)
+                              }
+                              className={
+                                (idx % 2 === 0 ? "bg-white dark:bg-gray-800" : "bg-gray-50 dark:bg-gray-700") +
+                                " cursor-pointer"
+                              }
+                            >
+                              <td className="px-3 py-2 text-left">
+                                <span
+                                  className="w-3 h-3 rounded-full inline-block mr-2"
+                                  style={{ backgroundColor: colors[idx % colors.length] }}
+                                />
+                                {r.reason}
+                              </td>
+                              <td className="px-3 py-2 text-right text-gray-900 dark:text-gray-100">
+                                {r.count}
+                              </td>
+                              <td className="px-3 py-2 text-right text-gray-600 dark:text-gray-300">
+                                {r.percentage.toFixed(1)}%
+                              </td>
+                            </tr>
+                            {expandedReason === r.reason && (
+                              <tr className={idx % 2 === 0 ? "bg-white dark:bg-gray-800" : "bg-gray-50 dark:bg-gray-700"}>
+                                <td colSpan={3} className="px-3 pb-2">
+                                  <AnimatePresence initial={false}>
+                                    <motion.div
+                                      initial={{ height: 0, opacity: 0 }}
+                                      animate={{ height: "auto", opacity: 1 }}
+                                      exit={{ height: 0, opacity: 0 }}
+                                    >
+                                      <ul className="pl-5 list-disc text-gray-600 dark:text-gray-300 space-y-1">
+                                        {tripsByReason[r.reason]?.map((t) => (
+                                          <li key={t.ID}>
+                                            {`${t['Address.Postcode'] || 'Unknown'} (${t['Trip.Driver1'] || t.Driver || 'Unknown'})`}
+                                          </li>
+                                        ))}
+                                      </ul>
+                                    </motion.div>
+                                  </AnimatePresence>
+                                </td>
+                              </tr>
+                            )}
+                          </>
                         ))}
                       </tbody>
                     </table>
@@ -440,16 +508,47 @@ export default function FailureAnalysisModal({
                     </thead>
                     <tbody>
                       {topDrivers.map((d, idx) => (
-                        <tr
-                          key={d.driver}
-                          className={idx % 2 === 0 ? "bg-white dark:bg-gray-800" : "bg-gray-50 dark:bg-gray-700"}
-                        >
-                          <td className="px-3 py-2 text-left font-medium text-gray-900 dark:text-gray-100">{d.driver}</td>
-                          <td className="px-3 py-2 text-right text-gray-900 dark:text-gray-100">{d.total}</td>
-                          <td className="px-3 py-2 text-left text-gray-600 dark:text-gray-300">
-                            {d.reasons.map((r) => `${r.reason} ${r.count}`).join(", ")}
-                          </td>
-                        </tr>
+                        <>
+                          <tr
+                            key={d.driver}
+                            onClick={() =>
+                              setExpandedDriver(expandedDriver === d.driver ? null : d.driver)
+                            }
+                            className={
+                              (idx % 2 === 0 ? "bg-white dark:bg-gray-800" : "bg-gray-50 dark:bg-gray-700") +
+                              " cursor-pointer"
+                            }
+                          >
+                            <td className="px-3 py-2 text-left font-medium text-gray-900 dark:text-gray-100">
+                              {d.driver}
+                            </td>
+                            <td className="px-3 py-2 text-right text-gray-900 dark:text-gray-100">{d.total}</td>
+                            <td className="px-3 py-2 text-left text-gray-600 dark:text-gray-300">
+                              {d.reasons.map((r) => `${r.reason} ${r.count}`).join(", ")}
+                            </td>
+                          </tr>
+                          {expandedDriver === d.driver && (
+                            <tr className={idx % 2 === 0 ? "bg-white dark:bg-gray-800" : "bg-gray-50 dark:bg-gray-700"}>
+                              <td colSpan={3} className="px-3 pb-2">
+                                <AnimatePresence initial={false}>
+                                  <motion.div
+                                    initial={{ height: 0, opacity: 0 }}
+                                    animate={{ height: "auto", opacity: 1 }}
+                                    exit={{ height: 0, opacity: 0 }}
+                                  >
+                                    <ul className="pl-5 list-disc text-gray-600 dark:text-gray-300 space-y-1">
+                                      {tripsByDriver[d.driver]?.map((t) => (
+                                        <li key={t.ID}>
+                                          {`${t['Address.Postcode'] || 'Unknown'} (${getFailureReason(t.Notes)})`}
+                                        </li>
+                                      ))}
+                                    </ul>
+                                  </motion.div>
+                                </AnimatePresence>
+                              </td>
+                            </tr>
+                          )}
+                        </>
                       ))}
                     </tbody>
                   </table>
@@ -472,18 +571,49 @@ export default function FailureAnalysisModal({
                       </thead>
                       <tbody>
                         {topPostcodes.map((pc, idx) => (
-                          <tr
-                            key={pc.postcode}
-                            className={idx % 2 === 0 ? "bg-white dark:bg-gray-800" : "bg-gray-50 dark:bg-gray-700"}
-                          >
-                            <td className="px-3 py-2 text-left font-medium text-gray-900 dark:text-gray-100">{pc.postcode}</td>
-                            <td className="px-3 py-2 text-right text-gray-900 dark:text-gray-100">{pc.total}</td>
-                            <td className="px-3 py-2 text-left text-gray-600 dark:text-gray-300">
-                              {pc.reasons
-                                .map((r) => `${r.reason} ${r.count} (${r.percentage.toFixed(1)}%)`)
-                                .join(", ")}
-                            </td>
-                          </tr>
+                          <>
+                            <tr
+                              key={pc.postcode}
+                              onClick={() =>
+                                setExpandedPostcode(expandedPostcode === pc.postcode ? null : pc.postcode)
+                              }
+                              className={
+                                (idx % 2 === 0 ? "bg-white dark:bg-gray-800" : "bg-gray-50 dark:bg-gray-700") +
+                                " cursor-pointer"
+                              }
+                            >
+                              <td className="px-3 py-2 text-left font-medium text-gray-900 dark:text-gray-100">
+                                {pc.postcode}
+                              </td>
+                              <td className="px-3 py-2 text-right text-gray-900 dark:text-gray-100">{pc.total}</td>
+                              <td className="px-3 py-2 text-left text-gray-600 dark:text-gray-300">
+                                {pc.reasons
+                                  .map((r) => `${r.reason} ${r.count} (${r.percentage.toFixed(1)}%)`)
+                                  .join(", ")}
+                              </td>
+                            </tr>
+                            {expandedPostcode === pc.postcode && (
+                              <tr className={idx % 2 === 0 ? "bg-white dark:bg-gray-800" : "bg-gray-50 dark:bg-gray-700"}>
+                                <td colSpan={3} className="px-3 pb-2">
+                                  <AnimatePresence initial={false}>
+                                    <motion.div
+                                      initial={{ height: 0, opacity: 0 }}
+                                      animate={{ height: "auto", opacity: 1 }}
+                                      exit={{ height: 0, opacity: 0 }}
+                                    >
+                                      <ul className="pl-5 list-disc text-gray-600 dark:text-gray-300 space-y-1">
+                                        {tripsByPostcode[pc.postcode]?.map((t) => (
+                                          <li key={t.ID}>
+                                            {`${t['Trip.Driver1'] || t.Driver || 'Unknown'} (${getFailureReason(t.Notes)})`}
+                                          </li>
+                                        ))}
+                                      </ul>
+                                    </motion.div>
+                                  </AnimatePresence>
+                                </td>
+                              </tr>
+                            )}
+                          </>
                         ))}
                       </tbody>
                     </table>
