@@ -355,30 +355,6 @@ export default function FullReport() {
   >("Driver");
   const [startSortDir, setStartSortDir] = useState<"asc" | "desc">("asc");
 
-  // Derived data
-  const { contractors, auctions, driverToContractor } = useMemo(() => {
-    const contractorSet = new Set<string>();
-    const driverMap: Record<string, string> = {};
-
-    startData.forEach((r) => {
-      if (r.Contractor_Name) {
-        contractorSet.add(r.Contractor_Name);
-        if (r.Driver) driverMap[r.Driver] = r.Contractor_Name;
-      }
-    });
-
-    const auctionSet = new Set<string>();
-    trips.forEach((t) => {
-      if (t["Order.Auction"]) auctionSet.add(t["Order.Auction"]);
-    });
-
-    return {
-      contractors: Array.from(contractorSet).sort(),
-      auctions: Array.from(auctionSet).sort(),
-      driverToContractor: driverMap,
-    };
-  }, [trips, startData]);
-
   // --- Data Loading ---
   useEffect(() => {
     if (!router.isReady) return;
@@ -416,6 +392,30 @@ export default function FullReport() {
   const trips: Trip[] = data?.trips || [];
   const startData: any[] = data?.startTimes || [];
   const vanChecks: any[] = data?.vanChecks || [];
+
+  // Derived data
+  const { contractors, auctions, driverToContractor } = useMemo(() => {
+    const contractorSet = new Set<string>();
+    const driverMap: Record<string, string> = {};
+
+    startData.forEach((r) => {
+      if (r.Contractor_Name) {
+        contractorSet.add(r.Contractor_Name);
+        if (r.Driver) driverMap[r.Driver] = r.Contractor_Name;
+      }
+    });
+
+    const auctionSet = new Set<string>();
+    trips.forEach((t) => {
+      if (t["Order.Auction"]) auctionSet.add(t["Order.Auction"]);
+    });
+
+    return {
+      contractors: Array.from(contractorSet).sort(),
+      auctions: Array.from(auctionSet).sort(),
+      driverToContractor: driverMap,
+    };
+  }, [trips, startData]);
 
   const isLoading = !data;
 
