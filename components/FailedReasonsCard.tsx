@@ -91,9 +91,9 @@ export default function FailedReasonsCard({
   return (
     <div
       onClick={onClick}
-      className={`bg-white rounded-lg shadow-md border border-gray-200 flex flex-col p-4 min-h-[10rem] max-w-4xl mx-auto ${onClick ? 'cursor-pointer hover:shadow-lg transition-shadow' : ''}`}
+      className={`bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-4 shadow-lg min-w-[250px] text-white cursor-pointer ${onClick ? 'cursor-pointer hover:shadow-lg transition-shadow' : ''}`}
     >
-      <h3 className="text-base font-semibold text-gray-800 mb-3">Failure Analysis</h3>
+      <h3 className="font-bold text-lg mb-3 opacity-90">Failure Analysis</h3>
       
       {isEmpty ? (
         <div className="flex flex-1 items-center justify-center text-center">
@@ -114,12 +114,12 @@ export default function FailedReasonsCard({
           <div className="flex-shrink-0 w-36 border-r border-gray-200 pr-4">
             <div className="flex items-center space-x-2 mb-3">
                <StatsIcon />
-               <h4 className="text-sm font-semibold text-gray-600">Summary</h4>
+               <h4 className="text-sm font-semibold">Summary</h4>
             </div>
             <div className="space-y-2">
                 <div className="text-xs">
-                    <p className="text-gray-500">Failure Rate</p>
-                    <p className="font-bold text-2xl text-red-600">{failureRate.toFixed(1)}<span className="text-lg">%</span></p>
+                    <p >Failure Rate</p>
+                    <p className="font-bold text-2xl text-yellow-600">{failureRate.toFixed(1)}<span className="text-lg">%</span></p>
                 </div>
             </div>
           </div>
@@ -128,7 +128,7 @@ export default function FailedReasonsCard({
           <div className="flex-1 min-w-0 border-r border-gray-200 pr-4">
              <div className="flex items-center space-x-2 mb-3">
                 <ChartIcon />
-                <h4 className="text-sm font-semibold text-gray-600">Reason Distribution</h4>
+                <h4 className="text-sm font-semibold">Reason Distribution</h4>
             </div>
             <div className="w-full h-6 bg-gray-100 rounded-full overflow-hidden flex" title="Distribution of failure reasons">
               {sortedReasons.map((item, index) => (
@@ -145,9 +145,9 @@ export default function FailedReasonsCard({
                 </div>
               ))}
             </div>
-            <div className="mt-2 text-xs text-gray-500">
+            <div className="mt-2 text-xs ">
                 <p>
-                    <span className="font-semibold text-gray-700">Top Reason: </span> 
+                    <span className="font-semibold">Top Reason: </span> 
                     <span className="text-orange-600 font-medium">{topReason.name}</span>
                     <span className="ml-1">({(topReason.count / totalFailed * 100).toFixed(0)}% of all failures)</span>
                 </p>
@@ -158,7 +158,7 @@ export default function FailedReasonsCard({
           <div className="flex-shrink-0 w-64">
             <div className="flex items-center space-x-2 mb-3">
                 <ListIcon />
-                <h4 className="text-sm font-semibold text-gray-600">Top 3 Reasons</h4>
+                <h4 className="text-sm font-semibold ">Top 3 Reasons</h4>
             </div>
             <div className="space-y-1.5">
               {sortedReasons.slice(0, 3).map((item, index) => (
@@ -168,11 +168,11 @@ export default function FailedReasonsCard({
                     style={{ backgroundColor: colors[index % colors.length] }}
                   />
                   <div className="flex-1 min-w-0">
-                    <p className="text-gray-800 font-medium truncate" title={item.reason}>{item.reason}</p>
+                    <p className="text font-medium truncate" title={item.reason}>{item.reason}</p>
                   </div>
                   <div className="flex items-center ml-2">
-                    <span className="font-semibold text-gray-900 w-6 text-right">{item.count}</span>
-                    <span className="text-gray-500 w-10 text-right">{item.percentage.toFixed(1)}%</span>
+                    <span className="font-semibold  w-6 text-right">{item.count}</span>
+                    <span className="text w-10 text-right">{item.percentage.toFixed(1)}%</span>
                   </div>
                 </div>
               ))}
