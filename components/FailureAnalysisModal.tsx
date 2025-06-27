@@ -346,72 +346,122 @@ export default function FailureAnalysisModal({
       }
     };
   }, [dailyTrend]);
+  
+useEffect(() => {
+  const Chart = (window as any).Chart;
+  if (!Chart || !timeChartRef.current) return;
 
-  // Create chart for failures by hour
-  useEffect(() => {
-    const Chart = (window as any).Chart;
-    if (!Chart || !timeChartRef.current) return;
+  if (timeChartInstanceRef.current) {
+    timeChartInstanceRef.current.destroy();
+  }
 
-    if (timeChartInstanceRef.current) {
-      timeChartInstanceRef.current.destroy();
-    }
+  // Filter data to start from 5 AM
+  const filteredData = failsByHour.filter((d) => d.hour >= 5);
+  const labels = filteredData.map((d) => String(d.hour)); // Show only hour number
+  const data = filteredData.map((d) => d.count);
 
-    const labels = failsByHour.map((d) => `${String(d.hour).padStart(2, '0')}:00`);
-    const data = failsByHour.map((d) => d.count);
+  // Create gradient for bars
+  const ctx = timeChartRef.current.getContext('2d');
+  const gradient = ctx.createLinearGradient(0, 0, 0, 400);
+  gradient.addColorStop(0, '#f87171');
+  gradient.addColorStop(1, '#ef4444');
 
-    timeChartInstanceRef.current = new Chart(timeChartRef.current, {
-      type: 'bar',
-      data: {
-        labels,
-        datasets: [
-          {
-            label: 'Failed',
-            data,
-            backgroundColor: '#f87171',
-          },
-        ],
+  timeChartInstanceRef.current = new Chart(timeChartRef.current, {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [
+        {
+          label: 'Failed',
+          data,
+          backgroundColor: gradient,
+          borderColor: '#ef4444',
+          borderWidth: 1,
+          borderRadius: 8,
+          barThickness: 'flex',
+          maxBarThickness: 30,
+        },
+      ],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      animation: {
+        duration: 1000,
+        easing: 'easeOutQuart',
+        delay: (context) => context.dataIndex * 50,
       },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        scales: {
-          y: {
-            beginAtZero: true,
-            grid: { color: '#e5e7eb', borderColor: '#d1d5db' },
-            ticks: { color: '#374151', font: { size: 12 } },
+      scales: {
+        y: {
+          beginAtZero: true,
+          grid: {
+            color: 'rgba(229, 231, 235, 0.09)',
+            borderColor: 'rgba(209, 213, 219, 0.09)',
+            drawTicks: false,
           },
-          x: {
-            grid: { display: false },
-            ticks: { color: '#374151', font: { size: 12 } },
+          ticks: {
+            color: '#6b7280',
+            font: { size: 14, family: "'Inter', sans-serif" },
+            padding: 0,
           },
         },
-        plugins: {
-          legend: { display: false },
-          tooltip: {
-            backgroundColor: '#1f2937',
-            titleFont: { size: 12 },
-            bodyFont: { size: 11 },
-            callbacks: {
-              afterLabel: (ctx: any) => {
-                const info = failsByHour[ctx.dataIndex];
-                const sorted = Object.entries(info.reasons)
-                  .sort((a, b) => b[1] - a[1])
-                  .slice(0, 3);
-                return sorted.map(([r, c]) => `${r} ${c}`);
-              },
+        x: {
+          grid: { display: false },
+          ticks: {
+            color: '#6b7280',
+            font: { size: 14, family: "'Inter', sans-serif" },
+            padding: 0,
+          },
+        },
+      },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: 'rgba(17, 24, 39, 0.95)', // Darker, sleeker background
+          titleFont: { size: 16, family: "'Inter', sans-serif", weight: '700' },
+          bodyFont: { size: 13, family: "'Inter', sans-serif", weight: '400' },
+          padding: 16,
+          cornerRadius: 12,
+          boxPadding: 8,
+          borderColor: 'rgba(239, 68, 68, 0.3)', // Subtle red border
+          borderWidth: 1,
+          caretSize: 8,
+          caretPadding: 12,
+          boxShadow: '0 4px 12px rgba(0, 0, 0, 0.3)', // Subtle shadow
+          animation: {
+            duration: 200,
+            easing: 'easeOutCubic',
+          },
+          callbacks: {
+            title: (ctx) => `Hour ${labels[ctx[0].dataIndex]}:00`, // Clearer title
+            label: (ctx) => `Failures: ${ctx.parsed.y}`,
+            afterLabel: (ctx) => {
+              const info = filteredData[ctx.dataIndex];
+              const sorted = Object.entries(info.reasons)
+                .sort((a, b) => b[1] - a[1])
+                .slice(0, 3);
+              return [' ', 'Top Reasons:'] // Add spacing and header
+                .concat(sorted.map(([reason, count]) => `• ${reason}: ${count}`)); // Bullet points
             },
           },
+          titleColor: '#f87171', // Vibrant red for title
+          bodyColor: '#d1d5db', // Light gray for body text
+          displayColors: false, // Remove color boxes for cleaner look
         },
       },
-    });
+      layout: {
+        padding: 20,
+      },
+    },
+  });
 
-    return () => {
-      if (timeChartInstanceRef.current) {
-        timeChartInstanceRef.current.destroy();
-        timeChartInstanceRef.current = null;
-      }
-    };
-  }, [failsByHour]);
+  return () => {
+    if (timeChartInstanceRef.current) {
+      timeChartInstanceRef.current.destroy();
+      timeChartInstanceRef.current = null;
+    }
+  };
+}, [failsByHour]);
 
   // Color palette
   const colors = [
@@ -423,365 +473,367 @@ export default function FailureAnalysisModal({
 
   return (
     <>
-    <Modal open={open} onClose={onClose} className="max-w-7xl w-full">
-      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 p-8 flex flex-col gap-8 min-h-[30rem] transition-colors duration-200">
-        <h3 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
-          Failure Analysis
-        </h3>
+      <Modal open={open} onClose={onClose} className="max-w-7xl w-full">
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 p-8 flex flex-col gap-8 min-h-[30rem] transition-colors duration-200">
+          <h3 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
+            Failure Analysis
+          </h3>
 
-        {isEmpty ? (
-          <div className="flex flex-1 items-center justify-center text-center">
-            <div>
-              <div className="w-16 h-16 bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center mx-auto mb-4">
-                <svg
-                  className="w-8 h-8 text-green-600 dark:text-green-400"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                  aria-hidden="true"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M5 13l4 4L19 7"
-                  />
-                </svg>
-              </div>
-              <p className="text-base font-medium text-gray-700 dark:text-gray-300">
-                No Failures Found!
-              </p>
-              <p className="text-sm text-gray-500 dark:text-gray-400">
-                {totalTrips} trips completed successfully.
-              </p>
-            </div>
-          </div>
-        ) : (
-          <div className="flex flex-col gap-8">
-            {/* Top Section: Summary, Distribution, Top Reasons */}
-            <div className="grid grid-cols-3 gap-8">
-              {/* Block 1: Key Metric */}
-              <div className="flex flex-col">
-                <div className="flex items-center gap-2 mb-4">
-                  <StatsIcon />
-                  <h4 className="text-sm font-semibold text-gray-600 dark:text-gray-300">
-                    Summary
-                  </h4>
+          {isEmpty ? (
+            <div className="flex flex-1 items-center justify-center text-center">
+              <div>
+                <div className="w-16 h-16 bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <svg
+                    className="w-8 h-8 text-green-600 dark:text-green-400"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                    aria-hidden="true"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M5 13l4 4L19 7"
+                    />
+                  </svg>
                 </div>
-                <div className="space-y-2 text-sm">
-                  <div>
-                    <p className="text-gray-500 dark:text-gray-400">Failure Rate</p>
-                    <p className="font-bold text-4xl text-red-600 dark:text-red-400">
-                      {failureRate.toFixed(1)}<span className="text-2xl">%</span>
+                <p className="text-base font-medium text-gray-700 dark:text-gray-300">
+                  No Failures Found!
+                </p>
+                <p className="text-sm text-gray-500 dark:text-gray-400">
+                  {totalTrips} trips completed successfully.
+                </p>
+              </div>
+            </div>
+          ) : (
+            <div className="flex flex-col gap-8">
+              {/* Top Section: Summary, Distribution, Top Reasons */}
+              <div className="grid grid-cols-3 gap-8">
+<div className="flex flex-row gap-6">
+  {/* Block 1: Key Metric */}
+  <div className="flex-1 flex flex-col">
+    <div className="flex items-center gap-2 mb-4">
+      <StatsIcon />
+      <h4 className="text-sm font-semibold text-gray-600 dark:text-gray-300">
+        Summary
+      </h4>
+    </div>
+    <div className="space-y-2 text-sm">
+      <div>
+        <p className="text-gray-500 dark:text-gray-400">Failure Rate</p>
+        <p className="font-bold text-4xl text-red-600 dark:text-red-400">
+          {failureRate.toFixed(1)}<span className="text-2xl">%</span>
+        </p>
+      </div>
+      <p className="text-gray-600 dark:text-gray-300">
+        {totalFailed} of {totalTrips} trips failed
+      </p>
+      <p className="text-gray-600 dark:text-gray-300">
+        Top reason: <span className="font-medium">{topReason.name}</span>
+      </p>
+    </div>
+  </div>
+  {/* Time of Day Chart */}
+  <div className="flex-1 flex flex-col">
+    <div className="flex items-center gap-2 mb-3">
+      <ClockIcon />
+      <h4 className="text-sm font-semibold text-gray-600 dark:text-gray-300">Fails by Time</h4>
+    </div>
+    <div className="flex-1 ">
+      <canvas ref={timeChartRef} />
+    </div>
+  </div>
+</div>
+                {/* Block 2: Distribution */}
+                <div className="flex flex-col">
+                  <div className="flex items-center gap-2 mb-4">
+                    <ChartIcon />
+                    <h4 className="text-sm font-semibold text-gray-600 dark:text-gray-300">
+                      Reason Distribution
+                    </h4>
+                  </div>
+                  <div
+                    className="w-full h-10 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden flex"
+                    title="Distribution of failure reasons"
+                  >
+                    {sortedReasons.map((item, index) => (
+                      <div
+                        key={item.reason}
+                        className="h-full group relative transition-all duration-200 hover:brightness-110"
+                        style={{
+                          width: `${item.percentage}%`,
+                          backgroundColor: colors[index % colors.length],
+                        }}
+                        role="tooltip"
+                      >
+                        <div className="absolute bottom-full mb-2 left-1/2 transform -translate-x-1/2 bg-gray-800 dark:bg-gray-900 text-white dark:text-gray-200 text-xs px-3 py-1.5 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none whitespace-nowrap z-10 shadow-xl">
+                          <span className="font-bold">{item.reason}:</span> {item.count} ({item.percentage.toFixed(1)}%)
+                          <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-x-4 border-x-transparent border-t-4 border-t-gray-800 dark:border-t-gray-900"></div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="mt-3 text-xs text-gray-500 dark:text-gray-400">
+                    <p>
+                      <span className="font-semibold text-gray-700 dark:text-gray-200">
+                        Top Reason:{" "}
+                      </span>
+                      <span className="text-orange-600 dark:text-orange-400 font-medium">
+                        {topReason.name}
+                      </span>
+                      <span className="ml-1">
+                        ({((topReason.count / totalFailed) * 100).toFixed(0)}% of all failures)
+                      </span>
                     </p>
                   </div>
-                  <p className="text-gray-600 dark:text-gray-300">
-                    {totalFailed} of {totalTrips} trips failed
-                  </p>
-                  <p className="text-gray-600 dark:text-gray-300">
-                    Top reason: <span className="font-medium">{topReason.name}</span>
-                  </p>
                 </div>
+
+
               </div>
 
-              {/* Block 2: Distribution */}
-              <div className="flex flex-col">
-                <div className="flex items-center gap-2 mb-4">
-                  <ChartIcon />
-                  <h4 className="text-sm font-semibold text-gray-600 dark:text-gray-300">
-                    Reason Distribution
-                  </h4>
-                </div>
-                <div
-                  className="w-full h-10 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden flex"
-                  title="Distribution of failure reasons"
-                >
-                  {sortedReasons.map((item, index) => (
-                    <div
-                      key={item.reason}
-                      className="h-full group relative transition-all duration-200 hover:brightness-110"
-                      style={{
-                        width: `${item.percentage}%`,
-                        backgroundColor: colors[index % colors.length],
-                      }}
-                      role="tooltip"
-                    >
-                      <div className="absolute bottom-full mb-2 left-1/2 transform -translate-x-1/2 bg-gray-800 dark:bg-gray-900 text-white dark:text-gray-200 text-xs px-3 py-1.5 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none whitespace-nowrap z-10 shadow-xl">
-                        <span className="font-bold">{item.reason}:</span> {item.count} ({item.percentage.toFixed(1)}%)
-                        <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-x-4 border-x-transparent border-t-4 border-t-gray-800 dark:border-t-gray-900"></div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-                <div className="mt-3 text-xs text-gray-500 dark:text-gray-400">
-                  <p>
-                    <span className="font-semibold text-gray-700 dark:text-gray-200">
-                      Top Reason:{" "}
-                    </span>
-                    <span className="text-orange-600 dark:text-orange-400 font-medium">
-                      {topReason.name}
-                    </span>
-                    <span className="ml-1">
-                      ({((topReason.count / totalFailed) * 100).toFixed(0)}% of all failures)
-                    </span>
-                  </p>
-                </div>
-              </div>
-
-
-            </div>
-
-            {/* Bottom Section: Tables and Chart */}
-            <div className="grid grid-cols-4 gap-8">
-              <div className="grid grid-cols-2 gap-6 h-full">
-                {/* Reasons Table */}
-                <div className="col-span-1 flex flex-col">
-                  <h4 className="text-sm font-semibold text-gray-600 dark:text-gray-300 mb-3">
-                    All Failure Reasons
-                  </h4>
-                  <div className="overflow-auto flex-1">
-                    <table className="w-full text-sm border-separate border-spacing-0">
-                      <thead className="bg-gray-50 dark:bg-gray-700 text-gray-600 dark:text-gray-300 sticky top-0">
-                        <tr>
-                          <th className="px-3 py-2 text-left rounded-tl-lg">Reason</th>
-                          <th className="px-3 py-2 text-right">Count</th>
-                          <th className="px-3 py-2 text-right rounded-tr-lg">%</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {sortedReasons.map((r, idx) => (
-                          <>
-                            <tr
-                              key={r.reason}
-                              onClick={() =>
-                                setExpandedReason(expandedReason === r.reason ? null : r.reason)
-                              }
-                              className={
-                                (idx % 2 === 0 ? "bg-white dark:bg-gray-800" : "bg-gray-50 dark:bg-gray-700") +
-                                " cursor-pointer"
-                              }
-                            >
-                              <td className="px-3 py-2 text-left">
-                                <span
-                                  className="w-3 h-3 rounded-full inline-block mr-2"
-                                  style={{ backgroundColor: colors[idx % colors.length] }}
-                                />
-                                {r.reason}
-                              </td>
-                              <td className="px-3 py-2 text-right text-gray-900 dark:text-gray-100">
-                                {r.count}
-                              </td>
-                              <td className="px-3 py-2 text-right text-gray-600 dark:text-gray-300">
-                                {r.percentage.toFixed(1)}%
-                              </td>
-                            </tr>
-                            {expandedReason === r.reason && (
-                              <tr className={idx % 2 === 0 ? "bg-white dark:bg-gray-800" : "bg-gray-50 dark:bg-gray-700"}>
-                                <td colSpan={3} className="px-3 pb-2">
-                                  <AnimatePresence initial={false}>
-                                    <motion.div
-                                      initial={{ height: 0, opacity: 0 }}
-                                      animate={{ height: "auto", opacity: 1 }}
-                                      exit={{ height: 0, opacity: 0 }}
-                                    >
-                                      <ul className="pl-5 list-disc text-gray-600 dark:text-gray-300 space-y-1">
-                                        {tripsByReason[r.reason]?.map((t) => (
-                                          <li key={t.ID}>
-                                            <button
-                                              className="text-blue-600 dark:text-blue-400 hover:underline mr-1"
-                                              onClick={() => setOrderModalId(t.ID)}
-                                            >
-                                              #{t['Order.OrderNumber']}
-                                            </button>
-                                            {`${t['Address.Postcode'] || 'Unknown'} (${t['Trip.Driver1'] || t.Driver || 'Unknown'})`}
-                                          </li>
-                                        ))}
-                                      </ul>
-                                    </motion.div>
-                                  </AnimatePresence>
-                                </td>
-                              </tr>
-                            )}
-                          </>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-                              {/* Drivers Table */}
-              <div className="col-span-1 flex flex-col">
-                <h4 className="text-sm font-semibold text-gray-600 dark:text-gray-300 mb-3">
-                  Top Drivers
-                </h4>
-                <div className="overflow-auto flex-1">
-                  <table className="w-full text-sm border-separate border-spacing-0">
-                    <thead className="bg-gray-50 dark:bg-gray-700 text-gray-600 dark:text-gray-300 sticky top-0">
-                      <tr>
-                        <th className="px-3 py-2 text-left rounded-tl-lg">Driver</th>
-                        <th className="px-3 py-2 text-right">Total</th>
-                        <th className="px-3 py-2 text-left rounded-tr-lg">Breakdown</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {topDrivers.map((d, idx) => (
-                        <>
-                          <tr
-                            key={d.driver}
-                            onClick={() =>
-                              setExpandedDriver(expandedDriver === d.driver ? null : d.driver)
-                            }
-                            className={
-                              (idx % 2 === 0 ? "bg-white dark:bg-gray-800" : "bg-gray-50 dark:bg-gray-700") +
-                              " cursor-pointer"
-                            }
-                          >
-                            <td className="px-3 py-2 text-left font-medium text-gray-900 dark:text-gray-100">
-                              {d.driver}
-                            </td>
-                            <td className="px-3 py-2 text-right text-gray-900 dark:text-gray-100">{d.total}</td>
-                            <td className="px-3 py-2 text-left text-gray-600 dark:text-gray-300">
-                              {d.reasons.map((r) => `${r.reason} ${r.count}`).join(", ")}
-                            </td>
+              {/* Bottom Section: Tables and Chart */}
+              <div className="grid grid-cols-4 gap-8">
+                <div className="grid grid-cols-2 gap-6 h-full">
+                  {/* Reasons Table */}
+                  <div className="col-span-1 flex flex-col">
+                    <h4 className="text-sm font-semibold text-gray-600 dark:text-gray-300 mb-3">
+                      All Failure Reasons
+                    </h4>
+                    <div className="overflow-auto flex-1">
+                      <table className="w-full text-sm border-separate border-spacing-0">
+                        <thead className="bg-gray-50 dark:bg-gray-700 text-gray-600 dark:text-gray-300 sticky top-0">
+                          <tr>
+                            <th className="px-3 py-2 text-left rounded-tl-lg">Reason</th>
+                            <th className="px-3 py-2 text-right">Count</th>
+                            <th className="px-3 py-2 text-right rounded-tr-lg">%</th>
                           </tr>
-                          {expandedDriver === d.driver && (
-                            <tr className={idx % 2 === 0 ? "bg-white dark:bg-gray-800" : "bg-gray-50 dark:bg-gray-700"}>
-                              <td colSpan={3} className="px-3 pb-2">
-                                <AnimatePresence initial={false}>
-                                  <motion.div
-                                    initial={{ height: 0, opacity: 0 }}
-                                    animate={{ height: "auto", opacity: 1 }}
-                                    exit={{ height: 0, opacity: 0 }}
-                                  >
-                                    <ul className="pl-5 list-disc text-gray-600 dark:text-gray-300 space-y-1">
-                                      {tripsByDriver[d.driver]?.map((t) => (
-                                        <li key={t.ID}>
-                                          <button
-                                            className="text-blue-600 dark:text-blue-400 hover:underline mr-1"
-                                            onClick={() => setOrderModalId(t.ID)}
-                                          >
-                                            #{t['Order.OrderNumber']}
-                                          </button>
-                                          {`${t['Address.Postcode'] || 'Unknown'} (${getFailureReason(t.Notes)})`}
-                                        </li>
-                                      ))}
-                                    </ul>
-                                  </motion.div>
-                                </AnimatePresence>
-                              </td>
-                            </tr>
-                          )}
-                        </>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-
-                {/* Postcodes Table */}
-                <div className="col-span-1 flex flex-col">
-                  <h4 className="text-sm font-semibold text-gray-600 dark:text-gray-300 mb-3">
-                    Top Postcodes
-                  </h4>
-                  <div className="overflow-auto flex-1">
-                    <table className="w-full text-sm border-separate border-spacing-0">
-                      <thead className="bg-gray-50 dark:bg-gray-700 text-gray-600 dark:text-gray-300 sticky top-0">
-                        <tr>
-                          <th className="px-3 py-2 text-left rounded-tl-lg">Postcode</th>
-                          <th className="px-3 py-2 text-right">Total</th>
-                          <th className="px-3 py-2 text-left rounded-tr-lg">Breakdown</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {topPostcodes.map((pc, idx) => (
-                          <>
-                            <tr
-                              key={pc.postcode}
-                              onClick={() =>
-                                setExpandedPostcode(expandedPostcode === pc.postcode ? null : pc.postcode)
-                              }
-                              className={
-                                (idx % 2 === 0 ? "bg-white dark:bg-gray-800" : "bg-gray-50 dark:bg-gray-700") +
-                                " cursor-pointer"
-                              }
-                            >
-                              <td className="px-3 py-2 text-left font-medium text-gray-900 dark:text-gray-100">
-                                {pc.postcode}
-                              </td>
-                              <td className="px-3 py-2 text-right text-gray-900 dark:text-gray-100">{pc.total}</td>
-                              <td className="px-3 py-2 text-left text-gray-600 dark:text-gray-300">
-                                {pc.reasons
-                                  .map((r) => `${r.reason} ${r.count} (${r.percentage.toFixed(1)}%)`)
-                                  .join(", ")}
-                              </td>
-                            </tr>
-                            {expandedPostcode === pc.postcode && (
-                              <tr className={idx % 2 === 0 ? "bg-white dark:bg-gray-800" : "bg-gray-50 dark:bg-gray-700"}>
-                                <td colSpan={3} className="px-3 pb-2">
-                                  <AnimatePresence initial={false}>
-                                    <motion.div
-                                      initial={{ height: 0, opacity: 0 }}
-                                      animate={{ height: "auto", opacity: 1 }}
-                                      exit={{ height: 0, opacity: 0 }}
-                                    >
-                                      <ul className="pl-5 list-disc text-gray-600 dark:text-gray-300 space-y-1">
-                                        {tripsByPostcode[pc.postcode]?.map((t) => (
-                                          <li key={t.ID}>
-                                            <button
-                                              className="text-blue-600 dark:text-blue-400 hover:underline mr-1"
-                                              onClick={() => setOrderModalId(t.ID)}
-                                            >
-                                              #{t['Order.OrderNumber']}
-                                            </button>
-                                            {`${t['Trip.Driver1'] || t.Driver || 'Unknown'} (${getFailureReason(t.Notes)})`}
-                                          </li>
-                                        ))}
-                                      </ul>
-                                    </motion.div>
-                                  </AnimatePresence>
+                        </thead>
+                        <tbody>
+                          {sortedReasons.map((r, idx) => (
+                            <>
+                              <tr
+                                key={r.reason}
+                                onClick={() =>
+                                  setExpandedReason(expandedReason === r.reason ? null : r.reason)
+                                }
+                                className={
+                                  (idx % 2 === 0 ? "bg-white dark:bg-gray-800" : "bg-gray-50 dark:bg-gray-700") +
+                                  " cursor-pointer"
+                                }
+                              >
+                                <td className="px-3 py-2 text-left">
+                                  <span
+                                    className="w-3 h-3 rounded-full inline-block mr-2"
+                                    style={{ backgroundColor: colors[idx % colors.length] }}
+                                  />
+                                  {r.reason}
+                                </td>
+                                <td className="px-3 py-2 text-right text-gray-900 dark:text-gray-100">
+                                  {r.count}
+                                </td>
+                                <td className="px-3 py-2 text-right text-gray-600 dark:text-gray-300">
+                                  {r.percentage.toFixed(1)}%
                                 </td>
                               </tr>
-                            )}
-                          </>
-                        ))}
-                      </tbody>
-                    </table>
+                              {expandedReason === r.reason && (
+                                <tr className={idx % 2 === 0 ? "bg-white dark:bg-gray-800" : "bg-gray-50 dark:bg-gray-700"}>
+                                  <td colSpan={3} className="px-3 pb-2">
+                                    <AnimatePresence initial={false}>
+                                      <motion.div
+                                        initial={{ height: 0, opacity: 0 }}
+                                        animate={{ height: "auto", opacity: 1 }}
+                                        exit={{ height: 0, opacity: 0 }}
+                                      >
+                                        <ul className="pl-5 list-disc text-gray-600 dark:text-gray-300 space-y-1">
+                                          {tripsByReason[r.reason]?.map((t) => (
+                                            <li key={t.ID}>
+                                              <button
+                                                className="text-blue-600 dark:text-blue-400 hover:underline mr-1"
+                                                onClick={() => setOrderModalId(t.ID)}
+                                              >
+                                                #{t['Order.OrderNumber']}
+                                              </button>
+                                              {`${t['Address.Postcode'] || 'Unknown'} (${t['Trip.Driver1'] || t.Driver || 'Unknown'})`}
+                                            </li>
+                                          ))}
+                                        </ul>
+                                      </motion.div>
+                                    </AnimatePresence>
+                                  </td>
+                                </tr>
+                              )}
+                            </>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                  {/* Drivers Table */}
+                  <div className="col-span-1 flex flex-col">
+                    <h4 className="text-sm font-semibold text-gray-600 dark:text-gray-300 mb-3">
+                      Top Drivers
+                    </h4>
+                    <div className="overflow-auto flex-1">
+                      <table className="w-full text-sm border-separate border-spacing-0">
+                        <thead className="bg-gray-50 dark:bg-gray-700 text-gray-600 dark:text-gray-300 sticky top-0">
+                          <tr>
+                            <th className="px-3 py-2 text-left rounded-tl-lg">Driver</th>
+                            <th className="px-3 py-2 text-right">Total</th>
+                            <th className="px-3 py-2 text-left rounded-tr-lg">Breakdown</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {topDrivers.map((d, idx) => (
+                            <>
+                              <tr
+                                key={d.driver}
+                                onClick={() =>
+                                  setExpandedDriver(expandedDriver === d.driver ? null : d.driver)
+                                }
+                                className={
+                                  (idx % 2 === 0 ? "bg-white dark:bg-gray-800" : "bg-gray-50 dark:bg-gray-700") +
+                                  " cursor-pointer"
+                                }
+                              >
+                                <td className="px-3 py-2 text-left font-medium text-gray-900 dark:text-gray-100">
+                                  {d.driver}
+                                </td>
+                                <td className="px-3 py-2 text-right text-gray-900 dark:text-gray-100">{d.total}</td>
+                                <td className="px-3 py-2 text-left text-gray-600 dark:text-gray-300">
+                                  {d.reasons.map((r) => `${r.reason} ${r.count}`).join(", ")}
+                                </td>
+                              </tr>
+                              {expandedDriver === d.driver && (
+                                <tr className={idx % 2 === 0 ? "bg-white dark:bg-gray-800" : "bg-gray-50 dark:bg-gray-700"}>
+                                  <td colSpan={3} className="px-3 pb-2">
+                                    <AnimatePresence initial={false}>
+                                      <motion.div
+                                        initial={{ height: 0, opacity: 0 }}
+                                        animate={{ height: "auto", opacity: 1 }}
+                                        exit={{ height: 0, opacity: 0 }}
+                                      >
+                                        <ul className="pl-5 list-disc text-gray-600 dark:text-gray-300 space-y-1">
+                                          {tripsByDriver[d.driver]?.map((t) => (
+                                            <li key={t.ID}>
+                                              <button
+                                                className="text-blue-600 dark:text-blue-400 hover:underline mr-1"
+                                                onClick={() => setOrderModalId(t.ID)}
+                                              >
+                                                #{t['Order.OrderNumber']}
+                                              </button>
+                                              {`${t['Address.Postcode'] || 'Unknown'} (${getFailureReason(t.Notes)})`}
+                                            </li>
+                                          ))}
+                                        </ul>
+                                      </motion.div>
+                                    </AnimatePresence>
+                                  </td>
+                                </tr>
+                              )}
+                            </>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+
+                  {/* Postcodes Table */}
+                  <div className="col-span-1 flex flex-col">
+                    <h4 className="text-sm font-semibold text-gray-600 dark:text-gray-300 mb-3">
+                      Top Postcodes
+                    </h4>
+                    <div className="overflow-auto flex-1">
+                      <table className="w-full text-sm border-separate border-spacing-0">
+                        <thead className="bg-gray-50 dark:bg-gray-700 text-gray-600 dark:text-gray-300 sticky top-0">
+                          <tr>
+                            <th className="px-3 py-2 text-left rounded-tl-lg">Postcode</th>
+                            <th className="px-3 py-2 text-right">Total</th>
+                            <th className="px-3 py-2 text-left rounded-tr-lg">Breakdown</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {topPostcodes.map((pc, idx) => (
+                            <>
+                              <tr
+                                key={pc.postcode}
+                                onClick={() =>
+                                  setExpandedPostcode(expandedPostcode === pc.postcode ? null : pc.postcode)
+                                }
+                                className={
+                                  (idx % 2 === 0 ? "bg-white dark:bg-gray-800" : "bg-gray-50 dark:bg-gray-700") +
+                                  " cursor-pointer"
+                                }
+                              >
+                                <td className="px-3 py-2 text-left font-medium text-gray-900 dark:text-gray-100">
+                                  {pc.postcode}
+                                </td>
+                                <td className="px-3 py-2 text-right text-gray-900 dark:text-gray-100">{pc.total}</td>
+                                <td className="px-3 py-2 text-left text-gray-600 dark:text-gray-300">
+                                  {pc.reasons
+                                    .map((r) => `${r.reason} ${r.count} (${r.percentage.toFixed(1)}%)`)
+                                    .join(", ")}
+                                </td>
+                              </tr>
+                              {expandedPostcode === pc.postcode && (
+                                <tr className={idx % 2 === 0 ? "bg-white dark:bg-gray-800" : "bg-gray-50 dark:bg-gray-700"}>
+                                  <td colSpan={3} className="px-3 pb-2">
+                                    <AnimatePresence initial={false}>
+                                      <motion.div
+                                        initial={{ height: 0, opacity: 0 }}
+                                        animate={{ height: "auto", opacity: 1 }}
+                                        exit={{ height: 0, opacity: 0 }}
+                                      >
+                                        <ul className="pl-5 list-disc text-gray-600 dark:text-gray-300 space-y-1">
+                                          {tripsByPostcode[pc.postcode]?.map((t) => (
+                                            <li key={t.ID}>
+                                              <button
+                                                className="text-blue-600 dark:text-blue-400 hover:underline mr-1"
+                                                onClick={() => setOrderModalId(t.ID)}
+                                              >
+                                                #{t['Order.OrderNumber']}
+                                              </button>
+                                              {`${t['Trip.Driver1'] || t.Driver || 'Unknown'} (${getFailureReason(t.Notes)})`}
+                                            </li>
+                                          ))}
+                                        </ul>
+                                      </motion.div>
+                                    </AnimatePresence>
+                                  </td>
+                                </tr>
+                              )}
+                            </>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
+
+
+
+
+
+                {/* Trend Chart */}
+                <div className="col-span-1 flex flex-col">
+                  <div className="flex items-center gap-2 mb-3">
+                    <TrendIcon />
+                    <h4 className="text-sm font-semibold text-gray-600 dark:text-gray-300">Failure Trend</h4>
+                  </div>
+                  <div className="flex-1 bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm border border-gray-200 dark:border-gray-700">
+                    <canvas ref={chartRef} />
                   </div>
                 </div>
               </div>
-
-
-
-              {/* Time of Day Chart */}
-              <div className="col-span-1 flex flex-col">
-                <div className="flex items-center gap-2 mb-3">
-                  <ClockIcon />
-                  <h4 className="text-sm font-semibold text-gray-600 dark:text-gray-300">Fails by Time</h4>
-                </div>
-                <div className="flex-1 bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm border border-gray-200 dark:border-gray-700">
-                  <canvas ref={timeChartRef} />
-                </div>
-              </div>
-
-              {/* Trend Chart */}
-              <div className="col-span-1 flex flex-col">
-                <div className="flex items-center gap-2 mb-3">
-                  <TrendIcon />
-                  <h4 className="text-sm font-semibold text-gray-600 dark:text-gray-300">Failure Trend</h4>
-                </div>
-                <div className="flex-1 bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm border border-gray-200 dark:border-gray-700">
-                  <canvas ref={chartRef} />
-                </div>
-              </div>
             </div>
-          </div>
-        )}
-      </div>
-    </Modal>
-    <OrderDetailModal
-      orderId={orderModalId}
-      open={!!orderModalId}
-      onClose={() => setOrderModalId(null)}
-    />
+          )}
+        </div>
+      </Modal>
+      <OrderDetailModal
+        orderId={orderModalId}
+        open={!!orderModalId}
+        onClose={() => setOrderModalId(null)}
+      />
     </>
   );
 }
