@@ -527,7 +527,7 @@ useEffect(() => {
         </p>
       </div>
       <p className="text-gray-600 dark:text-gray-300">
-        {totalFailed} of {totalTrips} trips failed
+        {totalFailed} of {totalTrips} tasks failed
       </p>
       <p className="text-gray-600 dark:text-gray-300">
         Top reason: <span className="font-medium">{topReason.name}</span>
