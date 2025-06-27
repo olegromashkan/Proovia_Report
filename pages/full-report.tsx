@@ -466,6 +466,15 @@ export default function FullReport() {
       positiveArrivalTime,
     };
   }, [trips]);
+
+  const routeStats = useMemo(() => {
+    const optimo = trips.filter((t) => t["Trip.Route"] === "Optimo").length;
+    const other = trips.length - optimo;
+    const total = optimo + other;
+    const optimoPct = total ? Math.round((optimo / total) * 100) : 0;
+    const otherPct = total ? Math.round((other / total) * 100) : 0;
+    return { optimo, other, optimoPct, otherPct };
+  }, [trips]);
   const failedTrips = useMemo(
     () => trips.filter((t) => t.Status === "Failed"),
     [trips]
@@ -959,6 +968,13 @@ export default function FullReport() {
                     <div className="text-lg font-bold text-warning">
                       {stats.positiveArrivalTime}
                     </div>
+                  </div>
+                </div>
+                {/* Trip Type */}
+                <div className="bg-base-200 rounded p-2 text-center mb-3">
+                  <div className="text-xs opacity-70">Trip Type</div>
+                  <div className="text-sm font-bold">
+                    Optimo {routeStats.optimo} ({routeStats.optimoPct}%) | Other {routeStats.other} ({routeStats.otherPct}%)
                   </div>
                 </div>
               </div>
