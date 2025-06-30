@@ -53,6 +53,7 @@ const iconMap: Record<string, string> = {
   star: 'star',
   'star-fill': 'star-fill',
   reply: 'arrow-90deg-left',
+  robot: 'robot',
 };
 
 export default function Icon({ name, className }: IconProps) {
