@@ -112,11 +112,9 @@ const ScrollingStats = ({
   onDriversClick: () => void;
   onFailuresClick: () => void;
 }) => {
-
   const stats = useMemo(() => {
     // Top Drivers
-    const driverStats: Record<string, { complete: number; failed: number }> =
-      {};
+    const driverStats: Record<string, { complete: number; failed: number }> = {};
     const postcodeCounts: Record<string, number> = {};
     const auctionCounts: Record<string, number> = {};
     const contractorCounts: Record<string, number> = {};
@@ -164,8 +162,6 @@ const ScrollingStats = ({
 
     return { topDrivers, topPostcodes, topAuctions, topContractors };
   }, [trips, driverToContractor]);
-
-  // animation handled purely in CSS
 
   const StatCard = ({
     title,
@@ -219,8 +215,8 @@ const ScrollingStats = ({
   );
 
   return (
-    <div className="overflow-hidden relative bg-base-200 py-3">
-      <div className="flex gap-4 px-4 marquee">
+    <div className="bg-base-200 py-3">
+      <div className="flex gap-4 px-4 overflow-x-auto">
         <TopDriversCard data={stats.topDrivers} onClick={onDriversClick} />
         <StatCard
           title="📍 Top Postcodes"
@@ -239,39 +235,6 @@ const ScrollingStats = ({
         />
         <FailedReasonsCard trips={trips} onClick={onFailuresClick} />
       </div>
-      <div className="flex gap-4 px-4 marquee" aria-hidden="true">
-        <TopDriversCard data={stats.topDrivers} onClick={onDriversClick} />
-        <StatCard
-          title="📍 Top Postcodes"
-          data={stats.topPostcodes}
-          color="from-purple-500 to-purple-600"
-        />
-        <StatCard
-          title="🏪 Top Auctions"
-          data={stats.topAuctions}
-          color="from-green-500 to-green-600"
-        />
-        <StatCard
-          title="🚛 Top Contractors"
-          data={stats.topContractors}
-          color="from-orange-500 to-orange-600"
-        />
-        <FailedReasonsCard trips={trips} onClick={onFailuresClick} />
-      </div>
-      <style jsx>{`
-        .marquee {
-          width: max-content;
-          animation: scroll 30s linear infinite;
-        }
-        @keyframes scroll {
-          from {
-            transform: translateX(0);
-          }
-          to {
-            transform: translateX(-50%);
-          }
-        }
-      `}</style>
     </div>
   );
 };
