@@ -8,6 +8,8 @@ import SearchOverlay from './SearchOverlay';
 import Icon from './Icon';
 import UserMenu from './UserMenu';
 import TasksPanel from './TasksPanel';
+import AiChatPanel from './AiChatPanel';
+import { Sparkles } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface NavLink {
@@ -37,6 +39,8 @@ const Navbar = memo(() => {
   const router = useRouter();
   const [searchOpen, setSearchOpen] = useState(false);
   const [tasksOpen, setTasksOpen] = useState(false);
+  const [aiOpen, setAiOpen] = useState(false);
+  const [aiText, setAiText] = useState('');
   const [navOpen, setNavOpen] = useState(false);
   const [hovered, setHovered] = useState(false);
   const [pinned, setPinned] = useState<string[]>([]);
@@ -371,6 +375,9 @@ const Navbar = memo(() => {
                       <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} onClick={() => setTasksOpen(true)} className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition-all duration-150" aria-label="Open tasks">
                         <Icon name="check" className="w-5 h-5 text-gray-600 dark:text-gray-300" />
                       </motion.button>
+                      <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} onClick={() => setAiOpen(true)} className="ai-glow-button" aria-label="Open AI chat">
+                        <Sparkles size={18} />
+                      </motion.button>
                       <UserMenu />
                     </div>
                   </div>
@@ -381,8 +388,17 @@ const Navbar = memo(() => {
         </div>
       </motion.div>
 
-      <SearchOverlay open={searchOpen} onClose={() => setSearchOpen(false)} />
+      <SearchOverlay
+        open={searchOpen}
+        onClose={() => setSearchOpen(false)}
+        onAskAi={(q) => {
+          setAiText(q);
+          setSearchOpen(false);
+          setAiOpen(true);
+        }}
+      />
       <TasksPanel open={tasksOpen} onClose={() => setTasksOpen(false)} />
+      <AiChatPanel open={aiOpen} onClose={() => setAiOpen(false)} initialText={aiText} />
 
       <style jsx global>{`
         .custom-scrollbar {

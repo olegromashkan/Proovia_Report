@@ -6,6 +6,7 @@ import '../styles/AiChatPanel.css'; // If in src/styles/
 interface AiChatPanelProps {
   open: boolean;
   onClose: () => void;
+  initialText?: string;
 }
 
 interface Message {
@@ -23,7 +24,7 @@ const suggestions = [
   'Hello!',
 ];
 
-const AiChatPanel = memo(({ open, onClose }: AiChatPanelProps) => {
+const AiChatPanel = memo(({ open, onClose, initialText }: AiChatPanelProps) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [text, setText] = useState('');
   const [loading, setLoading] = useState(false);
@@ -37,12 +38,15 @@ const AiChatPanel = memo(({ open, onClose }: AiChatPanelProps) => {
     }
   }, [messages.length, loading]); // Depend on messages length and loading to scroll to bottom
 
-  // Focus on textarea when panel opens
+  // Focus on textarea when panel opens and apply initial text
   useEffect(() => {
-    if (open && textareaRef.current) {
-      textareaRef.current.focus();
+    if (open) {
+      setText(initialText || '');
+      if (textareaRef.current) {
+        textareaRef.current.focus();
+      }
     }
-  }, [open]);
+  }, [open, initialText]);
 
   // Memoized and debounced send function
   const sendMessage = useCallback(
