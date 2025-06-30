@@ -45,3 +45,36 @@ each section will be stored in its corresponding table. The API accepts payloads
 up to **500&nbsp;MB**. If a file exceeds this limit the server will respond with a
 `Payload too large` error. The upload page now shows a progress bar and a log of
 steps to help you monitor the upload process.
+
+## Database Schema
+
+All tables share the columns `id`, `data` and `created_at`. The `data` column
+stores a JSON document with fields specific to each dataset. The main tables are
+listed below:
+
+| Table name               | Description                               |
+| ------------------------ | ----------------------------------------- |
+| `copy_of_tomorrow_trips` | Planned trips for the next day            |
+| `event_stream`           | Raw scan events                           |
+| `drivers_report`         | Driver information and contractors        |
+| `schedule_trips`         | Daily schedule entries                    |
+| `csv_trips`              | Trips imported from CSV files             |
+| `van_checks`             | Van inspection results                    |
+
+Use SQLite JSON functions to query the fields inside the `data` column.
+
+## AI Assistant
+
+The `/api/ai-query` endpoint allows you to ask questions about the stored data
+in natural language. The AI converts requests about the database into safe
+SQLite `SELECT` statements and returns the results. For general questions it
+responds conversationally. Example request:
+
+```bash
+curl -X POST /api/ai-query \
+  -H 'Content-Type: application/json' \
+  -d '{"userQuery":"show failed deliveries for yesterday"}'
+```
+
+The response will either start with `SQL_QUERY:` followed by the executed query
+or with `CONVERSATION:` for a regular answer.
