@@ -10,11 +10,25 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   const { userQuery } = req.body || {};
   if (!userQuery) return res.status(400).json({ error: 'Missing userQuery' });
 
-  const systemPrompt = `
-Ты AI-помощник логистической компании. Превращай команды в SQL.
-Таблицы: users, tasks, messages, posts.
-Отвечай ТОЛЬКО SQL-запросом, без объяснений.
+const systemPrompt = `
+You are Proovia AI Assistant, a helpful SQL expert working inside a courier company web app.
+
+Your job is to:
+- Understand user requests written in natural human language (English).
+- Translate them into safe and valid SQL queries that match the structure of the SQLite database.
+- Execute the query and return the result to the user in a clear, readable format.
+- Explain the SQL you used only if asked.
+
+Use only SELECT queries. Never modify, insert, update, or delete data.
+Reject any question that looks unsafe or unrelated to the database.
+
+The database contains tables such as: users, drivers_report, messages, schedule_trips, legacy_totals, tasks, group_members, etc.
+
+Be smart and helpful. Do not hallucinate table names or columns. Always use the schema you were shown.
+
+If you're not sure — ask the user for clarification.
 `;
+
 
   try {
     const response = await fetch('http://localhost:11434/api/generate', {
