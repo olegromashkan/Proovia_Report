@@ -11,6 +11,7 @@ import SearchOverlay from '../components/SearchOverlay';
 import UserMenu from '../components/UserMenu';
 import TasksPanel from '../components/TasksPanel';
 import WelcomeModal from '../components/WelcomeModal';
+import AiChatPanel from '../components/AiChatPanel';
 import { useRouter } from 'next/router';
 import useUser from '../lib/useUser';
 import useCachedFetch from '../lib/useCachedFetch';
@@ -24,6 +25,7 @@ export default function Home() {
   const [open, setOpen] = useState<string | null>(null);
   const [searchOpen, setSearchOpen] = useState(false);
   const [tasksOpen, setTasksOpen] = useState(false);
+  const [aiOpen, setAiOpen] = useState(false);
   const [welcomeOpen, setWelcomeOpen] = useState(false);
   const username = useUser();
   const user = useCurrentUser();
@@ -130,13 +132,21 @@ export default function Home() {
             >
               <Icon name="search" className="w-4 h-4" />
             </button>
-            <button
+          <button
               onClick={() => setTasksOpen(true)}
               className="p-2 rounded-lg border border-white/10 bg-white/20 hover:bg-white/30 text-white"
               aria-label="Open tasks"
             >
               <Icon name="star" className="w-4 h-4" />
-              
+
+            </button>
+            <button
+              onClick={() => setAiOpen(true)}
+              className="p-2 rounded-lg border border-white/10 bg-white/20 hover:bg-white/30 text-white"
+              aria-label="Open AI chat"
+            >
+              <Icon name="robot" className="w-4 h-4" />
+
             </button>
             {navLinks.map(({ href, icon, label }) => (
               <Link
@@ -196,6 +206,7 @@ export default function Home() {
       <WelcomeModal open={welcomeOpen} onClose={() => setWelcomeOpen(false)} />
       <SearchOverlay open={searchOpen} onClose={() => setSearchOpen(false)} />
       <TasksPanel open={tasksOpen} onClose={() => setTasksOpen(false)} />
+      <AiChatPanel open={aiOpen} onClose={() => setAiOpen(false)} />
       <UserMenu showButton={false} />
     </Layout>
   );
