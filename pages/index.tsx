@@ -11,6 +11,7 @@ import SearchOverlay from '../components/SearchOverlay';
 import UserMenu from '../components/UserMenu';
 import TasksPanel from '../components/TasksPanel';
 import WelcomeModal from '../components/WelcomeModal';
+import AIChat from '../components/AIChat';
 import { useRouter } from 'next/router';
 import useUser from '../lib/useUser';
 import useCachedFetch from '../lib/useCachedFetch';
@@ -197,6 +198,7 @@ export default function Home() {
       <SearchOverlay open={searchOpen} onClose={() => setSearchOpen(false)} />
       <TasksPanel open={tasksOpen} onClose={() => setTasksOpen(false)} />
       <UserMenu showButton={false} />
+      <AIChat />
     </Layout>
   );
 }
