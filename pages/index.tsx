@@ -17,6 +17,7 @@ import useUser from '../lib/useUser';
 import useCachedFetch from '../lib/useCachedFetch';
 import useCurrentUser from '../lib/useCurrentUser';
 import useUserMenu from '../lib/useUserMenu';
+import { Sparkles } from 'lucide-react';
 
 type Summary = { total: number; complete: number; failed: number; avgPunctuality: number };
 
@@ -64,13 +65,13 @@ export default function Home() {
     <Layout title="Home" fullWidth hideNavbar={true}>
       {user?.header ? (
         <div className="fixed inset-0 -z-10">
-        <img
-          src={user.header}
-          alt="Image"
-          className="w-full h-full blur-2xl object-cover"
-          style={{ filter: 'brightness(0.3)' }} // Прямое добавление стиля
-        />
-      </div>
+          <img
+            src={user.header}
+            alt="Image"
+            className="w-full h-full blur-2xl object-cover"
+            style={{ filter: 'brightness(0.3)' }} // Прямое добавление стиля
+          />
+        </div>
       ) : (
         <div className="fixed inset-0 -z-10 bg-gradient-to-br from-[#b53133] via-gray-800 to-gray-900" />
       )}
@@ -124,7 +125,7 @@ export default function Home() {
 
           {/* Кнопки навигации */}
           <div className="flex flex-wrap justify-center gap-2 flex-1">
-          <button
+            <button
               onClick={() => setSearchOpen(true)}
               className="p-2 rounded-lg border border-white/10 bg-white/20 hover:bg-white/30 text-white"
 
@@ -132,7 +133,7 @@ export default function Home() {
             >
               <Icon name="search" className="w-4 h-4" />
             </button>
-          <button
+            <button
               onClick={() => setTasksOpen(true)}
               className="p-2 rounded-lg border border-white/10 bg-white/20 hover:bg-white/30 text-white"
               aria-label="Open tasks"
@@ -142,24 +143,22 @@ export default function Home() {
             </button>
             <button
               onClick={() => setAiOpen(true)}
-              className="p-2 rounded-lg border border-white/10 bg-white/20 hover:bg-white/30 text-white"
+              className="ai-glow-button" /* Изменил класс */
               aria-label="Open AI chat"
             >
-              <Icon name="robot" className="w-4 h-4" />
-
+              <Sparkles size={19} />
             </button>
             {navLinks.map(({ href, icon, label }) => (
               <Link
                 key={href}
                 href={href}
-                className={`flex items-center gap-2 px-3 py-2 rounded-lg border border-white/10 bg-white/20 hover:bg-white/30 text-white transition ${
-                  isActive(href) ? 'bg-white/40' : ''
-                }`}
+                className={`flex items-center gap-2 px-3 py-2 rounded-lg border border-white/10 bg-white/20 hover:bg-white/30 text-white transition ${isActive(href) ? 'bg-white/40' : ''
+                  }`}
               >
                 <Icon name={icon} className="w-4 h-4" />
                 <span className="text-sm">{label}</span>
               </Link>
-              
+
             ))}
 
           </div>

@@ -1,12 +1,13 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback, memo } from 'react';
 import { Bot, Send, Sparkles, X, User, Loader } from 'lucide-react';
+import debounce from 'lodash/debounce';
+import '../styles/AiChatPanel.css'; // If in src/styles/
 
 interface AiChatPanelProps {
   open: boolean;
   onClose: () => void;
 }
 
-// Обновленный интерфейс сообщения для поддержки разных типов контента
 interface Message {
   role: 'user' | 'assistant';
   text: string;
@@ -15,238 +16,188 @@ interface Message {
   data?: any;
 }
 
-export default function AiChatPanel({ open, onClose }: AiChatPanelProps) {
+const suggestions = [
+  'Show all orders',
+  'Find customer by name "John"',
+  'How many drivers are there?',
+  'Hello!',
+];
+
+const AiChatPanel = memo(({ open, onClose }: AiChatPanelProps) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [text, setText] = useState('');
   const [loading, setLoading] = useState(false);
-  const [isTyping, setIsTyping] = useState(false);
   const endRef = useRef<HTMLDivElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
+  // Optimized scroll behavior
   useEffect(() => {
-    endRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages, loading]);
+    if (endRef.current) {
+      endRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [messages.length, loading]); // Depend on messages length and loading to scroll to bottom
 
-  const send = async () => {
-    if (!text.trim()) return;
-    const userQuery = text;
-    setText('');
-    setMessages((prev) => [...prev, { role: 'user', text: userQuery }]);
-    setLoading(true);
-    setIsTyping(true);
+  // Focus on textarea when panel opens
+  useEffect(() => {
+    if (open && textareaRef.current) {
+      textareaRef.current.focus();
+    }
+  }, [open]);
 
-    // Имитация "печатания" для лучшего UX
-    setTimeout(() => setIsTyping(false), 1800);
+  // Memoized and debounced send function
+  const sendMessage = useCallback(
+    debounce(async (userQuery: string) => {
+      if (!userQuery.trim()) return;
 
-    try {
-      const res = await fetch('/api/ai-query', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userQuery }),
-      });
+      setMessages((prev) => [...prev, { role: 'user', text: userQuery }]);
+      setText(''); // Clear input immediately
+      setLoading(true);
 
-      const data = await res.json();
+      try {
+        const res = await fetch('/api/ai-query', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userQuery }),
+        });
 
-      if (res.ok) {
-        if (data.type === 'sql') {
-          const resultText =
-            data.data && data.data.length > 0
-              ? JSON.stringify(data.data, null, 2)
-              : 'No results found.';
+        const data = await res.json();
+
+        if (res.ok) {
           setMessages((prev) => [
             ...prev,
             {
               role: 'assistant',
-              type: 'sql',
-              text: resultText,
-              sqlQuery: data.sqlQuery,
-              data: data.data,
-            },
-          ]);
-        } else if (data.type === 'conversation') {
-          setMessages((prev) => [
-            ...prev,
-            {
-              role: 'assistant',
-              type: 'conversation',
-              text: data.responseText,
+              type: data.type,
+              text:
+                data.type === 'sql'
+                  ? data.data?.length
+                    ? JSON.stringify(data.data, null, 2)
+                    : 'No results found for this SQL query.'
+                  : data.responseText || data.error || 'An unknown error occurred.',
+              ...(data.type === 'sql' && { sqlQuery: data.sqlQuery, data: data.data }),
             },
           ]);
         } else {
           setMessages((prev) => [
             ...prev,
-            {
-              role: 'assistant',
-              type: 'error',
-              text: data.error || 'An unknown error occurred.',
-            },
+            { role: 'assistant', type: 'error', text: data.error || 'Failed to contact the AI service.' },
           ]);
         }
-      } else {
+      } catch (err) {
+        console.error("Error sending message:", err);
         setMessages((prev) => [
           ...prev,
-          {
-            role: 'assistant',
-            type: 'error',
-            text: data.error || 'Failed to contact the AI service.',
-          },
+          { role: 'assistant', type: 'error', text: 'An unexpected error occurred. Please try again.' },
         ]);
+      } finally {
+        setLoading(false);
       }
-    } catch (err: any) {
-      setMessages((prev) => [
-        ...prev,
-        { role: 'assistant', type: 'error', text: 'An unexpected error occurred.' },
-      ]);
-    }
-    setLoading(false);
+    }, 300),
+    [] // Empty dependency array means this function is created once
+  );
+
+  const handleSendMessage = () => {
+    sendMessage(text);
   };
 
-  // Хелпер-функция для рендеринга контента сообщения в зависимости от его типа
-  const renderMessageContent = (message: Message) => {
-    if (message.type === 'sql') {
-      return (
-        <div className="text-white text-sm w-full font-mono">
-          <p className="mb-2 text-white/80 font-sans">Generated SQL Query:</p>
-          <pre className="bg-black/30 p-3 rounded-lg text-xs overflow-x-auto">
-            <code>{message.sqlQuery}</code>
-          </pre>
-          <p className="mt-4 mb-2 text-white/80 font-sans">Result:</p>
-          <pre className="bg-black/30 p-3 rounded-lg text-xs max-h-60 overflow-y-auto">
-            <code>{message.text}</code>
-          </pre>
-        </div>
-      );
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSendMessage();
     }
-    
-    // Для 'conversation', 'error', 'user' и других случаев просто отображаем текст
-    return <div className="whitespace-pre-wrap">{message.text}</div>;
   };
+
+  // Memoized message rendering
+  const renderMessageContent = useCallback(
+    (message: Message) => {
+      if (message.type === 'sql') {
+        return (
+          <div className="message-sql">
+            {message.sqlQuery && (
+              <>
+                <p className="message-sql-label">Generated SQL Query:</p>
+                <pre className="message-sql-query">
+                  <code>{message.sqlQuery}</code>
+                </pre>
+              </>
+            )}
+            <p className="message-sql-label">Result:</p>
+            <pre className="message-sql-result">
+              <code>{message.text}</code>
+            </pre>
+          </div>
+        );
+      }
+      return <div className="message-text">{message.text}</div>;
+    },
+    []
+  );
 
   if (!open) return null;
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/30"
-      style={{ backdropFilter: 'blur(10px) saturate(120%)' }}
-    >
-      <div
-        className="relative w-full max-w-2xl h-[85vh] max-h-[800px] flex flex-col space-y-4 p-4 rounded-2xl bg-gradient-to-br from-[rgba(255,100,100,0.2)] via-[rgba(150,100,255,0.15)] to-[rgba(100,200,255,0.2)] border border-white/30 shadow-xl overflow-hidden"
-        style={{
-          boxShadow: `
-            0 0 30px -5px rgba(100, 200, 255, 0.4),
-            0 0 60px -10px rgba(255, 100, 100, 0.2),
-            inset 0 1px 2px rgba(255, 255, 255, 0.3)
-          `,
-          animation: 'pulseGlow 4s infinite alternate',
-        }}
-      >
+    <div className="chat-panel-container">
+      <div className="chat-panel">
         {/* Header */}
-        <div className="relative px-6 py-4 border-b border-white/10">
-            <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-3">
-                    <div>
-                        <h2 className="text-xl font-semibold text-white">Proovia AI</h2>
-                        <p className="text-white/60 text-sm">Your AI Assistant</p>
-                    </div>
-                </div>
-                <button
-                    onClick={onClose}
-                    className="w-10 h-10 rounded-full flex items-center justify-center text-white/80 hover:text-white transition-all duration-300"
-                    style={{
-                        background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.15) 0%, rgba(255, 255, 255, 0.05) 100%)',
-                        border: '1px solid rgba(255, 255, 255, 0.25)',
-                        boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
-                    }}
-                >
-                    <X className="w-5 h-5" />
-                </button>
-            </div>
+        <div className="chat-header">
+          <div className="chat-header-title">
+            <h2>Proovia AI</h2>
+            <p>Your AI Assistant</p>
+          </div>
+          <button onClick={onClose} className="chat-close-button" aria-label="Close chat">
+            <X size={20} />
+          </button>
         </div>
 
         {/* Messages area */}
-        <div className="flex-1 overflow-y-auto p-6 space-y-4">
+        <div className="chat-messages">
           {messages.length === 0 ? (
-            <div className="text-center py-16">
-              <div
-                className="inline-flex items-center justify-center w-16 h-16 rounded-full mb-6"
-                style={{
-                  background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.25) 0%, rgba(255, 255, 255, 0.1) 100%)',
-                  border: '1px solid rgba(255, 255, 255, 0.25)',
-                  boxShadow: '0 8px 20px rgba(0, 0, 0, 0.1)',
-                }}
-              >
-                <Sparkles className="w-8 h-8 text-white/80" />
+            <div className="chat-welcome">
+              <div className="chat-welcome-icon">
+                <Sparkles size={32} />
               </div>
-              <h3 className="text-2xl font-semibold text-white mb-3">Welcome to Proovia AI</h3>
-              <p className="text-white/60 max-w-md mx-auto text-base">
-                Ask me about orders and customers, or just have a chat.
-              </p>
-              <div className="flex flex-wrap justify-center gap-2 mt-6">
-                {['Show all orders', 'Find customer by name "John"', 'How many drivers are there?', 'Hello!'].map(
-                  (suggestion) => (
-                    <div
-                      key={suggestion}
-                      className="px-4 py-2 rounded-full text-white/80 text-sm cursor-pointer hover:scale-105 transition-all duration-300"
-                      style={{
-                        background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0.1) 100%)',
-                        border: '1px solid rgba(255, 255, 255, 0.25)',
-                        boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
-                      }}
-                      onClick={() => setText(suggestion)}
-                    >
-                      {suggestion}
-                    </div>
-                  )
-                )}
+              <h3>Welcome to Proovia AI</h3>
+              <p>Ask me about orders and customers, or just have a chat.</p>
+              <div className="chat-suggestions">
+                {suggestions.map((suggestion) => (
+                  <button
+                    key={suggestion}
+                    className="chat-suggestion-button"
+                    onClick={() => setText(suggestion)}
+                  >
+                    {suggestion}
+                  </button>
+                ))}
               </div>
             </div>
           ) : (
             messages.map((message, idx) => (
-              <div key={idx} className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                <div className={`flex items-end space-x-2 max-w-[85%] ${message.role === 'user' ? 'flex-row-reverse space-x-reverse' : ''}`}>
-                  <div
-                    className="w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center"
-                    style={{
-                      background:
-                        message.role === 'user'
-                          ? 'linear-gradient(135deg, rgba(255, 255, 255, 0.25) 0%, rgba(255, 255, 255, 0.1) 100%)'
-                          : 'linear-gradient(135deg, rgba(100, 200, 255, 0.8) 0%, rgba(150, 100, 255, 0.8) 100%)',
-                      border: '1px solid rgba(255, 255, 255, 0.25)',
-                    }}
-                  >
-                    {message.role === 'user' ? <User className="w-4 h-4 text-white/80" /> : <Bot className="w-4 h-4 text-white" />}
+              <div key={idx} className={`chat-message ${message.role}`}>
+                <div className="chat-message-content">
+                  <div className={`chat-message-icon ${message.role}`}>
+                    {message.role === 'user' ? <User size={16} /> : <Bot size={16} />}
                   </div>
-                  <div
-                    className={`px-4 py-3 text-white text-sm ${
-                        // Исправляем опечатку 'rounded -full' и делаем пузыри более стандартной формы
-                        message.role === 'user' ? 'rounded-xl rounded-br-none' : 'rounded-xl rounded-bl-none'
-                    } ${message.type === 'sql' ? 'w-full' : ''}`}
-                    style={{
-                      background:
-                        message.role === 'user'
-                          ? 'linear-gradient(135deg, rgba(59, 130, 246, 0.9) 0%, rgba(147, 51, 234, 0.9) 100%)'
-                          : 'linear-gradient(135deg, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0.1) 100%)',
-                      border: '1px solid rgba(255, 255, 255, 0.25)',
-                      boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
-                    }}
-                  >
+                  <div className={`chat-message-text ${message.type}`}>
                     {renderMessageContent(message)}
                   </div>
                 </div>
               </div>
             ))
           )}
-          {(loading || isTyping) && (
-            <div className="flex justify-start">
-              <div className="flex items-end space-x-2">
-                <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{ background: 'linear-gradient(135deg, rgba(100, 200, 255, 0.8) 0%, rgba(150, 100, 255, 0.8) 100%)', border: '1px solid rgba(255, 255, 255, 0.25)' }}>
-                  <Bot className="w-4 h-4 text-white" />
+          {loading && (
+            <div className="chat-message assistant">
+              <div className="chat-message-content">
+                <div className="chat-message-icon assistant">
+                  <Bot size={16} />
                 </div>
-                <div className="px-4 py-3 rounded-xl rounded-bl-none" style={{ background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0.1) 100%)', border: '1px solid rgba(255, 255, 255, 0.25)', boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)' }}>
-                  <div className="flex items-center space-x-2">
-                    <div className="flex space-x-1">
-                      {[0, 1, 2].map((i) => (<div key={i} className="w-1.5 h-1.5 bg-white/60 rounded-full animate-bounce" style={{ animationDelay: `${i * 0.2}s` }}/>))}
+                <div className="chat-message-text">
+                  <div className="chat-loading">
+                    <div className="chat-loading-dots">
+                      {[0, 1, 2].map((i) => (
+                        <div key={i} className="chat-loading-dot" style={{ animationDelay: `${i * 0.2}s` }} />
+                      ))}
                     </div>
-                    <span className="text-white/60 text-xs">{isTyping ? 'Thinking...' : 'Processing...'}</span>
+                    <span>Thinking...</span>
                   </div>
                 </div>
               </div>
@@ -256,68 +207,30 @@ export default function AiChatPanel({ open, onClose }: AiChatPanelProps) {
         </div>
 
         {/* Input area */}
-        <div className="relative p-6 pt-2">
-            <div className="flex items-end space-x-3">
-                <textarea
-                    value={text}
-                    onChange={(e) => setText(e.target.value)}
-                    onKeyDown={(e) => {
-                        if (e.key === 'Enter' && !e.shiftKey) {
-                            e.preventDefault();
-                            send();
-                        }
-                    }}
-                    rows={1}
-                    placeholder="Ask me anything..."
-                    className="w-full px-4 py-3 text-white placeholder-white/50 text-sm resize-none focus:outline-none rounded-full transition-all duration-300"
-                    style={{
-                        background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.15) 0%, rgba(255, 255, 255, 0.05) 100%)',
-                        border: '1px solid rgba(255, 255, 255, 0.25)',
-                        boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
-                        minHeight: '48px',
-                    }}
-                />
-                <button
-                    onClick={send}
-                    disabled={!text.trim() || loading}
-                    className="w-12 h-12 rounded-full flex items-center justify-center text-white transition-all duration-300 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
-                    style={{
-                        background: loading
-                            ? 'linear-gradient(135deg, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0.1) 100%)'
-                            : 'linear-gradient(135deg, rgba(100, 200, 255, 0.9) 0%, rgba(150, 100, 255, 0.9) 100%)',
-                        border: '1px solid rgba(255, 255, 255, 0.25)',
-                        boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
-                    }}
-                >
-                    {loading ? <Loader className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5" />}
-                </button>
-            </div>
-            <p className="text-white/40 text-xs text-center mt-3">
-                Intelligence may make mistakes. Consider checking important information.
-            </p>
+        <div className="chat-input-area"> {/* Changed class name for clarity */}
+          <textarea
+            ref={textareaRef}
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            onKeyDown={handleKeyDown}
+            rows={1}
+            className="chat-textarea"
+            placeholder="Ask me anything..."
+            disabled={loading} // Disable textarea when loading
+          />
+          <button
+            onClick={handleSendMessage}
+            disabled={!text.trim() || loading}
+            className="chat-send-button"
+            aria-label="Send message"
+          >
+            {loading ? <Loader size={20} className="animate-spin" /> : <Send size={20} />}
+          </button>
+         
         </div>
       </div>
-
-      <style jsx>{`
-        @keyframes pulseGlow {
-          0% {
-            box-shadow:
-              0 0 30px -5px rgba(100, 200, 255, 0.4),
-              0 0 60px -10px rgba(255, 100, 100, 0.2),
-              inset 0 1px 2px rgba(255, 255, 255, 0.3);
-          }
-          100% {
-            box-shadow:
-              0 0 40px -5px rgba(100, 200, 255, 0.6),
-              0 0 80px -10px rgba(255, 100, 100, 0.3),
-              inset 0 1px 3px rgba(255, 255, 255, 0.4);
-          }
-        }
-        .whitespace-pre-wrap {
-            white-space: pre-wrap;
-            word-wrap: break-word;
-        }
-      `}</style>
     </div>
   );
-}
+});
+
+export default AiChatPanel;

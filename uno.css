@@ -1,3 +1,57 @@
+
+/* Основной стиль кнопки */
+.ai-glow-button {
+  padding: 0.75rem; /* Увеличил padding для лучшего внешнего вида */
+  border-radius:10rem; /* 10px, слегка закругленные края */
+  background: rgba(255, 255, 255, 0.15); /* Базовый полупрозрачный фон */
+  border: 1px solid rgba(255, 255, 255, 0.2); /* Тонкая полупрозрачная рамка */
+  color: white; /* Белый текст/иконка */
+  cursor: pointer;
+  position: relative; /* Важно для позиционирования псевдоэлемента */
+  overflow: hidden; /* Обрезает градиент, когда он вне кнопки */
+  transition: all 0.3s ease-out; /* Плавный переход для базовых свойств */
+  display: flex; /* Для центрирования иконки */
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1); /* Легкая тень */
+}
+
+/* Псевдоэлемент для градиентного свечения */
+.ai-glow-button::before {
+  content: '';
+  position: absolute;
+  top: -50%; /* Начинаем градиент сверху, чтобы он "проезжал" по кнопке */
+  left: -50%; /* Начинаем градиент слева */
+  width: 200%; /* Ширина градиента в два раза больше кнопки */
+  height: 200%; /* Высота градиента в два раза больше кнопки */
+  background: conic-gradient(
+    from 0deg at 50% 50%,
+    rgba(100, 200, 255, 0.7) 0%, /* Небесно-голубой */
+    rgba(150, 100, 255, 0.7) 30%, /* Фиолетовый */
+    rgba(255, 100, 100, 0.7) 60%, /* Красный */
+    rgba(100, 200, 255, 0.7) 100% /* Замыкаем круг */
+  );
+  /* background: conic-gradient(from 0deg at 50% 50%, #8be8ff 0%, #d896ff 30%, #ff8c8c 60%, #8be8ff 100%);  Если нужны более непрозрачные цвета */
+  opacity: 0; /* Изначально невидимый */
+  z-index: -1; /* Помещаем за кнопку */
+  transition: opacity 0.4s ease-out, transform 0.4s ease-out; /* Плавный переход для свечения */
+  transform: rotate(0deg); /* Начальное состояние для вращения */
+}
+
+/* Эффект при наведении */
+.ai-glow-button:hover {
+  background: rgba(255, 255, 255, 0.25); /* Слегка темнее при наведении */
+  border-color: rgba(255, 255, 255, 0.3); /* Рамка становится чуть более заметной */
+  transform: translateY(-2px); /* Легкий подъем */
+  box-shadow: 0 6px 15px rgba(0, 0, 0, 0.2); /* Более выраженная тень */
+}
+
+.ai-glow-button:hover::before {
+  opacity: 1; /* Появляется свечение */
+  transform: rotate(360deg); /* Вращение градиента */
+}
+
+
 /* layer: preflights */
 *,::before,::after{--un-rotate:0;--un-rotate-x:0;--un-rotate-y:0;--un-rotate-z:0;--un-scale-x:1;--un-scale-y:1;--un-scale-z:1;--un-skew-x:0;--un-skew-y:0;--un-translate-x:0;--un-translate-y:0;--un-translate-z:0;--un-pan-x: ;--un-pan-y: ;--un-pinch-zoom: ;--un-scroll-snap-strictness:proximity;--un-ordinal: ;--un-slashed-zero: ;--un-numeric-figure: ;--un-numeric-spacing: ;--un-numeric-fraction: ;--un-border-spacing-x:0;--un-border-spacing-y:0;--un-ring-offset-shadow:0 0 rgb(0 0 0 / 0);--un-ring-shadow:0 0 rgb(0 0 0 / 0);--un-shadow-inset: ;--un-shadow:0 0 rgb(0 0 0 / 0);--un-ring-inset: ;--un-ring-offset-width:0px;--un-ring-offset-color:#fff;--un-ring-width:0px;--un-ring-color:rgb(147 197 253 / 0.5);--un-blur: ;--un-brightness: ;--un-contrast: ;--un-drop-shadow: ;--un-grayscale: ;--un-hue-rotate: ;--un-invert: ;--un-saturate: ;--un-sepia: ;--un-backdrop-blur: ;--un-backdrop-brightness: ;--un-backdrop-contrast: ;--un-backdrop-grayscale: ;--un-backdrop-hue-rotate: ;--un-backdrop-invert: ;--un-backdrop-opacity: ;--un-backdrop-saturate: ;--un-backdrop-sepia: ;}::backdrop{--un-rotate:0;--un-rotate-x:0;--un-rotate-y:0;--un-rotate-z:0;--un-scale-x:1;--un-scale-y:1;--un-scale-z:1;--un-skew-x:0;--un-skew-y:0;--un-translate-x:0;--un-translate-y:0;--un-translate-z:0;--un-pan-x: ;--un-pan-y: ;--un-pinch-zoom: ;--un-scroll-snap-strictness:proximity;--un-ordinal: ;--un-slashed-zero: ;--un-numeric-figure: ;--un-numeric-spacing: ;--un-numeric-fraction: ;--un-border-spacing-x:0;--un-border-spacing-y:0;--un-ring-offset-shadow:0 0 rgb(0 0 0 / 0);--un-ring-shadow:0 0 rgb(0 0 0 / 0);--un-shadow-inset: ;--un-shadow:0 0 rgb(0 0 0 / 0);--un-ring-inset: ;--un-ring-offset-width:0px;--un-ring-offset-color:#fff;--un-ring-width:0px;--un-ring-color:rgb(147 197 253 / 0.5);--un-blur: ;--un-brightness: ;--un-contrast: ;--un-drop-shadow: ;--un-grayscale: ;--un-hue-rotate: ;--un-invert: ;--un-saturate: ;--un-sepia: ;--un-backdrop-blur: ;--un-backdrop-brightness: ;--un-backdrop-contrast: ;--un-backdrop-grayscale: ;--un-backdrop-hue-rotate: ;--un-backdrop-invert: ;--un-backdrop-opacity: ;--un-backdrop-saturate: ;--un-backdrop-sepia: ;}
 /* layer: shortcuts */
