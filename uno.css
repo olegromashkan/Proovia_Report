@@ -1,54 +1,104 @@
-
 /* Основной стиль кнопки */
 .ai-glow-button {
-  padding: 0.75rem; /* Увеличил padding для лучшего внешнего вида */
-  border-radius:10rem; /* 10px, слегка закругленные края */
-  background: rgba(255, 255, 255, 0.15); /* Базовый полупрозрачный фон */
-  border: 1px solid rgba(255, 255, 255, 0.2); /* Тонкая полупрозрачная рамка */
-  color: white; /* Белый текст/иконка */
+  padding: 0.85rem 1.5rem; /* Увеличенный padding для более комфортного клика */
+  border-radius: 12rem; /* Более мягкие закругленные края */
+background: conic-gradient(
+    from 0deg at 50% 50%,
+    rgba(100, 200, 255, 0.5) 0%, /* Небесно-голубой */
+    rgba(150, 100, 255, 0.5) 30%, /* Фиолетовый */
+    rgba(255, 100, 100, 0.5) 60%, /* Красный */
+    rgba(100, 200, 255, 0.5) 100% /* Замыкаем круг */
+  );
+  border: 1px solid rgba(255, 255, 255, 0.25); /* Полупрозрачная рамка с мягким свечением */
+  color: #e0e7ff; /* Светлый текст с легким голубым оттенком */
   cursor: pointer;
-  position: relative; /* Важно для позиционирования псевдоэлемента */
-  overflow: hidden; /* Обрезает градиент, когда он вне кнопки */
-  transition: all 0.3s ease-out; /* Плавный переход для базовых свойств */
-  display: flex; /* Для центрирования иконки */
+  position: relative; /* Для псевдоэлементов */
+  overflow: hidden; /* Обрезаем градиент за пределами кнопки */
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); /* Плавная анимация с кубической кривой */
+  display: inline-flex; /* Гибкое центрирование содержимого */
   align-items: center;
   justify-content: center;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1); /* Легкая тень */
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15), inset 0 0 8px rgba(255, 255, 255, 0.1); /* Мягкая тень и внутреннее свечение */
+  font-family: 'Inter', sans-serif; /* Современный шрифт */
+  font-weight: 500; /* Средний вес шрифта */
+  letter-spacing: 0.05em; /* Легкий разряд для текста */
+  color:rgb(255, 255, 255);
 }
 
-/* Псевдоэлемент для градиентного свечения */
+/* Псевдоэлемент для динамического свечения */
 .ai-glow-button::before {
   content: '';
   position: absolute;
-  top: -50%; /* Начинаем градиент сверху, чтобы он "проезжал" по кнопке */
-  left: -50%; /* Начинаем градиент слева */
-  width: 200%; /* Ширина градиента в два раза больше кнопки */
-  height: 200%; /* Высота градиента в два раза больше кнопки */
-  background: conic-gradient(
+  top: -75%; /* Увеличенный размер для более эффектного свечения */
+  left: -75%;
+  width: 250%; /* Градиент больше кнопки для эффектного перелива */
+  height: 250%;
+background: conic-gradient(
     from 0deg at 50% 50%,
-    rgba(100, 200, 255, 0.7) 0%, /* Небесно-голубой */
-    rgba(150, 100, 255, 0.7) 30%, /* Фиолетовый */
-    rgba(255, 100, 100, 0.7) 60%, /* Красный */
-    rgba(100, 200, 255, 0.7) 100% /* Замыкаем круг */
+    rgba(100, 200, 255, 0.9) 0%, /* Небесно-голубой */
+    rgba(150, 100, 255, 0.9) 30%, /* Фиолетовый */
+    rgba(255, 100, 100, 0.9) 60%, /* Красный */
+    rgba(100, 200, 255, 0.9) 100% /* Замыкаем круг */
   );
-  /* background: conic-gradient(from 0deg at 50% 50%, #8be8ff 0%, #d896ff 30%, #ff8c8c 60%, #8be8ff 100%);  Если нужны более непрозрачные цвета */
-  opacity: 0; /* Изначально невидимый */
-  z-index: -1; /* Помещаем за кнопку */
-  transition: opacity 0.4s ease-out, transform 0.4s ease-out; /* Плавный переход для свечения */
-  transform: rotate(0deg); /* Начальное состояние для вращения */
+  opacity: 0; /* Изначально скрыт */
+  z-index: -1; /* За содержимым кнопки */
+  transition: opacity 0.5s ease, transform 1s ease; /* Плавная анимация свечения и вращения */
+  transform: rotate(0deg); /* Начальное вращение */
+}
+
+/* Псевдоэлемент для пульсирующего эффекта */
+.ai-glow-button::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: radial-gradient(
+    circle at 50% 50%,
+    rgba(255, 255, 255, 0.2) 0%,
+    transparent 70%
+  );
+  opacity: 0.3; /* Легкое пульсирующее свечение */
+  z-index: -1;
+  animation: pulse 2s infinite ease-in-out; /* Пульсация */
 }
 
 /* Эффект при наведении */
 .ai-glow-button:hover {
-  background: rgba(255, 255, 255, 0.25); /* Слегка темнее при наведении */
-  border-color: rgba(255, 255, 255, 0.3); /* Рамка становится чуть более заметной */
-  transform: translateY(-2px); /* Легкий подъем */
-  box-shadow: 0 6px 15px rgba(0, 0, 0, 0.2); /* Более выраженная тень */
+
+  border-color: rgba(255, 255, 255, 0.4); /* Усиленная рамка */
+  box-shadow: 0 8px 20px rgba(50, 150, 255, 0.3), inset 0 0 10px rgba(255, 255, 255, 0.2); /* Усиленная тень и свечение */
+  color: #ffffff; /* Яркий белый текст */
 }
 
+/* Анимация при наведении для псевдоэлемента */
 .ai-glow-button:hover::before {
-  opacity: 1; /* Появляется свечение */
-  transform: rotate(360deg); /* Вращение градиента */
+  opacity: 1; /* Появление свечения */
+  transform: rotate(360deg); /* Полное вращение градиента */
+}
+
+/* Анимация пульсации */
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+    opacity: 0.3;
+  }
+  50% {
+    transform: scale(1.2);
+    opacity: 0.5;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 0.3;
+  }
+}
+
+/* Активное состояние (при клике) */
+.ai-glow-button:active {
+  transform: translateY(0) scale(0.98); /* Легкое нажатие */
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2), inset 0 0 5px rgba(255, 255, 255, 0.3);
+  transition: all 0.1s ease; /* Быстрая анимация при клике */
 }
 
 

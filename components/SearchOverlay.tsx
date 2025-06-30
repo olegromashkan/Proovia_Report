@@ -141,7 +141,7 @@ export default function SearchOverlay({ open, onClose, onAskAi }: { open: boolea
           background: 'rgba(255, 255, 255, 0.85)',
           backdropFilter: 'blur(40px)',
           WebkitBackdropFilter: 'blur(40px)',
-          borderRadius: '12px',
+          borderRadius: '30px',
           border: '1px solid rgba(255, 255, 255, 0.2)',
           boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25), 0 0 0 1px rgba(255, 255, 255, 0.1)',
           animation: open ? 'spotlight-in 0.2s ease-out' : 'spotlight-out 0.15s ease-in'
@@ -170,14 +170,14 @@ export default function SearchOverlay({ open, onClose, onAskAi }: { open: boolea
               </div>
             )}
           </div>
-          <button
-            onClick={onClose}
-            className="ml-3 w-6 h-6 text-gray-400 hover:text-gray-600 transition-colors"
-          >
-            <svg viewBox="0 0 20 20" fill="currentColor">
-              <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
-            </svg>
-          </button>
+      
+                  <button
+                    onClick={() => onAskAi(q)}
+                    className="ai-glow-button px-3 py-2 text-sm inline-flex items-center gap-1"
+                  >
+                    <Sparkles size={16} /> Ask AI
+                  </button>
+     
         </div>
 
         {/* Report Results */}
@@ -220,16 +220,7 @@ export default function SearchOverlay({ open, onClose, onAskAi }: { open: boolea
           {results.length === 0 && q && (
             <div className="px-4 py-8 text-center text-gray-500 text-sm">
               <div>No results found for "{q}"</div>
-              {onAskAi && (
-                <div className="mt-4">
-                  <button
-                    onClick={() => onAskAi(q)}
-                    className="ai-glow-button px-3 py-2 text-sm inline-flex items-center gap-1"
-                  >
-                    <Sparkles size={16} /> Ask AI
-                  </button>
-                </div>
-              )}
+             
             </div>
           )}
           
