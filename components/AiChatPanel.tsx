@@ -32,17 +32,34 @@ export default function AiChatPanel({ open, onClose }: AiChatPanelProps) {
 
     setTimeout(() => setIsTyping(false), 1800);
 
-    // Simulate AI response
-    setTimeout(() => {
+    try {
+      const res = await fetch('/api/ai-query', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userQuery: query }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setMessages((msgs) => [
+          ...msgs,
+          {
+            role: 'assistant',
+            text: `SQL: ${data.sql}\n\n${JSON.stringify(data.result, null, 2)}`,
+          },
+        ]);
+      } else {
+        setMessages((msgs) => [
+          ...msgs,
+          { role: 'assistant', text: data.error || 'Error' },
+        ]);
+      }
+    } catch (err: any) {
       setMessages((msgs) => [
         ...msgs,
-        {
-          role: 'assistant',
-          text: `I understand you're asking about "${query}". Here's my intelligent analysis and response based on the latest data patterns and insights.`,
-        },
+        { role: 'assistant', text: 'Error contacting AI' },
       ]);
-      setLoading(false);
-    }, 2000);
+    }
+    setLoading(false);
   };
 
   if (!open) return null;
