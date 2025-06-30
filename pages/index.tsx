@@ -27,6 +27,7 @@ export default function Home() {
   const [searchOpen, setSearchOpen] = useState(false);
   const [tasksOpen, setTasksOpen] = useState(false);
   const [aiOpen, setAiOpen] = useState(false);
+  const [aiText, setAiText] = useState('');
   const [welcomeOpen, setWelcomeOpen] = useState(false);
   const username = useUser();
   const user = useCurrentUser();
@@ -203,9 +204,17 @@ export default function Home() {
         </div>
       </Modal>
       <WelcomeModal open={welcomeOpen} onClose={() => setWelcomeOpen(false)} />
-      <SearchOverlay open={searchOpen} onClose={() => setSearchOpen(false)} />
+      <SearchOverlay
+        open={searchOpen}
+        onClose={() => setSearchOpen(false)}
+        onAskAi={(q) => {
+          setAiText(q);
+          setSearchOpen(false);
+          setAiOpen(true);
+        }}
+      />
       <TasksPanel open={tasksOpen} onClose={() => setTasksOpen(false)} />
-      <AiChatPanel open={aiOpen} onClose={() => setAiOpen(false)} />
+      <AiChatPanel open={aiOpen} onClose={() => setAiOpen(false)} initialText={aiText} />
       <UserMenu showButton={false} />
     </Layout>
   );

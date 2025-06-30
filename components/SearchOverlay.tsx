@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Sparkles } from 'lucide-react';
 import Icon from './Icon';
 import OrderCard from './OrderCard';
 
@@ -8,7 +9,7 @@ interface Result {
   postcode?: string;
 }
 
-export default function SearchOverlay({ open, onClose }: { open: boolean; onClose: () => void }) {
+export default function SearchOverlay({ open, onClose, onAskAi }: { open: boolean; onClose: () => void; onAskAi?: (q: string) => void }) {
   const [q, setQ] = useState('');
   const [results, setResults] = useState<Result[]>([]);
   const [suggest, setSuggest] = useState<string[]>([]);
@@ -218,7 +219,17 @@ export default function SearchOverlay({ open, onClose }: { open: boolean; onClos
         <div className="max-h-96 overflow-y-auto">
           {results.length === 0 && q && (
             <div className="px-4 py-8 text-center text-gray-500 text-sm">
-              No results found for "{q}"
+              <div>No results found for "{q}"</div>
+              {onAskAi && (
+                <div className="mt-4">
+                  <button
+                    onClick={() => onAskAi(q)}
+                    className="ai-glow-button px-3 py-2 text-sm inline-flex items-center gap-1"
+                  >
+                    <Sparkles size={16} /> Ask AI
+                  </button>
+                </div>
+              )}
             </div>
           )}
           
