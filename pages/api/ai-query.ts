@@ -1,6 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import db from '../../lib/db';
 import { withRetry } from '../../lib/withRetry';
+import { getSchemaDescription } from '../../lib/schema';
 
 export const config = { api: { bodyParser: { sizeLimit: '1mb' } } };
 
@@ -10,8 +11,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   const { userQuery } = req.body || {};
   if (!userQuery) return res.status(400).json({ error: 'Missing userQuery' });
 
-const systemPrompt = `
-You are Proovia AI Assistant, a helpful SQL expert working inside a courier company web app.
+const schema = getSchemaDescription();
+const systemPrompt = `You are Proovia AI Assistant, a helpful SQL expert working inside a courier company web app.
 
 Your job is to:
 - Understand user requests written in natural human language (English).
@@ -22,12 +23,12 @@ Your job is to:
 Use only SELECT queries. Never modify, insert, update, or delete data.
 Reject any question that looks unsafe or unrelated to the database.
 
-The database contains tables such as: users, drivers_report, messages, schedule_trips, legacy_totals, tasks, group_members, etc.
+Here is the database schema:
+${schema}
 
-Be smart and helpful. Do not hallucinate table names or columns. Always use the schema you were shown.
+Be smart and helpful. Do not hallucinate table names or columns. Always use this schema.
 
-If you're not sure — ask the user for clarification.
-`;
+If you're not sure — ask the user for clarification.`;
 
 
   try {
