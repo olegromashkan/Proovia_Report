@@ -46,17 +46,23 @@ function getRouteColorClass(route: string): string {
 }
 
 function stylePunctuality(val: number | null) {
-  if (val === null) return '-';
-  if (val > 90) return <span className="bg-red-100 px-0.5 rounded">{val}</span>;
-  if (val > 45) return <span className="bg-yellow-100 px-0.5 rounded">{val}</span>;
-  return <span>{val}</span>;
+  if (val === null) return <span className="text-gray-400">-</span>;
+
+  if (val > 90)
+    return <span className="text-red-600 font-semibold">{val}</span>;
+
+  if (val > 45)
+    return <span className="text-yellow-600 font-medium">{val}</span>;
+
+  return <span className="text-green-600 font-medium">{val}</span>;
 }
 
-function priceColors(val?: number | string) {
-  const num = Number(val);
-  if (isNaN(num)) return { bgColor: 'transparent', textColor: 'inherit' };
 
-  // Границы
+
+function priceTextColor(val?: number | string, isDarkTheme = false) {
+  const num = Number(val);
+  if (isNaN(num)) return 'inherit';
+
   const min = 500;
   const mid = 650;
   const high = 800;
@@ -65,28 +71,27 @@ function priceColors(val?: number | string) {
   let hue: number;
 
   if (num <= min) {
-    hue = 0; // красный
+    hue = 50; // красный
   } else if (num <= mid) {
-    // от красного (0°) до жёлтого (60°)
     const ratio = (num - min) / (mid - min);
     hue = 0 + ratio * 60;
   } else if (num <= high) {
-    // от жёлтого (60°) до зелёного (120°)
     const ratio = (num - mid) / (high - mid);
     hue = 60 + ratio * 60;
   } else if (num <= max) {
-    // от зелёного (120°) до синего (210°)
     const ratio = (num - high) / (max - high);
     hue = 120 + ratio * 90;
   } else {
-    hue = 210; // макс синий
+    hue = 210; // синий
   }
 
-  const bgColor = `hsl(${hue}, 100%, 85%)`;
-  const lightness = 85;
-  const textColor = lightness > 75 ? 'black' : 'white';
-  return { bgColor, textColor };
+  const lightness = isDarkTheme ? 50 : 40; // тёмный, чтоб не выжигал глаза
+  const saturation = 100;
+  return `hsl(${hue}, ${saturation}%, ${lightness}%)`;
 }
+
+
+
 
 
 
@@ -697,13 +702,13 @@ export default function DriverRoutes() {
                           }
                           return (
                             <td
-                              key={`${driver}-${d}-price`}
-                              className={`${borderClass} px-1 py-1 text-xs`}
-                              style={(() => { const {bgColor, textColor} = priceColors(data?.price); return { backgroundColor: bgColor, color: textColor }; })()}
-                              title={String(data?.price ?? '-')}
+                              className="border-b border-r border-gray-200 dark:border-gray-600 px-1 py-1 text-xs"
+                              style={{ color: priceTextColor(data?.price) }}
                             >
                               {data?.price ?? '-'}
                             </td>
+
+
 
                           );
                         });
