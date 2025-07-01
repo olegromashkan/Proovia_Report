@@ -305,23 +305,11 @@ export default function DatabasePanel() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4">
-      {/* Header */}
-      <div className="mb-6">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Database className="w-7 h-7 text-[#b53133]" />
-            <h1 className="text-2xl font-bold text-gray-900">Database Panel</h1>
-          </div>
-          <div className="bg-white px-4 py-2 rounded-lg shadow-sm border">
-            <div className="text-xs text-gray-500">Total Records</div>
-            <div className="text-xl font-bold text-[#b53133]">{total.toLocaleString()}</div>
-          </div>
-        </div>
-      </div>
+    <div className="min-h-screen">
+      
 
       {/* Controls */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4 mb-4">
+      <div className="rounded-2xl bg-white/70 dark:bg-black/50 shadow-sm border border-gray-200 dark:border-gray-700 p-4 mb-4">
         <div className="flex flex-wrap gap-3 items-end">
           <div className="min-w-[180px]">
             <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Table</label>
