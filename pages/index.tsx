@@ -128,7 +128,7 @@ export default function Home() {
           <div className="flex flex-wrap justify-center gap-2 flex-1">
             <button
               onClick={() => setSearchOpen(true)}
-              className="p-2 rounded-lg border border-white/10 bg-white/20 hover:bg-white/30 text-white"
+              className="ai-glow-button"
 
               aria-label="Open search"
             >
@@ -142,13 +142,7 @@ export default function Home() {
               <Icon name="star" className="w-4 h-4" />
 
             </button>
-            <button
-              onClick={() => setAiOpen(true)}
-              className="ai-glow-button" /* Изменил класс */
-              aria-label="Open AI chat"
-            >
-              <Sparkles size={19} />
-            </button>
+           
             {navLinks.map(({ href, icon, label }) => (
               <Link
                 key={href}
