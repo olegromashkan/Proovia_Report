@@ -18,6 +18,8 @@ interface Item {
 }
 
 type SortableField =
+  | 'driver'
+  | 'contractor'
   | 'route'
   | 'tasks'
   | 'start'
@@ -321,6 +323,8 @@ export default function DriverRoutes() {
     const { field, date } = sortField;
     sortedDrivers.sort((a, b) => {
       const getVal = (driver: string) => {
+        if (field === 'driver') return driver;
+        if (field === 'contractor') return driverContractor[driver] || '';
         if (date) {
           const d = map[driver]?.[date];
           if (!d) return field === 'route' || field === 'start' || field === 'end' ? '' : 0;
@@ -345,7 +349,9 @@ export default function DriverRoutes() {
           ? valA.localeCompare(valB)
           : valB.localeCompare(valA);
       }
-      return sortDirection === 'asc' ? (valA as number) - (valB as number) : (valB as number) - (valA as number);
+      return sortDirection === 'asc'
+        ? (valA as number) - (valB as number)
+        : (valB as number) - (valA as number);
     });
   }
 
@@ -566,17 +572,49 @@ export default function DriverRoutes() {
               <thead>
                 <tr className="bg-gray-50 dark:bg-gray-700 sticky top-0 z-40">
                   <th
-                    className="sticky left-0 z-30 bg-gray-50 dark:bg-gray-700 border-b border-r border-gray-200 dark:border-gray-600 px-2 py-1 text-left text-gray-900 dark:text-white font-semibold text-xs"
+                    className="sticky left-0 z-30 bg-gray-50 dark:bg-gray-700 border-b border-r border-gray-200 dark:border-gray-600 px-2 py-1 text-left text-gray-900 dark:text-white font-semibold text-xs cursor-pointer select-none"
                     style={{ position: 'sticky', left: 0 }}
+                    onClick={() => {
+                      if (sortField && sortField.field === 'driver') {
+                        setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+                      } else {
+                        setSortField({ field: 'driver' });
+                        setSortDirection('asc');
+                      }
+                    }}
                   >
-                    Driver
+                    <span className="flex items-center">
+                      Driver
+                      {sortField && sortField.field === 'driver' && (
+                        <Icon
+                          name={sortDirection === 'asc' ? 'chevron-up' : 'chevron-down'}
+                          className="inline-block w-3 h-3 ml-1"
+                        />
+                      )}
+                    </span>
                   </th>
                   {visibleCols.contractor && (
                     <th
-                      className="sticky left-[150px] z-30 bg-gray-50 dark:bg-gray-700 border-b border-r border-gray-200 dark:border-gray-600 px-2 py-1 text-left text-gray-900 dark:text-white font-semibold text-xs"
+                      className="sticky left-[150px] z-30 bg-gray-50 dark:bg-gray-700 border-b border-r border-gray-200 dark:border-gray-600 px-2 py-1 text-left text-gray-900 dark:text-white font-semibold text-xs cursor-pointer select-none"
                       style={{ position: 'sticky', left: '150px' }}
+                      onClick={() => {
+                        if (sortField && sortField.field === 'contractor') {
+                          setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+                        } else {
+                          setSortField({ field: 'contractor' });
+                          setSortDirection('asc');
+                        }
+                      }}
                     >
-                      Contractor
+                      <span className="flex items-center">
+                        Contractor
+                        {sortField && sortField.field === 'contractor' && (
+                          <Icon
+                            name={sortDirection === 'asc' ? 'chevron-up' : 'chevron-down'}
+                            className="inline-block w-3 h-3 ml-1"
+                          />
+                        )}
+                      </span>
                     </th>
                   )}
                   {dates.map((d, index) => (
