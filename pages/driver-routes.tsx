@@ -131,9 +131,26 @@ export default function DriverRoutes() {
   const [contractorFilter, setContractorFilter] = useState('');
   const [sortField, setSortField] = useState<string | null>(null);
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
+  const [editingCell, setEditingCell] = useState<
+    | { driver: string; date: string; field: string }
+    | null
+  >(null);
+  const [editedCells, setEditedCells] = useState<Record<string, string>>({});
   const menuRef = useRef<HTMLDivElement>(null);
   const cardContainerRef = useRef<HTMLDivElement>(null);
   const scrollIntervalRef = useRef<NodeJS.Timeout | null>(null);
+
+  const setCellValue = (
+    driver: string,
+    date: string,
+    field: string,
+    value: string
+  ) => {
+    setEditedCells((prev) => ({
+      ...prev,
+      [`${driver}|${date}|${field}`]: value,
+    }));
+  };
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
@@ -648,14 +665,58 @@ export default function DriverRoutes() {
                           const isLastDate = dateIndex === dates.length - 1;
                           const borderClass = `border-b ${!isLastDate && isLastKeyInDate ? 'border-r' : ''} border-gray-200 dark:border-gray-600`;
 
+                          const cellKey = `${driver}|${d}|${key}`;
+                          const editedValue = editedCells[cellKey];
+                          let rawValue: any =
+                            key === 'route'
+                              ? data?.route
+                              : key === 'tasks'
+                                ? data?.tasks
+                                : key === 'start'
+                                  ? data?.start
+                                  : key === 'end'
+                                    ? data?.end
+                                    : key === 'punctuality'
+                                      ? data?.punctuality
+                                      : data?.price;
+                          rawValue = editedValue !== undefined ? editedValue : rawValue;
+
+                          const editing =
+                            editingCell?.driver === driver &&
+                            editingCell.date === d &&
+                            editingCell.field === key;
+
+                          const startEdit = () => {
+                            setEditingCell({ driver, date: d, field: key });
+                          };
+
+                          const finishEdit = (val: string) => {
+                            setCellValue(driver, d, key, val);
+                            setEditingCell(null);
+                          };
+
                           if (key === 'route') {
                             return (
                               <td
                                 key={`${driver}-${d}-r`}
-                                className={`${getRouteColorClass(data?.route || '')} ${borderClass} px-1 py-1 text-xs text-nowrap overflow-hidden text-ellipsis`}
-                                title={data?.route || '-'}
+                                className={`${getRouteColorClass(String(rawValue || ''))} ${borderClass} px-1 py-1 text-xs text-nowrap overflow-hidden text-ellipsis`}
+                                title={String(rawValue || '-')}
+                                onDoubleClick={startEdit}
                               >
-                                {data?.route || '-'}
+                                {editing ? (
+                                  <input
+                                    autoFocus
+                                    className="w-full bg-transparent focus:outline-none text-xs"
+                                    defaultValue={String(rawValue || '')}
+                                    onBlur={(e) => finishEdit(e.target.value)}
+                                    onKeyDown={(e) => {
+                                      if (e.key === 'Enter') finishEdit((e.target as HTMLInputElement).value);
+                                      if (e.key === 'Escape') setEditingCell(null);
+                                    }}
+                                  />
+                                ) : (
+                                  String(rawValue || '-')
+                                )}
                               </td>
                             );
                           }
@@ -664,9 +725,23 @@ export default function DriverRoutes() {
                               <td
                                 key={`${driver}-${d}-t`}
                                 className={`${borderClass} px-1 py-1 text-gray-900 dark:text-white text-xs text-nowrap overflow-hidden text-ellipsis`}
-                                title={data?.tasks || '-'}
+                                title={String(rawValue || '-')}
+                                onDoubleClick={startEdit}
                               >
-                                {data?.tasks || '-'}
+                                {editing ? (
+                                  <input
+                                    autoFocus
+                                    className="w-full bg-transparent focus:outline-none text-xs"
+                                    defaultValue={String(rawValue || '')}
+                                    onBlur={(e) => finishEdit(e.target.value)}
+                                    onKeyDown={(e) => {
+                                      if (e.key === 'Enter') finishEdit((e.target as HTMLInputElement).value);
+                                      if (e.key === 'Escape') setEditingCell(null);
+                                    }}
+                                  />
+                                ) : (
+                                  String(rawValue || '-')
+                                )}
                               </td>
                             );
                           }
@@ -675,8 +750,22 @@ export default function DriverRoutes() {
                               <td
                                 key={`${driver}-${d}-s`}
                                 className={`${borderClass} px-1 py-1 text-gray-900 dark:text-white text-xs`}
+                                onDoubleClick={startEdit}
                               >
-                                {data?.start || '-'}
+                                {editing ? (
+                                  <input
+                                    autoFocus
+                                    className="w-full bg-transparent focus:outline-none text-xs"
+                                    defaultValue={String(rawValue || '')}
+                                    onBlur={(e) => finishEdit(e.target.value)}
+                                    onKeyDown={(e) => {
+                                      if (e.key === 'Enter') finishEdit((e.target as HTMLInputElement).value);
+                                      if (e.key === 'Escape') setEditingCell(null);
+                                    }}
+                                  />
+                                ) : (
+                                  String(rawValue || '-')
+                                )}
                               </td>
                             );
                           }
@@ -685,8 +774,22 @@ export default function DriverRoutes() {
                               <td
                                 key={`${driver}-${d}-e`}
                                 className={`${borderClass} px-1 py-1 text-gray-900 dark:text-white text-xs`}
+                                onDoubleClick={startEdit}
                               >
-                                {data?.end || '-'}
+                                {editing ? (
+                                  <input
+                                    autoFocus
+                                    className="w-full bg-transparent focus:outline-none text-xs"
+                                    defaultValue={String(rawValue || '')}
+                                    onBlur={(e) => finishEdit(e.target.value)}
+                                    onKeyDown={(e) => {
+                                      if (e.key === 'Enter') finishEdit((e.target as HTMLInputElement).value);
+                                      if (e.key === 'Escape') setEditingCell(null);
+                                    }}
+                                  />
+                                ) : (
+                                  String(rawValue || '-')
+                                )}
                               </td>
                             );
                           }
@@ -695,19 +798,47 @@ export default function DriverRoutes() {
                               <td
                                 key={`${driver}-${d}-p`}
                                 className={`${borderClass} px-1 py-1 text-xs`}
+                                onDoubleClick={startEdit}
                               >
-                                {stylePunctuality(data?.punctuality ?? null)}
+                                {editing ? (
+                                  <input
+                                    autoFocus
+                                    className="w-full bg-transparent focus:outline-none text-xs"
+                                    defaultValue={String(rawValue ?? '')}
+                                    onBlur={(e) => finishEdit(e.target.value)}
+                                    onKeyDown={(e) => {
+                                      if (e.key === 'Enter') finishEdit((e.target as HTMLInputElement).value);
+                                      if (e.key === 'Escape') setEditingCell(null);
+                                    }}
+                                  />
+                                ) : (
+                                  stylePunctuality(rawValue === undefined || rawValue === null || rawValue === '' ? null : Number(rawValue))
+                                )}
                               </td>
                             );
                           }
                           return (
                             <td
                               className="border-b border-r border-gray-200 dark:border-gray-600 px-1 py-1 text-xs"
-                              style={{ color: priceTextColor(data?.price) }}
+                              style={{ color: priceTextColor(rawValue) }}
+                              onDoubleClick={startEdit}
+                              key={`${driver}-${d}-pr`}
                             >
-                              {data?.price ?? '-'}
+                              {editing ? (
+                                <input
+                                  autoFocus
+                                  className="w-full bg-transparent focus:outline-none text-xs"
+                                  defaultValue={String(rawValue || '')}
+                                  onBlur={(e) => finishEdit(e.target.value)}
+                                  onKeyDown={(e) => {
+                                    if (e.key === 'Enter') finishEdit((e.target as HTMLInputElement).value);
+                                    if (e.key === 'Escape') setEditingCell(null);
+                                  }}
+                                />
+                              ) : (
+                                String(rawValue || '-')
+                              )}
                             </td>
-
 
 
                           );
