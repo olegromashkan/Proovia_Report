@@ -58,6 +58,7 @@ const Navbar = memo(() => {
     { href: '/feed', icon: 'chat', label: 'Feed' },
     { href: '/upload', icon: 'upload', label: 'Upload' },
     { href: '/driver-routes', icon: 'signpost', label: 'Driver Routes' },
+    { href: '/driver-routes-table', icon: 'table-list', label: 'Routes Table' },
     { href: '/full-report', icon: 'table-list', label: 'Full Report' },
     { href: '/monthly-report', icon: 'calendar', label: 'Monthly' },
     { href: '/working-times', icon: 'clock', label: 'Working Times' },
