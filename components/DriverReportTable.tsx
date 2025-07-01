@@ -101,6 +101,28 @@ export default function DriverReportTable() {
 
   const startEdit = (pos: CellPos) => dispatch({ type: 'START_EDIT', pos });
 
+  const selectRow = (r: number) => {
+    dispatch({ type: 'SET_ACTIVE', pos: { row: r, col: 0 } });
+    dispatch({
+      type: 'SET_SELECTION',
+      sel: {
+        start: { row: r, col: 0 },
+        end: { row: r, col: state.cells[0].length - 1 },
+      },
+    });
+  };
+
+  const selectCol = (c: number) => {
+    dispatch({ type: 'SET_ACTIVE', pos: { row: 0, col: c } });
+    dispatch({
+      type: 'SET_SELECTION',
+      sel: {
+        start: { row: 0, col: c },
+        end: { row: state.cells.length - 1, col: c },
+      },
+    });
+  };
+
   const stopEdit = (value: string) => {
     if (!state.editing) return;
     dispatch({ type: 'STOP_EDIT', row: state.editing.row, col: state.editing.col, value });
@@ -199,15 +221,32 @@ export default function DriverReportTable() {
       >
         <div className="grid" style={{ gridTemplateColumns: `40px repeat(${state.cells[0].length}, ${COL_WIDTH}px)` }}>
           <div className="sticky top-0 left-0 z-10 bg-gray-50 dark:bg-gray-700 border-r border-b border-gray-300 dark:border-gray-600"></div>
-          {state.cells[0].map((_, c) => (
-            <div
-              key={c}
-              className="sticky top-0 z-10 flex items-center justify-center bg-gray-50 dark:bg-gray-700 border-b border-r border-gray-300 dark:border-gray-600 text-xs font-semibold"
-            >
-              {colLetter(c)}
-              <button className="ml-1 text-red-500" onClick={() => dispatch({ type: 'DEL_COL', col: c })}>×</button>
-            </div>
-          ))}
+          {state.cells[0].map((_, c) => {
+            const colSelected =
+              state.selection &&
+              state.selection.start.col === c &&
+              state.selection.end.col === c &&
+              state.selection.start.row === 0 &&
+              state.selection.end.row === state.cells.length - 1;
+            return (
+              <div
+                key={c}
+                onClick={() => selectCol(c)}
+                className={`sticky top-0 z-10 flex items-center justify-center bg-gray-50 dark:bg-gray-700 border-b border-r border-gray-300 dark:border-gray-600 text-xs font-semibold ${colSelected ? 'bg-blue-100 dark:bg-blue-900/40' : ''}`}
+              >
+                {colLetter(c)}
+                <button
+                  className="ml-1 text-red-500"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    dispatch({ type: 'DEL_COL', col: c });
+                  }}
+                >
+                  ×
+                </button>
+              </div>
+            );
+          })}
         </div>
         <div style={{ height: rowVirtual.getTotalSize(), position: 'relative' }}>
           {rowVirtual.getVirtualItems().map((vr) => (
@@ -224,9 +263,20 @@ export default function DriverReportTable() {
                 gridTemplateColumns: `40px repeat(${state.cells[0].length}, ${COL_WIDTH}px)`,
               }}
             >
-              <div className="sticky left-0 bg-gray-50 dark:bg-gray-700 border-r border-b border-gray-300 dark:border-gray-600 text-center text-xs font-semibold">
+              <div
+                className={`sticky left-0 bg-gray-50 dark:bg-gray-700 border-r border-b border-gray-300 dark:border-gray-600 text-center text-xs font-semibold ${state.selection && state.selection.start.row === vr.index && state.selection.end.row === vr.index && state.selection.start.col === 0 && state.selection.end.col === state.cells[0].length - 1 ? 'bg-blue-100 dark:bg-blue-900/40' : ''}`}
+                onClick={() => selectRow(vr.index)}
+              >
                 {vr.index + 1}
-                <button className="ml-1 text-red-500" onClick={() => dispatch({ type: 'DEL_ROW', row: vr.index })}>×</button>
+                <button
+                  className="ml-1 text-red-500"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    dispatch({ type: 'DEL_ROW', row: vr.index });
+                  }}
+                >
+                  ×
+                </button>
               </div>
               {state.cells[vr.index].map((val, c) => {
                 const active = state.active.row === vr.index && state.active.col === c;
