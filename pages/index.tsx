@@ -12,6 +12,7 @@ import UserMenu from '../components/UserMenu';
 import TasksPanel from '../components/TasksPanel';
 import WelcomeModal from '../components/WelcomeModal';
 import AiChatPanel from '../components/AiChatPanel';
+import PixelPet from '../components/PixelPet';
 import { useRouter } from 'next/router';
 import useUser from '../lib/useUser';
 import useCachedFetch from '../lib/useCachedFetch';
@@ -210,6 +211,7 @@ export default function Home() {
       <TasksPanel open={tasksOpen} onClose={() => setTasksOpen(false)} />
       <AiChatPanel open={aiOpen} onClose={() => setAiOpen(false)} initialText={aiText} />
       <UserMenu showButton={false} />
+      <PixelPet />
     </Layout>
   );
 }
