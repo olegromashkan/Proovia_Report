@@ -48,6 +48,10 @@ const Navbar = memo(() => {
   const [isDragging, setIsDragging] = useState(false);
   const [windowSize, setWindowSize] = useState({ width: 0, height: 0 });
   const [currentEdge, setCurrentEdge] = useState<'left' | 'right' | 'top' | 'bottom'>('left');
+
+  const forceRefresh = useCallback(() => {
+    window.dispatchEvent(new Event('forceRefresh'));
+  }, []);
   
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   const panelRef = useRef<HTMLDivElement>(null);
@@ -375,6 +379,9 @@ const Navbar = memo(() => {
                       </motion.button>
                       <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} onClick={() => setTasksOpen(true)} className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition-all duration-150" aria-label="Open tasks">
                         <Icon name="check" className="w-5 h-5 text-gray-600 dark:text-gray-300" />
+                      </motion.button>
+                      <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} onClick={forceRefresh} className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition-all duration-150" aria-label="Force refresh">
+                        <Icon name="refresh" className="w-5 h-5 text-gray-600 dark:text-gray-300" />
                       </motion.button>
 
                       <UserMenu />
