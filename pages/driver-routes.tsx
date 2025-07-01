@@ -52,6 +52,17 @@ function stylePunctuality(val: number | null) {
   return <span className="text-red-500">{val}</span>;
 }
 
+function priceBgColor(val?: number | string) {
+  const num = Number(val);
+  if (isNaN(num)) return undefined;
+  const diff = num - 650;
+  const maxDiff = 150;
+  const ratio = Math.max(-1, Math.min(1, diff / maxDiff));
+  if (ratio > 0) return `rgba(0, 255, 0, ${ratio})`;
+  if (ratio < 0) return `rgba(255, 0, 0, ${-ratio})`;
+  return undefined;
+}
+
 function formatDisplayDate(dateStr: string): string {
   const date = new Date(dateStr);
   return date.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
@@ -547,6 +558,7 @@ export default function DriverRoutes() {
                           <td
                             key={`${driver}-${d}-price`}
                             className={`${borderClass} px-1 py-1 text-gray-900 dark:text-white text-xs`}
+                            style={{ backgroundColor: priceBgColor(data?.price) }}
                           >
                             {data?.price ?? '-'}
                           </td>
