@@ -17,6 +17,19 @@ interface Item {
   price?: number | string;
 }
 
+type SortableField =
+  | 'route'
+  | 'tasks'
+  | 'start'
+  | 'end'
+  | 'punctuality'
+  | 'price';
+
+interface SortConfig {
+  field: SortableField;
+  date?: string;
+}
+
 function formatDate(d: Date): string {
   return d.toISOString().slice(0, 10);
 }
@@ -129,7 +142,7 @@ export default function DriverRoutes() {
   const [showContractorCards, setShowContractorCards] = useState(true);
   const [driverFilter, setDriverFilter] = useState('');
   const [contractorFilter, setContractorFilter] = useState('');
-  const [sortField, setSortField] = useState<string | null>(null);
+  const [sortField, setSortField] = useState<SortConfig | null>(null);
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   const [editingCell, setEditingCell] = useState<
     | { driver: string; date: string; field: string }
@@ -305,19 +318,34 @@ export default function DriverRoutes() {
 
   const sortedDrivers = [...filteredDrivers];
   if (sortField) {
+    const { field, date } = sortField;
     sortedDrivers.sort((a, b) => {
-      const sa = driverStats[a];
-      const sb = driverStats[b];
-      const getVal = (s?: typeof sa) => {
+      const getVal = (driver: string) => {
+        if (date) {
+          const d = map[driver]?.[date];
+          if (!d) return field === 'route' || field === 'start' || field === 'end' ? '' : 0;
+          if (field === 'route') return String(d.route || '');
+          if (field === 'tasks') return Number(d.tasks) || 0;
+          if (field === 'start') return String(d.start || '');
+          if (field === 'end') return String(d.end || '');
+          if (field === 'punctuality') return d.punctuality ?? 0;
+          if (field === 'price') return Number(d.price) || 0;
+        }
+        const s = driverStats[driver];
         if (!s) return 0;
-        if (sortField === 'tasks') return s.tasksTotal;
-        if (sortField === 'price') return s.priceCount ? s.priceTotal / s.priceCount : 0;
-        if (sortField === 'punctuality') return s.punctualityCount ? s.punctualityTotal / s.punctualityCount : 0;
+        if (field === 'tasks') return s.tasksTotal;
+        if (field === 'price') return s.priceCount ? s.priceTotal / s.priceCount : 0;
+        if (field === 'punctuality') return s.punctualityCount ? s.punctualityTotal / s.punctualityCount : 0;
         return 0;
       };
-      const valA = getVal(sa);
-      const valB = getVal(sb);
-      return sortDirection === 'asc' ? valA - valB : valB - valA;
+      const valA = getVal(a);
+      const valB = getVal(b);
+      if (typeof valA === 'string' && typeof valB === 'string') {
+        return sortDirection === 'asc'
+          ? valA.localeCompare(valB)
+          : valB.localeCompare(valA);
+      }
+      return sortDirection === 'asc' ? (valA as number) - (valB as number) : (valB as number) - (valA as number);
     });
   }
 
@@ -593,21 +621,27 @@ export default function DriverRoutes() {
                                 : key === 'punctuality'
                                   ? 'Punct.'
                                   : 'Price';
-                      const sortable = key === 'price' || key === 'punctuality' || key === 'tasks';
+                      const sortable = true;
                       return (
                         <th
                           key={`${d}-${key}`}
                           onClick={sortable ? () => {
-                            if (sortField === key) {
+                            if (sortField && sortField.field === key && sortField.date === d) {
                               setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
                             } else {
-                              setSortField(key);
+                              setSortField({ field: key as SortableField, date: d });
                               setSortDirection('asc');
                             }
                           } : undefined}
                           className={`${sortable ? 'cursor-pointer select-none' : ''} border-b ${dateIndex < dates.length - 1 && keyIndex === visibleKeys.length - 1 ? 'border-r' : ''} border-gray-200 dark:border-gray-600 px-1 py-0.5 text-gray-900 dark:text-white font-medium min-w-[60px] text-[10px]`}
                         >
                           {label}
+                          {sortField && sortField.field === key && sortField.date === d && (
+                            <Icon
+                              name={sortDirection === 'asc' ? 'chevron-up' : 'chevron-down'}
+                              className="inline-block w-3 h-3 ml-1"
+                            />
+                          )}
                         </th>
                       );
                     })
