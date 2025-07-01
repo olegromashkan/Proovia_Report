@@ -1,15 +1,16 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 
 interface CachedData<T> {
   ts: number;
   data: T;
 }
 
-export default function useCachedFetch<T>(key: string, url?: string | null, ttl = 3600 * 1000) {
-  const [data, setData] = useState<T | undefined>();
+export default function useCachedFetch<T>(key: string | null, url?: string | null, ttl = 3600 * 1000, initial?: T) {
+  const [data, setData] = useState<T | undefined>(initial);
   const [error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
+    if (!key) return;
     try {
       const raw = localStorage.getItem(key);
       if (raw) {
@@ -21,7 +22,7 @@ export default function useCachedFetch<T>(key: string, url?: string | null, ttl 
     } catch {}
   }, [key, ttl]);
 
-  useEffect(() => {
+  const fetchData = useCallback(() => {
     if (!url) return;
     let ignore = false;
     fetch(url)
@@ -33,8 +34,10 @@ export default function useCachedFetch<T>(key: string, url?: string | null, ttl 
         if (!ignore) {
           setData(json);
           try {
-            const payload: CachedData<T> = { ts: Date.now(), data: json };
-            localStorage.setItem(key, JSON.stringify(payload));
+            if (key) {
+              const payload: CachedData<T> = { ts: Date.now(), data: json };
+              localStorage.setItem(key, JSON.stringify(payload));
+            }
           } catch {}
         }
       })
@@ -44,7 +47,16 @@ export default function useCachedFetch<T>(key: string, url?: string | null, ttl 
     return () => {
       ignore = true;
     };
-  }, [key, url, ttl]);
+  }, [key, url]);
 
-  return { data, error };
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
+
+  const refresh = useCallback(() => {
+    if (key) localStorage.removeItem(key);
+    fetchData();
+  }, [fetchData, key]);
+
+  return { data, error, refresh };
 }
