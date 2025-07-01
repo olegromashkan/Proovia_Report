@@ -47,14 +47,14 @@ function getRouteColorClass(route: string): string {
 
 function stylePunctuality(val: number | null) {
   if (val === null) return '-';
-  if (val <= 45) return <span className="text-green-500">{val}</span>;
-  if (val <= 90) return <span className="text-yellow-500">{val}</span>;
-  return <span className="text-red-500">{val}</span>;
+  if (val > 90) return <span className="bg-red-100 px-0.5 rounded">{val}</span>;
+  if (val > 45) return <span className="bg-yellow-100 px-0.5 rounded">{val}</span>;
+  return <span>{val}</span>;
 }
 
-function priceTextColor(val?: number | string) {
+function priceColors(val?: number | string) {
   const num = Number(val);
-  if (isNaN(num)) return '#ffffff';
+  if (isNaN(num)) return { bgColor: 'transparent', textColor: 'inherit' };
 
   // Границы
   const min = 500;
@@ -82,7 +82,10 @@ function priceTextColor(val?: number | string) {
     hue = 210; // макс синий
   }
 
-  return `hsl(${hue}, 100%, 50%)`;
+  const bgColor = `hsl(${hue}, 100%, 85%)`;
+  const lightness = 85;
+  const textColor = lightness > 75 ? 'black' : 'white';
+  return { bgColor, textColor };
 }
 
 
@@ -116,8 +119,13 @@ export default function DriverRoutes() {
     tasks: true,
     punctuality: true,
     price: true,
+    contractor: true,
   });
   const [showContractorCards, setShowContractorCards] = useState(true);
+  const [driverFilter, setDriverFilter] = useState('');
+  const [contractorFilter, setContractorFilter] = useState('');
+  const [sortField, setSortField] = useState<string | null>(null);
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   const menuRef = useRef<HTMLDivElement>(null);
   const cardContainerRef = useRef<HTMLDivElement>(null);
   const scrollIntervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -193,18 +201,22 @@ export default function DriverRoutes() {
     };
   }, []);
 
-  const dates = Array.from(new Set(items.map((it) => it.date))).sort().reverse();
-  const drivers = Array.from(new Set(items.map((it) => it.driver))).sort();
-  const colOrder: Array<keyof typeof visibleCols> = ['start', 'end', 'route', 'tasks', 'punctuality', 'price'];
-  const visibleKeys = colOrder.filter((k) => visibleCols[k]);
-
+  const dateSet = new Set<string>();
+  const driverSet = new Set<string>();
   const map: Record<string, Record<string, { route: string; tasks: string; start?: string | null; end?: string | null; punctuality: number | null; price?: number | string }>> = {};
   const driverContractor: Record<string, string> = {};
-  items.forEach((it) => {
+  const contractorStats: Record<string, { drivers: Set<string>; total: number; count: number }> = {};
+  const driverStats: Record<string, { priceTotal: number; priceCount: number; tasksTotal: number; punctualityTotal: number; punctualityCount: number }> = {};
+
+  for (const it of items) {
+    dateSet.add(it.date);
+    driverSet.add(it.driver);
+
     const afterColon = it.calendar?.split(':')[1] || it.calendar || '';
     const route = afterColon.split(' ')[0] || '';
     const taskMatch = it.calendar?.match(/\((\d+)\)/);
     const tasks = taskMatch ? taskMatch[1] : '';
+
     if (!map[it.driver]) map[it.driver] = {};
     if (it.contractor) driverContractor[it.driver] = it.contractor;
     map[it.driver][it.date] = {
@@ -215,25 +227,42 @@ export default function DriverRoutes() {
       punctuality: it.punctuality ?? null,
       price: it.price,
     };
-  });
 
-  const contractorStats = Object.entries(driverContractor).reduce<Record<string, { drivers: Set<string>; total: number; count: number }>>(
-    (acc, [drv, contractor]) => {
-      if (!acc[contractor]) acc[contractor] = { drivers: new Set(), total: 0, count: 0 };
-      acc[contractor].drivers.add(drv);
-      items
-        .filter((i) => i.driver === drv)
-        .forEach((i) => {
-          const n = Number(i.price);
-          if (!isNaN(n)) {
-            acc[contractor].total += n;
-            acc[contractor].count += 1;
-          }
-        });
-      return acc;
-    },
-    {}
-  );
+    if (it.contractor) {
+      if (!contractorStats[it.contractor]) contractorStats[it.contractor] = { drivers: new Set(), total: 0, count: 0 };
+      contractorStats[it.contractor].drivers.add(it.driver);
+    }
+
+    if (!driverStats[it.driver]) {
+      driverStats[it.driver] = { priceTotal: 0, priceCount: 0, tasksTotal: 0, punctualityTotal: 0, punctualityCount: 0 };
+    }
+
+    const priceNum = Number(it.price);
+    if (!isNaN(priceNum)) {
+      driverStats[it.driver].priceTotal += priceNum;
+      driverStats[it.driver].priceCount += 1;
+      if (it.contractor) {
+        contractorStats[it.contractor].total += priceNum;
+        contractorStats[it.contractor].count += 1;
+      }
+    }
+
+    const tasksNum = parseInt(tasks, 10);
+    if (!isNaN(tasksNum)) {
+      driverStats[it.driver].tasksTotal += tasksNum;
+    }
+
+    if (it.punctuality !== null && it.punctuality !== undefined) {
+      driverStats[it.driver].punctualityTotal += it.punctuality;
+      driverStats[it.driver].punctualityCount += 1;
+    }
+  }
+
+  const dates = Array.from(dateSet).sort().reverse();
+  const drivers = Array.from(driverSet).sort();
+  const colOrder: Array<keyof typeof visibleCols> = ['contractor', 'start', 'end', 'route', 'tasks', 'punctuality', 'price'];
+  const visibleKeys = colOrder.filter((k) => k !== 'contractor' && visibleCols[k]);
+
   const contractorCards = Object.entries(contractorStats)
     .map(([name, info]) => ({
       name,
@@ -241,6 +270,48 @@ export default function DriverRoutes() {
       avgPrice: info.count ? info.total / info.count : 0,
     }))
     .sort((a, b) => b.avgPrice - a.avgPrice);
+
+  const baseColSpan = 1 + (visibleCols.contractor ? 1 : 0);
+
+  const filteredDrivers = drivers
+    .filter((d) => d.toLowerCase().includes(driverFilter.toLowerCase()))
+    .filter((d) =>
+      contractorFilter
+        ? (driverContractor[d] || '').toLowerCase().includes(contractorFilter.toLowerCase())
+        : true
+    );
+
+  const sortedDrivers = [...filteredDrivers];
+  if (sortField) {
+    sortedDrivers.sort((a, b) => {
+      const sa = driverStats[a];
+      const sb = driverStats[b];
+      const getVal = (s?: typeof sa) => {
+        if (!s) return 0;
+        if (sortField === 'tasks') return s.tasksTotal;
+        if (sortField === 'price') return s.priceCount ? s.priceTotal / s.priceCount : 0;
+        if (sortField === 'punctuality') return s.punctualityCount ? s.punctualityTotal / s.punctualityCount : 0;
+        return 0;
+      };
+      const valA = getVal(sa);
+      const valB = getVal(sb);
+      return sortDirection === 'asc' ? valA - valB : valB - valA;
+    });
+  }
+
+  const summary = sortedDrivers.reduce(
+    (acc, drv) => {
+      const s = driverStats[drv];
+      if (s) {
+        acc.totalTasks += s.tasksTotal;
+        acc.totalPrice += s.priceTotal;
+        acc.priceCount += s.priceCount;
+      }
+      return acc;
+    },
+    { totalTasks: 0, totalPrice: 0, priceCount: 0 }
+  );
+  const avgPrice = summary.priceCount ? summary.totalPrice / summary.priceCount : 0;
 
   const handleFile = async (dateStr: string, file: File) => {
     try {
@@ -358,6 +429,20 @@ export default function DriverRoutes() {
                 className="px-2 py-1 text-sm bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg border border-gray-300 dark:border-gray-600 focus:ring-1 focus:ring-blue-500"
                 aria-label="End date"
               />
+              <input
+                type="text"
+                placeholder="Driver"
+                value={driverFilter}
+                onChange={(e) => setDriverFilter(e.target.value)}
+                className="px-2 py-1 text-sm bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg border border-gray-300 dark:border-gray-600 focus:ring-1 focus:ring-blue-500"
+              />
+              <input
+                type="text"
+                placeholder="Contractor"
+                value={contractorFilter}
+                onChange={(e) => setContractorFilter(e.target.value)}
+                className="px-2 py-1 text-sm bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg border border-gray-300 dark:border-gray-600 focus:ring-1 focus:ring-blue-500"
+              />
               <div className="relative" ref={menuRef}>
                 <button
                   type="button"
@@ -394,7 +479,9 @@ export default function DriverRoutes() {
                                     ? 'End Time'
                                     : key === 'punctuality'
                                       ? 'Punctuality'
-                                      : 'Price'}
+                                      : key === 'contractor'
+                                        ? 'Contractor'
+                                        : 'Price'}
                           </span>
                         </label>
                       ))}
@@ -413,10 +500,13 @@ export default function DriverRoutes() {
 
           {/* Table Section */}
           <div className="flex-1 overflow-auto">
+            <div className="px-2 py-1 text-sm text-gray-700 dark:text-gray-300">
+              Total drivers: {sortedDrivers.length} | Avg price: £{avgPrice.toFixed(2)} | Total tasks: {summary.totalTasks}
+            </div>
             <table className="w-full text-center border-collapse text-xs">
               <colgroup>
                 <col style={{ width: '150px', minWidth: '150px' }} />
-                <col style={{ width: '120px', minWidth: '120px' }} />
+                {visibleCols.contractor && <col style={{ width: '120px', minWidth: '120px' }} />}
                 {dates.flatMap((_, dateIdx) =>
                   visibleKeys.map((_, colIdx) => (
                     <col key={`d${dateIdx}-${colIdx}`} style={{ width: '60px', minWidth: '60px' }} />
@@ -424,19 +514,21 @@ export default function DriverRoutes() {
                 )}
               </colgroup>
               <thead>
-                <tr className="bg-gray-50 dark:bg-gray-700 sticky top-0 z-20">
+                <tr className="bg-gray-50 dark:bg-gray-700 sticky top-0 z-40">
                   <th
                     className="sticky left-0 z-30 bg-gray-50 dark:bg-gray-700 border-b border-r border-gray-200 dark:border-gray-600 px-2 py-1 text-left text-gray-900 dark:text-white font-semibold text-xs"
                     style={{ position: 'sticky', left: 0 }}
                   >
                     Driver
                   </th>
-                  <th
-                    className="sticky left-[150px] z-30 bg-gray-50 dark:bg-gray-700 border-b border-r border-gray-200 dark:border-gray-600 px-2 py-1 text-left text-gray-900 dark:text-white font-semibold text-xs"
-                    style={{ position: 'sticky', left: '150px' }}
-                  >
-                    Contractor
-                  </th>
+                  {visibleCols.contractor && (
+                    <th
+                      className="sticky left-[150px] z-30 bg-gray-50 dark:bg-gray-700 border-b border-r border-gray-200 dark:border-gray-600 px-2 py-1 text-left text-gray-900 dark:text-white font-semibold text-xs"
+                      style={{ position: 'sticky', left: '150px' }}
+                    >
+                      Contractor
+                    </th>
+                  )}
                   {dates.map((d, index) => (
                     <th
                       key={d}
@@ -454,22 +546,21 @@ export default function DriverRoutes() {
                     </th>
                   ))}
                 </tr>
-                <tr className="bg-gray-50 dark:bg-gray-700 sticky top-[28px] z-20">
+                <tr className="bg-gray-50 dark:bg-gray-700 sticky top-[28px] z-40">
                   <th
                     className="sticky left-0 z-30 bg-gray-50 dark:bg-gray-700 border-b border-r border-gray-200 dark:border-gray-600"
                     style={{ position: 'sticky', left: 0 }}
                   ></th>
-                  <th
-                    className="sticky left-[150px] z-30 bg-gray-50 dark:bg-gray-700 border-b border-r border-gray-200 dark:border-gray-600"
-                    style={{ position: 'sticky', left: '150px' }}
-                  ></th>
+                  {visibleCols.contractor && (
+                    <th
+                      className="sticky left-[150px] z-30 bg-gray-50 dark:bg-gray-700 border-b border-r border-gray-200 dark:border-gray-600"
+                      style={{ position: 'sticky', left: '150px' }}
+                    ></th>
+                  )}
                   {dates.flatMap((d, dateIndex) =>
-                    visibleKeys.map((key, keyIndex) => (
-                      <th
-                        key={`${d}-${key}`}
-                        className={`border-b ${dateIndex < dates.length - 1 && keyIndex === visibleKeys.length - 1 ? 'border-r' : ''} border-gray-200 dark:border-gray-600 px-1 py-0.5 text-gray-900 dark:text-white font-medium min-w-[60px] text-[10px]`}
-                      >
-                        {key === 'route'
+                    visibleKeys.map((key, keyIndex) => {
+                      const label =
+                        key === 'route'
                           ? 'Route'
                           : key === 'tasks'
                             ? 'Tasks'
@@ -479,9 +570,25 @@ export default function DriverRoutes() {
                                 ? 'End'
                                 : key === 'punctuality'
                                   ? 'Punct.'
-                                  : 'Price'}
-                      </th>
-                    ))
+                                  : 'Price';
+                      const sortable = key === 'price' || key === 'punctuality' || key === 'tasks';
+                      return (
+                        <th
+                          key={`${d}-${key}`}
+                          onClick={sortable ? () => {
+                            if (sortField === key) {
+                              setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+                            } else {
+                              setSortField(key);
+                              setSortDirection('asc');
+                            }
+                          } : undefined}
+                          className={`${sortable ? 'cursor-pointer select-none' : ''} border-b ${dateIndex < dates.length - 1 && keyIndex === visibleKeys.length - 1 ? 'border-r' : ''} border-gray-200 dark:border-gray-600 px-1 py-0.5 text-gray-900 dark:text-white font-medium min-w-[60px] text-[10px]`}
+                        >
+                          {label}
+                        </th>
+                      );
+                    })
                   )}
                 </tr>
               </thead>
@@ -489,7 +596,7 @@ export default function DriverRoutes() {
                 {loading ? (
                   <tr>
                     <td
-                      colSpan={2 + dates.length * visibleKeys.length}
+                      colSpan={baseColSpan + dates.length * visibleKeys.length}
                       className="text-center py-2 text-gray-500 dark:text-gray-400 text-xs"
                     >
                       <div className="flex justify-center items-center gap-1">
@@ -498,33 +605,37 @@ export default function DriverRoutes() {
                       </div>
                     </td>
                   </tr>
-                ) : drivers.length === 0 ? (
+                ) : sortedDrivers.length === 0 ? (
                   <tr>
                     <td
-                      colSpan={2 + dates.length * visibleKeys.length}
+                      colSpan={baseColSpan + dates.length * visibleKeys.length}
                       className="text-center py-2 text-gray-500 dark:text-gray-400 text-xs"
                     >
                       No data available
                     </td>
                   </tr>
                 ) : (
-                  drivers.map((driver, index) => (
+                  sortedDrivers.map((driver, index) => (
                     <tr
                       key={driver}
                       className={`${index % 2 === 0 ? 'bg-white dark:bg-gray-800' : 'bg-gray-50 dark:bg-gray-700'} hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors`}
                     >
                       <td
-                        className="sticky left-0 z-10 bg-inherit border-b border-r border-gray-200 dark:border-gray-600 px-2 py-1 text-left text-gray-900 dark:text-white font-medium text-xs"
+                        className="sticky left-0 z-10 bg-inherit border-b border-r border-gray-200 dark:border-gray-600 px-2 py-1 text-left text-gray-900 dark:text-white font-medium text-xs text-nowrap overflow-hidden text-ellipsis"
                         style={{ position: 'sticky', left: 0 }}
+                        title={driver}
                       >
                         {driver}
                       </td>
-                      <td
-                        className="sticky left-[150px] z-10 bg-inherit border-b border-r border-gray-200 dark:border-gray-600 px-2 py-1 text-left text-gray-900 dark:text-white text-xs"
-                        style={{ position: 'sticky', left: '150px' }}
-                      >
-                        {driverContractor[driver] || '-'}
-                      </td>
+                      {visibleCols.contractor && (
+                        <td
+                          className="sticky left-[150px] z-10 bg-inherit border-b border-r border-gray-200 dark:border-gray-600 px-2 py-1 text-left text-gray-900 dark:text-white text-xs text-nowrap overflow-hidden text-ellipsis"
+                          style={{ position: 'sticky', left: '150px' }}
+                          title={driverContractor[driver] || '-'}
+                        >
+                          {driverContractor[driver] || '-'}
+                        </td>
+                      )}
                       {dates.flatMap((d, dateIndex) => {
                         const data = map[driver]?.[d];
                         return visibleKeys.map((key, keyIndex) => {
@@ -536,7 +647,8 @@ export default function DriverRoutes() {
                             return (
                               <td
                                 key={`${driver}-${d}-r`}
-                                className={`${getRouteColorClass(data?.route || '')} ${borderClass} px-1 py-1 text-xs`}
+                                className={`${getRouteColorClass(data?.route || '')} ${borderClass} px-1 py-1 text-xs text-nowrap overflow-hidden text-ellipsis`}
+                                title={data?.route || '-'}
                               >
                                 {data?.route || '-'}
                               </td>
@@ -546,7 +658,8 @@ export default function DriverRoutes() {
                             return (
                               <td
                                 key={`${driver}-${d}-t`}
-                                className={`${borderClass} px-1 py-1 text-gray-900 dark:text-white text-xs`}
+                                className={`${borderClass} px-1 py-1 text-gray-900 dark:text-white text-xs text-nowrap overflow-hidden text-ellipsis`}
+                                title={data?.tasks || '-'}
                               >
                                 {data?.tasks || '-'}
                               </td>
@@ -585,8 +698,9 @@ export default function DriverRoutes() {
                           return (
                             <td
                               key={`${driver}-${d}-price`}
-                              className={`${borderClass} px-1 py-1 text-xs`} // удалили text-*
-                              style={{ color: priceTextColor(data?.price) }}
+                              className={`${borderClass} px-1 py-1 text-xs`}
+                              style={(() => { const {bgColor, textColor} = priceColors(data?.price); return { backgroundColor: bgColor, color: textColor }; })()}
+                              title={String(data?.price ?? '-')}
                             >
                               {data?.price ?? '-'}
                             </td>
