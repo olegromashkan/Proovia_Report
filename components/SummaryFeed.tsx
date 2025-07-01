@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import useSWR from 'swr';
 import Modal from './Modal';
 
 // Mock Icon component
@@ -92,7 +93,7 @@ interface LatestDriver {
   time: number;
 }
 
-interface FeedData {
+export interface FeedData {
   posts: Post[];
   topContractors: ContractorInfo[];
   topDrivers: DriverInfo[];
@@ -125,9 +126,9 @@ const getWeekNumber = (date: Date) => {
 const formatDisplayDate = (date: Date) =>
   date.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
 
-export default function SummaryFeed() {
-  const [data, setData] = useState<FeedData | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+const fetcher = (url: string) => fetch(url).then((res) => res.json());
+
+export default function SummaryFeed({ initialData }: { initialData?: FeedData }) {
   const [modalType, setModalType] = useState<'' | 'early' | 'night' | 'latest'>('');
   const [modalDrivers, setModalDrivers] = useState<{
     driver: string;
@@ -143,16 +144,17 @@ export default function SummaryFeed() {
   const [start, setStart] = useState<string>(defaultStart);
   const [end, setEnd] = useState<string>(defaultEnd);
 
+  const { data, mutate } = useSWR<FeedData>(
+    `/api/summary-feed?start=${start}&end=${end}`,
+    fetcher,
+    { fallbackData: initialData }
+  );
+
   useEffect(() => {
-    setIsLoading(true);
-    fetch(`/api/summary-feed?start=${start}&end=${end}`)
-      .then((res) => (res.ok ? res.json() : Promise.reject()))
-      .then((json: FeedData) => {
-        setData(json);
-      })
-      .catch(() => {})
-      .finally(() => setIsLoading(false));
-  }, [start, end]);
+    const handler = () => mutate();
+    window.addEventListener('forceRefresh', handler);
+    return () => window.removeEventListener('forceRefresh', handler);
+  }, [mutate]);
 
   const posts = data?.posts || [];
   const topContractors = data?.topContractors || [];

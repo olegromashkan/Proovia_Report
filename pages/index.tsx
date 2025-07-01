@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react';
+import type { GetServerSideProps } from 'next';
+import useSWR, { mutate as globalMutate } from 'swr';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import Layout from '../components/Layout';
 import Modal from '../components/Modal';
 import Calendar from '../components/Calendar';
-import SummaryFeed from '../components/SummaryFeed';
+import SummaryFeed, { FeedData } from '../components/SummaryFeed';
 import Skeleton from '../components/Skeleton';
 import Icon from '../components/Icon';
 import SearchOverlay from '../components/SearchOverlay';
@@ -15,15 +17,17 @@ import AiChatPanel from '../components/AiChatPanel';
 import PixelPet from '../components/PixelPet';
 import { useRouter } from 'next/router';
 import useUser from '../lib/useUser';
-import useCachedFetch from '../lib/useCachedFetch';
 import useCurrentUser from '../lib/useCurrentUser';
 import useUserMenu from '../lib/useUserMenu';
 import { Sparkles } from 'lucide-react';
 
 type Summary = { total: number; complete: number; failed: number; avgPunctuality: number };
 
-export default function Home() {
-  const { data: summary } = useCachedFetch<Summary>('summary', '/api/summary');
+const fetcher = (url: string) => fetch(url).then((res) => res.json());
+export default function Home({ initialSummary, initialFeedData }: { initialSummary: Summary; initialFeedData: FeedData }) {
+  const { data: summary, mutate: mutateSummary } = useSWR<Summary>('/api/summary', fetcher, {
+    fallbackData: initialSummary,
+  });
   const [open, setOpen] = useState<string | null>(null);
   const [searchOpen, setSearchOpen] = useState(false);
   const [tasksOpen, setTasksOpen] = useState(false);
@@ -40,6 +44,15 @@ export default function Home() {
     const seen = localStorage.getItem('welcomeSeen');
     if (!seen) setWelcomeOpen(true);
   }, []);
+
+  useEffect(() => {
+    const handler = () => {
+      mutateSummary();
+      globalMutate((key) => typeof key === 'string' && key.startsWith('/api/summary-feed'));
+    };
+    window.addEventListener('forceRefresh', handler);
+    return () => window.removeEventListener('forceRefresh', handler);
+  }, [mutateSummary]);
 
   const cards = [
     { id: 'total', title: 'Total Tasks', value: summary?.total ?? 0 },
@@ -188,7 +201,7 @@ export default function Home() {
           <Calendar />
         </div>
         <div className="flex-[5] min-w-[900px] bg-white/70 dark:bg-black/50  p-4">
-          <SummaryFeed />
+          <SummaryFeed initialData={initialFeedData as FeedData} />
         </div>
       </div>
 
@@ -215,3 +228,16 @@ export default function Home() {
     </Layout>
   );
 }
+
+export const getServerSideProps: GetServerSideProps = async ({ req }) => {
+  const protocol = (req.headers['x-forwarded-proto'] as string) || 'http';
+  const host = req.headers.host;
+  const baseUrl = `${protocol}://${host}`;
+
+  const summaryRes = await fetch(`${baseUrl}/api/summary`);
+  const summary = await summaryRes.json();
+  const feedRes = await fetch(`${baseUrl}/api/summary-feed`);
+  const feed = await feedRes.json();
+
+  return { props: { initialSummary: summary, initialFeedData: feed } };
+};
