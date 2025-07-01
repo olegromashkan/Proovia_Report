@@ -52,16 +52,44 @@ function stylePunctuality(val: number | null) {
   return <span className="text-red-500">{val}</span>;
 }
 
-function priceBgColor(val?: number | string) {
+function priceTextColor(val?: number | string) {
   const num = Number(val);
-  if (isNaN(num)) return undefined;
-  const diff = num - 650;
-  const maxDiff = 150;
-  const ratio = Math.max(-1, Math.min(1, diff / maxDiff));
-  if (ratio > 0) return `rgba(0, 255, 0, ${ratio})`;
-  if (ratio < 0) return `rgba(255, 0, 0, ${-ratio})`;
-  return undefined;
+  if (isNaN(num)) return '#ffffff';
+
+  // Границы
+  const min = 500;
+  const mid = 650;
+  const high = 800;
+  const max = 950;
+
+  let hue: number;
+
+  if (num <= min) {
+    hue = 0; // красный
+  } else if (num <= mid) {
+    // от красного (0°) до жёлтого (60°)
+    const ratio = (num - min) / (mid - min);
+    hue = 0 + ratio * 60;
+  } else if (num <= high) {
+    // от жёлтого (60°) до зелёного (120°)
+    const ratio = (num - mid) / (high - mid);
+    hue = 60 + ratio * 60;
+  } else if (num <= max) {
+    // от зелёного (120°) до синего (210°)
+    const ratio = (num - high) / (max - high);
+    hue = 120 + ratio * 90;
+  } else {
+    hue = 210; // макс синий
+  }
+
+  return `hsl(${hue}, 100%, 50%)`;
 }
+
+
+
+
+
+
 
 function formatDisplayDate(dateStr: string): string {
   const date = new Date(dateStr);
@@ -263,340 +291,341 @@ export default function DriverRoutes() {
     <Layout title="Driver Routes" fullWidth>
       <div className="flex flex-col h-full">
         <div className="p-4 space-y-4 flex flex-col">
-        {/* Header Section */}
-        <div className="space-y-4">
-          {/* Error Message */}
-          <AnimatePresence>
-            {error && (
-              <motion.div
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                className="bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-100 px-4 py-2 rounded-lg text-sm flex items-center justify-between"
-              >
-                <span>{error}</span>
-                <button
-                  onClick={() => setError(null)}
-                  className="w-5 h-5 flex items-center justify-center rounded-full hover:bg-red-200 dark:hover:bg-red-800"
+          {/* Header Section */}
+          <div className="space-y-4">
+            {/* Error Message */}
+            <AnimatePresence>
+              {error && (
+                <motion.div
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  className="bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-100 px-4 py-2 rounded-lg text-sm flex items-center justify-between"
                 >
-                  <Icon name="xmark" className="w-4 h-4 text-red-600 dark:text-red-300" />
+                  <span>{error}</span>
+                  <button
+                    onClick={() => setError(null)}
+                    className="w-5 h-5 flex items-center justify-center rounded-full hover:bg-red-200 dark:hover:bg-red-800"
+                  >
+                    <Icon name="xmark" className="w-4 h-4 text-red-600 dark:text-red-300" />
+                  </button>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+
+            {/* Contractor Cards */}
+            <AnimatePresence>
+              {showContractorCards && contractorCards.length > 0 && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
+                  className="flex overflow-x-auto space-x-4 pb-2"
+                  ref={cardContainerRef}
+                >
+                  {contractorCards.map((c) => (
+                    <motion.div
+                      key={c.name}
+                      initial={{ opacity: 0, scale: 0.95 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      className="flex-shrink-0 w-40 bg-white dark:bg-gray-800 rounded-lg shadow-sm p-3 border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow"
+                    >
+                      <h3 className="text-sm font-semibold text-gray-900 dark:text-white truncate">{c.name}</h3>
+                      <div className="text-xs text-gray-600 dark:text-gray-300 mt-1">
+                        <div>{c.driverCount} drivers</div>
+                        <div>Avg £{c.avgPrice.toFixed(2)}</div>
+                      </div>
+                    </motion.div>
+                  ))}
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            {/* Filters */}
+            <div className="flex flex-wrap gap-2 items-center">
+              <input
+                type="date"
+                value={start}
+                onChange={(e) => setStart(e.target.value)}
+                className="px-2 py-1 text-sm bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg border border-gray-300 dark:border-gray-600 focus:ring-1 focus:ring-blue-500"
+                aria-label="Start date"
+              />
+              <input
+                type="date"
+                value={end}
+                onChange={(e) => setEnd(e.target.value)}
+                className="px-2 py-1 text-sm bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg border border-gray-300 dark:border-gray-600 focus:ring-1 focus:ring-blue-500"
+                aria-label="End date"
+              />
+              <div className="relative" ref={menuRef}>
+                <button
+                  type="button"
+                  className="h-8 px-3 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 rounded-md border border-gray-300 dark:border-gray-600"
+                  onClick={() => setColumnMenuOpen(!columnMenuOpen)}
+                  title="Toggle columns"
+                >
+                  <Icon name="eye" className="w-4 h-4" />
                 </button>
-              </motion.div>
-            )}
-          </AnimatePresence>
-
-
-          {/* Contractor Cards */}
-          <AnimatePresence>
-            {showContractorCards && contractorCards.length > 0 && (
-              <motion.div
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: 'auto' }}
-                exit={{ opacity: 0, height: 0 }}
-                className="flex overflow-x-auto space-x-4 pb-2"
-                ref={cardContainerRef}
-              >
-                {contractorCards.map((c) => (
-                  <motion.div
-                    key={c.name}
-                    initial={{ opacity: 0, scale: 0.95 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    className="flex-shrink-0 w-40 bg-white dark:bg-gray-800 rounded-lg shadow-sm p-3 border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow"
-                  >
-                    <h3 className="text-sm font-semibold text-gray-900 dark:text-white truncate">{c.name}</h3>
-                    <div className="text-xs text-gray-600 dark:text-gray-300 mt-1">
-                      <div>{c.driverCount} drivers</div>
-                      <div>Avg £{c.avgPrice.toFixed(2)}</div>
-                    </div>
-                  </motion.div>
-                ))}
-              </motion.div>
-            )}
-          </AnimatePresence>
-
-          {/* Filters */}
-          <div className="flex flex-wrap gap-2 items-center">
-            <input
-              type="date"
-              value={start}
-              onChange={(e) => setStart(e.target.value)}
-              className="px-2 py-1 text-sm bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg border border-gray-300 dark:border-gray-600 focus:ring-1 focus:ring-blue-500"
-              aria-label="Start date"
-            />
-            <input
-              type="date"
-              value={end}
-              onChange={(e) => setEnd(e.target.value)}
-              className="px-2 py-1 text-sm bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg border border-gray-300 dark:border-gray-600 focus:ring-1 focus:ring-blue-500"
-              aria-label="End date"
-            />
-            <div className="relative" ref={menuRef}>
-              <button
-                type="button"
-                className="h-8 px-3 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 rounded-md border border-gray-300 dark:border-gray-600"
-                onClick={() => setColumnMenuOpen(!columnMenuOpen)}
-                title="Toggle columns"
-              >
-                <Icon name="eye" className="w-4 h-4" />
-              </button>
-              <AnimatePresence>
-                {columnMenuOpen && (
-                  <motion.div
-                    initial={{ opacity: 0, y: -10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -10 }}
-                    className="absolute right-0 mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-2 z-50 space-y-1 w-40"
-                  >
-                    {colOrder.map((key) => (
-                      <label key={key} className="flex items-center gap-2 cursor-pointer">
-                        <input
-                          type="checkbox"
-                          className="w-3 h-3 rounded border-gray-300 dark:border-gray-600"
-                          checked={visibleCols[key]}
-                          onChange={() => setVisibleCols((v) => ({ ...v, [key]: !v[key] }))}
-                        />
-                        <span className="text-sm text-gray-900 dark:text-white">
-                          {key === 'route'
-                            ? 'Route'
-                            : key === 'tasks'
-                            ? 'Tasks'
-                            : key === 'start'
-                            ? 'Start Time'
-                            : key === 'end'
-                            ? 'End Time'
-                            : key === 'punctuality'
-                            ? 'Punctuality'
-                            : 'Price'}
-                        </span>
-                      </label>
-                    ))}
-                  </motion.div>
-                )}
-              </AnimatePresence>
-              <button
-                onClick={() => setShowContractorCards(!showContractorCards)}
-                className="h-8 px-3 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm"
-              >
-                {showContractorCards ? 'Hide' : 'Show'}
-              </button>
+                <AnimatePresence>
+                  {columnMenuOpen && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -10 }}
+                      className="absolute right-0 mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-2 z-50 space-y-1 w-40"
+                    >
+                      {colOrder.map((key) => (
+                        <label key={key} className="flex items-center gap-2 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            className="w-3 h-3 rounded border-gray-300 dark:border-gray-600"
+                            checked={visibleCols[key]}
+                            onChange={() => setVisibleCols((v) => ({ ...v, [key]: !v[key] }))}
+                          />
+                          <span className="text-sm text-gray-900 dark:text-white">
+                            {key === 'route'
+                              ? 'Route'
+                              : key === 'tasks'
+                                ? 'Tasks'
+                                : key === 'start'
+                                  ? 'Start Time'
+                                  : key === 'end'
+                                    ? 'End Time'
+                                    : key === 'punctuality'
+                                      ? 'Punctuality'
+                                      : 'Price'}
+                          </span>
+                        </label>
+                      ))}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+                <button
+                  onClick={() => setShowContractorCards(!showContractorCards)}
+                  className="h-8 px-3 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm"
+                >
+                  {showContractorCards ? 'Hide' : 'Show'}
+                </button>
+              </div>
             </div>
           </div>
-        </div>
 
-        {/* Table Section */}
-        <div className="flex-1 overflow-auto">
-        <table className="w-full text-center border-collapse text-xs">
-        <colgroup>
-              <col style={{ width: '150px', minWidth: '150px' }} />
-              <col style={{ width: '120px', minWidth: '120px' }} />
-              {dates.flatMap((_, dateIdx) =>
-                visibleKeys.map((_, colIdx) => (
-                  <col key={`d${dateIdx}-${colIdx}`} style={{ width: '60px', minWidth: '60px' }} />
-                ))
-              )}
-            </colgroup>
-            <thead>
-              <tr className="bg-gray-50 dark:bg-gray-700 sticky top-0 z-20">
-                <th
-                  className="sticky left-0 z-30 bg-gray-50 dark:bg-gray-700 border-b border-r border-gray-200 dark:border-gray-600 px-2 py-1 text-left text-gray-900 dark:text-white font-semibold text-xs"
-                  style={{ position: 'sticky', left: 0 }}
-                >
-                  Driver
-                </th>
-                <th
-                  className="sticky left-[150px] z-30 bg-gray-50 dark:bg-gray-700 border-b border-r border-gray-200 dark:border-gray-600 px-2 py-1 text-left text-gray-900 dark:text-white font-semibold text-xs"
-                  style={{ position: 'sticky', left: '150px' }}
-                >
-                  Contractor
-                </th>
-                {dates.map((d, index) => (
-                  <th
-                    key={d}
-                    colSpan={visibleKeys.length}
-                    className={`relative border-b ${index < dates.length - 1 ? 'border-r' : ''} border-gray-200 dark:border-gray-600 px-2 py-1 text-gray-900 dark:text-white font-semibold text-xs min-w-[80px]`}
-                  >
-                    {formatDisplayDate(d)}
-                    <button
-                      className="absolute right-1 top-1 w-5 h-5 flex items-center justify-center bg-gray-200 dark:bg-gray-600 hover:bg-gray-300 dark:hover:bg-gray-500 rounded"
-                      onClick={() => setModalDate(d)}
-                      title="Update schedule"
-                    >
-                      <Icon name="refresh" className="w-3 h-3" />
-                    </button>
-                  </th>
-                ))}
-              </tr>
-              <tr className="bg-gray-50 dark:bg-gray-700 sticky top-[28px] z-20">
-                <th
-                  className="sticky left-0 z-30 bg-gray-50 dark:bg-gray-700 border-b border-r border-gray-200 dark:border-gray-600"
-                  style={{ position: 'sticky', left: 0 }}
-                ></th>
-                <th
-                  className="sticky left-[150px] z-30 bg-gray-50 dark:bg-gray-700 border-b border-r border-gray-200 dark:border-gray-600"
-                  style={{ position: 'sticky', left: '150px' }}
-                ></th>
-                {dates.flatMap((d, dateIndex) =>
-                  visibleKeys.map((key, keyIndex) => (
-                    <th
-                      key={`${d}-${key}`}
-                      className={`border-b ${dateIndex < dates.length - 1 && keyIndex === visibleKeys.length - 1 ? 'border-r' : ''} border-gray-200 dark:border-gray-600 px-1 py-0.5 text-gray-900 dark:text-white font-medium min-w-[60px] text-[10px]`}
-                    >
-                      {key === 'route'
-                        ? 'Route'
-                        : key === 'tasks'
-                        ? 'Tasks'
-                        : key === 'start'
-                        ? 'Start'
-                        : key === 'end'
-                        ? 'End'
-                        : key === 'punctuality'
-                        ? 'Punct.'
-                        : 'Price'}
-                    </th>
+          {/* Table Section */}
+          <div className="flex-1 overflow-auto">
+            <table className="w-full text-center border-collapse text-xs">
+              <colgroup>
+                <col style={{ width: '150px', minWidth: '150px' }} />
+                <col style={{ width: '120px', minWidth: '120px' }} />
+                {dates.flatMap((_, dateIdx) =>
+                  visibleKeys.map((_, colIdx) => (
+                    <col key={`d${dateIdx}-${colIdx}`} style={{ width: '60px', minWidth: '60px' }} />
                   ))
                 )}
-              </tr>
-            </thead>
-            <tbody>
-              {loading ? (
-                <tr>
-                  <td
-                    colSpan={2 + dates.length * visibleKeys.length}
-                    className="text-center py-2 text-gray-500 dark:text-gray-400 text-xs"
+              </colgroup>
+              <thead>
+                <tr className="bg-gray-50 dark:bg-gray-700 sticky top-0 z-20">
+                  <th
+                    className="sticky left-0 z-30 bg-gray-50 dark:bg-gray-700 border-b border-r border-gray-200 dark:border-gray-600 px-2 py-1 text-left text-gray-900 dark:text-white font-semibold text-xs"
+                    style={{ position: 'sticky', left: 0 }}
                   >
-                    <div className="flex justify-center items-center gap-1">
-                      <Icon name="spinner" className="w-3 h-3 animate-spin" />
-                      Loading...
-                    </div>
-                  </td>
-                </tr>
-              ) : drivers.length === 0 ? (
-                <tr>
-                  <td
-                    colSpan={2 + dates.length * visibleKeys.length}
-                    className="text-center py-2 text-gray-500 dark:text-gray-400 text-xs"
+                    Driver
+                  </th>
+                  <th
+                    className="sticky left-[150px] z-30 bg-gray-50 dark:bg-gray-700 border-b border-r border-gray-200 dark:border-gray-600 px-2 py-1 text-left text-gray-900 dark:text-white font-semibold text-xs"
+                    style={{ position: 'sticky', left: '150px' }}
                   >
-                    No data available
-                  </td>
-                </tr>
-              ) : (
-                drivers.map((driver, index) => (
-                  <tr
-                    key={driver}
-                    className={`${index % 2 === 0 ? 'bg-white dark:bg-gray-800' : 'bg-gray-50 dark:bg-gray-700'} hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors`}
-                  >
-                    <td
-                      className="sticky left-0 z-10 bg-inherit border-b border-r border-gray-200 dark:border-gray-600 px-2 py-1 text-left text-gray-900 dark:text-white font-medium text-xs"
-                      style={{ position: 'sticky', left: 0 }}
+                    Contractor
+                  </th>
+                  {dates.map((d, index) => (
+                    <th
+                      key={d}
+                      colSpan={visibleKeys.length}
+                      className={`relative border-b ${index < dates.length - 1 ? 'border-r' : ''} border-gray-200 dark:border-gray-600 px-2 py-1 text-gray-900 dark:text-white font-semibold text-xs min-w-[80px]`}
                     >
-                      {driver}
-                    </td>
+                      {formatDisplayDate(d)}
+                      <button
+                        className="absolute right-1 top-1 w-5 h-5 flex items-center justify-center bg-gray-200 dark:bg-gray-600 hover:bg-gray-300 dark:hover:bg-gray-500 rounded"
+                        onClick={() => setModalDate(d)}
+                        title="Update schedule"
+                      >
+                        <Icon name="refresh" className="w-3 h-3" />
+                      </button>
+                    </th>
+                  ))}
+                </tr>
+                <tr className="bg-gray-50 dark:bg-gray-700 sticky top-[28px] z-20">
+                  <th
+                    className="sticky left-0 z-30 bg-gray-50 dark:bg-gray-700 border-b border-r border-gray-200 dark:border-gray-600"
+                    style={{ position: 'sticky', left: 0 }}
+                  ></th>
+                  <th
+                    className="sticky left-[150px] z-30 bg-gray-50 dark:bg-gray-700 border-b border-r border-gray-200 dark:border-gray-600"
+                    style={{ position: 'sticky', left: '150px' }}
+                  ></th>
+                  {dates.flatMap((d, dateIndex) =>
+                    visibleKeys.map((key, keyIndex) => (
+                      <th
+                        key={`${d}-${key}`}
+                        className={`border-b ${dateIndex < dates.length - 1 && keyIndex === visibleKeys.length - 1 ? 'border-r' : ''} border-gray-200 dark:border-gray-600 px-1 py-0.5 text-gray-900 dark:text-white font-medium min-w-[60px] text-[10px]`}
+                      >
+                        {key === 'route'
+                          ? 'Route'
+                          : key === 'tasks'
+                            ? 'Tasks'
+                            : key === 'start'
+                              ? 'Start'
+                              : key === 'end'
+                                ? 'End'
+                                : key === 'punctuality'
+                                  ? 'Punct.'
+                                  : 'Price'}
+                      </th>
+                    ))
+                  )}
+                </tr>
+              </thead>
+              <tbody>
+                {loading ? (
+                  <tr>
                     <td
-                      className="sticky left-[150px] z-10 bg-inherit border-b border-r border-gray-200 dark:border-gray-600 px-2 py-1 text-left text-gray-900 dark:text-white text-xs"
-                      style={{ position: 'sticky', left: '150px' }}
+                      colSpan={2 + dates.length * visibleKeys.length}
+                      className="text-center py-2 text-gray-500 dark:text-gray-400 text-xs"
                     >
-                      {driverContractor[driver] || '-'}
+                      <div className="flex justify-center items-center gap-1">
+                        <Icon name="spinner" className="w-3 h-3 animate-spin" />
+                        Loading...
+                      </div>
                     </td>
-                    {dates.flatMap((d, dateIndex) => {
-                      const data = map[driver]?.[d];
-                      return visibleKeys.map((key, keyIndex) => {
-                        const isLastKeyInDate = keyIndex === visibleKeys.length - 1;
-                        const isLastDate = dateIndex === dates.length - 1;
-                        const borderClass = `border-b ${!isLastDate && isLastKeyInDate ? 'border-r' : ''} border-gray-200 dark:border-gray-600`;
-
-                        if (key === 'route') {
-                          return (
-                            <td
-                              key={`${driver}-${d}-r`}
-                              className={`${getRouteColorClass(data?.route || '')} ${borderClass} px-1 py-1 text-xs`}
-                            >
-                              {data?.route || '-'}
-                            </td>
-                          );
-                        }
-                        if (key === 'tasks') {
-                          return (
-                            <td
-                              key={`${driver}-${d}-t`}
-                              className={`${borderClass} px-1 py-1 text-gray-900 dark:text-white text-xs`}
-                            >
-                              {data?.tasks || '-'}
-                            </td>
-                          );
-                        }
-                        if (key === 'start') {
-                          return (
-                            <td
-                              key={`${driver}-${d}-s`}
-                              className={`${borderClass} px-1 py-1 text-gray-900 dark:text-white text-xs`}
-                            >
-                              {data?.start || '-'}
-                            </td>
-                          );
-                        }
-                        if (key === 'end') {
-                          return (
-                            <td
-                              key={`${driver}-${d}-e`}
-                              className={`${borderClass} px-1 py-1 text-gray-900 dark:text-white text-xs`}
-                            >
-                              {data?.end || '-'}
-                            </td>
-                          );
-                        }
-                        if (key === 'punctuality') {
-                          return (
-                            <td
-                              key={`${driver}-${d}-p`}
-                              className={`${borderClass} px-1 py-1 text-xs`}
-                            >
-                              {stylePunctuality(data?.punctuality ?? null)}
-                            </td>
-                          );
-                        }
-                        return (
-                          <td
-                            key={`${driver}-${d}-price`}
-                            className={`${borderClass} px-1 py-1 text-gray-900 dark:text-white text-xs`}
-                            style={{ backgroundColor: priceBgColor(data?.price) }}
-                          >
-                            {data?.price ?? '-'}
-                          </td>
-                        );
-                      });
-                    })}
                   </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
+                ) : drivers.length === 0 ? (
+                  <tr>
+                    <td
+                      colSpan={2 + dates.length * visibleKeys.length}
+                      className="text-center py-2 text-gray-500 dark:text-gray-400 text-xs"
+                    >
+                      No data available
+                    </td>
+                  </tr>
+                ) : (
+                  drivers.map((driver, index) => (
+                    <tr
+                      key={driver}
+                      className={`${index % 2 === 0 ? 'bg-white dark:bg-gray-800' : 'bg-gray-50 dark:bg-gray-700'} hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors`}
+                    >
+                      <td
+                        className="sticky left-0 z-10 bg-inherit border-b border-r border-gray-200 dark:border-gray-600 px-2 py-1 text-left text-gray-900 dark:text-white font-medium text-xs"
+                        style={{ position: 'sticky', left: 0 }}
+                      >
+                        {driver}
+                      </td>
+                      <td
+                        className="sticky left-[150px] z-10 bg-inherit border-b border-r border-gray-200 dark:border-gray-600 px-2 py-1 text-left text-gray-900 dark:text-white text-xs"
+                        style={{ position: 'sticky', left: '150px' }}
+                      >
+                        {driverContractor[driver] || '-'}
+                      </td>
+                      {dates.flatMap((d, dateIndex) => {
+                        const data = map[driver]?.[d];
+                        return visibleKeys.map((key, keyIndex) => {
+                          const isLastKeyInDate = keyIndex === visibleKeys.length - 1;
+                          const isLastDate = dateIndex === dates.length - 1;
+                          const borderClass = `border-b ${!isLastDate && isLastKeyInDate ? 'border-r' : ''} border-gray-200 dark:border-gray-600`;
 
-        {/* File Upload Modal */}
-        <Modal open={modalDate !== null} onClose={() => setModalDate(null)}>
-          <h2 className="text-base font-semibold text-gray-900 dark:text-white mb-2">Update Schedule for {modalDate && formatDisplayDate(modalDate)}</h2>
-          <motion.div
-            className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-6 text-center bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-            onDrop={handleDrop}
-            onDragOver={handleDrag}
-            initial={{ scale: 1 }}
-            whileHover={{ scale: 1.02 }}
-          >
-            <input
-              type="file"
-              accept=".json"
-              ref={fileInputRef}
-              onChange={handleInput}
-              className="hidden"
-              id="file-upload"
-            />
-            <label htmlFor="file-upload" className="flex flex-col items-center gap-2 cursor-pointer">
-              <Icon name="file-arrow-up" className="text-3xl text-gray-500 dark:text-gray-400" />
-              <span className="text-gray-600 dark:text-gray-300 text-sm">Drag JSON file here or click to select</span>
-              <span className="text-xs text-gray-500 dark:text-gray-400">Only .json files are accepted</span>
-            </label>
-          </motion.div>
-        </Modal>
+                          if (key === 'route') {
+                            return (
+                              <td
+                                key={`${driver}-${d}-r`}
+                                className={`${getRouteColorClass(data?.route || '')} ${borderClass} px-1 py-1 text-xs`}
+                              >
+                                {data?.route || '-'}
+                              </td>
+                            );
+                          }
+                          if (key === 'tasks') {
+                            return (
+                              <td
+                                key={`${driver}-${d}-t`}
+                                className={`${borderClass} px-1 py-1 text-gray-900 dark:text-white text-xs`}
+                              >
+                                {data?.tasks || '-'}
+                              </td>
+                            );
+                          }
+                          if (key === 'start') {
+                            return (
+                              <td
+                                key={`${driver}-${d}-s`}
+                                className={`${borderClass} px-1 py-1 text-gray-900 dark:text-white text-xs`}
+                              >
+                                {data?.start || '-'}
+                              </td>
+                            );
+                          }
+                          if (key === 'end') {
+                            return (
+                              <td
+                                key={`${driver}-${d}-e`}
+                                className={`${borderClass} px-1 py-1 text-gray-900 dark:text-white text-xs`}
+                              >
+                                {data?.end || '-'}
+                              </td>
+                            );
+                          }
+                          if (key === 'punctuality') {
+                            return (
+                              <td
+                                key={`${driver}-${d}-p`}
+                                className={`${borderClass} px-1 py-1 text-xs`}
+                              >
+                                {stylePunctuality(data?.punctuality ?? null)}
+                              </td>
+                            );
+                          }
+                          return (
+                            <td
+                              key={`${driver}-${d}-price`}
+                              className={`${borderClass} px-1 py-1 text-xs`} // удалили text-*
+                              style={{ color: priceTextColor(data?.price) }}
+                            >
+                              {data?.price ?? '-'}
+                            </td>
+
+                          );
+                        });
+                      })}
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+
+          {/* File Upload Modal */}
+          <Modal open={modalDate !== null} onClose={() => setModalDate(null)}>
+            <h2 className="text-base font-semibold text-gray-900 dark:text-white mb-2">Update Schedule for {modalDate && formatDisplayDate(modalDate)}</h2>
+            <motion.div
+              className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-6 text-center bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+              onDrop={handleDrop}
+              onDragOver={handleDrag}
+              initial={{ scale: 1 }}
+              whileHover={{ scale: 1.02 }}
+            >
+              <input
+                type="file"
+                accept=".json"
+                ref={fileInputRef}
+                onChange={handleInput}
+                className="hidden"
+                id="file-upload"
+              />
+              <label htmlFor="file-upload" className="flex flex-col items-center gap-2 cursor-pointer">
+                <Icon name="file-arrow-up" className="text-3xl text-gray-500 dark:text-gray-400" />
+                <span className="text-gray-600 dark:text-gray-300 text-sm">Drag JSON file here or click to select</span>
+                <span className="text-xs text-gray-500 dark:text-gray-400">Only .json files are accepted</span>
+              </label>
+            </motion.div>
+          </Modal>
         </div>
       </div>
     </Layout>
