@@ -25,7 +25,7 @@ function formatDate(d: Date): string {
 function getRouteColorClass(route: string): string {
   const upper = route.toUpperCase();
   const grey = ['EDINBURGH', 'GLASGOW', 'INVERNESS', 'ABERDEEN', 'EX+TR', 'TQ+PL'];
-  if (grey.includes(upper)) return 'text-gray-500';
+  if (grey.includes(upper)) return 'text-gray-400';
   const parts = upper.split('+');
   const has = (arr: string[]) => parts.some(p => arr.includes(p));
   const purple = ['WD', 'HA', 'UB', 'TW', 'KT', 'CR', 'BR', 'DA', 'RM', 'IG', 'EN', 'SM', 'W', 'NW', 'N', 'E', 'EC', 'SE', 'WC'];
@@ -42,7 +42,7 @@ function getRouteColorClass(route: string): string {
   if (has(pink)) return 'text-pink-500';
   const light = ['ST', 'TF', 'WV', 'DY', 'HR', 'WR', 'B', 'WS', 'CV', 'NN'];
   if (has(light)) return 'text-sky-500';
-  return '';
+  return 'text-white';
 }
 
 function stylePunctuality(val: number | null) {
