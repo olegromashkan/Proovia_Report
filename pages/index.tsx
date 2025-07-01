@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import type { GetServerSideProps } from 'next';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import Layout from '../components/Layout';
@@ -18,12 +19,13 @@ import useUser from '../lib/useUser';
 import useCachedFetch from '../lib/useCachedFetch';
 import useCurrentUser from '../lib/useCurrentUser';
 import useUserMenu from '../lib/useUserMenu';
+import db from '../lib/db';
 import { Sparkles } from 'lucide-react';
 
 type Summary = { total: number; complete: number; failed: number; avgPunctuality: number };
 
-export default function Home() {
-  const { data: summary } = useCachedFetch<Summary>('summary', '/api/summary');
+export default function Home({ initialSummary }: { initialSummary: Summary }) {
+  const { data: summary, refresh } = useCachedFetch<Summary>('summary', '/api/summary', 3600 * 1000, initialSummary);
   const [open, setOpen] = useState<string | null>(null);
   const [searchOpen, setSearchOpen] = useState(false);
   const [tasksOpen, setTasksOpen] = useState(false);
@@ -40,6 +42,12 @@ export default function Home() {
     const seen = localStorage.getItem('welcomeSeen');
     if (!seen) setWelcomeOpen(true);
   }, []);
+
+  useEffect(() => {
+    const handler = () => refresh();
+    document.addEventListener('force-refresh', handler);
+    return () => document.removeEventListener('force-refresh', handler);
+  }, [refresh]);
 
   const cards = [
     { id: 'total', title: 'Total Tasks', value: summary?.total ?? 0 },
@@ -211,7 +219,54 @@ export default function Home() {
       <TasksPanel open={tasksOpen} onClose={() => setTasksOpen(false)} />
       <AiChatPanel open={aiOpen} onClose={() => setAiOpen(false)} initialText={aiText} />
       <UserMenu showButton={false} />
-      <PixelPet />
-    </Layout>
+    <PixelPet />
+  </Layout>
   );
 }
+
+export const getServerSideProps: GetServerSideProps = async () => {
+  const rows = db.prepare('SELECT data FROM copy_of_tomorrow_trips').all();
+  const items = rows.map((r: any) => JSON.parse(r.data));
+  const legacy =
+    db
+      .prepare(
+        'SELECT total_orders, collection_complete, collection_failed, delivery_complete, delivery_failed FROM legacy_totals WHERE id = 1',
+      )
+      .get() || {
+        total_orders: 0,
+        collection_complete: 0,
+        collection_failed: 0,
+        delivery_complete: 0,
+        delivery_failed: 0,
+      };
+
+  function parseMinutes(str: string) {
+    const time = str.split(' ')[1] || str;
+    const [h = '0', m = '0', s = '0'] = time.split(':');
+    return Number(h) * 60 + Number(m) + Number(s) / 60;
+  }
+
+  let total = items.length + (legacy.total_orders || 0);
+  let complete = legacy.collection_complete + legacy.delivery_complete;
+  let failed = legacy.collection_failed + legacy.delivery_failed;
+  let totalDiff = 0;
+
+  items.forEach((t: any) => {
+    if (t.Status === 'Complete') complete++;
+    if (t.Status === 'Failed') failed++;
+    const arrival = t.Arrival_Time || t['Arrival_Time'];
+    const done = t.Time_Completed || t['Time_Completed'];
+    if (arrival && done) {
+      const diff = parseMinutes(done) - parseMinutes(arrival);
+      totalDiff += diff;
+    }
+  });
+
+  const avgPunctuality = items.length
+    ? Math.round(totalDiff / items.length)
+    : 0;
+
+  return {
+    props: { initialSummary: { total, complete, failed, avgPunctuality } },
+  };
+};
