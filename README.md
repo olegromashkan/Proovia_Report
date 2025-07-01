@@ -19,9 +19,9 @@ This project uses **Next.js** with UnoCSS and a small SQLite database.
 npm run dev
 ```
 
-The navigation now includes a **Routes Table** page showing a spreadsheet-like
-interface for managing driver routes. It supports editable cells, keyboard
-navigation and copy/paste operations.
+The **Driver Routes** page now displays a spreadsheet-like table for managing
+routes. It supports editable cells, keyboard navigation and copy/paste
+operations.
 
 For production builds the UnoCSS stylesheet must be generated first:
 
