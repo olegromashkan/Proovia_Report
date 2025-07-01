@@ -24,7 +24,8 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
   driverRows.forEach((r: any) => {
     const d = JSON.parse(r.data);
     if (d.Full_Name) {
-      driverMap[d.Full_Name.trim()] = d.Contractor_Name || 'Unknown';
+      driverMap[d.Full_Name.trim().toLowerCase()] =
+        d.Contractor_Name || 'Unknown';
     }
   });
   const items = rows
@@ -37,7 +38,10 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
       return iso >= startDate && iso <= endDate;
     })
     .map((item: any) => {
-      const driver = item.Driver1 || item.Driver || item['Trip.Driver1'] || 'Unknown';
+      const rawDriver =
+        item.Driver1 || item.Driver || item['Trip.Driver1'] || 'Unknown';
+      const driver =
+        typeof rawDriver === 'string' ? rawDriver.trim() : String(rawDriver);
       const route =
         item.Route_Name ||
         item.Route ||
@@ -104,7 +108,7 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
         punctuality = Math.round(parseMinutes(done) - parseMinutes(arrival));
       }
 
-      const contractor = driverMap[driver] || 'Unknown';
+      const contractor = driverMap[driver.toLowerCase()] || 'Unknown';
       return { driver, contractor, route, calendar, date, start_time, end_time, punctuality, price };
     });
 
