@@ -376,9 +376,7 @@ const Navbar = memo(() => {
                       <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} onClick={() => setTasksOpen(true)} className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition-all duration-150" aria-label="Open tasks">
                         <Icon name="check" className="w-5 h-5 text-gray-600 dark:text-gray-300" />
                       </motion.button>
-                      <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} onClick={() => setAiOpen(true)} className="ai-glow-button" aria-label="Open AI chat">
-                        <Sparkles size={18} />
-                      </motion.button>
+
                       <UserMenu />
                     </div>
                   </div>
