@@ -321,35 +321,7 @@ const fetcher = (url: string) => fetch(url).then((res) => res.json());
   const [startSortDir, setStartSortDir] = useState<"asc" | "desc">("asc");
 
   const parentRef = useRef<HTMLDivElement>(null);
-  const rowVirtualizer = useVirtualizer({
-    count: trips.length,
-    getScrollElement: () => parentRef.current,
-    estimateSize: () => 100,
-  });
 
-  // Derived data
-  const { contractors, auctions, driverToContractor } = useMemo(() => {
-    const contractorSet = new Set<string>();
-    const driverMap: Record<string, string> = {};
-
-    startData.forEach((r) => {
-      if (r.Contractor_Name) {
-        contractorSet.add(r.Contractor_Name);
-        if (r.Driver) driverMap[r.Driver] = r.Contractor_Name;
-      }
-    });
-
-    const auctionSet = new Set<string>();
-    trips.forEach((t) => {
-      if (t["Order.Auction"]) auctionSet.add(t["Order.Auction"]);
-    });
-
-    return {
-      contractors: Array.from(contractorSet).sort(),
-      auctions: Array.from(auctionSet).sort(),
-      driverToContractor: driverMap,
-    };
-  }, [trips, startData]);
 
   // --- Data Loading ---
   useEffect(() => {
@@ -399,6 +371,36 @@ const fetcher = (url: string) => fetch(url).then((res) => res.json());
     () => tripPages.flatMap((p: any) => p.trips || []),
     [tripPages],
   );
+
+  const rowVirtualizer = useVirtualizer({
+    count: trips.length,
+    getScrollElement: () => parentRef.current,
+    estimateSize: () => 100,
+  });
+
+  // Derived data
+  const { contractors, auctions, driverToContractor } = useMemo(() => {
+    const contractorSet = new Set<string>();
+    const driverMap: Record<string, string> = {};
+
+    startData.forEach((r) => {
+      if (r.Contractor_Name) {
+        contractorSet.add(r.Contractor_Name);
+        if (r.Driver) driverMap[r.Driver] = r.Contractor_Name;
+      }
+    });
+
+    const auctionSet = new Set<string>();
+    trips.forEach((t) => {
+      if (t["Order.Auction"]) auctionSet.add(t["Order.Auction"]);
+    });
+
+    return {
+      contractors: Array.from(contractorSet).sort(),
+      auctions: Array.from(auctionSet).sort(),
+      driverToContractor: driverMap,
+    };
+  }, [trips, startData]);
 
   useEffect(() => {
     const el = parentRef.current;
