@@ -1,5 +1,4 @@
 import { useState, useEffect, useMemo, useCallback, memo } from 'react';
-import type { GetServerSideProps } from 'next';
 import useSWR, { mutate as globalMutate } from 'swr';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
@@ -21,15 +20,34 @@ import { useRouter } from 'next/router';
 import useUser from '../lib/useUser';
 import useCurrentUser from '../lib/useCurrentUser';
 import useUserMenu from '../lib/useUserMenu';
+import useLoadingStore from '../lib/useLoadingStore';
 import { Sparkles } from 'lucide-react';
 
 type Summary = { total: number; complete: number; failed: number; avgPunctuality: number };
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
-const Home = memo(function Home({ initialSummary, initialFeedData }: { initialSummary: Summary; initialFeedData: FeedData }) {
-  const { data: summary, mutate: mutateSummary } = useSWR<Summary>('/api/summary', fetcher, {
-    fallbackData: initialSummary,
-  });
+const Home = memo(function Home() {
+  const setLoading = useLoadingStore((state) => state.setLoading);
+  const { data: summary, isLoading: summaryLoading, mutate: mutateSummary } = useSWR<Summary>(
+    '/api/summary',
+    (url) => {
+      setLoading(true);
+      return fetcher(url);
+    },
+    {
+      onSuccess: () => setLoading(false),
+    }
+  );
+  const { data: feedData, isLoading: feedLoading } = useSWR<FeedData>(
+    '/api/summary-feed',
+    (url) => {
+      setLoading(true);
+      return fetcher(url);
+    },
+    {
+      onSuccess: () => setLoading(false),
+    }
+  );
   const [open, setOpen] = useState<string | null>(null);
   const [searchOpen, setSearchOpen] = useState(false);
   const [tasksOpen, setTasksOpen] = useState(false);
@@ -67,6 +85,10 @@ const Home = memo(function Home({ initialSummary, initialFeedData }: { initialSu
     return () => window.removeEventListener('forceRefresh', forceRefreshHandler);
   }, [forceRefreshHandler]);
 
+  useEffect(() => {
+    setLoading(summaryLoading || feedLoading);
+  }, [summaryLoading, feedLoading, setLoading]);
+
   const cards = useMemo(
     () => [
       { id: 'total', title: 'Total Tasks', value: summary?.total ?? 0 },
@@ -97,6 +119,12 @@ const Home = memo(function Home({ initialSummary, initialFeedData }: { initialSu
     (href: string) => router.pathname === href,
     [router.pathname]
   );
+
+  if (!summary || !feedData) {
+    return (
+      <Layout title="Home" fullWidth hideNavbar={true} />
+    );
+  }
 
   return (
     <Layout title="Home" fullWidth hideNavbar={true}>
@@ -223,7 +251,7 @@ const Home = memo(function Home({ initialSummary, initialFeedData }: { initialSu
           <Calendar />
         </div>
         <div className="flex-[5] min-w-[900px] bg-white/70 dark:bg-black/50  p-4">
-          <SummaryFeed initialData={initialFeedData as FeedData} />
+          <SummaryFeed initialData={feedData as FeedData} />
         </div>
       </div>
 
@@ -253,15 +281,3 @@ const Home = memo(function Home({ initialSummary, initialFeedData }: { initialSu
 
 export default Home;
 
-export const getServerSideProps: GetServerSideProps = async ({ req }) => {
-  const protocol = (req.headers['x-forwarded-proto'] as string) || 'http';
-  const host = req.headers.host;
-  const baseUrl = `${protocol}://${host}`;
-
-  const summaryRes = await fetch(`${baseUrl}/api/summary`);
-  const summary = await summaryRes.json();
-  const feedRes = await fetch(`${baseUrl}/api/summary-feed`);
-  const feed = await feedRes.json();
-
-  return { props: { initialSummary: summary, initialFeedData: feed } };
-};
