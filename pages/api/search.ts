@@ -21,20 +21,26 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
   const q = typeof req.query.q === 'string' ? req.query.q.trim() : '';
   if (!q) return res.status(200).json({ items: [] });
 
-  const rows = db.prepare('SELECT id, data FROM copy_of_tomorrow_trips').all();
-  const items = rows.map((r: any) => ({ id: r.id, ...JSON.parse(r.data) }));
-
-  const results = items
-    .filter((it) =>
-      String(it['Order.OrderNumber']).includes(q) ||
-      String(it['Address.Postcode'] || '').toLowerCase().includes(q.toLowerCase()) ||
-      String(it['Order.Account_Name'] || '').toLowerCase().includes(q.toLowerCase())
+  const results = db
+    .prepare(
+      `SELECT id,
+              json_extract(data,'$.Order.OrderNumber') AS orderNumber,
+              json_extract(data,'$.Address.Postcode') AS postcode,
+              json_extract(data,'$.Order.Account_Name') AS accountName
+         FROM copy_of_tomorrow_trips
+        WHERE CAST(json_extract(data,'$.Order.OrderNumber') AS TEXT) LIKE '%' || ? || '%'
+           OR LOWER(CAST(json_extract(data,'$.Address.Postcode') AS TEXT)) LIKE '%' || LOWER(?) || '%'
+           OR LOWER(CAST(json_extract(data,'$.Order.Account_Name') AS TEXT)) LIKE '%' || LOWER(?) || '%'
+        LIMIT 20`
     )
-    .slice(0, 20);
+    .all(q, q, q) as Array<{ id: string; orderNumber: string; postcode: string; accountName: string }>;
 
   let suggest: string[] = [];
   if (results.length === 0) {
-    const fieldValues = items.map((it) => String(it['Order.OrderNumber']));
+    const fieldValues = db
+      .prepare("SELECT json_extract(data,'$.Order.OrderNumber') AS num FROM copy_of_tomorrow_trips")
+      .all()
+      .map((r: any) => String(r.num));
     const distances = fieldValues.map((v) => ({ v, d: levenshtein(v.toLowerCase(), q.toLowerCase()) }));
     distances.sort((a, b) => a.d - b.d);
     suggest = distances.slice(0, 5).map((d) => d.v);
@@ -43,8 +49,8 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
   res.status(200).json({
     items: results.map((r) => ({
       id: r.id,
-      order: r['Order.OrderNumber'],
-      postcode: r['Address.Postcode'],
+      order: r.orderNumber,
+      postcode: r.postcode,
     })),
     suggest,
   });

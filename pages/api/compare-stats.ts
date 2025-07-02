@@ -1,6 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import db from '../../lib/db';
-import { parseDate } from '../../lib/dateUtils';
 
 interface Totals {
   complete: number;
@@ -15,38 +14,31 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
     return res.status(400).json({ message: 'Missing parameters' });
   }
 
-  const rows = db.prepare('SELECT data FROM copy_of_tomorrow_trips').all();
+  const baseQuery = `
+    SELECT
+      COALESCE(SUM(CASE WHEN lower(status) = 'complete' THEN 1 ELSE 0 END), 0) AS complete,
+      COALESCE(SUM(CASE WHEN lower(status) = 'failed' THEN 1 ELSE 0 END), 0) AS failed,
+      COUNT(*) AS total
+    FROM (
+      SELECT
+        parse_date(
+          COALESCE(
+            json_extract(data,'$.Start_Time'),
+            json_extract(data,'$."Start_Time"'),
+            json_extract(data,'$."Trip.Start_Time"'),
+            json_extract(data,'$.Predicted_Time'),
+            json_extract(data,'$."Predicted_Time"')
+          )
+        ) AS d,
+        json_extract(data,'$.Status') AS status
+      FROM copy_of_tomorrow_trips
+    ) t
+    WHERE d IS NOT NULL AND d BETWEEN ? AND ?
+  `;
 
-  const totals: [Totals, Totals] = [
-    { complete: 0, failed: 0, total: 0 },
-    { complete: 0, failed: 0, total: 0 },
-  ];
+  const stmt = db.prepare(baseQuery);
+  const period1 = stmt.get(start1, end1) as Totals;
+  const period2 = stmt.get(start2, end2) as Totals;
 
-  rows.forEach((r: any) => {
-    const item = JSON.parse(r.data);
-    const raw =
-      item.Start_Time ||
-      item['Start_Time'] ||
-      item['Trip.Start_Time'] ||
-      item.Predicted_Time ||
-      item['Predicted_Time'] ||
-      '';
-    const iso = parseDate(String(raw).split(' ')[0]);
-    if (!iso) return;
-
-    const status = String(item.Status || '').toLowerCase();
-
-    if (iso >= start1 && iso <= end1) {
-      totals[0].total += 1;
-      if (status === 'complete') totals[0].complete += 1;
-      else if (status === 'failed') totals[0].failed += 1;
-    }
-    if (iso >= start2 && iso <= end2) {
-      totals[1].total += 1;
-      if (status === 'complete') totals[1].complete += 1;
-      else if (status === 'failed') totals[1].failed += 1;
-    }
-  });
-
-  res.status(200).json({ period1: totals[0], period2: totals[1] });
+  res.status(200).json({ period1, period2 });
 }
