@@ -381,5 +381,89 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
     );
   }
 
-  res.status(200).json({ trips, startData, vanChecks });
+  // compute summary stats from filtered trips
+  let positiveTimeCompleted = 0;
+  let positiveArrivalTime = 0;
+
+  const driverStats: Record<string, { complete: number; failed: number }> = {};
+  const postcodeCounts: Record<string, number> = {};
+  const auctionCounts: Record<string, number> = {};
+  const contractorCounts: Record<string, number> = {};
+
+  trips.forEach((t) => {
+    const driver = t['Trip.Driver1'];
+    const postcode = t['Address.Postcode'];
+    const auctionName = t['Order.Auction'];
+    const contractor = driver ? driverToContractor[driver] : null;
+
+    if (driver) {
+      if (!driverStats[driver]) driverStats[driver] = { complete: 0, failed: 0 };
+      if (t.Status === 'Complete') driverStats[driver].complete++;
+      else if (t.Status === 'Failed') driverStats[driver].failed++;
+    }
+
+    if (postcode) postcodeCounts[postcode] = (postcodeCounts[postcode] || 0) + 1;
+    if (auctionName) auctionCounts[auctionName] = (auctionCounts[auctionName] || 0) + 1;
+    if (contractor) contractorCounts[contractor] = (contractorCounts[contractor] || 0) + 1;
+
+    if (
+      t['Address.Working_Hours'] &&
+      t.Time_Completed &&
+      t.Arrival_Time
+    ) {
+      const matches = String(t['Address.Working_Hours']).match(/\d{2}:\d{2}/g);
+      const endTime = matches?.[1];
+      if (endTime) {
+        const [h, m] = endTime.split(':').map(Number);
+        const tcDate = new Date(t.Time_Completed);
+        const whEndForTC = new Date(tcDate);
+        whEndForTC.setHours(h, m, 0, 0);
+        const arrDate = new Date(t.Arrival_Time);
+        const whEndForArr = new Date(arrDate);
+        whEndForArr.setHours(h, m, 0, 0);
+        if (tcDate >= whEndForTC) positiveTimeCompleted++;
+        if (arrDate >= whEndForArr) positiveArrivalTime++;
+      }
+    }
+  });
+
+  const topDrivers = Object.entries(driverStats)
+    .map(([d, s]) => ({
+      driver: d,
+      complete: s.complete,
+      failed: s.failed,
+      total: s.complete + s.failed,
+    }))
+    .sort((a, b) => b.total - a.total)
+    .slice(0, 3);
+
+  const topPostcodes = Object.entries(postcodeCounts)
+    .sort(([, a], [, b]) => b - a)
+    .slice(0, 10);
+
+  const topAuctions = Object.entries(auctionCounts)
+    .sort(([, a], [, b]) => b - a)
+    .slice(0, 10);
+
+  const topContractors = Object.entries(contractorCounts)
+    .sort(([, a], [, b]) => b - a)
+    .slice(0, 10);
+
+  const statsPayload = {
+    total: trips.length,
+    complete: trips.filter((t) => t.Status === 'Complete').length,
+    failed: trips.filter((t) => t.Status === 'Failed').length,
+    positiveTimeCompleted,
+    positiveArrivalTime,
+  };
+
+  res.status(200).json({
+    startData,
+    vanChecks,
+    stats: statsPayload,
+    topDrivers,
+    topPostcodes,
+    topAuctions,
+    topContractors,
+  });
 }

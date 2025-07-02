@@ -1,4 +1,5 @@
 import { useEffect, useRef, useMemo } from 'react';
+import useSWR from 'swr';
 import Modal from './Modal';
 import Icon from './Icon';
 import { getFailureReason } from '../lib/failureReason';
@@ -11,7 +12,6 @@ interface Trip {
 interface Props {
   trip: Trip | null;
   onClose: () => void;
-  allTrips: Trip[];
 }
 
 const geoCache = new Map<string, { lat: number; lon: number }>();
@@ -23,10 +23,12 @@ function parseMinutes(str: string | undefined): number {
   return Number(h) * 60 + Number(m) + Number(s) / 60;
 }
 
-export default function TripModal({ trip, onClose, allTrips }: Props) {
+export default function TripModal({ trip, onClose }: Props) {
   const mapRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<HTMLCanvasElement>(null);
   const chartInstanceRef = useRef<any>(null);
+
+  const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
   const { driver, punctuality, status, statusColor, statusIcon } = useMemo(() => {
     if (!trip) return {};
@@ -44,6 +46,11 @@ export default function TripModal({ trip, onClose, allTrips }: Props) {
       statusIcon: tripStatus === 'Complete' ? 'check' : tripStatus === 'Failed' ? 'ban' : 'clock'
     };
   }, [trip]);
+
+  const { data: performanceData } = useSWR(
+    trip && driver ? `/api/driver-performance?driver=${encodeURIComponent(driver)}` : null,
+    fetcher
+  );
   
   useEffect(() => {
     if (!trip || !mapRef.current) return;
@@ -89,13 +96,8 @@ export default function TripModal({ trip, onClose, allTrips }: Props) {
       chartInstanceRef.current.destroy();
     }
 
-    const driverTrips = allTrips.filter(t => (t['Trip.Driver1'] || t['Driver']) === driver);
-    const labels = driverTrips.map(t => `#${t['Order.OrderNumber']}`);
-    const data = driverTrips.map(t => {
-      const a = parseMinutes(t.Arrival_Time || t['Arrival_Time']);
-      const d = parseMinutes(t.Time_Completed || t['Time_Completed']);
-      return a && d ? d - a : 0;
-    });
+    const labels = performanceData?.labels || [];
+    const data = performanceData?.data || [];
 
     chartInstanceRef.current = new Chart(chartRef.current, {
       type: 'line',
@@ -130,7 +132,7 @@ export default function TripModal({ trip, onClose, allTrips }: Props) {
         chartInstanceRef.current = null;
       }
     };
-  }, [trip, allTrips, driver]);
+  }, [trip, driver, performanceData]);
 
   if (!trip) return null;
 
