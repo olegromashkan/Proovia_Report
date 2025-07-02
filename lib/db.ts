@@ -1,4 +1,5 @@
 import Database from 'better-sqlite3';
+import { parseDate } from './dateUtils';
 
 declare global {
   // eslint-disable-next-line no-var
@@ -34,6 +35,12 @@ export function init() {
       data TEXT,
       created_at TEXT DEFAULT CURRENT_TIMESTAMP
     );
+    CREATE INDEX IF NOT EXISTS idx_copy_trips_status
+      ON copy_of_tomorrow_trips (json_extract(data,'$.Status'));
+    CREATE INDEX IF NOT EXISTS idx_copy_trips_order
+      ON copy_of_tomorrow_trips (json_extract(data,'$."Order.OrderNumber"'));
+    CREATE INDEX IF NOT EXISTS idx_copy_trips_postcode
+      ON copy_of_tomorrow_trips (json_extract(data,'$."Address.Postcode"'));
     CREATE TABLE IF NOT EXISTS event_stream (
       id TEXT PRIMARY KEY,
       data TEXT,
@@ -262,6 +269,22 @@ export function init() {
 }
 
 init();
+
+db.function('parse_date', { deterministic: true }, (value: unknown) => {
+  if (value === null || value === undefined) return null;
+  const str = String(value);
+  const part = str.split(' ')[0];
+  return parseDate(part) ?? null;
+});
+
+db.function('minutes', { deterministic: true }, (value: unknown) => {
+  if (value === null || value === undefined) return null;
+  const str = String(value);
+  const time = str.split(' ')[1] || str;
+  const [h = '0', m = '0', s = '0'] = time.split(':');
+  const n = Number(h) * 60 + Number(m) + Number(s) / 60;
+  return Number.isFinite(n) ? n : null;
+});
 
 export function addNotification(type: string, message: string) {
   db.prepare('INSERT INTO notifications (type, message) VALUES (?, ?)').run(
