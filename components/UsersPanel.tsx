@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import Image from 'next/image';
 import useFetch from '../lib/useFetch';
 import useCurrentUser from '../lib/useCurrentUser';
 
@@ -18,7 +19,9 @@ export default function UsersPanel() {
       <ul className="space-y-2">
         {users.map((u: any) => (
           <li key={u.id} className="flex items-center gap-3">
-            {u.photo && <img src={u.photo} alt="avatar" className="w-8 h-8 rounded-full" />}
+            {u.photo && (
+              <Image src={u.photo} alt="avatar" width={32} height={32} className="w-8 h-8 rounded-full" />
+            )}
             <Link href={`/profile/${u.username}`} className="text-[#b53133] hover:underline flex-1">
               {u.username}
             </Link>

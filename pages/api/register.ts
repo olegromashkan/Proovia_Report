@@ -1,6 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import db from '../../lib/db';
 import { createHash } from 'crypto';
+import { saveImage } from '../../lib/saveImage';
 
 export const config = {
   api: {
@@ -21,8 +22,8 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
     db.prepare('INSERT INTO users (username, password, photo, header, role, status) VALUES (?, ?, ?, ?, ?, ?)').run(
       username,
       hashed,
-      photo || '',
-      header || '',
+      photo ? saveImage(photo, 'uploads/avatars') : '',
+      header ? saveImage(header, 'uploads/headers') : '',
       'user',
       'online'
     );

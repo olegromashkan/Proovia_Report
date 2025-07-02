@@ -1,6 +1,7 @@
 import { useRouter } from 'next/router';
 import { useState, ChangeEvent, useEffect } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import ChatPanel from '../../components/ChatPanel';
 import Layout from '../../components/Layout';
 import Icon from '../../components/Icon';
@@ -157,10 +158,12 @@ export default function Profile() {
           {/* Header Image */}
           <div className="relative h-64 bg-[#b53133] rounded-2xl overflow-hidden shadow-xl">
             {info.header && (
-              <img 
-                src={info.header} 
-                alt="header" 
-                className="w-full h-full object-cover"
+              <Image
+                src={info.header}
+                alt="header"
+                fill
+                sizes="100vw"
+                className="object-cover"
               />
             )}
             {/* Gradient Overlay for better text readability */}
@@ -171,9 +174,11 @@ export default function Profile() {
           <div className="absolute -bottom-16 left-8">
             <div className="relative">
               {info.photo ? (
-                <img 
-                  src={info.photo} 
-                  alt="avatar" 
+                <Image
+                  src={info.photo}
+                  alt="avatar"
+                  width={128}
+                  height={128}
                   className="w-32 h-32 rounded-full border-4 border-white shadow-2xl object-cover bg-white"
                 />
               ) : (

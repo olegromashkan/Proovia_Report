@@ -1,6 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import db from '../../lib/db';
 import { createHash } from 'crypto';
+import { saveImage } from '../../lib/saveImage';
 
 export const config = {
   api: { bodyParser: { sizeLimit: '5mb' } }
@@ -26,11 +27,11 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
     }
     if (photo !== undefined) {
       updates.push('photo = ?');
-      params.push(photo);
+      params.push(photo ? saveImage(photo, 'uploads/avatars') : '');
     }
     if (header !== undefined) {
       updates.push('header = ?');
-      params.push(header);
+      params.push(header ? saveImage(header, 'uploads/headers') : '');
     }
     if (!updates.length) return res.status(400).json({ message: 'No data' });
     params.push(username);
