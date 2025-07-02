@@ -9,7 +9,8 @@ import {
 } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { useRouter } from "next/router";
-import useSWR, { useSWRInfinite } from "swr";
+import useSWR from 'swr';
+import useSWRInfinite from 'swr/infinite';
 import Layout from "../components/Layout";
 import dynamic from "next/dynamic";
 const TripModal = dynamic(() => import("../components/TripModal"));
