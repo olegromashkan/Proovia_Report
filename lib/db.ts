@@ -53,6 +53,34 @@ export function init() {
       data TEXT,
       created_at TEXT DEFAULT CURRENT_TIMESTAMP
     );
+    CREATE TABLE IF NOT EXISTS trips (
+      id TEXT PRIMARY KEY,
+      order_number TEXT,
+      driver_name TEXT,
+      contractor_name TEXT,
+      status TEXT,
+      start_time TEXT,
+      end_time TEXT,
+      arrival_time TEXT,
+      postcode TEXT,
+      auction TEXT,
+      price REAL,
+      notes TEXT,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP
+    );
+    CREATE INDEX IF NOT EXISTS idx_trips_order_number ON trips(order_number);
+    CREATE INDEX IF NOT EXISTS idx_trips_driver_name ON trips(driver_name);
+    CREATE INDEX IF NOT EXISTS idx_trips_contractor_name ON trips(contractor_name);
+    CREATE INDEX IF NOT EXISTS idx_trips_start_time ON trips(start_time);
+    CREATE INDEX IF NOT EXISTS idx_trips_postcode ON trips(postcode);
+    CREATE TABLE IF NOT EXISTS drivers (
+      id TEXT PRIMARY KEY,
+      full_name TEXT,
+      contractor_name TEXT,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP
+    );
+    CREATE INDEX IF NOT EXISTS idx_drivers_full_name ON drivers(full_name);
+    CREATE INDEX IF NOT EXISTS idx_drivers_contractor_name ON drivers(contractor_name);
     CREATE TABLE IF NOT EXISTS notifications (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       type TEXT,
@@ -158,6 +186,8 @@ export function init() {
     'drivers_report',
     'schedule_trips',
     'csv_trips',
+    'trips',
+    'drivers',
     'van_checks',
     'users',
     'posts',

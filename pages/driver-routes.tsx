@@ -17,6 +17,21 @@ interface Item {
   price?: number | string;
 }
 
+type SortableField =
+  | 'driver'
+  | 'contractor'
+  | 'route'
+  | 'tasks'
+  | 'start'
+  | 'end'
+  | 'punctuality'
+  | 'price';
+
+interface SortConfig {
+  field: SortableField;
+  date?: string;
+}
+
 function formatDate(d: Date): string {
   return d.toISOString().slice(0, 10);
 }
@@ -129,11 +144,28 @@ export default function DriverRoutes() {
   const [showContractorCards, setShowContractorCards] = useState(true);
   const [driverFilter, setDriverFilter] = useState('');
   const [contractorFilter, setContractorFilter] = useState('');
-  const [sortField, setSortField] = useState<string | null>(null);
+  const [sortField, setSortField] = useState<SortConfig | null>(null);
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
+  const [editingCell, setEditingCell] = useState<
+    | { driver: string; date: string; field: string }
+    | null
+  >(null);
+  const [editedCells, setEditedCells] = useState<Record<string, string>>({});
   const menuRef = useRef<HTMLDivElement>(null);
   const cardContainerRef = useRef<HTMLDivElement>(null);
   const scrollIntervalRef = useRef<NodeJS.Timeout | null>(null);
+
+  const setCellValue = (
+    driver: string,
+    date: string,
+    field: string,
+    value: string
+  ) => {
+    setEditedCells((prev) => ({
+      ...prev,
+      [`${driver}|${date}|${field}`]: value,
+    }));
+  };
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
@@ -288,19 +320,38 @@ export default function DriverRoutes() {
 
   const sortedDrivers = [...filteredDrivers];
   if (sortField) {
+    const { field, date } = sortField;
     sortedDrivers.sort((a, b) => {
-      const sa = driverStats[a];
-      const sb = driverStats[b];
-      const getVal = (s?: typeof sa) => {
+      const getVal = (driver: string) => {
+        if (field === 'driver') return driver;
+        if (field === 'contractor') return driverContractor[driver] || '';
+        if (date) {
+          const d = map[driver]?.[date];
+          if (!d) return field === 'route' || field === 'start' || field === 'end' ? '' : 0;
+          if (field === 'route') return String(d.route || '');
+          if (field === 'tasks') return Number(d.tasks) || 0;
+          if (field === 'start') return String(d.start || '');
+          if (field === 'end') return String(d.end || '');
+          if (field === 'punctuality') return d.punctuality ?? 0;
+          if (field === 'price') return Number(d.price) || 0;
+        }
+        const s = driverStats[driver];
         if (!s) return 0;
-        if (sortField === 'tasks') return s.tasksTotal;
-        if (sortField === 'price') return s.priceCount ? s.priceTotal / s.priceCount : 0;
-        if (sortField === 'punctuality') return s.punctualityCount ? s.punctualityTotal / s.punctualityCount : 0;
+        if (field === 'tasks') return s.tasksTotal;
+        if (field === 'price') return s.priceCount ? s.priceTotal / s.priceCount : 0;
+        if (field === 'punctuality') return s.punctualityCount ? s.punctualityTotal / s.punctualityCount : 0;
         return 0;
       };
-      const valA = getVal(sa);
-      const valB = getVal(sb);
-      return sortDirection === 'asc' ? valA - valB : valB - valA;
+      const valA = getVal(a);
+      const valB = getVal(b);
+      if (typeof valA === 'string' && typeof valB === 'string') {
+        return sortDirection === 'asc'
+          ? valA.localeCompare(valB)
+          : valB.localeCompare(valA);
+      }
+      return sortDirection === 'asc'
+        ? (valA as number) - (valB as number)
+        : (valB as number) - (valA as number);
     });
   }
 
@@ -366,7 +417,7 @@ export default function DriverRoutes() {
   return (
     <Layout title="Driver Routes" fullWidth>
       <div className="flex flex-col h-full">
-        <div className="space-y-2 flex flex-col">
+        <div className="p-4 space-y-4 flex flex-col">
           {/* Header Section */}
           <div className="space-y-4">
             {/* Error Message */}
@@ -405,7 +456,7 @@ export default function DriverRoutes() {
                       key={c.name}
                       initial={{ opacity: 0, scale: 0.95 }}
                       animate={{ opacity: 1, scale: 1 }}
-                      className="flex-shrink-0 w-40 rounded-2xl bg-white/70 dark:bg-black/50 border border-white/20 dark:border-black/20 p-4 shadow-lg transition-transform duration-200 "
+                      className="flex-shrink-0 w-40 bg-white dark:bg-gray-800 rounded-lg shadow-sm p-3 border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow"
                     >
                       <h3 className="text-sm font-semibold text-gray-900 dark:text-white truncate">{c.name}</h3>
                       <div className="text-xs text-gray-600 dark:text-gray-300 mt-1">
@@ -418,107 +469,100 @@ export default function DriverRoutes() {
               )}
             </AnimatePresence>
 
-
+            {/* Filters */}
+            <div className="flex flex-wrap gap-2 items-center">
+              <input
+                type="date"
+                value={start}
+                onChange={(e) => setStart(e.target.value)}
+                className="px-2 py-1 text-sm bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg border border-gray-300 dark:border-gray-600 focus:ring-1 focus:ring-blue-500"
+                aria-label="Start date"
+              />
+              <input
+                type="date"
+                value={end}
+                onChange={(e) => setEnd(e.target.value)}
+                className="px-2 py-1 text-sm bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg border border-gray-300 dark:border-gray-600 focus:ring-1 focus:ring-blue-500"
+                aria-label="End date"
+              />
+              <input
+                type="text"
+                placeholder="Driver"
+                value={driverFilter}
+                onChange={(e) => setDriverFilter(e.target.value)}
+                className="px-2 py-1 text-sm bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg border border-gray-300 dark:border-gray-600 focus:ring-1 focus:ring-blue-500"
+              />
+              <input
+                type="text"
+                placeholder="Contractor"
+                value={contractorFilter}
+                onChange={(e) => setContractorFilter(e.target.value)}
+                className="px-2 py-1 text-sm bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg border border-gray-300 dark:border-gray-600 focus:ring-1 focus:ring-blue-500"
+              />
+              <div className="relative" ref={menuRef}>
+                <button
+                  type="button"
+                  className="h-8 px-3 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 rounded-md border border-gray-300 dark:border-gray-600"
+                  onClick={() => setColumnMenuOpen(!columnMenuOpen)}
+                  title="Toggle columns"
+                >
+                  <Icon name="eye" className="w-4 h-4" />
+                </button>
+                <AnimatePresence>
+                  {columnMenuOpen && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -10 }}
+                      className="absolute right-0 mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-2 z-50 space-y-1 w-40"
+                    >
+                      {colOrder.map((key) => (
+                        <label key={key} className="flex items-center gap-2 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            className="w-3 h-3 rounded border-gray-300 dark:border-gray-600"
+                            checked={visibleCols[key]}
+                            onChange={() => setVisibleCols((v) => ({ ...v, [key]: !v[key] }))}
+                          />
+                          <span className="text-sm text-gray-900 dark:text-white">
+                            {key === 'route'
+                              ? 'Route'
+                              : key === 'tasks'
+                                ? 'Tasks'
+                                : key === 'start'
+                                  ? 'Start Time'
+                                  : key === 'end'
+                                    ? 'End Time'
+                                    : key === 'punctuality'
+                                      ? 'Punctuality'
+                                      : key === 'contractor'
+                                        ? 'Contractor'
+                                        : 'Price'}
+                          </span>
+                        </label>
+                      ))}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+                <button
+                  onClick={() => setShowContractorCards(!showContractorCards)}
+                  className="h-8 px-3 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm"
+                >
+                  {showContractorCards ? 'Hide' : 'Show'}
+                </button>
+              </div>
+            </div>
           </div>
 
           {/* Table Section */}
-          <div className="overflow-auto max-h-[600px] max-w-full border border-gray-300 dark:border-gray-600 rounded-2xl">
+          <div className="flex-1 overflow-auto">
             <div className="px-2 py-1 text-sm text-gray-700 dark:text-gray-300">
-
-              <div className="flex flex-wrap gap-2 items-center">
-                Total drivers: {sortedDrivers.length} | Avg price: £{avgPrice.toFixed(2)} | Total tasks: {summary.totalTasks}
-
-                <input
-                  type="date"
-                  value={start}
-                  onChange={(e) => setStart(e.target.value)}
-                  className="px-2 py-1 text-sm bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg border border-gray-300 dark:border-gray-600 focus:ring-1 focus:ring-blue-500"
-                  aria-label="Start date"
-                />
-                <input
-                  type="date"
-                  value={end}
-                  onChange={(e) => setEnd(e.target.value)}
-                  className="px-2 py-1 text-sm bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg border border-gray-300 dark:border-gray-600 focus:ring-1 focus:ring-blue-500"
-                  aria-label="End date"
-                />
-                <input
-                  type="text"
-                  placeholder="Driver"
-                  value={driverFilter}
-                  onChange={(e) => setDriverFilter(e.target.value)}
-                  className="px-2 py-1 text-sm bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg border border-gray-300 dark:border-gray-600 focus:ring-1 focus:ring-blue-500"
-                />
-                <input
-                  type="text"
-                  placeholder="Contractor"
-                  value={contractorFilter}
-                  onChange={(e) => setContractorFilter(e.target.value)}
-                  className="px-2 py-1 text-sm bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg border border-gray-300 dark:border-gray-600 focus:ring-1 focus:ring-blue-500"
-                />
-                <div className="relative" ref={menuRef}>
-                  <button
-                    type="button"
-                    className="h-8 px-3 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 rounded-md border border-gray-300 dark:border-gray-600"
-                    onClick={() => setColumnMenuOpen(!columnMenuOpen)}
-                    title="Toggle columns"
-                  >
-                    <Icon name="eye" className="w-4 h-4" />
-                  </button>
-                  <AnimatePresence>
-                    {columnMenuOpen && (
-                      <motion.div
-                        initial={{ opacity: 0, y: -10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -10 }}
-                        className="absolute right-0 mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-2 z-50 space-y-1 w-40"
-                      >
-                        {colOrder.map((key) => (
-                          <label key={key} className="flex items-center gap-2 cursor-pointer">
-                            <input
-                              type="checkbox"
-                              className="w-3 h-3 rounded border-gray-300 dark:border-gray-600"
-                              checked={visibleCols[key]}
-                              onChange={() => setVisibleCols((v) => ({ ...v, [key]: !v[key] }))}
-                            />
-                            <span className="text-sm text-gray-900 dark:text-white">
-                              {key === 'route'
-                                ? 'Route'
-                                : key === 'tasks'
-                                  ? 'Tasks'
-                                  : key === 'start'
-                                    ? 'Start Time'
-                                    : key === 'end'
-                                      ? 'End Time'
-                                      : key === 'punctuality'
-                                        ? 'Punctuality'
-                                        : key === 'contractor'
-                                          ? 'Contractor'
-                                          : 'Price'}
-                            </span>
-                          </label>
-                        ))}
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                  <button
-                    onClick={() => setShowContractorCards(!showContractorCards)}
-                    className="h-8 px-3 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm"
-                  >
-                    {showContractorCards ? 'Hide' : 'Show'}
-                  </button>
-                </div>
-              </div>
+              Total drivers: {sortedDrivers.length} | Avg price: £{avgPrice.toFixed(2)} | Total tasks: {summary.totalTasks}
             </div>
             <table className="w-full text-center border-collapse text-xs">
               <colgroup>
-                {/* First column: Driver */}
-                <col style={{ width: 'max-content', minWidth: '150px', maxWidth: '300px' }} />
-                {/* Second column: Contractor (if visible) */}
-                {visibleCols.contractor && (
-                  <col style={{ width: 'max-content', minWidth: '120px', maxWidth: '220px' }} />
-                )}
-                {/* Other columns */}
+                <col style={{ width: '150px', minWidth: '150px' }} />
+                {visibleCols.contractor && <col style={{ width: '120px', minWidth: '120px' }} />}
                 {dates.flatMap((_, dateIdx) =>
                   visibleKeys.map((_, colIdx) => (
                     <col key={`d${dateIdx}-${colIdx}`} style={{ width: '60px', minWidth: '60px' }} />
@@ -528,17 +572,49 @@ export default function DriverRoutes() {
               <thead>
                 <tr className="bg-gray-50 dark:bg-gray-700 sticky top-0 z-40">
                   <th
-                    className="sticky left-0 z-30 bg-gray-50 dark:bg-gray-700 border-b border-r border-gray-200 dark:border-gray-600 px-2 py-1 text-left text-gray-900 dark:text-white font-semibold text-xs whitespace-nowrap shadow-[2px_0_8px_-2px_rgba(0,0,0,0.08)]"
-                    style={{ position: 'sticky', left: 0, maxWidth: 300, minWidth: 150 }}
+                    className="sticky left-0 z-30 bg-gray-50 dark:bg-gray-700 border-b border-r border-gray-200 dark:border-gray-600 px-2 py-1 text-left text-gray-900 dark:text-white font-semibold text-xs cursor-pointer select-none"
+                    style={{ position: 'sticky', left: 0 }}
+                    onClick={() => {
+                      if (sortField && sortField.field === 'driver') {
+                        setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+                      } else {
+                        setSortField({ field: 'driver' });
+                        setSortDirection('asc');
+                      }
+                    }}
                   >
-                    Driver
+                    <span className="flex items-center">
+                      Driver
+                      {sortField && sortField.field === 'driver' && (
+                        <Icon
+                          name={sortDirection === 'asc' ? 'chevron-up' : 'chevron-down'}
+                          className="inline-block w-3 h-3 ml-1"
+                        />
+                      )}
+                    </span>
                   </th>
                   {visibleCols.contractor && (
                     <th
-                      className="sticky left-[150px] z-30 bg-gray-50 dark:bg-gray-700 border-b border-r border-gray-200 dark:border-gray-600 px-2 py-1 text-left text-gray-900 dark:text-white font-semibold text-xs whitespace-nowrap shadow-[2px_0_8px_-2px_rgba(0,0,0,0.08)]"
-                      style={{ position: 'sticky', left: '150px', maxWidth: 220, minWidth: 120 }}
+                      className="sticky left-[150px] z-30 bg-gray-50 dark:bg-gray-700 border-b border-r border-gray-200 dark:border-gray-600 px-2 py-1 text-left text-gray-900 dark:text-white font-semibold text-xs cursor-pointer select-none"
+                      style={{ position: 'sticky', left: '150px' }}
+                      onClick={() => {
+                        if (sortField && sortField.field === 'contractor') {
+                          setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+                        } else {
+                          setSortField({ field: 'contractor' });
+                          setSortDirection('asc');
+                        }
+                      }}
                     >
-                      Contractor
+                      <span className="flex items-center">
+                        Contractor
+                        {sortField && sortField.field === 'contractor' && (
+                          <Icon
+                            name={sortDirection === 'asc' ? 'chevron-up' : 'chevron-down'}
+                            className="inline-block w-3 h-3 ml-1"
+                          />
+                        )}
+                      </span>
                     </th>
                   )}
                   {dates.map((d, index) => (
@@ -583,21 +659,27 @@ export default function DriverRoutes() {
                                 : key === 'punctuality'
                                   ? 'Punct.'
                                   : 'Price';
-                      const sortable = key === 'price' || key === 'punctuality' || key === 'tasks';
+                      const sortable = true;
                       return (
                         <th
                           key={`${d}-${key}`}
                           onClick={sortable ? () => {
-                            if (sortField === key) {
+                            if (sortField && sortField.field === key && sortField.date === d) {
                               setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
                             } else {
-                              setSortField(key);
+                              setSortField({ field: key as SortableField, date: d });
                               setSortDirection('asc');
                             }
                           } : undefined}
                           className={`${sortable ? 'cursor-pointer select-none' : ''} border-b ${dateIndex < dates.length - 1 && keyIndex === visibleKeys.length - 1 ? 'border-r' : ''} border-gray-200 dark:border-gray-600 px-1 py-0.5 text-gray-900 dark:text-white font-medium min-w-[60px] text-[10px]`}
                         >
                           {label}
+                          {sortField && sortField.field === key && sortField.date === d && (
+                            <Icon
+                              name={sortDirection === 'asc' ? 'chevron-up' : 'chevron-down'}
+                              className="inline-block w-3 h-3 ml-1"
+                            />
+                          )}
                         </th>
                       );
                     })
@@ -630,23 +712,19 @@ export default function DriverRoutes() {
                   sortedDrivers.map((driver, index) => (
                     <tr
                       key={driver}
-                      className={`${index % 2 === 0
-                        ? 'bg-white dark:bg-gray-800'
-                        : 'bg-gray-50 dark:bg-gray-700'
-                        } hover:bg-blue-50 dark:hover:bg-gray-600 transition-colors group`}
-                      style={{ borderBottom: '1px solid #e5e7eb' }}
+                      className={`${index % 2 === 0 ? 'bg-white dark:bg-gray-800' : 'bg-gray-50 dark:bg-gray-700'} hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors`}
                     >
                       <td
-                        className="sticky left-0 z-10 bg-inherit border-b border-r border-gray-200 dark:border-gray-600 px-2 py-1 text-left text-gray-900 dark:text-white font-medium text-xs whitespace-nowrap overflow-hidden text-ellipsis shadow-[2px_0_8px_-2px_rgba(0,0,0,0.08)]"
-                        style={{ position: 'sticky', left: 0, maxWidth: 300, minWidth: 150 }}
+                        className="sticky left-0 z-10 bg-inherit border-b border-r border-gray-200 dark:border-gray-600 px-2 py-1 text-left text-gray-900 dark:text-white font-medium text-xs text-nowrap overflow-hidden text-ellipsis"
+                        style={{ position: 'sticky', left: 0 }}
                         title={driver}
                       >
                         {driver}
                       </td>
                       {visibleCols.contractor && (
                         <td
-                          className="sticky left-[150px] z-10 bg-inherit border-b border-r border-gray-200 dark:border-gray-600 px-2 py-1 text-left text-gray-900 dark:text-white text-xs whitespace-nowrap overflow-hidden text-ellipsis shadow-[2px_0_8px_-2px_rgba(0,0,0,0.08)]"
-                          style={{ position: 'sticky', left: '150px', maxWidth: 220, minWidth: 120 }}
+                          className="sticky left-[150px] z-10 bg-inherit border-b border-r border-gray-200 dark:border-gray-600 px-2 py-1 text-left text-gray-900 dark:text-white text-xs text-nowrap overflow-hidden text-ellipsis"
+                          style={{ position: 'sticky', left: '150px' }}
                           title={driverContractor[driver] || '-'}
                         >
                           {driverContractor[driver] || '-'}
@@ -659,18 +737,58 @@ export default function DriverRoutes() {
                           const isLastDate = dateIndex === dates.length - 1;
                           const borderClass = `border-b ${!isLastDate && isLastKeyInDate ? 'border-r' : ''} border-gray-200 dark:border-gray-600`;
 
-                          // All cells: nowrap, ellipsis, improved padding
-                          const cellBase =
-                            `${borderClass} px-1 py-1 text-xs whitespace-nowrap overflow-hidden text-ellipsis`;
+                          const cellKey = `${driver}|${d}|${key}`;
+                          const editedValue = editedCells[cellKey];
+                          let rawValue: any =
+                            key === 'route'
+                              ? data?.route
+                              : key === 'tasks'
+                                ? data?.tasks
+                                : key === 'start'
+                                  ? data?.start
+                                  : key === 'end'
+                                    ? data?.end
+                                    : key === 'punctuality'
+                                      ? data?.punctuality
+                                      : data?.price;
+                          rawValue = editedValue !== undefined ? editedValue : rawValue;
+
+                          const editing =
+                            editingCell?.driver === driver &&
+                            editingCell.date === d &&
+                            editingCell.field === key;
+
+                          const startEdit = () => {
+                            setEditingCell({ driver, date: d, field: key });
+                          };
+
+                          const finishEdit = (val: string) => {
+                            setCellValue(driver, d, key, val);
+                            setEditingCell(null);
+                          };
 
                           if (key === 'route') {
                             return (
                               <td
                                 key={`${driver}-${d}-r`}
-                                className={`${getRouteColorClass(data?.route || '')} ${cellBase}`}
-                                title={data?.route || '-'}
+                                className={`${getRouteColorClass(String(rawValue || ''))} ${borderClass} px-1 py-1 text-xs text-nowrap overflow-hidden text-ellipsis`}
+                                title={String(rawValue || '-')}
+                                onDoubleClick={startEdit}
                               >
-                                {data?.route || '-'}
+                                {editing ? (
+                                  <input
+                                    autoFocus
+                                    className="w-full bg-transparent focus:outline-none text-xs"
+                                    defaultValue={String(rawValue || '')}
+                                    onBlur={(e) => finishEdit(e.target.value)}
+                                    onKeyDown={(e) => {
+                                      if (e.key === 'Enter') finishEdit((e.target as HTMLInputElement).value);
+                                      if (e.key === 'Escape') setEditingCell(null);
+                                    }}
+                                  />
+                                ) : (
+                                  String(rawValue || '-')
+                                )}
                               </td>
                             );
                           }
@@ -678,10 +796,24 @@ export default function DriverRoutes() {
                             return (
                               <td
                                 key={`${driver}-${d}-t`}
-                                className={`${cellBase} text-gray-900 dark:text-white`}
-                                title={data?.tasks || '-'}
+                                className={`${borderClass} px-1 py-1 text-gray-900 dark:text-white text-xs text-nowrap overflow-hidden text-ellipsis`}
+                                title={String(rawValue || '-')}
+                                onDoubleClick={startEdit}
                               >
-                                {data?.tasks || '-'}
+                                {editing ? (
+                                  <input
+                                    autoFocus
+                                    className="w-full bg-transparent focus:outline-none text-xs"
+                                    defaultValue={String(rawValue || '')}
+                                    onBlur={(e) => finishEdit(e.target.value)}
+                                    onKeyDown={(e) => {
+                                      if (e.key === 'Enter') finishEdit((e.target as HTMLInputElement).value);
+                                      if (e.key === 'Escape') setEditingCell(null);
+                                    }}
+                                  />
+                                ) : (
+                                  String(rawValue || '-')
+                                )}
                               </td>
                             );
                           }
@@ -689,9 +821,23 @@ export default function DriverRoutes() {
                             return (
                               <td
                                 key={`${driver}-${d}-s`}
-                                className={`${cellBase} text-gray-900 dark:text-white`}
+                                className={`${borderClass} px-1 py-1 text-gray-900 dark:text-white text-xs`}
+                                onDoubleClick={startEdit}
                               >
-                                {data?.start || '-'}
+                                {editing ? (
+                                  <input
+                                    autoFocus
+                                    className="w-full bg-transparent focus:outline-none text-xs"
+                                    defaultValue={String(rawValue || '')}
+                                    onBlur={(e) => finishEdit(e.target.value)}
+                                    onKeyDown={(e) => {
+                                      if (e.key === 'Enter') finishEdit((e.target as HTMLInputElement).value);
+                                      if (e.key === 'Escape') setEditingCell(null);
+                                    }}
+                                  />
+                                ) : (
+                                  String(rawValue || '-')
+                                )}
                               </td>
                             );
                           }
@@ -699,9 +845,23 @@ export default function DriverRoutes() {
                             return (
                               <td
                                 key={`${driver}-${d}-e`}
-                                className={`${cellBase} text-gray-900 dark:text-white`}
+                                className={`${borderClass} px-1 py-1 text-gray-900 dark:text-white text-xs`}
+                                onDoubleClick={startEdit}
                               >
-                                {data?.end || '-'}
+                                {editing ? (
+                                  <input
+                                    autoFocus
+                                    className="w-full bg-transparent focus:outline-none text-xs"
+                                    defaultValue={String(rawValue || '')}
+                                    onBlur={(e) => finishEdit(e.target.value)}
+                                    onKeyDown={(e) => {
+                                      if (e.key === 'Enter') finishEdit((e.target as HTMLInputElement).value);
+                                      if (e.key === 'Escape') setEditingCell(null);
+                                    }}
+                                  />
+                                ) : (
+                                  String(rawValue || '-')
+                                )}
                               </td>
                             );
                           }
@@ -709,19 +869,50 @@ export default function DriverRoutes() {
                             return (
                               <td
                                 key={`${driver}-${d}-p`}
-                                className={cellBase}
+                                className={`${borderClass} px-1 py-1 text-xs`}
+                                onDoubleClick={startEdit}
                               >
-                                {stylePunctuality(data?.punctuality ?? null)}
+                                {editing ? (
+                                  <input
+                                    autoFocus
+                                    className="w-full bg-transparent focus:outline-none text-xs"
+                                    defaultValue={String(rawValue ?? '')}
+                                    onBlur={(e) => finishEdit(e.target.value)}
+                                    onKeyDown={(e) => {
+                                      if (e.key === 'Enter') finishEdit((e.target as HTMLInputElement).value);
+                                      if (e.key === 'Escape') setEditingCell(null);
+                                    }}
+                                  />
+                                ) : (
+                                  stylePunctuality(rawValue === undefined || rawValue === null || rawValue === '' ? null : Number(rawValue))
+                                )}
                               </td>
                             );
                           }
                           return (
                             <td
-                              className={`${cellBase}`}
-                              style={{ color: priceTextColor(data?.price) }}
+                              className="border-b border-r border-gray-200 dark:border-gray-600 px-1 py-1 text-xs"
+                              style={{ color: priceTextColor(rawValue) }}
+                              onDoubleClick={startEdit}
+                              key={`${driver}-${d}-pr`}
                             >
-                              {data?.price ?? '-'}
+                              {editing ? (
+                                <input
+                                  autoFocus
+                                  className="w-full bg-transparent focus:outline-none text-xs"
+                                  defaultValue={String(rawValue || '')}
+                                  onBlur={(e) => finishEdit(e.target.value)}
+                                  onKeyDown={(e) => {
+                                    if (e.key === 'Enter') finishEdit((e.target as HTMLInputElement).value);
+                                    if (e.key === 'Escape') setEditingCell(null);
+                                  }}
+                                />
+                              ) : (
+                                String(rawValue || '-')
+                              )}
                             </td>
+
+
                           );
                         });
                       })}
