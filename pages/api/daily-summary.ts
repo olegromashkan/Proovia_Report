@@ -14,15 +14,16 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
 
   const result = db
     .prepare(
-      `SELECT date(start_time) as date,
-              COUNT(*) as total,
-              SUM(CASE WHEN LOWER(status) = 'complete' THEN 1 ELSE 0 END) as complete,
-              SUM(CASE WHEN LOWER(status) = 'failed' THEN 1 ELSE 0 END) as failed
+      `SELECT
+          parse_date(start_time) as date,
+          COUNT(*) as total,
+          SUM(CASE WHEN LOWER(status) = 'complete' THEN 1 ELSE 0 END) as complete,
+          SUM(CASE WHEN LOWER(status) = 'failed' THEN 1 ELSE 0 END) as failed
          FROM trips
-        WHERE date(start_time) >= date(?)
-          AND date(start_time) < date(?)
-        GROUP BY date(start_time)
-        ORDER BY date(start_time)`,
+        WHERE date(parse_date(start_time)) >= date(?)
+          AND date(parse_date(start_time)) < date(?)
+        GROUP BY parse_date(start_time)
+        ORDER BY parse_date(start_time)`,
     )
     .all(start, endMonth);
 
