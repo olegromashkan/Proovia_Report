@@ -473,7 +473,7 @@ useEffect(() => {
 
   return (
     <>
-      <Modal open={open} onClose={onClose} className="max-w-7xl w-full">
+      <Modal open={open} onClose={onClose} className="max-w-9xl w-full">
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 p-8 flex flex-col gap-8 min-h-[30rem] transition-colors duration-200">
           <h3 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
             Failure Analysis
@@ -809,9 +809,6 @@ useEffect(() => {
                     </div>
                   </div>
                 </div>
-
-
-
 
 
                 {/* Trend Chart */}
