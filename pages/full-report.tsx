@@ -107,11 +107,13 @@ const ScrollingStats = ({
   driverToContractor,
   onDriversClick,
   onFailuresClick,
+  range,
 }: {
   trips: Trip[];
   driverToContractor: Record<string, string>;
   onDriversClick: () => void;
   onFailuresClick: () => void;
+  range: string;
 }) => {
   const stats = useMemo(() => {
     // Top Drivers
@@ -215,9 +217,16 @@ const ScrollingStats = ({
     </div>
   );
 
+  const PeriodCard = ({ text }: { text: string }) => (
+    <div className="bg-gradient-to-br from-gray-500 to-gray-600 rounded-xl p-4 shadow-lg min-w-[250px] text-white flex items-center justify-center">
+      <span className="font-bold">{text}</span>
+    </div>
+  );
+
   return (
     <div className="bg-base-200 py-3">
       <div className="flex gap-4 px-4 overflow-x-auto">
+        <PeriodCard text={range} />
         <TopDriversCard data={stats.topDrivers} onClick={onDriversClick} />
         <StatCard
           title="📍 Top Postcodes"
@@ -327,6 +336,20 @@ export default function FullReport() {
       ? filters.start
       : `${filters.start} - ${filters.end}`;
   }, [filters.start, filters.end]);
+
+  const dateRangeLabel = useMemo(() => {
+    const formatDisplayDate = (d: string) =>
+      new Date(d).toLocaleDateString('en-GB', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric',
+      });
+    return filters.start === filters.end
+      ? formatDisplayDate(filters.start)
+      : `${formatDisplayDate(filters.start)} - ${formatDisplayDate(filters.end)}`;
+  }, [filters.start, filters.end]);
+
+  const pageTitle = `${dateRangeLabel} Report`;
 
   const [sortField, setSortField] = useState("Order.OrderNumber");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
@@ -637,7 +660,7 @@ export default function FullReport() {
   }, [startData]);
 
   return (
-    <Layout title="Orders Report" fullWidth>
+    <Layout title={pageTitle} fullWidth>
       <div className="drawer drawer-end">
         <input
           id="filter-drawer"
@@ -654,6 +677,7 @@ export default function FullReport() {
             driverToContractor={driverToContractor}
             onDriversClick={() => setShowDriverStats(true)}
             onFailuresClick={() => setShowFailureAnalysis(true)}
+            range={dateRangeLabel}
           />
 
           {/* Header */}
@@ -690,7 +714,7 @@ export default function FullReport() {
                   </button>
                 </div>
                 <span className="text-sm opacity-70 hidden sm:inline">
-                  {dateRangeText}
+                  {dateRangeLabel}
                 </span>
               </div>
               <label

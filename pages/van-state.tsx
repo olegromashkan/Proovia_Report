@@ -27,6 +27,8 @@ export default function VanState() {
       ? formatDisplayDate(start)
       : `${formatDisplayDate(start)} - ${formatDisplayDate(end)}`;
 
+  const pageTitle = `${periodLabel} Van State`;
+
   const handleStartChange = useCallback(
     (e: ChangeEvent<HTMLInputElement>) => setStart(e.target.value),
     []
@@ -142,7 +144,7 @@ export default function VanState() {
   };
 
   return (
-    <Layout title="Van State">
+    <Layout title={pageTitle}>
       <div className="flex items-center justify-between mb-2">
         <h1 className="text-2xl font-bold">Van State</h1>
         <span className="text-sm text-gray-600 dark:text-gray-300">{periodLabel}</span>

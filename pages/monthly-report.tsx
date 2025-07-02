@@ -58,6 +58,8 @@ export default function MonthlyReport() {
       ? formatDisplayDate(start)
       : `${formatDisplayDate(start)} - ${formatDisplayDate(end)}`;
 
+  const pageTitle = `${periodLabel} Report`;
+
   useEffect(() => {
     const params = new URLSearchParams({ start, end }).toString();
     fetch('/api/monthly-driver-stats?' + params)
@@ -106,7 +108,7 @@ export default function MonthlyReport() {
   };
 
   return (
-    <Layout title="MonthlyReport" fullWidth>
+    <Layout title={pageTitle} fullWidth>
 
       <div className="flex items-center justify-between mb-2">
         <h1 className="text-xl font-bold">Monthly Report</h1>
