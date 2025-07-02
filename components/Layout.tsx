@@ -2,6 +2,7 @@ import { ReactNode } from 'react';
 import Head from 'next/head';
 import Navbar from './Navbar';
 import dynamic from 'next/dynamic';
+import GlobalLoader from './GlobalLoader';
 
 const ToastNotifications = dynamic(() => import('./ToastNotifications'), { ssr: false });
 
@@ -24,6 +25,7 @@ export default function Layout({ children, title, fullWidth, hideNavbar }: Layou
       <div className="min-h-screen flex flex-col bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 text-base-content">
         {showNavbar && <Navbar />}
         <div className="flex-1 flex flex-col min-h-0">
+          <GlobalLoader />
           <ToastNotifications />
           <main
             className={
