@@ -1,5 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
+import { createHash } from 'crypto';
 import db from '../../lib/db';
+import { getCache, setCache } from '../../lib/cache';
 
 function parseMinutes(str: string) {
   const time = str.split(' ')[1] || str;
@@ -8,6 +10,17 @@ function parseMinutes(str: string) {
 }
 
 export default function handler(req: NextApiRequest, res: NextApiResponse) {
+  const cached = getCache<any>('summary');
+  if (cached) {
+    if (req.headers['if-none-match'] === cached.etag) {
+      res.status(304).end();
+      return;
+    }
+    res.setHeader('ETag', cached.etag);
+    res.status(200).json(cached.value);
+    return;
+  }
+
   const rows = db.prepare('SELECT data FROM copy_of_tomorrow_trips').all();
   const items = rows.map((r: any) => JSON.parse(r.data));
 
@@ -40,5 +53,9 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
   const avgPunctuality = items.length
     ? Math.round(totalDiff / items.length)
     : 0;
-  res.status(200).json({ total, complete, failed, avgPunctuality });
+  const payload = { total, complete, failed, avgPunctuality };
+  const etag = createHash('sha1').update(JSON.stringify(payload)).digest('hex');
+  setCache('summary', payload, 5 * 60 * 1000, etag);
+  res.setHeader('ETag', etag);
+  res.status(200).json(payload);
 }

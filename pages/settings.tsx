@@ -1,11 +1,12 @@
 import { useState } from 'react';
+import dynamic from 'next/dynamic';
 import Layout from '../components/Layout';
-import DatabasePanel from '../components/DatabasePanel';
-import CustomizePanel from '../components/CustomizePanel';
-import UsersPanel from '../components/UsersPanel';
-import UploadSettingsPanel from '../components/UploadSettingsPanel';
-import BackgroundSettingsPanel from '../components/BackgroundSettingsPanel';
-import ContractorsPanel from '../components/ContractorsPanel';
+const DatabasePanel = dynamic(() => import('../components/DatabasePanel'));
+const CustomizePanel = dynamic(() => import('../components/CustomizePanel'));
+const UsersPanel = dynamic(() => import('../components/UsersPanel'));
+const UploadSettingsPanel = dynamic(() => import('../components/UploadSettingsPanel'));
+const BackgroundSettingsPanel = dynamic(() => import('../components/BackgroundSettingsPanel'));
+const ContractorsPanel = dynamic(() => import('../components/ContractorsPanel'));
 
 // Fallback Layout component if the import fails
 const FallbackLayout = ({ children, title, fullWidth }) => (

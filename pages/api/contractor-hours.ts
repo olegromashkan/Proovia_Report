@@ -1,6 +1,8 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
+import { createHash } from 'crypto';
 import db from '../../lib/db';
 import { parseDate } from '../../lib/dateUtils';
+import { getCache, setCache } from '../../lib/cache';
 
 function parseDateTime(value: any): Date | null {
   if (!value) return null;
@@ -40,7 +42,18 @@ function parseTime(val: string): number {
   return h + m / 60;
 }
 
-export default function handler(_req: NextApiRequest, res: NextApiResponse) {
+export default function handler(req: NextApiRequest, res: NextApiResponse) {
+  const cached = getCache<any>('contractor-hours');
+  if (cached) {
+    if (req.headers['if-none-match'] === cached.etag) {
+      res.status(304).end();
+      return;
+    }
+    res.setHeader('ETag', cached.etag);
+    res.status(200).json(cached.value);
+    return;
+  }
+
   try {
     const scheduleRows = db.prepare('SELECT data FROM schedule_trips').all();
     const todayRows = db.prepare('SELECT data FROM copy_of_tomorrow_trips').all();
@@ -109,14 +122,20 @@ export default function handler(_req: NextApiRequest, res: NextApiResponse) {
       groups[contractor].count += 1;
     });
 
-    const items = Object.entries(groups).map(([contractor, g]) => ({
-      contractor,
-      avgStart: g.startSum / g.count,
-      avgEnd: g.endSum / g.count,
-      avgHours: g.timeSum / g.count,
-    })).sort((a,b) => a.contractor.localeCompare(b.contractor));
+    const items = Object.entries(groups)
+      .map(([contractor, g]) => ({
+        contractor,
+        avgStart: g.startSum / g.count,
+        avgEnd: g.endSum / g.count,
+        avgHours: g.timeSum / g.count,
+      }))
+      .sort((a, b) => a.contractor.localeCompare(b.contractor));
 
-    res.status(200).json({ items });
+    const payload = { items };
+    const etag = createHash('sha1').update(JSON.stringify(payload)).digest('hex');
+    setCache('contractor-hours', payload, 5 * 60 * 1000, etag);
+    res.setHeader('ETag', etag);
+    res.status(200).json(payload);
   } catch (err) {
     console.error('contractor-hours error', err);
     res.status(500).json({ message: 'Server error' });
