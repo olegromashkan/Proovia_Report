@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback, memo } from 'react';
+import { useState, useEffect } from 'react';
 import type { GetServerSideProps } from 'next';
 import useSWR, { mutate as globalMutate } from 'swr';
 import Link from 'next/link';
@@ -9,13 +9,11 @@ import Calendar from '../components/Calendar';
 import SummaryFeed, { FeedData } from '../components/SummaryFeed';
 import Skeleton from '../components/Skeleton';
 import Icon from '../components/Icon';
-import dynamic from 'next/dynamic';
-import Image from 'next/image';
+import SearchOverlay from '../components/SearchOverlay';
 import UserMenu from '../components/UserMenu';
-const SearchOverlay = dynamic(() => import('../components/SearchOverlay'), { ssr: false });
-const TasksPanel = dynamic(() => import('../components/TasksPanel'), { ssr: false });
-const WelcomeModal = dynamic(() => import('../components/WelcomeModal'), { ssr: false });
-const AiChatPanel = dynamic(() => import('../components/AiChatPanel'), { ssr: false });
+import TasksPanel from '../components/TasksPanel';
+import WelcomeModal from '../components/WelcomeModal';
+import AiChatPanel from '../components/AiChatPanel';
 import PixelPet from '../components/PixelPet';
 import { useRouter } from 'next/router';
 import useUser from '../lib/useUser';
@@ -26,7 +24,7 @@ import { Sparkles } from 'lucide-react';
 type Summary = { total: number; complete: number; failed: number; avgPunctuality: number };
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
-const Home = memo(function Home({ initialSummary, initialFeedData }: { initialSummary: Summary; initialFeedData: FeedData }) {
+export default function Home({ initialSummary, initialFeedData }: { initialSummary: Summary; initialFeedData: FeedData }) {
   const { data: summary, mutate: mutateSummary } = useSWR<Summary>('/api/summary', fetcher, {
     fallbackData: initialSummary,
   });
@@ -42,69 +40,53 @@ const Home = memo(function Home({ initialSummary, initialFeedData }: { initialSu
   const { setOpen: setUserMenuOpen } = useUserMenu();
   const router = useRouter();
 
-  const openSearch = useCallback(() => setSearchOpen(true), []);
-  const closeSearch = useCallback(() => setSearchOpen(false), []);
-  const openTasks = useCallback(() => setTasksOpen(true), []);
-  const closeTasks = useCallback(() => setTasksOpen(false), []);
-  const openAiPanel = useCallback(() => setAiOpen(true), []);
-  const closeAiPanel = useCallback(() => setAiOpen(false), []);
-  const closeModal = useCallback(() => setOpen(null), []);
-  const openSummaryModal = useCallback((id: string) => setOpen(id), []);
-  const closeWelcome = useCallback(() => setWelcomeOpen(false), []);
-
   useEffect(() => {
     const seen = localStorage.getItem('welcomeSeen');
     if (!seen) setWelcomeOpen(true);
   }, []);
 
-  const forceRefreshHandler = useCallback(() => {
-    mutateSummary();
-    globalMutate((key) => typeof key === 'string' && key.startsWith('/api/summary-feed'));
+  useEffect(() => {
+    const handler = () => {
+      mutateSummary();
+      globalMutate((key) => typeof key === 'string' && key.startsWith('/api/summary-feed'));
+    };
+    window.addEventListener('forceRefresh', handler);
+    return () => window.removeEventListener('forceRefresh', handler);
   }, [mutateSummary]);
 
-  useEffect(() => {
-    window.addEventListener('forceRefresh', forceRefreshHandler);
-    return () => window.removeEventListener('forceRefresh', forceRefreshHandler);
-  }, [forceRefreshHandler]);
+  const cards = [
+    { id: 'total', title: 'Total Tasks', value: summary?.total ?? 0 },
+    { id: 'complete', title: 'Completed', value: summary?.complete ?? 0 },
+    { id: 'failed', title: 'Failed', value: summary?.failed ?? 0 },
+    { id: 'avg', title: 'Avg Punctuality (m)', value: summary?.avgPunctuality ?? 0 },
+  ];
 
-  const cards = useMemo(
-    () => [
-      { id: 'total', title: 'Total Tasks', value: summary?.total ?? 0 },
-      { id: 'complete', title: 'Completed', value: summary?.complete ?? 0 },
-      { id: 'failed', title: 'Failed', value: summary?.failed ?? 0 },
-      { id: 'avg', title: 'Avg Punctuality (m)', value: summary?.avgPunctuality ?? 0 },
-    ],
-    [summary]
-  );
+  const navLinks = [
+    { href: '/', icon: 'house', label: 'Home' },
+    { href: '/feed', icon: 'chat', label: 'Feed' },
+    { href: '/upload', icon: 'upload', label: 'Upload' },
+    { href: '/driver-routes', icon: 'signpost', label: 'Driver Routes' },
+    { href: '/full-report', icon: 'table-list', label: 'Full Report' },
+    { href: '/monthly-report', icon: 'calendar', label: 'Monthly' },
+    { href: '/working-times', icon: 'clock', label: 'Working Times' },
+    { href: '/van-state', icon: 'truck', label: 'Van State' },
+    { href: '/users', icon: 'people', label: 'Users' },
+    { href: '/messages', icon: 'chat-left', label: 'Messages' },
+  ];
 
-  const navLinks = useMemo(
-    () => [
-      { href: '/', icon: 'house', label: 'Home' },
-      { href: '/feed', icon: 'chat', label: 'Feed' },
-      { href: '/upload', icon: 'upload', label: 'Upload' },
-      { href: '/driver-routes', icon: 'signpost', label: 'Driver Routes' },
-      { href: '/full-report', icon: 'table-list', label: 'Full Report' },
-      { href: '/monthly-report', icon: 'calendar', label: 'Monthly' },
-      { href: '/working-times', icon: 'clock', label: 'Working Times' },
-      { href: '/van-state', icon: 'truck', label: 'Van State' },
-      { href: '/users', icon: 'people', label: 'Users' },
-      { href: '/messages', icon: 'chat-left', label: 'Messages' },
-    ],
-    []
-  );
-
-  const isActive = useCallback(
-    (href: string) => router.pathname === href,
-    [router.pathname]
-  );
+  const isActive = (href: string) => router.pathname === href;
 
   return (
     <Layout title="Home" fullWidth hideNavbar={true}>
       {user?.header ? (
-        <div
-          className="fixed inset-0 -z-10 blur-2xl bg-cover bg-center"
-          style={{ backgroundImage: `url(${user.header})`, filter: 'brightness(0.3)' }}
-        />
+        <div className="fixed inset-0 -z-10">
+          <img
+            src={user.header}
+            alt="Image"
+            className="w-full h-full blur-2xl object-cover"
+            style={{ filter: 'brightness(0.3)' }} // Прямое добавление стиля
+          />
+        </div>
       ) : (
         <div className="fixed inset-0 -z-10 bg-gradient-to-br from-[#b53133] via-gray-800 to-gray-900" />
       )}
@@ -125,15 +107,11 @@ const Home = memo(function Home({ initialSummary, initialFeedData }: { initialSu
             {loadingUser ? (
               <Skeleton className="w-28 h-28 rounded-full border-4 border-white shadow-xl" />
             ) : user?.photo ? (
-              <Image
+              <img
                 src={user.photo}
                 alt="avatar"
-                width={112}
-                height={112}
                 onClick={() => setUserMenuOpen(true)}
                 className="w-28 h-28 cursor-pointer rounded-full object-cover border-4 border-white shadow-xl transition-transform duration-300 hover:scale-105"
-                priority
-                quality={80}
               />
             ) : (
               <div
@@ -163,7 +141,7 @@ const Home = memo(function Home({ initialSummary, initialFeedData }: { initialSu
           {/* Кнопки навигации */}
           <div className="flex flex-wrap justify-center gap-2 flex-1">
             <button
-              onClick={openSearch}
+              onClick={() => setSearchOpen(true)}
               className="ai-glow-button"
 
               aria-label="Open search"
@@ -171,7 +149,7 @@ const Home = memo(function Home({ initialSummary, initialFeedData }: { initialSu
               <Icon name="search" className="w-4 h-4" />
             </button>
             <button
-              onClick={openTasks}
+              onClick={() => setTasksOpen(true)}
               className="p-2 rounded-lg border border-white/10 bg-white/20 hover:bg-white/30 text-white"
               aria-label="Open tasks"
             >
@@ -207,7 +185,7 @@ const Home = memo(function Home({ initialSummary, initialFeedData }: { initialSu
                 className="bg-white/20 backdrop-blur-sm rounded-xl p-4 text-center border border-white/10 hover:bg-white/40 transition cursor-pointer"
                 whileHover={{ scale: 1.05, rotate: 2, boxShadow: '0 4px 16px rgba(0, 0, 0, 0.2)' }}
                 whileTap={{ scale: 0.95 }}
-                onClick={() => openSummaryModal(c.id)}
+                onClick={() => setOpen(c.id)}
               >
                 <h3 className="text-sm font-semibold text-white">{c.title}</h3>
                 <p className="text-2xl font-bold text-white">{c.value}</p>
@@ -227,31 +205,29 @@ const Home = memo(function Home({ initialSummary, initialFeedData }: { initialSu
         </div>
       </div>
 
-      <Modal open={!!open} onClose={closeModal}>
+      <Modal open={!!open} onClose={() => setOpen(null)}>
         <div className="bg-white p-6 rounded-lg shadow-lg">
           <h2 className="text-xl font-bold mb-4">{cards.find((c) => c.id === open)?.title}</h2>
           <div className="h-40 flex items-center justify-center text-gray-500">Graph Placeholder</div>
         </div>
       </Modal>
-      <WelcomeModal open={welcomeOpen} onClose={closeWelcome} />
+      <WelcomeModal open={welcomeOpen} onClose={() => setWelcomeOpen(false)} />
       <SearchOverlay
         open={searchOpen}
-        onClose={closeSearch}
+        onClose={() => setSearchOpen(false)}
         onAskAi={(q) => {
           setAiText(q);
-          closeSearch();
-          openAiPanel();
+          setSearchOpen(false);
+          setAiOpen(true);
         }}
       />
-      <TasksPanel open={tasksOpen} onClose={closeTasks} />
-      <AiChatPanel open={aiOpen} onClose={closeAiPanel} initialText={aiText} />
+      <TasksPanel open={tasksOpen} onClose={() => setTasksOpen(false)} />
+      <AiChatPanel open={aiOpen} onClose={() => setAiOpen(false)} initialText={aiText} />
       <UserMenu showButton={false} />
       <PixelPet />
     </Layout>
   );
-});
-
-export default Home;
+}
 
 export const getServerSideProps: GetServerSideProps = async ({ req }) => {
   const protocol = (req.headers['x-forwarded-proto'] as string) || 'http';

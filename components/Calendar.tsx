@@ -1,4 +1,4 @@
-import { useEffect, useState, memo } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import Icon from './Icon';
 
@@ -9,7 +9,7 @@ interface DayStats {
   failed: number;
 }
 
-function Calendar() {
+export default function Calendar() {
   const now = new Date();
   const [year, setYear] = useState(now.getFullYear());
   const [month, setMonth] = useState(now.getMonth() + 1); // 1-12
@@ -181,5 +181,3 @@ function Calendar() {
     </div>
   );
 }
-
-export default memo(Calendar);

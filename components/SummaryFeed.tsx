@@ -1,4 +1,4 @@
-import { useEffect, useState, memo } from 'react';
+import { useEffect, useState } from 'react';
 import useSWR from 'swr';
 import Modal from './Modal';
 
@@ -128,7 +128,7 @@ const formatDisplayDate = (date: Date) =>
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
-function SummaryFeed({ initialData }: { initialData?: FeedData }) {
+export default function SummaryFeed({ initialData }: { initialData?: FeedData }) {
   const [modalType, setModalType] = useState<'' | 'early' | 'night' | 'latest'>('');
   const [modalDrivers, setModalDrivers] = useState<{
     driver: string;
@@ -573,6 +573,3 @@ function SummaryFeed({ initialData }: { initialData?: FeedData }) {
     </div>
   );
 }
-
-export default memo(SummaryFeed);
-
