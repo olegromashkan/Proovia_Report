@@ -9,8 +9,12 @@ import {
 } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { useRouter } from "next/router";
+<<<<<<< HEAD
 import useSWR from 'swr';
 import useSWRInfinite from 'swr/infinite';
+=======
+import useSWR from "swr";
+>>>>>>> parent of 7835ecf (Merge pull request #380 from olegromashkan/codex/implement-lazy-loading-and-server-side-computation-for-full)
 import Layout from "../components/Layout";
 import dynamic from "next/dynamic";
 const TripModal = dynamic(() => import("../components/TripModal"));
@@ -21,6 +25,7 @@ const FailedTripsModal = dynamic(() => import("../components/FailedTripsModal"))
 const FailedReasonsCard = dynamic(() => import("../components/FailedReasonsCard"));
 const FailureAnalysisModal = dynamic(() => import("../components/FailureAnalysisModal"));
 import { getFailureReason } from "../lib/failureReason";
+import { parseDate } from "../lib/dateUtils";
 
 // --- Helpers ---
 interface Trip {
@@ -104,24 +109,67 @@ const filterReducer = (state: Filters, action: FilterAction): Filters => {
 // --- Scrolling Stats Component ---
 const ScrollingStats = ({
   trips,
+  driverToContractor,
   onDriversClick,
   onFailuresClick,
   range,
-  topDrivers,
-  topPostcodes,
-  topAuctions,
-  topContractors,
 }: {
   trips: Trip[];
+  driverToContractor: Record<string, string>;
   onDriversClick: () => void;
   onFailuresClick: () => void;
   range: string;
-  topDrivers: { driver: string; complete: number; failed: number }[];
-  topPostcodes: [string, number][];
-  topAuctions: [string, number][];
-  topContractors: [string, number][];
 }) => {
-  const stats = { topDrivers, topPostcodes, topAuctions, topContractors };
+  const stats = useMemo(() => {
+    // Top Drivers
+    const driverStats: Record<string, { complete: number; failed: number }> = {};
+    const postcodeCounts: Record<string, number> = {};
+    const auctionCounts: Record<string, number> = {};
+    const contractorCounts: Record<string, number> = {};
+
+    trips.forEach((trip) => {
+      const driver = trip["Trip.Driver1"];
+      const postcode = trip["Address.Postcode"];
+      const auction = trip["Order.Auction"];
+      const contractor = driver ? driverToContractor[driver] : null;
+
+      if (driver) {
+        if (!driverStats[driver])
+          driverStats[driver] = { complete: 0, failed: 0 };
+        if (trip.Status === "Complete") driverStats[driver].complete++;
+        else if (trip.Status === "Failed") driverStats[driver].failed++;
+      }
+      if (postcode)
+        postcodeCounts[postcode] = (postcodeCounts[postcode] || 0) + 1;
+      if (auction) auctionCounts[auction] = (auctionCounts[auction] || 0) + 1;
+      if (contractor)
+        contractorCounts[contractor] = (contractorCounts[contractor] || 0) + 1;
+    });
+
+    const topDrivers = Object.entries(driverStats)
+      .map(([d, s]) => ({
+        driver: d,
+        complete: s.complete,
+        failed: s.failed,
+        total: s.complete + s.failed,
+      }))
+      .sort((a, b) => b.total - a.total)
+      .slice(0, 3);
+
+    const topPostcodes = Object.entries(postcodeCounts)
+      .sort(([, a], [, b]) => b - a)
+      .slice(0, 10);
+
+    const topAuctions = Object.entries(auctionCounts)
+      .sort(([, a], [, b]) => b - a)
+      .slice(0, 10);
+
+    const topContractors = Object.entries(contractorCounts)
+      .sort(([, a], [, b]) => b - a)
+      .slice(0, 10);
+
+    return { topDrivers, topPostcodes, topAuctions, topContractors };
+  }, [trips, driverToContractor]);
 
   const StatCard = ({
     title,
@@ -269,10 +317,10 @@ export default function FullReport() {
   const router = useRouter();
   const today = useMemo(() => formatDate(new Date()), []);
 
-const fetcher = (url: string) => fetch(url).then((res) => res.json());
-  const PAGE_SIZE = 50;
+  const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
   // --- State ---
+  const [trips, setTrips] = useState<Trip[]>([]);
   const [startData, setStartData] = useState<any[]>([]);
   const [vanChecks, setVanChecks] = useState<any[]>([]);
   const [selected, setSelected] = useState<Trip | null>(null);
@@ -355,6 +403,7 @@ const fetcher = (url: string) => fetch(url).then((res) => res.json());
     return params.toString();
   }, [filters, sortField, sortDir, startSortField, startSortDir]);
 
+<<<<<<< HEAD
   const getKey = (index: number, prev: any) => {
     if (!router.isReady) return null;
     if (prev && prev.trips.length === 0) return null;
@@ -417,6 +466,8 @@ const fetcher = (url: string) => fetch(url).then((res) => res.json());
     return () => el.removeEventListener('scroll', onScroll);
   }, [tripPages, size, setSize]);
 
+=======
+>>>>>>> parent of 7835ecf (Merge pull request #380 from olegromashkan/codex/implement-lazy-loading-and-server-side-computation-for-full)
   const { data: fullRes } = useSWR(
     router.isReady ? `/api/v2/full-report?${query}` : null,
     fetcher,
@@ -424,21 +475,54 @@ const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
   useEffect(() => {
     if (fullRes) {
+      setTrips(fullRes.trips || []);
       setStartData(fullRes.startData || []);
       setVanChecks(fullRes.vanChecks || []);
     }
   }, [fullRes]);
 
-  const isLoading = !fullRes || tripPages.length === 0;
+  const isLoading = !fullRes;
 
 
-  const stats = fullRes?.stats || {
-    total: trips.length,
-    complete: 0,
-    failed: 0,
-    positiveTimeCompleted: 0,
-    positiveArrivalTime: 0,
-  };
+  const stats = useMemo(() => {
+    let positiveTimeCompleted = 0;
+    let positiveArrivalTime = 0;
+
+    trips.forEach((trip) => {
+      if (
+        !trip?.["Address.Working_Hours"] ||
+        !trip.Time_Completed ||
+        !trip.Arrival_Time
+      )
+        return;
+
+      const matches = String(trip["Address.Working_Hours"]).match(
+        /\d{2}:\d{2}/g,
+      );
+      const endTime = matches?.[1];
+      if (!endTime) return;
+
+      const [h, m] = endTime.split(":").map(Number);
+      const timeCompletedDate = new Date(trip.Time_Completed);
+      const whEndForCompleted = new Date(timeCompletedDate);
+      whEndForCompleted.setHours(h, m, 0, 0);
+
+      const arrivalDate = new Date(trip.Arrival_Time);
+      const whEndForArrival = new Date(arrivalDate);
+      whEndForArrival.setHours(h, m, 0, 0);
+
+      if (timeCompletedDate >= whEndForCompleted) positiveTimeCompleted++;
+      if (arrivalDate >= whEndForArrival) positiveArrivalTime++;
+    });
+
+    return {
+      total: trips.length,
+      complete: trips.filter((t) => t.Status === "Complete").length,
+      failed: trips.filter((t) => t.Status === "Failed").length,
+      positiveTimeCompleted,
+      positiveArrivalTime,
+    };
+  }, [trips]);
 
   const failedTrips = useMemo(
     () => trips.filter((t) => t.Status === "Failed"),
@@ -464,10 +548,45 @@ const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
   // datasets are already filtered and sorted by the server
 
-  const { data: driverStatsData } = useSWR(
-    showDriverStats ? `/api/driver-stats?start=${filters.start}&end=${filters.end}` : null,
-    fetcher
-  );
+  const driverStatsData = useMemo(() => {
+    const dateSet = new Set<string>();
+    const map: Record<string, Record<string, { complete: number; failed: number; total: number }>> = {};
+
+    trips.forEach((t) => {
+      const driver = t["Trip.Driver1"];
+      if (!driver) return;
+      const raw = t["Trip.Start_Time"] || t["Start_Time"] || t.Start_Time;
+      const date = parseDate(String(raw || "").split(" ")[0] || "");
+      if (!date) return;
+      dateSet.add(date);
+      if (!map[driver]) map[driver] = {};
+      if (!map[driver][date]) map[driver][date] = { complete: 0, failed: 0, total: 0 };
+      if (t.Status === "Complete") map[driver][date].complete++;
+      else if (t.Status === "Failed") map[driver][date].failed++;
+      map[driver][date].total++;
+    });
+
+    const dates = Array.from(dateSet).sort();
+    const stats = Object.keys(map).map((driver) => {
+      const daily = dates.map((d) => map[driver][d] || { complete: 0, failed: 0, total: 0 });
+      const total = daily.reduce(
+        (acc, cur) => ({
+          complete: acc.complete + cur.complete,
+          failed: acc.failed + cur.failed,
+          total: acc.total + cur.total,
+        }),
+        { complete: 0, failed: 0, total: 0 },
+      );
+      return {
+        driver,
+        contractor: driverToContractor[driver] || "Unknown",
+        daily,
+        total,
+      };
+    }).sort((a, b) => b.total.total - a.total.total);
+
+    return { dates, stats };
+  }, [trips, driverToContractor]);
 
   // --- Handlers ---
   const setDateRange = useCallback((start: Date, end: Date) => {
@@ -597,13 +716,10 @@ const fetcher = (url: string) => fetch(url).then((res) => res.json());
           {/* Scrolling Stats */}
           <ScrollingStats
             trips={trips}
+            driverToContractor={driverToContractor}
             onDriversClick={() => setShowDriverStats(true)}
             onFailuresClick={() => setShowFailureAnalysis(true)}
             range={dateRangeLabel}
-            topDrivers={fullRes?.topDrivers || []}
-            topPostcodes={fullRes?.topPostcodes || []}
-            topAuctions={fullRes?.topAuctions || []}
-            topContractors={fullRes?.topContractors || []}
           />
 
           {/* Header */}
@@ -1157,12 +1273,16 @@ const fetcher = (url: string) => fetch(url).then((res) => res.json());
         </div>
       </div>
 
-      <TripModal trip={selected} onClose={() => setSelected(null)} />
+      <TripModal
+        trip={selected}
+        onClose={() => setSelected(null)}
+        allTrips={trips}
+      />
       <DriverStatsModal
         open={showDriverStats}
         onClose={() => setShowDriverStats(false)}
-        dates={driverStatsData?.dates || []}
-        stats={driverStatsData?.stats || []}
+        dates={driverStatsData.dates}
+        stats={driverStatsData.stats}
       />
       <FailureAnalysisModal
         open={showFailureAnalysis}
