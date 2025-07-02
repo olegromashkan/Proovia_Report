@@ -100,16 +100,19 @@ const AiChatPanel = memo(({ open, onClose, initialText }: AiChatPanelProps) => {
     [] // Empty dependency array means this function is created once
   );
 
-  const handleSendMessage = () => {
+  const handleSendMessage = useCallback(() => {
     sendMessage(text);
-  };
+  }, [sendMessage, text]);
 
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      handleSendMessage();
-    }
-  };
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        handleSendMessage();
+      }
+    },
+    [handleSendMessage]
+  );
 
   // Memoized message rendering
   const renderMessageContent = useCallback(

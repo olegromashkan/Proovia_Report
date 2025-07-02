@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, useCallback, type ChangeEvent } from 'react';
 import Layout from '../components/Layout';
 import VanCheck from '../components/VanCheck';
 import Modal from '../components/Modal';
@@ -13,25 +13,38 @@ export default function VanState() {
   const [start, setStart] = useState(today);
   const [end, setEnd] = useState(today);
   const [search, setSearch] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+
+  const handleStartChange = useCallback(
+    (e: ChangeEvent<HTMLInputElement>) => setStart(e.target.value),
+    []
+  );
+  const handleEndChange = useCallback(
+    (e: ChangeEvent<HTMLInputElement>) => setEnd(e.target.value),
+    []
+  );
+  const handleSearchChange = useCallback(
+    (e: ChangeEvent<HTMLInputElement>) => setSearch(e.target.value),
+    []
+  );
 
   useEffect(() => {
-    const params = new URLSearchParams({ start, end }).toString();
+    const handler = setTimeout(() => setDebouncedSearch(search), 300);
+    return () => clearTimeout(handler);
+  }, [search]);
+
+  useEffect(() => {
+    const params = new URLSearchParams({ start, end, search: debouncedSearch }).toString();
     fetch(`/api/van-checks?${params}`)
       .then(res => (res.ok ? res.json() : Promise.reject()))
       .then(data => setChecks(data.items || []))
       .catch(() => {});
-  }, [start, end]);
+  }, [start, end, debouncedSearch]);
 
-  const filteredChecks = useMemo(() => {
-    return checks.filter(c => {
-      const text = `${c.van_id || ''} ${c.driver_id || ''}`.toLowerCase();
-      return !search || text.includes(search.toLowerCase());
-    });
-  }, [checks, search]);
 
   const latest = useMemo(() => {
     const map: Record<string, VanCheckData> = {};
-    filteredChecks.forEach(c => {
+    checks.forEach(c => {
       if (!c.van_id) return;
       const existing = map[c.van_id];
       const d = new Date(c.date);
@@ -40,11 +53,11 @@ export default function VanState() {
       }
     });
     return Object.values(map).sort((a, b) => a.van_id.localeCompare(b.van_id));
-  }, [filteredChecks]);
+  }, [checks]);
 
   const history = useMemo(() => {
     const map: Record<string, VanCheckData[]> = {};
-    filteredChecks.forEach(c => {
+    checks.forEach(c => {
       if (!c.van_id) return;
       if (!map[c.van_id]) map[c.van_id] = [];
       map[c.van_id].push(c);
@@ -53,7 +66,7 @@ export default function VanState() {
       arr.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
     );
     return map;
-  }, [filteredChecks]);
+  }, [checks]);
 
   const hasIssue = (val: any): boolean => {
     if (val === null || val === undefined) return false;
@@ -68,7 +81,7 @@ export default function VanState() {
   const analytics = useMemo(() => {
     const vans: Record<string, { issues: number; total: number }> = {};
     const drivers: Record<string, { issues: number; total: number }> = {};
-    filteredChecks.forEach(vc => {
+    checks.forEach(vc => {
       const vanId = vc.van_id || 'Unknown';
       const driverId = vc.driver_id || 'Unknown';
       if (!vans[vanId]) vans[vanId] = { issues: 0, total: 0 };
@@ -90,7 +103,7 @@ export default function VanState() {
       .sort((a, b) => b.issues - a.issues)
       .slice(0, 5);
     return { vanList, driverList };
-  }, [filteredChecks]);
+  }, [checks]);
 
   const renderParams = (vc: VanCheckData) => {
     if (!vc.parameters) return null;
@@ -123,20 +136,20 @@ export default function VanState() {
         <input
           type="date"
           value={start}
-          onChange={e => setStart(e.target.value)}
+          onChange={handleStartChange}
           className="input input-bordered input-sm"
         />
         <input
           type="date"
           value={end}
-          onChange={e => setEnd(e.target.value)}
+          onChange={handleEndChange}
           className="input input-bordered input-sm"
         />
         <input
           type="text"
           placeholder="Search..."
           value={search}
-          onChange={e => setSearch(e.target.value)}
+          onChange={handleSearchChange}
           className="input input-bordered input-sm flex-1 min-w-[150px]"
         />
       </div>
@@ -153,7 +166,7 @@ export default function VanState() {
           <div className="stats shadow">
             <div className="stat">
               <div className="stat-title">Total Checks</div>
-              <div className="stat-value">{filteredChecks.length}</div>
+              <div className="stat-value">{checks.length}</div>
             </div>
           </div>
           <div>

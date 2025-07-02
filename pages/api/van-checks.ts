@@ -13,7 +13,7 @@ function pick(obj: any, keys: string[]): any {
 }
 
 export default function handler(req: NextApiRequest, res: NextApiResponse) {
-  const { start, end } = req.query;
+  const { start, end, search } = req.query;
   const startDate = typeof start === 'string' ? new Date(start) : null;
   const endDate = typeof end === 'string' ? new Date(end + 'T23:59:59') : null;
 
@@ -72,6 +72,14 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
       if (startDate && d < startDate) return false;
       if (endDate && d > endDate) return false;
       return true;
+    });
+  }
+
+  const searchStr = typeof search === 'string' ? search.toLowerCase() : '';
+  if (searchStr) {
+    items = items.filter(it => {
+      const text = `${it.van_id || ''} ${it.driver_id || ''}`.toLowerCase();
+      return text.includes(searchStr);
     });
   }
 
