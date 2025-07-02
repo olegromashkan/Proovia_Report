@@ -15,6 +15,18 @@ export default function VanState() {
   const [search, setSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
 
+  const formatDisplayDate = (d: string) =>
+    new Date(d).toLocaleDateString('en-GB', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+    });
+
+  const periodLabel =
+    start === end
+      ? formatDisplayDate(start)
+      : `${formatDisplayDate(start)} - ${formatDisplayDate(end)}`;
+
   const handleStartChange = useCallback(
     (e: ChangeEvent<HTMLInputElement>) => setStart(e.target.value),
     []
@@ -131,7 +143,10 @@ export default function VanState() {
 
   return (
     <Layout title="Van State">
-      <h1 className="text-2xl font-bold mb-2">Van State</h1>
+      <div className="flex items-center justify-between mb-2">
+        <h1 className="text-2xl font-bold">Van State</h1>
+        <span className="text-sm text-gray-600 dark:text-gray-300">{periodLabel}</span>
+      </div>
       <div className="flex flex-wrap gap-2 mb-4">
         <input
           type="date"

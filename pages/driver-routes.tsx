@@ -116,7 +116,11 @@ function priceTextColor(val?: number | string, isDarkTheme = false) {
 
 function formatDisplayDate(dateStr: string): string {
   const date = new Date(dateStr);
-  return date.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
+  return date.toLocaleDateString('en-GB', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+  });
 }
 
 export default function DriverRoutes() {
@@ -144,6 +148,11 @@ export default function DriverRoutes() {
   const [showContractorCards, setShowContractorCards] = useState(true);
   const [driverFilter, setDriverFilter] = useState('');
   const [contractorFilter, setContractorFilter] = useState('');
+
+  const periodLabel =
+    start === end
+      ? formatDisplayDate(start)
+      : `${formatDisplayDate(start)} - ${formatDisplayDate(end)}`;
   const [sortField, setSortField] = useState<SortConfig | null>(null);
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   const [editingCell, setEditingCell] = useState<
@@ -420,6 +429,10 @@ export default function DriverRoutes() {
         <div className="p-4 space-y-4 flex flex-col">
           {/* Header Section */}
           <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h1 className="text-xl font-bold">Driver Routes</h1>
+              <span className="text-sm text-gray-600 dark:text-gray-300">{periodLabel}</span>
+            </div>
             {/* Error Message */}
             <AnimatePresence>
               {error && (

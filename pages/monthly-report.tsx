@@ -33,6 +33,14 @@ function formatDate(d: Date): string {
   return d.toISOString().slice(0, 10);
 }
 
+function formatDisplayDate(dateStr: string): string {
+  return new Date(dateStr).toLocaleDateString('en-GB', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+  });
+}
+
 export default function MonthlyReport() {
   const today = new Date();
   const defaultStart = formatDate(new Date(today.getFullYear(), today.getMonth(), 1));
@@ -44,6 +52,11 @@ export default function MonthlyReport() {
   const [sortField, setSortField] = useState('driver');
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
   const [compareOpen, setCompareOpen] = useState(false);
+
+  const periodLabel =
+    start === end
+      ? formatDisplayDate(start)
+      : `${formatDisplayDate(start)} - ${formatDisplayDate(end)}`;
 
   useEffect(() => {
     const params = new URLSearchParams({ start, end }).toString();
@@ -94,6 +107,11 @@ export default function MonthlyReport() {
 
   return (
     <Layout title="MonthlyReport" fullWidth>
+
+      <div className="flex items-center justify-between mb-2">
+        <h1 className="text-xl font-bold">Monthly Report</h1>
+        <span className="text-sm text-gray-600 dark:text-gray-300">{periodLabel}</span>
+      </div>
 
       {contractorCards.length > 0 && (
         <div className="flex overflow-x-auto space-x-4 pb-2 mb-4">
