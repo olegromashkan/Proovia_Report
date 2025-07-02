@@ -153,6 +153,8 @@ export default function DriverRoutes() {
     start === end
       ? formatDisplayDate(start)
       : `${formatDisplayDate(start)} - ${formatDisplayDate(end)}`;
+
+  const pageTitle = `${periodLabel} Driver Routes`;
   const [sortField, setSortField] = useState<SortConfig | null>(null);
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   const [editingCell, setEditingCell] = useState<
@@ -424,7 +426,7 @@ export default function DriverRoutes() {
   const handleDrag = (e: DragEvent<HTMLDivElement>) => e.preventDefault();
 
   return (
-    <Layout title="Driver Routes" fullWidth>
+    <Layout title={pageTitle} fullWidth>
       <div className="flex flex-col h-full">
         <div className="p-4 space-y-4 flex flex-col">
           {/* Header Section */}
