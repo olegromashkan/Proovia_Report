@@ -4,6 +4,7 @@ import { useRouter } from 'next/router';
 import Icon from './Icon';
 import NotificationsPanel from './NotificationsPanel';
 import WelcomeModal from './WelcomeModal';
+import Image from 'next/image';
 import useUser from '../lib/useUser';
 import useFetch from '../lib/useFetch';
 import useNotifications from '../lib/useNotifications';
@@ -88,9 +89,11 @@ export default function UserMenu({ showButton = true }: UserMenuProps) {
           <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700">
             <div className="flex items-center space-x-3">
               {userInfo?.photo && !imageError ? (
-                <img
+                <Image
                   src={userInfo.photo}
                   alt={`Avatar of ${userInfo.name || username}`}
+                  width={40}
+                  height={40}
                   className="w-10 h-10 rounded-full object-cover"
                 />
               ) : (
@@ -208,11 +211,13 @@ export default function UserMenu({ showButton = true }: UserMenuProps) {
       type="button"
     >
       {userInfo?.photo && !imageError ? (
-        <img
+        <Image
           src={userInfo.photo}
           alt={`Avatar of ${userInfo.name || username}`}
+          width={32}
+          height={32}
           className="w-8 h-8 rounded-full object-cover border-2 border-gray-200 dark:border-gray-600"
-          onError={handleImageError}
+          onError={handleImageError as any}
         />
       ) : (
         <Icon name="person-circle" className="w-8 h-8 text-gray-600 dark:text-gray-400" />
