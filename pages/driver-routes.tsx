@@ -3,7 +3,7 @@ import Layout from '../components/Layout';
 import Modal from '../components/Modal';
 import Icon from '../components/Icon';
 import { motion, AnimatePresence } from 'framer-motion';
-import { debounce } from 'lodash';
+import debounce from 'lodash/debounce';
 import { parseDate } from '../lib/dateUtils';
 
 interface Item {

@@ -18,6 +18,12 @@ if (!global.sqliteDb) {
   } catch (err) {
     console.error('Failed to set busy_timeout', err);
   }
+  try {
+    // NORMAL (1) offers a good balance of safety and write performance
+    db.pragma('synchronous = NORMAL');
+  } catch (err) {
+    console.error('Failed to set synchronous mode', err);
+  }
   global.sqliteDb = db;
 }
 
@@ -73,6 +79,8 @@ export function init() {
     CREATE INDEX IF NOT EXISTS idx_trips_contractor_name ON trips(contractor_name);
     CREATE INDEX IF NOT EXISTS idx_trips_start_time ON trips(start_time);
     CREATE INDEX IF NOT EXISTS idx_trips_postcode ON trips(postcode);
+    CREATE INDEX IF NOT EXISTS idx_trips_driver_start ON trips(driver_name, start_time);
+    CREATE INDEX IF NOT EXISTS idx_trips_failed ON trips(start_time) WHERE status = 'Failed';
     CREATE TABLE IF NOT EXISTS drivers (
       id TEXT PRIMARY KEY,
       full_name TEXT,

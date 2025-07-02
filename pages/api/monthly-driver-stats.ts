@@ -1,8 +1,21 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
+import { createHash } from 'crypto';
 import db from '../../lib/db';
 import { parseDate } from '../../lib/dateUtils';
+import { getCache, setCache } from '../../lib/cache';
 
 export default function handler(req: NextApiRequest, res: NextApiResponse) {
+  const cached = getCache<any>('monthly-driver-stats');
+  if (cached) {
+    if (req.headers['if-none-match'] === cached.etag) {
+      res.status(304).end();
+      return;
+    }
+    res.setHeader('ETag', cached.etag);
+    res.status(200).json(cached.value);
+    return;
+  }
+
   const today = new Date();
   const defaultStart = new Date(today.getFullYear(), today.getMonth(), 1)
     .toISOString()
@@ -91,5 +104,9 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
     }))
     .sort((a, b) => b.total - a.total);
 
-  res.status(200).json({ dates, stats, contractorStats });
+  const payload = { dates, stats, contractorStats };
+  const etag = createHash('sha1').update(JSON.stringify(payload)).digest('hex');
+  setCache('monthly-driver-stats', payload, 5 * 60 * 1000, etag);
+  res.setHeader('ETag', etag);
+  res.status(200).json(payload);
 }
