@@ -1,6 +1,6 @@
 # Proovia Report
 
-This project uses **Next.js** with UnoCSS and a small SQLite database.
+This project uses **Next.js** with UnoCSS and a small SQLite database. Some components are being migrated to the **shadcn/ui** style library.
 
 ## Development
 
