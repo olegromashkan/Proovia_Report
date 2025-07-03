@@ -381,5 +381,119 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
     );
   }
 
-  res.status(200).json({ trips, startData, vanChecks });
+  // --------- Additional statistics ---------
+  let total = 0;
+  let complete = 0;
+  let failed = 0;
+  let positiveTimeCompleted = 0;
+  let positiveArrivalTime = 0;
+
+  interface DriverStat { complete: number; failed: number }
+  const driverStats: Record<string, DriverStat> = {};
+  const postcodeCount: Record<string, number> = {};
+  const auctionCount: Record<string, number> = {};
+  interface ContractorStat { sum: number; count: number }
+  const contractorStats: Record<string, ContractorStat> = {};
+
+  trips.forEach((item: any) => {
+    total += 1;
+    const status = String(item.Status || '').toLowerCase();
+    if (status === 'complete') complete += 1;
+    if (status === 'failed') failed += 1;
+
+    const driver =
+      item['Trip.Driver1'] || item.Driver1 || item.Driver || 'Unknown';
+    const contractor = driverToContractor[driver] || 'Unknown';
+
+    if (!driverStats[driver]) driverStats[driver] = { complete: 0, failed: 0 };
+    if (status === 'complete') driverStats[driver].complete += 1;
+    if (status === 'failed') driverStats[driver].failed += 1;
+
+    const priceVal =
+      item.Order_Value || item['Order_Value'] || item.OrderValue || item['OrderValue'];
+    const price = priceVal !== undefined ? parseFloat(String(priceVal)) : NaN;
+    if (!isNaN(price)) {
+      if (!contractorStats[contractor])
+        contractorStats[contractor] = { sum: 0, count: 0 };
+      contractorStats[contractor].sum += price;
+      contractorStats[contractor].count += 1;
+    }
+
+    const pc = item['Address.Postcode'] || item.Postcode;
+    if (pc) {
+      const key = String(pc);
+      postcodeCount[key] = (postcodeCount[key] || 0) + 1;
+    }
+
+    const auc = item['Order.Auction'];
+    if (auc) {
+      const key = String(auc);
+      auctionCount[key] = (auctionCount[key] || 0) + 1;
+    }
+
+    const wh =
+      item['Address.Working_Hours'] ||
+      item.Address_Working_Hours ||
+      item['Address.Working_Hours'];
+    const timeCompleted =
+      item.Time_Completed || item['Time_Completed'] || item['Trip.Time_Completed'];
+    const arrival =
+      item.Arrival_Time || item['Arrival_Time'] || item['Trip.Arrival_Time'];
+
+    if (wh && timeCompleted && arrival) {
+      const matches = String(wh).match(/\d{2}:\d{2}/g);
+      const endTime = matches?.[1];
+      if (endTime) {
+        const [h, m] = endTime.split(':').map(Number);
+        const tcDate = new Date(timeCompleted);
+        const whEndForTC = new Date(tcDate);
+        whEndForTC.setHours(h, m, 0, 0);
+        const arrDate = new Date(arrival);
+        const whEndForArr = new Date(arrDate);
+        whEndForArr.setHours(h, m, 0, 0);
+
+        if (tcDate >= whEndForTC) positiveTimeCompleted++;
+        if (arrDate >= whEndForArr) positiveArrivalTime++;
+      }
+    }
+  });
+
+  const topDrivers = Object.entries(driverStats)
+    .map(([driver, s]) => ({
+      driver,
+      complete: s.complete,
+      failed: s.failed,
+    }))
+    .sort((a, b) => b.complete + b.failed - (a.complete + a.failed))
+    .slice(0, 3);
+
+  const topPostcodes = Object.entries(postcodeCount)
+    .sort(([, a], [, b]) => b - a)
+    .slice(0, 5);
+
+  const topAuctions = Object.entries(auctionCount)
+    .sort(([, a], [, b]) => b - a)
+    .slice(0, 5);
+
+  const topContractors = Object.entries(contractorStats)
+    .map(([name, s]) => [name, s.sum / s.count] as [string, number])
+    .sort(([, a], [, b]) => b - a)
+    .slice(0, 3);
+
+  res.status(200).json({
+    trips,
+    startData,
+    vanChecks,
+    topDrivers,
+    topPostcodes,
+    topAuctions,
+    topContractors,
+    stats: {
+      total,
+      complete,
+      failed,
+      positiveTimeCompleted,
+      positiveArrivalTime,
+    },
+  });
 }
