@@ -14,11 +14,13 @@ export function getFailureReason(notes: string | undefined): string {
     incorrect_address: "incorrect address",
   };
 
+  const normalized = note.replace(/[\s-]+/g, "_");
+
   for (const key of Object.keys(map)) {
-    if (note.includes(key)) {
+    if (normalized.includes(key)) {
       return map[key];
     }
   }
 
-  return notes.replace(/_/g, " ");
+  return "other";
 }
