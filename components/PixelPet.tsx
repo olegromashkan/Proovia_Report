@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import useUser from '../lib/useUser';
-import '../styles/PixelPet.css';
+
 // Updated pixel art to represent a cute cat
 const pixelData = [
   "000000000000000000000000",

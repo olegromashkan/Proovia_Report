@@ -2,6 +2,8 @@ import type { AppProps } from 'next/app';
 import Head from 'next/head';
 import Script from 'next/script';
 import '../uno.css';
+import '../styles/AiChatPanel.css';
+import '../styles/PixelPet.css';
 import { useEffect } from 'react';
 
 export default function MyApp({ Component, pageProps }: AppProps) {
