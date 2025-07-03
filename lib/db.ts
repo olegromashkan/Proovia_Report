@@ -29,6 +29,10 @@ if (!global.sqliteDb) {
 }
 
 export function init() {
+  // Migrate legacy van check table if present
+  try {
+    db.exec('ALTER TABLE van_checks RENAME TO van_checks_raw');
+  } catch {}
   db.exec(`
     CREATE TABLE IF NOT EXISTS copy_of_tomorrow_trips (
       id TEXT PRIMARY KEY,
@@ -51,11 +55,70 @@ export function init() {
       data TEXT,
       created_at TEXT DEFAULT CURRENT_TIMESTAMP
     );
-    CREATE TABLE IF NOT EXISTS van_checks (
+    -- Raw vehicle inspection data for backwards compatibility
+    CREATE TABLE IF NOT EXISTS van_checks_raw (
       id TEXT PRIMARY KEY,
       data TEXT,
       created_at TEXT DEFAULT CURRENT_TIMESTAMP
     );
+
+    -- Normalised tables for the ETL pipeline
+    CREATE TABLE IF NOT EXISTS drivers (
+      id TEXT PRIMARY KEY,
+      full_name TEXT UNIQUE NOT NULL,
+      email TEXT,
+      contractor_name TEXT NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS idx_drivers_full_name ON drivers(full_name);
+    CREATE INDEX IF NOT EXISTS idx_drivers_contractor_name ON drivers(contractor_name);
+
+    CREATE TABLE IF NOT EXISTS trips (
+      id TEXT PRIMARY KEY,
+      driver_id TEXT REFERENCES drivers(id),
+      trip_date DATE NOT NULL,
+      route_name TEXT,
+      order_value REAL,
+      task_count INTEGER,
+      scheduled_start_time DATETIME,
+      scheduled_end_time DATETIME,
+      actual_start_time DATETIME,
+      actual_end_time DATETIME
+    );
+    CREATE INDEX IF NOT EXISTS idx_trips_driver_id ON trips(driver_id);
+    CREATE INDEX IF NOT EXISTS idx_trips_trip_date ON trips(trip_date);
+
+    CREATE TABLE IF NOT EXISTS tasks (
+      id TEXT PRIMARY KEY,
+      trip_id TEXT REFERENCES trips(id),
+      order_number TEXT NOT NULL,
+      task_type TEXT NOT NULL,
+      status TEXT NOT NULL,
+      failure_reason TEXT,
+      postcode TEXT,
+      time_arrival DATETIME,
+      time_completed DATETIME,
+      notes TEXT
+    );
+    CREATE INDEX IF NOT EXISTS idx_tasks_trip_id ON tasks(trip_id);
+    CREATE INDEX IF NOT EXISTS idx_tasks_order_number ON tasks(order_number);
+    CREATE INDEX IF NOT EXISTS idx_tasks_status ON tasks(status);
+
+    CREATE TABLE IF NOT EXISTS van_assignments (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      assignment_time DATETIME NOT NULL,
+      driver_name TEXT NOT NULL,
+      van_registration TEXT NOT NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS van_checks (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      check_time DATETIME NOT NULL,
+      van_registration TEXT NOT NULL,
+      mileage INTEGER,
+      fuel TEXT,
+      oil TEXT
+    );
+    CREATE INDEX IF NOT EXISTS idx_van_checks_van ON van_checks(van_registration);
     CREATE TABLE IF NOT EXISTS schedule_trips (
       id TEXT PRIMARY KEY,
       data TEXT,
@@ -66,36 +129,6 @@ export function init() {
       data TEXT,
       created_at TEXT DEFAULT CURRENT_TIMESTAMP
     );
-    CREATE TABLE IF NOT EXISTS trips (
-      id TEXT PRIMARY KEY,
-      order_number TEXT,
-      driver_name TEXT,
-      contractor_name TEXT,
-      status TEXT,
-      start_time TEXT,
-      end_time TEXT,
-      arrival_time TEXT,
-      postcode TEXT,
-      auction TEXT,
-      price REAL,
-      notes TEXT,
-      created_at TEXT DEFAULT CURRENT_TIMESTAMP
-    );
-    CREATE INDEX IF NOT EXISTS idx_trips_order_number ON trips(order_number);
-    CREATE INDEX IF NOT EXISTS idx_trips_driver_name ON trips(driver_name);
-    CREATE INDEX IF NOT EXISTS idx_trips_contractor_name ON trips(contractor_name);
-    CREATE INDEX IF NOT EXISTS idx_trips_start_time ON trips(start_time);
-    CREATE INDEX IF NOT EXISTS idx_trips_postcode ON trips(postcode);
-    CREATE INDEX IF NOT EXISTS idx_trips_driver_start ON trips(driver_name, start_time);
-    CREATE INDEX IF NOT EXISTS idx_trips_failed ON trips(start_time) WHERE status = 'Failed';
-    CREATE TABLE IF NOT EXISTS drivers (
-      id TEXT PRIMARY KEY,
-      full_name TEXT,
-      contractor_name TEXT,
-      created_at TEXT DEFAULT CURRENT_TIMESTAMP
-    );
-    CREATE INDEX IF NOT EXISTS idx_drivers_full_name ON drivers(full_name);
-    CREATE INDEX IF NOT EXISTS idx_drivers_contractor_name ON drivers(contractor_name);
     CREATE TABLE IF NOT EXISTS notifications (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       type TEXT,
@@ -118,16 +151,6 @@ export function init() {
     CREATE TABLE IF NOT EXISTS friends (
       user_id INTEGER,
       friend_id INTEGER,
-      created_at TEXT DEFAULT CURRENT_TIMESTAMP
-    );
-
-    CREATE TABLE IF NOT EXISTS tasks (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      creator TEXT,
-      assignee TEXT,
-      text TEXT,
-      due_at TEXT,
-      completed INTEGER DEFAULT 0,
       created_at TEXT DEFAULT CURRENT_TIMESTAMP
     );
 
@@ -206,9 +229,7 @@ export function init() {
     'drivers_report',
     'schedule_trips',
     'csv_trips',
-    'trips',
-    'drivers',
-    'van_checks',
+    'van_checks_raw',
     'users',
     'posts',
     'post_likes',
@@ -241,7 +262,6 @@ export function init() {
   addColumnIfMissing('users', 'status', "TEXT DEFAULT 'offline'");
   addColumnIfMissing('users', 'status_message', 'TEXT');
   addColumnIfMissing('users', 'last_seen', 'TEXT DEFAULT CURRENT_TIMESTAMP');
-  addColumnIfMissing('tasks', 'due_at', 'TEXT');
   addColumnIfMissing('posts', 'updated_at', 'TEXT');
   addColumnIfMissing('posts', 'type', "TEXT DEFAULT 'user'");
   addColumnIfMissing('messages', 'chat_id', 'INTEGER');
