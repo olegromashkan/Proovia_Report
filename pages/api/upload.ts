@@ -1,6 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import db, { addNotification } from '../../lib/db';
 import { generateSummaryPosts } from '../../lib/summaryPosts';
+import { generateFullReportStats } from '../../lib/fullReportStats';
 
 export const config = {
   api: {
@@ -104,6 +105,7 @@ export default function handler(
     }
 
     generateSummaryPosts();
+    generateFullReportStats();
     res.status(200).json({ message: 'Uploaded' });
   } catch (err: any) {
     console.error(err);

@@ -182,6 +182,11 @@ export function init() {
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       url TEXT
     );
+    CREATE TABLE IF NOT EXISTS full_report_stats (
+      date TEXT PRIMARY KEY,
+      data TEXT,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP
+    );
     CREATE TABLE IF NOT EXISTS legacy_totals (
       id INTEGER PRIMARY KEY,
       total_orders INTEGER,
