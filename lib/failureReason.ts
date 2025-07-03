@@ -1,14 +1,25 @@
 export function getFailureReason(notes: string | undefined): string {
-  if (!notes) return 'unknown';
-  const note = notes.toLowerCase();
-  if (note.includes('not_ready')) return 'not ready';
-  if (note.includes('other')) return 'other';
-  if (note.includes('customer_is_not_home')) return "isn't home";
-  if (note.includes('shop_is_closed')) return 'is closed';
-  if (note.includes('did_not_fit')) return "didn't fit";
-  if (note.includes('too_heavy')) return 'too heavy';
-  if (note.includes('damaged')) return 'damaged';
-  if (note.includes('no_space')) return 'no space';
-  if (note.includes('incorrect_address')) return 'incorrect address';
-  return 'unknown';
+  if (!notes) return 'Unknown';
+  const normalized = notes
+    .toLowerCase()
+    .replace(/\s+/g, '_')
+    .replace(/[^a-z_]/g, '');
+
+  const map: Record<string, string> = {
+    not_ready: 'not ready',
+    other: 'other',
+    customer_is_not_home: "isn't home",
+    shop_is_closed: 'is closed',
+    did_not_fit: "didn't fit",
+    too_heavy: 'too heavy',
+    damaged: 'damaged',
+    no_space: 'no space',
+    incorrect_address: 'incorrect address',
+  };
+
+  for (const [key, label] of Object.entries(map)) {
+    if (normalized.includes(key)) return label;
+  }
+
+  return notes.replace(/_/g, ' ').trim() || 'Unknown';
 }
