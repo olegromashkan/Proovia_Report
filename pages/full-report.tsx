@@ -20,6 +20,7 @@ const DriverStatsModal = dynamic(() => import("../components/DriverStatsModal"))
 const FailedTripsModal = dynamic(() => import("../components/FailedTripsModal"));
 const FailedReasonsCard = dynamic(() => import("../components/FailedReasonsCard"));
 const FailureAnalysisModal = dynamic(() => import("../components/FailureAnalysisModal"));
+const TopListModal = dynamic(() => import("../components/TopListModal"));
 import { getFailureReason } from "../lib/failureReason";
 
 // --- Helpers ---
@@ -105,6 +106,9 @@ const filterReducer = (state: Filters, action: FilterAction): Filters => {
 const ScrollingStats = ({
   trips,
   onDriversClick,
+  onPostcodesClick,
+  onAuctionsClick,
+  onContractorsClick,
   onFailuresClick,
   range,
   topDrivers,
@@ -114,6 +118,9 @@ const ScrollingStats = ({
 }: {
   trips: Trip[];
   onDriversClick: () => void;
+  onPostcodesClick: () => void;
+  onAuctionsClick: () => void;
+  onContractorsClick: () => void;
   onFailuresClick: () => void;
   range: string;
   topDrivers: { driver: string; complete: number; failed: number }[];
@@ -127,13 +134,16 @@ const ScrollingStats = ({
     title,
     data,
     color,
+    onClick,
   }: {
     title: string;
     data: [string, number][];
     color: string;
+    onClick?: () => void;
   }) => (
     <div
-      className={`bg-gradient-to-br ${color} rounded-xl p-4 shadow-lg min-w-[250px] text-white`}
+      className={`bg-gradient-to-br ${color} rounded-xl p-4 shadow-lg min-w-[250px] text-white ${onClick ? 'cursor-pointer' : ''}`}
+      onClick={onClick}
     >
       <h3 className="font-bold text-lg mb-3 opacity-90">{title}</h3>
       <div className="space-y-1">
@@ -189,16 +199,19 @@ const ScrollingStats = ({
           title="📍 Top Postcodes"
           data={stats.topPostcodes}
           color="from-purple-500 to-purple-600"
+          onClick={onPostcodesClick}
         />
         <StatCard
           title="🏪 Top Auctions"
           data={stats.topAuctions}
           color="from-green-500 to-green-600"
+          onClick={onAuctionsClick}
         />
         <StatCard
           title="🚛 Top Contractors"
           data={stats.topContractors}
           color="from-orange-500 to-orange-600"
+          onClick={onContractorsClick}
         />
         <FailedReasonsCard trips={trips} onClick={onFailuresClick} />
       </div>
@@ -278,6 +291,9 @@ const fetcher = (url: string) => fetch(url).then((res) => res.json());
   const [selected, setSelected] = useState<Trip | null>(null);
   const [isDrawerOpen, setDrawerOpen] = useState(false);
   const [showDriverStats, setShowDriverStats] = useState(false);
+  const [showPostcodes, setShowPostcodes] = useState(false);
+  const [showAuctions, setShowAuctions] = useState(false);
+  const [showContractors, setShowContractors] = useState(false);
   const [showFailed, setShowFailed] = useState(false);
   const [showFailureAnalysis, setShowFailureAnalysis] = useState(false);
 
@@ -599,6 +615,9 @@ const fetcher = (url: string) => fetch(url).then((res) => res.json());
           <ScrollingStats
             trips={trips}
             onDriversClick={() => setShowDriverStats(true)}
+            onPostcodesClick={() => setShowPostcodes(true)}
+            onAuctionsClick={() => setShowAuctions(true)}
+            onContractorsClick={() => setShowContractors(true)}
             onFailuresClick={() => setShowFailureAnalysis(true)}
             range={dateRangeLabel}
             topDrivers={fullRes?.topDrivers || []}
@@ -1164,6 +1183,24 @@ const fetcher = (url: string) => fetch(url).then((res) => res.json());
         onClose={() => setShowDriverStats(false)}
         dates={driverStatsData?.dates || []}
         stats={driverStatsData?.stats || []}
+      />
+      <TopListModal
+        open={showPostcodes}
+        onClose={() => setShowPostcodes(false)}
+        title="Top Postcodes"
+        items={fullRes?.topPostcodes || []}
+      />
+      <TopListModal
+        open={showAuctions}
+        onClose={() => setShowAuctions(false)}
+        title="Top Auctions"
+        items={fullRes?.topAuctions || []}
+      />
+      <TopListModal
+        open={showContractors}
+        onClose={() => setShowContractors(false)}
+        title="Top Contractors"
+        items={fullRes?.topContractors || []}
       />
       <FailureAnalysisModal
         open={showFailureAnalysis}
