@@ -1,6 +1,8 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
+import { createHash } from 'crypto';
 import db from '../../../lib/db';
 import { parseDate } from '../../../lib/dateUtils';
+import { getCache, setCache } from '../../../lib/cache';
 
 const TARGET_LOCATION = 'Wood Lane, BIRMINGHAM B24, GB';
 const MIN_HOUR = 4;
@@ -270,6 +272,18 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
     startSortDir = 'asc',
   } = req.query as Record<string, string>;
 
+  const cacheKey = 'full-report:' + JSON.stringify(req.query);
+  const cached = getCache<any>(cacheKey);
+  if (cached) {
+    if (req.headers['if-none-match'] === cached.etag) {
+      res.status(304).end();
+      return;
+    }
+    res.setHeader('ETag', cached.etag);
+    res.status(200).json(cached.value);
+    return;
+  }
+
   const startDate = start ? start : '';
   const endDate = end ? end : '';
 
@@ -282,52 +296,85 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
     }
   });
 
-  const tripRows = db.prepare('SELECT data FROM copy_of_tomorrow_trips').all();
-  let trips = tripRows.map((r: any) => JSON.parse(r.data));
-
-  if (startDate || endDate) {
-    trips = trips.filter((item: any) => {
-      const raw =
-        item['Trip.Start_Time'] || item['Start_Time'] || item.Start_Time || '';
-      if (!raw) return false;
-      const iso = parseDate(raw.split(' ')[0]);
-      if (!iso) return false;
-      if (startDate && iso < startDate) return false;
-      if (endDate && iso > endDate) return false;
-      return true;
-    });
+  const params: any[] = [];
+  let where = 'WHERE 1=1';
+  if (startDate) {
+    where += ' AND d >= ?';
+    params.push(startDate);
   }
-
+  if (endDate) {
+    where += ' AND d <= ?';
+    params.push(endDate);
+  }
   if (status) {
-    const s = status.toLowerCase();
-    trips = trips.filter(
-      (t) => String(t.Status || '').toLowerCase() === s,
-    );
+    where += ' AND status = ?';
+    params.push(status.toLowerCase());
   }
-
-  if (contractor) {
-    trips = trips.filter((t) => {
-      const driver = t['Trip.Driver1'] || t.Driver1 || '';
-      return driverToContractor[driver] === contractor;
-    });
-  }
-
   if (auction) {
-    const a = auction.toLowerCase();
-    trips = trips.filter(
-      (t) => String(t['Order.Auction'] || '').toLowerCase() === a,
-    );
+    where += ' AND auction = ?';
+    params.push(auction.toLowerCase());
+  }
+  if (contractor) {
+    const drivers = Object.keys(driverToContractor)
+      .filter((d) => driverToContractor[d] === contractor)
+      .map((d) => d.toLowerCase());
+    if (drivers.length === 0) {
+      const payload = {
+        trips: [],
+        startData: [],
+        vanChecks: [],
+        topDrivers: [],
+        topPostcodes: [],
+        topAuctions: [],
+        topContractors: [],
+        stats: {
+          total: 0,
+          complete: 0,
+          failed: 0,
+          positiveTimeCompleted: 0,
+          positiveArrivalTime: 0,
+        },
+      };
+      const etag = createHash('sha1')
+        .update(JSON.stringify(payload))
+        .digest('hex');
+      setCache(cacheKey, payload, 5 * 60 * 1000, etag);
+      res.setHeader('ETag', etag);
+      return res.status(200).json(payload);
+    }
+    where += ` AND driver IN (${drivers.map(() => '?').join(',')})`;
+    params.push(...drivers);
+  }
+  if (search) {
+    const q = `%${search.toLowerCase()}%`;
+    where +=
+      ' AND (orderNumber LIKE ? OR postcode LIKE ? OR driver LIKE ?)';
+    params.push(q, q, q);
   }
 
-  if (search) {
-    const q = search.toLowerCase();
-    trips = trips.filter((t) => {
-      const order = String(t['Order.OrderNumber'] || '').toLowerCase();
-      const postcode = String(t['Address.Postcode'] || '').toLowerCase();
-      const driver = String(t['Trip.Driver1'] || '').toLowerCase();
-      return order.includes(q) || postcode.includes(q) || driver.includes(q);
-    });
-  }
+  const query = `
+    SELECT data FROM (
+      SELECT data,
+             parse_date(
+               COALESCE(
+                 json_extract(data,'$.Start_Time'),
+                 json_extract(data,'$."Start_Time"'),
+                 json_extract(data,'$."Trip.Start_Time"'),
+                 json_extract(data,'$.Predicted_Time'),
+                 json_extract(data,'$."Predicted_Time"')
+               )
+             ) AS d,
+             lower(json_extract(data,'$.Status')) AS status,
+             lower(json_extract(data,'$."Order.Auction"')) AS auction,
+             lower(COALESCE(json_extract(data,'$."Trip.Driver1"'), json_extract(data,'$.Driver1'), json_extract(data,'$.Driver'))) AS driver,
+             CAST(json_extract(data,'$.Order.OrderNumber') AS TEXT) AS orderNumber,
+             lower(CAST(json_extract(data,'$.Address.Postcode') AS TEXT)) AS postcode
+        FROM copy_of_tomorrow_trips
+    ) t
+    ${where}
+  `;
+  const tripRows = db.prepare(query).all(...params) as Array<{ data: string }>;
+  let trips = tripRows.map((r) => JSON.parse(r.data));
 
   trips.sort((a, b) => {
     const av = getValue(a, sortField);
@@ -480,7 +527,7 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
     .sort(([, a], [, b]) => b - a)
     .slice(0, 3);
 
-  res.status(200).json({
+  const payload = {
     trips,
     startData,
     vanChecks,
@@ -495,5 +542,11 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
       positiveTimeCompleted,
       positiveArrivalTime,
     },
-  });
+  };
+  const etag = createHash('sha1')
+    .update(JSON.stringify(payload))
+    .digest('hex');
+  setCache(cacheKey, payload, 5 * 60 * 1000, etag);
+  res.setHeader('ETag', etag);
+  res.status(200).json(payload);
 }
