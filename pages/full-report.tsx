@@ -1158,7 +1158,7 @@ const fetcher = (url: string) => fetch(url).then((res) => res.json());
         </div>
       </div>
 
-      <TripModal trip={selected} onClose={() => setSelected(null)} />
+      <TripModal trip={selected} onClose={() => setSelected(null)} allTrips={trips} />
       <DriverStatsModal
         open={showDriverStats}
         onClose={() => setShowDriverStats(false)}

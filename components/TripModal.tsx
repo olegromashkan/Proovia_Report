@@ -11,7 +11,7 @@ interface Trip {
 interface Props {
   trip: Trip | null;
   onClose: () => void;
-  allTrips: Trip[];
+  allTrips?: Trip[];
 }
 
 const geoCache = new Map<string, { lat: number; lon: number }>();
@@ -23,7 +23,7 @@ function parseMinutes(str: string | undefined): number {
   return Number(h) * 60 + Number(m) + Number(s) / 60;
 }
 
-export default function TripModal({ trip, onClose, allTrips }: Props) {
+export default function TripModal({ trip, onClose, allTrips = [] }: Props) {
   const mapRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<HTMLCanvasElement>(null);
   const chartInstanceRef = useRef<any>(null);
