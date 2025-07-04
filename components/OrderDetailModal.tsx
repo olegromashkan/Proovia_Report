@@ -162,6 +162,12 @@ const ErrorMessage = () => (
 export default function OrderDetailModal({ orderId, open, onClose }: Props) {
   const [data, setData] = useState<any | null>(null);
   const [loading, setLoading] = useState(false);
+  const [csvInfo, setCsvInfo] = useState<{
+    arrival: string;
+    location: string;
+    van: string;
+    driver: string;
+  } | null>(null);
   const value = (key: string) => getField(data, key);
 
   useEffect(() => {
@@ -169,6 +175,7 @@ export default function OrderDetailModal({ orderId, open, onClose }: Props) {
 
     setLoading(true);
     setData(null);
+    setCsvInfo(null);
 
     fetch(`/api/items?table=copy_of_tomorrow_trips&id=${orderId}`)
       .then(res => (res.ok ? res.json() : Promise.reject()))
@@ -178,6 +185,16 @@ export default function OrderDetailModal({ orderId, open, onClose }: Props) {
       .catch(() => setData(null))
       .finally(() => setLoading(false));
   }, [orderId, open]);
+
+  useEffect(() => {
+    if (!data) return;
+    const tc = value('Time_Completed');
+    if (!tc) return;
+    fetch(`/api/order-arrival?completed=${encodeURIComponent(tc)}`)
+      .then(res => (res.ok ? res.json() : Promise.reject()))
+      .then(info => setCsvInfo(info))
+      .catch(() => setCsvInfo(null));
+  }, [data]);
 
   // Calculate driver punctuality
   const calculatePunctuality = (timeCompleted: string, arrivalTime: string) => {
@@ -249,7 +266,7 @@ export default function OrderDetailModal({ orderId, open, onClose }: Props) {
     {!loading && data && (
       <div className="space-y-8">
         {/* Key Information Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
           <InfoCard
             icon={<svg className="h-6 w-6 text-blue-600 dark:text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M8 21h8a2 2 0 002-2v-5a2 2 0 00-2-2H8a2 2 0 00-2 2v5a2 2 0 002 2z" /></svg>}
             title="Order Number"
@@ -274,6 +291,14 @@ export default function OrderDetailModal({ orderId, open, onClose }: Props) {
             title={value("Driver1")}
             value={<PunctualityIndicator punctuality={punctuality} />}
           />
+          {csvInfo && (
+            <InfoCard
+              icon={<svg className="h-6 w-6 text-indigo-600 dark:text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /></svg>}
+              title="Trip End"
+              value={csvInfo.location}
+              subtitle={`${csvInfo.arrival} • ${csvInfo.driver}`}
+            />
+          )}
         </div>
 
         {/* Contact & Schedule */}
