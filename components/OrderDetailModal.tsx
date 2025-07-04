@@ -190,7 +190,11 @@ export default function OrderDetailModal({ orderId, open, onClose }: Props) {
     if (!data) return;
     const tc = value('Time_Completed');
     if (!tc) return;
-    fetch(`/api/order-arrival?completed=${encodeURIComponent(tc)}`)
+    const driverName = value('Driver1') || value('Trip.Driver1');
+    const url = `/api/order-arrival?completed=${encodeURIComponent(tc)}${
+      driverName ? `&driver=${encodeURIComponent(driverName)}` : ''
+    }`;
+    fetch(url)
       .then(res => (res.ok ? res.json() : Promise.reject()))
       .then(info => setCsvInfo(info))
       .catch(() => setCsvInfo(null));
