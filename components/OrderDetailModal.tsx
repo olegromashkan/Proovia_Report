@@ -189,8 +189,10 @@ export default function OrderDetailModal({ orderId, open, onClose }: Props) {
   useEffect(() => {
     if (!data) return;
     const tc = value('Time_Completed');
-    if (!tc) return;
-    fetch(`/api/order-arrival?completed=${encodeURIComponent(tc)}`)
+    const driver = value('Driver1');
+    if (!tc || !driver) return;
+    const url = `/api/order-arrival?completed=${encodeURIComponent(tc)}&driver=${encodeURIComponent(driver)}`;
+    fetch(url)
       .then(res => (res.ok ? res.json() : Promise.reject()))
       .then(info => setCsvInfo(info))
       .catch(() => setCsvInfo(null));
