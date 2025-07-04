@@ -48,19 +48,26 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
   const eventData = events.map((r: any) => JSON.parse(r.data));
 
   const vanToDriver: Record<string, string> = {};
+  const driverToVans: Record<string, Set<string>> = {};
   eventData.forEach((e: any) => {
-    if (e.Vans) {
-      const van = String(e.Vans).split('-').pop();
-      const d = typeof e.Driver === 'string' ? e.Driver.trim() : 'Unknown';
-      if (van) {
-        vanToDriver[van] = d || 'Unknown';
-      }
+    if (!e.Vans) return;
+    const van = String(e.Vans).split('-').pop();
+    if (!van) return;
+    const driver = typeof e.Driver === 'string' ? e.Driver.trim() : '';
+    if (driver) {
+      const dn = norm(driver);
+      if (!driverToVans[dn]) driverToVans[dn] = new Set();
+      driverToVans[dn].add(van);
+      vanToDriver[van] = driver;
+    } else {
+      vanToDriver[van] = 'Unknown';
     }
   });
 
   const driverName =
     typeof driverQuery === 'string' ? driverQuery.trim() : '';
   const driverNorm = driverName ? norm(driverName) : '';
+  const vansForDriver = driverNorm ? driverToVans[driverNorm] : undefined;
 
   let match: any = null;
   let bestDiff = Infinity;
@@ -72,8 +79,10 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
       const rowDriver = csvDriver || vanToDriver[vanId] || 'Unknown';
       const rowNorm = norm(rowDriver);
 
-      if (useDriver && driverNorm && rowNorm !== driverNorm) {
-        return;
+      if (useDriver && driverNorm) {
+        if (rowNorm !== driverNorm && !(vansForDriver?.has(vanId))) {
+          return;
+        }
       }
 
       const end = parseDateTime(row['End At']);
