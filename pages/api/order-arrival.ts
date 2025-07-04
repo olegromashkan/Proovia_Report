@@ -28,6 +28,10 @@ function parseDateTime(value: string): Date | null {
   return isNaN(dt.getTime()) ? null : dt;
 }
 
+function norm(name: string): string {
+  return name.trim().toLowerCase().replace(/\s+/g, '');
+}
+
 export default function handler(req: NextApiRequest, res: NextApiResponse) {
   const { completed, driver: driverQuery } = req.query;
   if (typeof completed !== 'string') {
@@ -48,44 +52,54 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
     if (e.Vans) {
       const van = String(e.Vans).split('-').pop();
       const d = typeof e.Driver === 'string' ? e.Driver.trim() : 'Unknown';
-      vanToDriver[van] = d || 'Unknown';
+      if (van) {
+        vanToDriver[van] = d || 'Unknown';
+      }
     }
   });
 
-  const driverName = typeof driverQuery === 'string' ? driverQuery.trim() : '';
+  const driverName =
+    typeof driverQuery === 'string' ? driverQuery.trim() : '';
+  const driverNorm = driverName ? norm(driverName) : '';
 
   let match: any = null;
   let bestDiff = Infinity;
-  const MAX_DIFF = 20 * 60 * 1000; // 20 minutes
-  csv.forEach((row: any) => {
-    const asset = String(row['Asset'] || '');
-    const vanId = asset.includes('-') ? asset.split('-')[1] : asset;
-    const rowDriver = vanToDriver[vanId] || 'Unknown';
+  const findMatch = (maxDiff: number, useDriver: boolean) => {
+    csv.forEach((row: any) => {
+      const asset = String(row['Asset'] || '');
+      const vanId = asset.includes('-') ? asset.split('-')[1] : asset;
+      const csvDriver = typeof row['Driver'] === 'string' ? row['Driver'].trim() : '';
+      const rowDriver = csvDriver || vanToDriver[vanId] || 'Unknown';
+      const rowNorm = norm(rowDriver);
 
-    if (driverName && rowDriver !== driverName) {
-      return;
-    }
+      if (useDriver && driverNorm && rowNorm !== driverNorm) {
+        return;
+      }
 
-    const end = parseDateTime(row['End At']);
-    if (!end) return;
-    const diff = Math.abs(end.getTime() - done.getTime());
-    if (diff <= MAX_DIFF && diff < bestDiff) {
-      bestDiff = diff;
-      match = row;
-    }
-  });
+      const end = parseDateTime(row['End At']);
+      if (!end) return;
+      const diff = Math.abs(end.getTime() - done.getTime());
+      if (diff <= maxDiff && diff < bestDiff) {
+        bestDiff = diff;
+        match = { row, rowDriver };
+      }
+    });
+  };
+
+  findMatch(20 * 60 * 1000, true);
+  if (!match) findMatch(60 * 60 * 1000, false);
 
   if (!match) {
     return res.status(404).json({ message: 'No match' });
   }
 
-  const asset = String(match['Asset'] || '');
+  const asset = String(match.row['Asset'] || '');
   const van = asset.includes('-') ? asset.split('-')[1] : asset;
-  const driverResolved = vanToDriver[van] || 'Unknown';
+  const driverResolved = match.rowDriver || vanToDriver[van] || 'Unknown';
 
   res.status(200).json({
-    arrival: match['End At'],
-    location: match['Trip End Location'],
+    arrival: match.row['End At'],
+    location: match.row['Trip End Location'],
     van,
     driver: driverResolved,
   });
