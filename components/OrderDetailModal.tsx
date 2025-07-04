@@ -296,7 +296,7 @@ export default function OrderDetailModal({ orderId, open, onClose }: Props) {
               icon={<svg className="h-6 w-6 text-indigo-600 dark:text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /></svg>}
               title="Trip End"
               value={csvInfo.location}
-              subtitle={`${csvInfo.arrival} • ${csvInfo.driver}`}
+              subtitle={`${csvInfo.arrival} • ${csvInfo.van} • ${csvInfo.driver}`}
             />
           )}
         </div>
@@ -353,6 +353,13 @@ export default function OrderDetailModal({ orderId, open, onClose }: Props) {
                 value={value("Time_Completed")}
                 icon={<svg className="h-4 w-4 text-gray-600 dark:text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>}
               />
+              {csvInfo && (
+                <DetailRow
+                  label="Samsara Arrival"
+                  value={`${csvInfo.arrival} – ${csvInfo.location}`}
+                  icon={<svg className="h-4 w-4 text-gray-600 dark:text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>}
+                />
+              )}
               <DetailRow
                 label="Task Date"
                 value={value("Task_Date")}
