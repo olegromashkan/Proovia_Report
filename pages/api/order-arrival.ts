@@ -3,19 +3,27 @@ import db from '../../lib/db';
 import { parseDate } from '../../lib/dateUtils';
 
 function parseDateTime(value: string): Date | null {
-  const [datePart, timePart = '00:00'] = value.trim().split(/\s+/);
+  const str = value.trim();
+  if (!str) return null;
+
+  // try native parser first (handles MM/DD/YY and other common forms)
+  const direct = new Date(str);
+  if (!isNaN(direct.getTime())) return direct;
+
+  const [datePart, timePart = '00:00'] = str.split(/\s+/);
   let iso = parseDate(datePart);
+
+  // handle ambiguous short dates like 4/7/25 or 04/07/25
   if (!iso) {
     const m = datePart.match(/^(\d{1,2})[\/](\d{1,2})[\/](\d{2})$/);
     if (m) {
-      const [, d, mo, y] = m;
-      iso = `${2000 + Number(y)}-${String(mo).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+      const [, m1, d1, y1] = m;
+      iso = `${2000 + Number(y1)}-${String(m1).padStart(2, '0')}-${String(d1).padStart(2, '0')}`;
     }
   }
-  if (!iso) {
-    const d = new Date(value);
-    return isNaN(d.getTime()) ? null : d;
-  }
+
+  if (!iso) return null;
+
   const dt = new Date(`${iso}T${timePart}`);
   return isNaN(dt.getTime()) ? null : dt;
 }
@@ -44,17 +52,17 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
     }
   });
 
-  const tolerances = [5, 10, 15];
   let match: any = null;
-  for (const tol of tolerances) {
-    match = csv.find((row: any) => {
-      const end = parseDateTime(row['End At']);
-      if (!end) return false;
-      const diff = Math.abs(end.getTime() - done.getTime()) / 60000;
-      return diff <= tol;
-    });
-    if (match) break;
-  }
+  let bestDiff = Infinity;
+  csv.forEach((row: any) => {
+    const end = parseDateTime(row['End At']);
+    if (!end) return;
+    const diff = Math.abs(end.getTime() - done.getTime());
+    if (diff < bestDiff) {
+      bestDiff = diff;
+      match = row;
+    }
+  });
 
   if (!match) {
     return res.status(404).json({ message: 'No match' });
