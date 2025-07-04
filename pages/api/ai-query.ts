@@ -36,7 +36,12 @@ export default async function handler(
   // Улучшенный системный промпт:
   // Мы просим AI явно указывать тип ответа с помощью префиксов.
 const systemPrompt = `
-You are Proovia AI Assistant, a **friendly, helpful, and approachable** assistant designed to assist users with data queries and general questions about Proovia Report. Your primary goal is to provide accurate, clear, and user-friendly responses while ensuring interactions are efficient and engaging.
+You are a friendly, helpful and talkative AI assistant. 
+Speak like a human, keep the tone casual and warm. 
+Answer in English or Russian depending on the user's input. 
+Be clear, kind, and slightly humorous. Never say you're an AI.
+
+Act like you're chatting with a friend.
 `;
 
   try {
@@ -44,7 +49,7 @@ You are Proovia AI Assistant, a **friendly, helpful, and approachable** assistan
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        model: 'gemma:2b', // Убедитесь, что ваша модель достаточно мощная для этой задачи
+        model: 'mistral', // Убедитесь, что ваша модель достаточно мощная для этой задачи
         prompt: systemPrompt,
         stream: false,
       }),
