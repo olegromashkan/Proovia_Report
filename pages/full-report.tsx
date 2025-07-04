@@ -11,7 +11,7 @@ import { useVirtualizer } from "@tanstack/react-virtual";
 import { useRouter } from "next/router";
 import useSWR from "swr";
 import Layout from "../components/Layout";
-import TripModal from "../components/TripModal";
+import OrderDetailModal from "../components/OrderDetailModal";
 import Icon from "../components/Icon";
 import VanCheck from "../components/VanCheck";
 import DriverStatsModal from "../components/DriverStatsModal";
@@ -308,7 +308,7 @@ export default function FullReport() {
   const [trips, setTrips] = useState<Trip[]>([]);
   const [startData, setStartData] = useState<any[]>([]);
   const [vanChecks, setVanChecks] = useState<any[]>([]);
-  const [selected, setSelected] = useState<Trip | null>(null);
+  const [orderModalId, setOrderModalId] = useState<string | null>(null);
   const [isDrawerOpen, setDrawerOpen] = useState(false);
   const [showDriverStats, setShowDriverStats] = useState(false);
   const [showFailed, setShowFailed] = useState(false);
@@ -988,7 +988,7 @@ export default function FullReport() {
                         >
                           <TripCard
                             trip={trip}
-                            onClick={() => setSelected(trip)}
+                            onClick={() => setOrderModalId(trip.ID)}
                           />
                         </div>
                       );
@@ -1206,10 +1206,10 @@ export default function FullReport() {
         </div>
       </div>
 
-      <TripModal
-        trip={selected}
-        onClose={() => setSelected(null)}
-        allTrips={trips}
+      <OrderDetailModal
+        orderId={orderModalId}
+        open={!!orderModalId}
+        onClose={() => setOrderModalId(null)}
       />
       <DriverStatsModal
         open={showDriverStats}
