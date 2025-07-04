@@ -29,7 +29,7 @@ function parseDateTime(value: string): Date | null {
 }
 
 export default function handler(req: NextApiRequest, res: NextApiResponse) {
-  const { completed } = req.query;
+  const { completed, driver } = req.query;
   if (typeof completed !== 'string') {
     return res.status(400).json({ message: 'Missing completed' });
   }
@@ -52,11 +52,17 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
     }
   });
 
+  const driverFilter = typeof driver === 'string' ? driver.trim().toLowerCase() : null;
+
   let match: any = null;
   let bestDiff = Infinity;
   csv.forEach((row: any) => {
     const end = parseDateTime(row['End At']);
     if (!end) return;
+    const asset = String(row['Asset'] || '');
+    const van = asset.includes('-') ? asset.split('-').pop() : asset;
+    const mappedDriver = (vanToDriver[van] || 'Unknown').toLowerCase();
+    if (driverFilter && mappedDriver !== driverFilter) return;
     const diff = Math.abs(end.getTime() - done.getTime());
     if (diff < bestDiff) {
       bestDiff = diff;
@@ -64,18 +70,20 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
     }
   });
 
-  if (!match) {
+  const MAX_DIFF = 20 * 60 * 1000; // 20 minutes
+
+  if (!match || bestDiff > MAX_DIFF) {
     return res.status(404).json({ message: 'No match' });
   }
 
   const asset = String(match['Asset'] || '');
   const van = asset.includes('-') ? asset.split('-')[1] : asset;
-  const driver = vanToDriver[van] || 'Unknown';
+  const matchedDriver = vanToDriver[van] || 'Unknown';
 
   res.status(200).json({
     arrival: match['End At'],
     location: match['Trip End Location'],
     van,
-    driver,
+    driver: matchedDriver,
   });
 }
