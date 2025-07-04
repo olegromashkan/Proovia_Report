@@ -29,7 +29,7 @@ function parseDateTime(value: string): Date | null {
 }
 
 export default function handler(req: NextApiRequest, res: NextApiResponse) {
-  const { completed } = req.query;
+  const { completed, driver: driverQuery } = req.query;
   if (typeof completed !== 'string') {
     return res.status(400).json({ message: 'Missing completed' });
   }
@@ -52,13 +52,24 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
     }
   });
 
+  const driverName = typeof driverQuery === 'string' ? driverQuery.trim() : '';
+
   let match: any = null;
   let bestDiff = Infinity;
+  const MAX_DIFF = 20 * 60 * 1000; // 20 minutes
   csv.forEach((row: any) => {
+    const asset = String(row['Asset'] || '');
+    const vanId = asset.includes('-') ? asset.split('-')[1] : asset;
+    const rowDriver = vanToDriver[vanId] || 'Unknown';
+
+    if (driverName && rowDriver !== driverName) {
+      return;
+    }
+
     const end = parseDateTime(row['End At']);
     if (!end) return;
     const diff = Math.abs(end.getTime() - done.getTime());
-    if (diff < bestDiff) {
+    if (diff <= MAX_DIFF && diff < bestDiff) {
       bestDiff = diff;
       match = row;
     }
@@ -70,12 +81,12 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
 
   const asset = String(match['Asset'] || '');
   const van = asset.includes('-') ? asset.split('-')[1] : asset;
-  const driver = vanToDriver[van] || 'Unknown';
+  const driverResolved = vanToDriver[van] || 'Unknown';
 
   res.status(200).json({
     arrival: match['End At'],
     location: match['Trip End Location'],
     van,
-    driver,
+    driver: driverResolved,
   });
 }
