@@ -29,7 +29,7 @@ function parseDateTime(value: string): Date | null {
 }
 
 export default function handler(req: NextApiRequest, res: NextApiResponse) {
-  const { completed } = req.query;
+  const { completed, driver } = req.query;
   if (typeof completed !== 'string') {
     return res.status(400).json({ message: 'Missing completed' });
   }
@@ -44,21 +44,37 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
   const eventData = events.map((r: any) => JSON.parse(r.data));
 
   const vanToDriver: Record<string, string> = {};
+  const driverToVan: Record<string, string> = {};
   eventData.forEach((e: any) => {
     if (e.Vans) {
       const van = String(e.Vans).split('-').pop();
       const d = typeof e.Driver === 'string' ? e.Driver.trim() : 'Unknown';
-      vanToDriver[van] = d || 'Unknown';
+      if (van) {
+        vanToDriver[van] = d || 'Unknown';
+        driverToVan[d || 'Unknown'] = van;
+      }
     }
   });
 
+  let candidates = csv;
+  if (typeof driver === 'string') {
+    const van = driverToVan[driver.trim()];
+    if (van) {
+      candidates = candidates.filter((row: any) => {
+        const asset = String(row['Asset'] || '');
+        const rowVan = asset.includes('-') ? asset.split('-')[1] : asset;
+        return rowVan === van;
+      });
+    }
+  }
+
   let match: any = null;
   let bestDiff = Infinity;
-  csv.forEach((row: any) => {
+  candidates.forEach((row: any) => {
     const end = parseDateTime(row['End At']);
     if (!end) return;
     const diff = Math.abs(end.getTime() - done.getTime());
-    if (diff < bestDiff) {
+    if (diff < bestDiff && diff <= 20 * 60 * 1000) {
       bestDiff = diff;
       match = row;
     }
@@ -70,12 +86,12 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
 
   const asset = String(match['Asset'] || '');
   const van = asset.includes('-') ? asset.split('-')[1] : asset;
-  const driver = vanToDriver[van] || 'Unknown';
+  const driverName = vanToDriver[van] || 'Unknown';
 
   res.status(200).json({
     arrival: match['End At'],
     location: match['Trip End Location'],
     van,
-    driver,
+    driver: driverName,
   });
 }
