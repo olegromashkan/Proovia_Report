@@ -43,7 +43,7 @@ const StatusBadge = ({ status }: { status: string }) => {
         return 'bg-blue-100 text-blue-800 border-blue-200';
       case 'pending':
       case 'assigned':
-        return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+        return 'bg-amber-100 text-amber-800 border-amber-200';
       case 'failed':
       case 'cancelled':
         return 'bg-red-100 text-red-800 border-red-200';
@@ -88,7 +88,7 @@ const PunctualityIndicator = ({ punctuality }: { punctuality: number | null }) =
 
   const getColor = (minutes: number) => {
     if (minutes <= 5) return 'text-green-600 bg-green-50 border-green-200';
-    if (minutes <= 15) return 'text-yellow-600 bg-yellow-50 border-yellow-200';
+    if (minutes <= 15) return 'text-amber-600 bg-amber-50 border-amber-200';
     return 'text-red-600 bg-red-50 border-red-200';
   };
 
@@ -402,13 +402,13 @@ export default function OrderDetailModal({ orderId, open, onClose }: Props) {
                 <div className="mb-6">
                   <h4 className="font-semibold 
  dark:text-white mb-3 flex items-center">
-                    <span className="bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300 px-2 py-1 rounded-full text-xs font-medium mr-2">
+                    <span className="bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300 px-2 py-1 rounded-full text-xs font-medium mr-2">
                       Office
                     </span>
                     Office Notes
                   </h4>
                   <div
-                    className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4 text-sm text-gray-700 dark:text-gray-200 leading-relaxed"
+                    className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-4 text-sm text-gray-700 dark:text-gray-200 leading-relaxed"
                     dangerouslySetInnerHTML={{ __html: value("Office_Notes") }}
                   />
                 </div>

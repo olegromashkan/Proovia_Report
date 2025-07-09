@@ -849,7 +849,7 @@ export default function DriverRoutes() {
                             return (
                               <td
                                 key={`${driver}-${d}-s`}
-                                className={`${borderClass} px-1 py-1 text-gray-900 dark:text-white text-xs ${highlight ? 'bg-yellow-100 dark:bg-yellow-900/30' : ''}`}
+                                className={`${borderClass} px-1 py-1 text-gray-900 dark:text-white text-xs ${highlight ? 'bg-amber-100 dark:bg-amber-900/30' : ''}`}
                                 onDoubleClick={startEdit}
                               >
                                 {editing ? (
