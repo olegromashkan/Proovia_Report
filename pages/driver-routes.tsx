@@ -105,6 +105,12 @@ function priceTextColor(val?: number | string, isDarkTheme = false) {
   return `hsl(${hue}, ${saturation}%, ${lightness}%)`;
 }
 
+function isEarlyStart(time?: string | null): boolean {
+  if (!time) return false;
+  const hour = parseInt(time.split(':')[0] || '0', 10);
+  return hour < 7;
+}
+
 
 
 
@@ -276,7 +282,7 @@ export default function DriverRoutes() {
       driverStats[it.driver] = { priceTotal: 0, priceCount: 0, tasksTotal: 0, punctualityTotal: 0, punctualityCount: 0 };
     }
 
-    if (it.start_time && (it.start_time.startsWith('06:00') || it.start_time.startsWith('06:30'))){
+    if (isEarlyStart(it.start_time)) {
       if (!earlyStarts[it.driver]) earlyStarts[it.driver] = { count: 0, dates: [] };
       earlyStarts[it.driver].count += 1;
       earlyStarts[it.driver].dates.push(it.date);
@@ -732,7 +738,7 @@ export default function DriverRoutes() {
                           {earlyStarts[driver] && earlyStarts[driver].count > 3 && (
                             <button
                               onClick={() => setHighlightDriver(highlightDriver === driver ? null : driver)}
-                              className="text-yellow-600 dark:text-yellow-400"
+                              className="text-yellow-500 dark:text-yellow-400"
                               title="Highlight early starts"
                             >
                               <Icon name="clock" className="w-3 h-3" />
@@ -837,7 +843,7 @@ export default function DriverRoutes() {
                             );
                           }
                           if (key === 'start') {
-                            const isEarly = typeof rawValue === 'string' && (rawValue.startsWith('06:00') || rawValue.startsWith('06:30'));
+                            const isEarly = isEarlyStart(typeof rawValue === 'string' ? rawValue : undefined);
                             const highlight =
                               highlightDriver === driver && isEarly && earlyStarts[driver]?.dates.includes(d);
                             return (
