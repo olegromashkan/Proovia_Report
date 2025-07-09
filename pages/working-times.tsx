@@ -219,7 +219,7 @@ export default function WorkingTimes() {
                         ))}
                         <th
                           key={w.start + 'avg'}
-                          className="border-b border-l border-gray-200 dark:border-gray-700 px-3 py-2 text-center cursor-pointer select-none hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-xs font-medium text-gray-700 dark:text-gray-300 bg-yellow-50 dark:bg-yellow-900/20"
+                          className="border-b border-l border-gray-200 dark:border-gray-700 px-3 py-2 text-center cursor-pointer select-none hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-xs font-medium text-gray-700 dark:text-gray-300 bg-amber-50 dark:bg-amber-900/20"
                           onClick={() => {
                             const key = `${w.start}|avg`;
                             setSortKey(key);
@@ -300,7 +300,7 @@ export default function WorkingTimes() {
                                 </td>
                               );
                             })}
-                            <td key={row.driver + w.start + 'avg'} className="border-l border-gray-200 dark:border-gray-700 px-3 py-3 text-center text-sm font-medium bg-yellow-50 dark:bg-yellow-900/20 text-yellow-800 dark:text-yellow-200">
+                            <td key={row.driver + w.start + 'avg'} className="border-l border-gray-200 dark:border-gray-700 px-3 py-3 text-center text-sm font-medium bg-amber-50 dark:bg-amber-900/20 text-amber-800 dark:text-amber-200">
                               {wd.avg ? wd.avg.toFixed(2) : '–'}
                             </td>
                             <td key={row.driver + w.start + 'tot'} className="border-l border-gray-200 dark:border-gray-700 px-3 py-3 text-center text-sm font-medium bg-green-50 dark:bg-green-900/20 text-green-800 dark:text-green-200">
