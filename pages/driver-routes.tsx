@@ -151,6 +151,7 @@ export default function DriverRoutes() {
     | null
   >(null);
   const [editedCells, setEditedCells] = useState<Record<string, string>>({});
+  const [highlightDriver, setHighlightDriver] = useState<string | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const cardContainerRef = useRef<HTMLDivElement>(null);
   const scrollIntervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -244,6 +245,7 @@ export default function DriverRoutes() {
   const driverContractor: Record<string, string> = {};
   const contractorStats: Record<string, { drivers: Set<string>; total: number; count: number }> = {};
   const driverStats: Record<string, { priceTotal: number; priceCount: number; tasksTotal: number; punctualityTotal: number; punctualityCount: number }> = {};
+  const earlyStarts: Record<string, { count: number; dates: string[] }> = {};
 
   for (const it of items) {
     dateSet.add(it.date);
@@ -272,6 +274,12 @@ export default function DriverRoutes() {
 
     if (!driverStats[it.driver]) {
       driverStats[it.driver] = { priceTotal: 0, priceCount: 0, tasksTotal: 0, punctualityTotal: 0, punctualityCount: 0 };
+    }
+
+    if (it.start_time && (it.start_time.startsWith('06:00') || it.start_time.startsWith('06:30'))){
+      if (!earlyStarts[it.driver]) earlyStarts[it.driver] = { count: 0, dates: [] };
+      earlyStarts[it.driver].count += 1;
+      earlyStarts[it.driver].dates.push(it.date);
     }
 
     const priceNum = Number(it.price);
@@ -719,7 +727,18 @@ export default function DriverRoutes() {
                         style={{ position: 'sticky', left: 0 }}
                         title={driver}
                       >
-                        {driver}
+                        <span className="flex items-center gap-1">
+                          {driver}
+                          {earlyStarts[driver] && earlyStarts[driver].count > 3 && (
+                            <button
+                              onClick={() => setHighlightDriver(highlightDriver === driver ? null : driver)}
+                              className="text-yellow-600 dark:text-yellow-400"
+                              title="Highlight early starts"
+                            >
+                              <Icon name="clock" className="w-3 h-3" />
+                            </button>
+                          )}
+                        </span>
                       </td>
                       {visibleCols.contractor && (
                         <td
@@ -818,10 +837,13 @@ export default function DriverRoutes() {
                             );
                           }
                           if (key === 'start') {
+                            const isEarly = typeof rawValue === 'string' && (rawValue.startsWith('06:00') || rawValue.startsWith('06:30'));
+                            const highlight =
+                              highlightDriver === driver && isEarly && earlyStarts[driver]?.dates.includes(d);
                             return (
                               <td
                                 key={`${driver}-${d}-s`}
-                                className={`${borderClass} px-1 py-1 text-gray-900 dark:text-white text-xs`}
+                                className={`${borderClass} px-1 py-1 text-gray-900 dark:text-white text-xs ${highlight ? 'bg-yellow-100 dark:bg-yellow-900/30' : ''}`}
                                 onDoubleClick={startEdit}
                               >
                                 {editing ? (
