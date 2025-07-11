@@ -14,6 +14,7 @@ interface TestData {
   name: string;
   email: string;
   created_at: string;
+  test_id?: number;
   answers: Answer[];
   scores: Answer[];
 }
@@ -23,6 +24,7 @@ export default function TestDetail() {
   const { id } = router.query as { id?: string };
   const [data, setData] = useState<TestData | null>(null);
   const [scores, setScores] = useState<Answer[]>([]);
+  const [template, setTemplate] = useState<{ questions: { text: string; points: number }[] } | null>(null);
 
   useEffect(() => {
     if (!id) return;
@@ -31,6 +33,12 @@ export default function TestDetail() {
       .then(d => {
         setData(d.test);
         setScores(d.test.scores.length ? d.test.scores : d.test.answers.map((a: Answer) => ({ question: a.question, answer: a.answer, score: 0, comment: '' })));
+        if (d.test.test_id) {
+          fetch(`/api/test-templates/${d.test.test_id}`)
+            .then(res => (res.ok ? res.json() : Promise.reject()))
+            .then(t => setTemplate(t.template))
+            .catch(() => setTemplate(null));
+        }
       })
       .catch(() => setData(null));
   }, [id]);
@@ -57,7 +65,7 @@ export default function TestDetail() {
       <div className="space-y-4">
         {data.answers.map((a, i) => (
           <div key={i} className="border p-2 rounded">
-            <p className="font-medium">{a.question}</p>
+            <p className="font-medium">{a.question} <span className="text-sm text-gray-500">(points: {template?.questions[i]?.points ?? '-'})</span></p>
             <p className="mb-2 whitespace-pre-wrap">{a.answer}</p>
             <div className="flex gap-2 items-center">
               <input
