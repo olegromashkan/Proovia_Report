@@ -1,5 +1,5 @@
 import { useRouter } from 'next/router';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import Layout from '../components/Layout';
 import EmailTemplate from '../components/EmailTemplate';
 
@@ -10,6 +10,8 @@ export default function WelcomeEmailPage() {
   const [pdfUrl, setPdfUrl] = useState('#');
   const [date, setDate] = useState('Monday, July 14, 2025');
   const [time, setTime] = useState('7:30 AM');
+  const previewRef = useRef<HTMLDivElement>(null);
+  const [html, setHtml] = useState('');
 
   useEffect(() => {
     if (!router.isReady) return;
@@ -19,6 +21,12 @@ export default function WelcomeEmailPage() {
     if (typeof router.query.date === 'string') setDate(router.query.date);
     if (typeof router.query.time === 'string') setTime(router.query.time);
   }, [router.isReady, router.query]);
+
+  useEffect(() => {
+    if (previewRef.current) {
+      setHtml(previewRef.current.innerHTML);
+    }
+  }, [name, score, pdfUrl, date, time]);
 
   return (
     <Layout title="Welcome Email" fullWidth>
@@ -71,7 +79,23 @@ export default function WelcomeEmailPage() {
           </div>
         </div>
         <div className="overflow-auto">
-          <EmailTemplate name={name} score={score} pdfUrl={pdfUrl} date={date} time={time} />
+          <div ref={previewRef}>
+            <EmailTemplate name={name} score={score} pdfUrl={pdfUrl} date={date} time={time} />
+          </div>
+          <div className="mt-4 space-y-2">
+            <textarea
+              className="textarea textarea-bordered w-full font-mono text-xs"
+              rows={12}
+              readOnly
+              value={html}
+            />
+            <button
+              className="btn btn-primary"
+              onClick={() => navigator.clipboard.writeText(html)}
+            >
+              Copy HTML
+            </button>
+          </div>
         </div>
       </div>
     </Layout>
