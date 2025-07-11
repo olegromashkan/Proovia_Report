@@ -4,7 +4,7 @@ import Layout from '../../components/Layout';
 
 interface Answer {
   question: string;
-  answer: string;
+  answer: string | string[];
   score?: number;
   comment?: string;
 }
@@ -66,7 +66,9 @@ export default function TestDetail() {
         {data.answers.map((a, i) => (
           <div key={i} className="border p-2 rounded">
             <p className="font-medium">{a.question} <span className="text-sm text-gray-500">(points: {template?.questions[i]?.points ?? '-'})</span></p>
-            <p className="mb-2 whitespace-pre-wrap">{a.answer}</p>
+            <p className="mb-2 whitespace-pre-wrap">
+              {Array.isArray(a.answer) ? a.answer.join(', ') : a.answer}
+            </p>
             <div className="flex gap-2 items-center">
               <input
                 type="number"
