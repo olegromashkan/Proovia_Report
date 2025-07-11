@@ -61,23 +61,12 @@ export default function Home({ initialSummary, initialFeedData }: { initialSumma
     { id: 'avg', title: 'Avg Punctuality (m)', value: summary?.avgPunctuality ?? 0 },
   ];
 
-  const navLinks = [
-    { href: '/', icon: 'house', label: 'Home' },
-    { href: '/feed', icon: 'chat', label: 'Feed' },
-    { href: '/upload', icon: 'upload', label: 'Upload' },
-    { href: '/driver-routes', icon: 'signpost', label: 'Driver Routes' },
-    { href: '/full-report', icon: 'table-list', label: 'Full Report' },
-    { href: '/monthly-report', icon: 'calendar', label: 'Monthly' },
-    { href: '/working-times', icon: 'clock', label: 'Working Times' },
-    { href: '/van-state', icon: 'truck', label: 'Van State' },
-    { href: '/users', icon: 'people', label: 'Users' },
-    { href: '/messages', icon: 'chat-left', label: 'Messages' },
-  ];
+  
 
   const isActive = (href: string) => router.pathname === href;
 
   return (
-    <Layout title="Home" fullWidth hideNavbar={true}>
+    <Layout title="Home" fullWidth>
       {user?.header ? (
         <div className="fixed inset-0 -z-10">
           <img
@@ -138,39 +127,7 @@ export default function Home({ initialSummary, initialFeedData }: { initialSumma
             </div>
           </motion.div>
 
-          {/* Кнопки навигации */}
-          <div className="flex flex-wrap justify-center gap-2 flex-1">
-            <button
-              onClick={() => setSearchOpen(true)}
-              className="ai-glow-button"
 
-              aria-label="Open search"
-            >
-              <Icon name="search" className="w-4 h-4" />
-            </button>
-            <button
-              onClick={() => setTasksOpen(true)}
-              className="p-2 rounded-lg border border-white/10 bg-white/20 hover:bg-white/30 text-white"
-              aria-label="Open tasks"
-            >
-              <Icon name="star" className="w-4 h-4" />
-
-            </button>
-           
-            {navLinks.map(({ href, icon, label }) => (
-              <Link
-                key={href}
-                href={href}
-                className={`flex items-center gap-2 px-3 py-2 rounded-lg border border-white/10 bg-white/20 hover:bg-white/30 text-white transition ${isActive(href) ? 'bg-white/40' : ''
-                  }`}
-              >
-                <Icon name={icon} className="w-4 h-4" />
-                <span className="text-sm">{label}</span>
-              </Link>
-
-            ))}
-
-          </div>
 
           {/* Карточки */}
           <motion.div

@@ -2,11 +2,9 @@ import { useRef, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import Icon from './Icon';
-import NotificationsPanel from './NotificationsPanel';
 import WelcomeModal from './WelcomeModal';
 import useUser from '../lib/useUser';
 import useFetch from '../lib/useFetch';
-import useNotifications from '../lib/useNotifications';
 import useUserMenu from '../lib/useUserMenu';
 import ThemeToggle from './ThemeToggle';
 
@@ -27,8 +25,6 @@ export default function UserMenu({ showButton = true }: UserMenuProps) {
   const [imageError, setImageError] = useState(false);
   const [welcomeOpen, setWelcomeOpen] = useState(false);
 
-  const { items } = useNotifications();
-  const unreadCount = items.length;
   
   const username = useUser();
   // Check that username is not empty string and not null/undefined
@@ -147,7 +143,6 @@ export default function UserMenu({ showButton = true }: UserMenuProps) {
             Sign Out
           </button>
           <div className="border-t border-gray-200 dark:border-gray-700 mt-3" />
-          <NotificationsPanel />
         </div>
       </div>
     );
@@ -217,11 +212,7 @@ export default function UserMenu({ showButton = true }: UserMenuProps) {
       ) : (
         <Icon name="person-circle" className="w-8 h-8 text-gray-600 dark:text-gray-400" />
       )}
-      {unreadCount > 0 && (
-        <span className="absolute -top-1 -right-1 bg-red-600 text-white rounded-full text-xs px-1">
-          {unreadCount}
-        </span>
-      )}
+     
     </button>
   ) : null;
 

@@ -49,7 +49,7 @@ export default function EmailTemplate({ name, score, pdfUrl, date, time }: Email
                       <tbody>
                         <tr>
                           <td align="center" style={{ paddingBottom: '30px' }}>
-                            <img src="https://cdn.proovia.uk/pd/images/logo/logo-default.svg" alt="Proovia Logo" width="180" style={{ display: 'block', border: 0 }} />
+                            <img src="https://s3.eu-central-1.amazonaws.com/trengo/media/hc_logo_AIwK7FIhfy.png" alt="Proovia Logo" width="180" style={{ display: 'block', border: 0 }} />
                           </td>
                         </tr>
                         <tr>
@@ -60,7 +60,7 @@ export default function EmailTemplate({ name, score, pdfUrl, date, time }: Email
                         <tr><td style={{ height: '20px', lineHeight: '20px' }}>&nbsp;</td></tr>
                         <tr>
                           <td align="center">
-                            <p className="main-text">Hi {name},</p>
+                            <p className="main-text"><b>Hi {name},</b></p>
                             <p className="main-text" style={{ marginTop: '1em' }}>
                               The entire team at Proovia is thrilled to officially welcome you aboard! Your skills and fantastic energy during the interviews really stood out to us, and we know you're going to be a brilliant addition to the team.
                             </p>
