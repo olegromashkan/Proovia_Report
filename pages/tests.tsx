@@ -7,6 +7,7 @@ interface TestInfo {
   name: string;
   email: string;
   created_at: string;
+  test_id: number | null;
 }
 
 export default function TestsPage() {
@@ -27,6 +28,7 @@ export default function TestsPage() {
             <th className="text-left">Name</th>
             <th className="text-left">Email</th>
             <th className="text-left">Date</th>
+            <th className="text-left">Template</th>
             <th></th>
           </tr>
         </thead>
@@ -36,6 +38,7 @@ export default function TestsPage() {
               <td>{t.name}</td>
               <td>{t.email}</td>
               <td>{new Date(t.created_at).toLocaleString()}</td>
+              <td>{t.test_id ?? '-'}</td>
               <td>
                 <Link href={`/tests/${t.id}`}>Open</Link>
               </td>
