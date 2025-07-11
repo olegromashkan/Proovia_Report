@@ -69,6 +69,8 @@ const Navbar = memo(() => {
     { href: '/van-state', icon: 'truck', label: 'Van State' },
     { href: '/users', icon: 'people', label: 'Users' },
     { href: '/messages', icon: 'chat-left', label: 'Messages' },
+    { href: '/training-test', icon: 'clipboard', label: 'Training Test' },
+    { href: '/tests', icon: 'list', label: 'Tests' },
   ], []);
 
   const isActive = useCallback((href: string) => router.pathname === href, [router.pathname]);

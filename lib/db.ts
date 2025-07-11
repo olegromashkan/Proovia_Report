@@ -139,6 +139,14 @@ export function init() {
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       url TEXT
     );
+    CREATE TABLE IF NOT EXISTS training_tests (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT,
+      email TEXT,
+      answers TEXT,
+      scores TEXT,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP
+    );
     CREATE TABLE IF NOT EXISTS legacy_totals (
       id INTEGER PRIMARY KEY,
       total_orders INTEGER,
@@ -202,6 +210,7 @@ export function init() {
   addColumnIfMissing('messages', 'deleted', 'INTEGER DEFAULT 0');
   addColumnIfMissing('chats', 'photo', 'TEXT');
   addColumnIfMissing('chats', 'pinned', 'INTEGER DEFAULT 0');
+  addColumnIfMissing('training_tests', 'scores', 'TEXT');
 
   // seed legacy totals if not already present
   const legacyRow = db
