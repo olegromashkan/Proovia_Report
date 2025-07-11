@@ -431,7 +431,7 @@ export default function DriverRoutes() {
   return (
     <Layout title="Driver Routes" fullWidth>
       <div className="flex flex-col h-full">
-        <div className="p-4 space-y-4 flex flex-col">
+        <div className=" flex flex-col">
           {/* Header Section */}
           <div className="space-y-4">
             {/* Error Message */}
@@ -462,7 +462,7 @@ export default function DriverRoutes() {
                   initial={{ opacity: 0, height: 0 }}
                   animate={{ opacity: 1, height: 'auto' }}
                   exit={{ opacity: 0, height: 0 }}
-                  className="flex overflow-x-auto space-x-4 pb-2"
+                  className="flex overflow-x-auto p-4 space-x-4 pb-2"
                   ref={cardContainerRef}
                 >
                   {contractorCards.map((c) => (
@@ -586,7 +586,7 @@ export default function DriverRoutes() {
               <thead>
                 <tr className="bg-gray-50 dark:bg-gray-700 sticky top-0 z-40">
                   <th
-                    className="sticky left-0 z-30 bg-gray-50 dark:bg-gray-700 border-b border-r border-gray-200 dark:border-gray-600 px-2 py-1 text-left text-gray-900 dark:text-white font-semibold text-xs cursor-pointer select-none"
+                    className="sticky left-0 z-30 min-w-[200px] bg-gray-50 dark:bg-gray-700 border-b border-r border-gray-200 dark:border-gray-600 px-2 py-1 text-left text-gray-900 dark:text-white font-semibold text-xs cursor-pointer select-none"
                     style={{ position: 'sticky', left: 0 }}
                     onClick={() => {
                       if (sortField && sortField.field === 'driver') {
@@ -608,28 +608,31 @@ export default function DriverRoutes() {
                     </span>
                   </th>
                   {visibleCols.contractor && (
-                    <th
-                      className="sticky left-[150px] z-30 bg-gray-50 dark:bg-gray-700 border-b border-r border-gray-200 dark:border-gray-600 px-2 py-1 text-left text-gray-900 dark:text-white font-semibold text-xs cursor-pointer select-none"
-                      style={{ position: 'sticky', left: '150px' }}
-                      onClick={() => {
-                        if (sortField && sortField.field === 'contractor') {
-                          setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
-                        } else {
-                          setSortField({ field: 'contractor' });
-                          setSortDirection('asc');
-                        }
-                      }}
-                    >
-                      <span className="flex items-center">
-                        Contractor
-                        {sortField && sortField.field === 'contractor' && (
-                          <Icon
-                            name={sortDirection === 'asc' ? 'chevron-up' : 'chevron-down'}
-                            className="inline-block w-3 h-3 ml-1"
-                          />
-                        )}
-                      </span>
-                    </th>
+<th
+  className="sticky left-[150px] z-30 min-w-[150px] bg-gray-50 dark:bg-gray-700 border-b border-r border-gray-200 dark:border-gray-600 px-2 py-1 text-left text-gray-900 dark:text-white font-semibold text-xs cursor-pointer select-none"
+  style={{ position: 'sticky', left: '150px' }}
+  onClick={() => {
+    if (sortField && sortField.field === 'contractor') {
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField({ field: 'contractor' });
+      setSortDirection('asc');
+    }
+  }}
+>
+  <div className="inline-block w-max">
+    <span className="flex items-center">
+      Contractor
+      {sortField && sortField.field === 'contractor' && (
+        <Icon
+          name={sortDirection === 'asc' ? 'chevron-up' : 'chevron-down'}
+          className="inline-block w-3 h-3 ml-1"
+        />
+      )}
+    </span>
+  </div>
+</th>
+
                   )}
                   {dates.map((d, index) => (
                     <th

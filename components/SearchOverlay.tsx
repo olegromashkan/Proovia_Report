@@ -148,37 +148,49 @@ export default function SearchOverlay({ open, onClose, onAskAi }: { open: boolea
         }}
       >
         {/* Search Input */}
-        <div className="flex items-center px-4 py-3 border-b border-gray-200/50">
-          <div className="w-5 h-5 mr-3 text-gray-400">
-            <svg viewBox="0 0 20 20" fill="currentColor">
-              <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" />
-            </svg>
-          </div>
-          <div className="relative flex-1">
-            <input
-              autoFocus
-              value={q}
-              onChange={(e) => setQ(e.target.value)}
-              placeholder="Spotlight Search"
-              className="relative z-10 w-full bg-transparent text-gray-900 placeholder-gray-500 outline-none text-lg font-medium"
+<div className="flex items-center px-4 py-3">
+  <div className="w-5 h-5 mr-3 text-gray-400">
+    <svg
+      viewBox="0 0 20 20"
+      fill="currentColor"
+      className="w-full h-full"
+      aria-hidden="true"
+    >
+      <path
+        fillRule="evenodd"
+        d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z"
+        clipRule="evenodd"
+      />
+    </svg>
+  </div>
 
-            />
-            {hint && (
-              <div className="absolute inset-0 pointer-events-none flex items-center text-lg font-medium text-gray-400">
-                <span className="invisible">{q}</span>
-                <span>{hint}</span>
-              </div>
-            )}
-          </div>
-      
-                  <button
-                    onClick={() => onAskAi(q)}
-                    className="ai-glow-button px-3 py-2 text-sm inline-flex items-center gap-1"
-                  >
-                    <Sparkles size={16} /> Ask AI
-                  </button>
-     
-        </div>
+  <div className="relative flex-1">
+    <input
+      autoFocus
+      type="text"
+      value={q}
+      onChange={(e) => setQ(e.target.value)}
+      placeholder="Search or ask anything..."
+      className="relative z-10 w-full bg-transparent text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 outline-none text-lg font-medium focus:ring-0"
+    />
+    {hint && (
+      <div className="absolute inset-0 pointer-events-none flex items-center text-lg font-medium text-gray-400 dark:text-gray-500">
+        <span className="invisible">{q}</span>
+        <span>{hint}</span>
+      </div>
+    )}
+  </div>
+
+  <button
+    onClick={() => onAskAi(q)}
+    type="button"
+    aria-label="Ask AI"
+    className="ai-glow-button px-3 py-2 text-sm inline-flex items-center gap-1 transition hover:brightness-110 focus:outline-none focus-visible:ring focus-visible:ring-blue-500"
+  >
+    <Sparkles size={16} /> Ask AI
+  </button>
+</div>
+
 
         {/* Report Results */}
         {report && (

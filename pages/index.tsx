@@ -94,7 +94,7 @@ export default function Home({ initialSummary, initialFeedData }: { initialSumma
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ type: 'spring', stiffness: 80, damping: 15 }}
-        className="relative rounded-2xl bg-white/0 dark:bg-black/50 backdrop-blur-md border border-white/20 dark:border-black/20 shadow-lg"
+        className="relative rounded-2xl bg-white/0 dark:bg-black/50 backdrop-blur-md border border-white/20 dark:border-black/20 shadow-lg "
       >
         <div className="relative flex flex-col sm:flex-row items-center justify-between p-4 gap-4">
           {/* Информация о пользователе */}
