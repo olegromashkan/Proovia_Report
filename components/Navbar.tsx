@@ -66,8 +66,8 @@ export default function Navbar() {
     {
       label: 'Training',
       links: [
-        { href: '/training-test', icon: 'clipboard', label: 'Training Test' },
         { href: '/tests/dashboard', icon: 'layout-dashboard', label: 'Test Dashboard' },
+        { href: '/training-test', icon: 'clipboard', label: 'Training Test' },
         { href: '/tests', icon: 'list', label: 'Test Results' },
       ],
     },
