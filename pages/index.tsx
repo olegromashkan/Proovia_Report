@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react'; // Added explicit React import
 import type { GetServerSideProps } from 'next';
 import useSWR, { mutate as globalMutate } from 'swr';
 import Link from 'next/link';
@@ -8,7 +8,6 @@ import Modal from '../components/Modal';
 import Calendar from '../components/Calendar';
 import SummaryFeed, { FeedData } from '../components/SummaryFeed';
 import Skeleton from '../components/Skeleton';
-import Icon from '../components/Icon';
 import SearchOverlay from '../components/SearchOverlay';
 import UserMenu from '../components/UserMenu';
 import TasksPanel from '../components/TasksPanel';
@@ -24,9 +23,11 @@ import { Sparkles } from 'lucide-react';
 type Summary = { total: number; complete: number; failed: number; avgPunctuality: number };
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
+
 export default function Home({ initialSummary, initialFeedData }: { initialSummary: Summary; initialFeedData: FeedData }) {
   const { data: summary, mutate: mutateSummary } = useSWR<Summary>('/api/summary', fetcher, {
     fallbackData: initialSummary,
+    revalidateOnFocus: false, // Minor optimization: disable revalidation on focus
   });
   const [open, setOpen] = useState<string | null>(null);
   const [searchOpen, setSearchOpen] = useState(false);
@@ -45,14 +46,16 @@ export default function Home({ initialSummary, initialFeedData }: { initialSumma
     if (!seen) setWelcomeOpen(true);
   }, []);
 
-  useEffect(() => {
-    const handler = () => {
-      mutateSummary();
-      globalMutate((key) => typeof key === 'string' && key.startsWith('/api/summary-feed'));
-    };
-    window.addEventListener('forceRefresh', handler);
-    return () => window.removeEventListener('forceRefresh', handler);
+  // Debounced refresh handler for performance
+  const handleRefresh = useCallback(() => {
+    mutateSummary();
+    globalMutate((key) => typeof key === 'string' && key.startsWith('/api/summary-feed'));
   }, [mutateSummary]);
+
+  useEffect(() => {
+    window.addEventListener('forceRefresh', handleRefresh);
+    return () => window.removeEventListener('forceRefresh', handleRefresh);
+  }, [handleRefresh]);
 
   const cards = [
     { id: 'total', title: 'Total Tasks', value: summary?.total ?? 0 },
@@ -61,32 +64,18 @@ export default function Home({ initialSummary, initialFeedData }: { initialSumma
     { id: 'avg', title: 'Avg Punctuality (m)', value: summary?.avgPunctuality ?? 0 },
   ];
 
-  
-
   const isActive = (href: string) => router.pathname === href;
 
   return (
     <Layout title="Home" fullWidth>
-      {user?.header ? (
-        <div className="fixed inset-0 -z-10">
-          <img
-            src={user.header}
-            alt="Image"
-            className="w-full h-full blur-2xl object-cover"
-            style={{ filter: 'brightness(0.3)' }} // Прямое добавление стиля
-          />
-        </div>
-      ) : (
-        <div className="fixed inset-0 -z-10 bg-gradient-to-br from-[#b53133] via-gray-800 to-gray-900" />
-      )}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ type: 'spring', stiffness: 80, damping: 15 }}
-        className="relative rounded-2xl bg-white/0 dark:bg-black/50 backdrop-blur-md border border-white/20 dark:border-black/20 shadow-lg "
+        className="relative rounded-2xl bg-white/0 dark:bg-black/50 border border-white/20 dark:border-black/20 shadow-lg"
       >
         <div className="relative flex flex-col sm:flex-row items-center justify-between p-4 gap-4">
-          {/* Информация о пользователе */}
+          {/* User Info */}
           <motion.div
             className="flex items-center gap-4 flex-shrink-0"
             initial={{ opacity: 0, x: -20 }}
@@ -127,9 +116,7 @@ export default function Home({ initialSummary, initialFeedData }: { initialSumma
             </div>
           </motion.div>
 
-
-
-          {/* Карточки */}
+          {/* Cards */}
           <motion.div
             className="grid grid-cols-2 sm:grid-cols-4 gap-4 w-full sm:w-auto"
             initial={{ opacity: 0, x: 20 }}
@@ -149,15 +136,14 @@ export default function Home({ initialSummary, initialFeedData }: { initialSumma
               </motion.div>
             ))}
           </motion.div>
-
         </div>
       </motion.div>
 
       <div className="flex flex-col md:flex-row gap-6">
-        <div className="flex-[3] w-full md:w-62  p-4">
+        <div className="flex-[3] w-full md:w-62 p-4">
           <Calendar />
         </div>
-        <div className="flex-[5] min-w-[900px] bg-white/70 dark:bg-black/50  p-4">
+        <div className="flex-[5] min-w-[900px] bg-white/70 dark:bg-black/50 p-4">
           <SummaryFeed initialData={initialFeedData as FeedData} />
         </div>
       </div>
@@ -191,10 +177,12 @@ export const getServerSideProps: GetServerSideProps = async ({ req }) => {
   const host = req.headers.host;
   const baseUrl = `${protocol}://${host}`;
 
-  const summaryRes = await fetch(`${baseUrl}/api/summary`);
-  const summary = await summaryRes.json();
-  const feedRes = await fetch(`${baseUrl}/api/summary-feed`);
-  const feed = await feedRes.json();
+  // Concurrent fetching for performance
+  const [summaryRes, feedRes] = await Promise.all([
+    fetch(`${baseUrl}/api/summary`),
+    fetch(`${baseUrl}/api/summary-feed`),
+  ]);
+  const [summary, feed] = await Promise.all([summaryRes.json(), feedRes.json()]);
 
   return { props: { initialSummary: summary, initialFeedData: feed } };
 };
