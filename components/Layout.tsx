@@ -11,17 +11,22 @@ interface LayoutProps {
   fullWidth?: boolean;
   hideNavbar?: boolean;
 }
+
 export default function Layout({ children, title, fullWidth, hideNavbar }: LayoutProps) {
-  // `hideNavbar` is a boolean flag, so the navbar should be shown when it is
-  // not explicitly set to `true`.
   const showNavbar = !hideNavbar;
+
   return (
     <>
       <Head>
         <title>{title ? `${title} | Proovia Report` : 'Proovia Report'}</title>
         <meta name="viewport" content="width=device-width, initial-scale=1" />
       </Head>
-      <div className="min-h-screen flex flex-col bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 text-base-content">
+
+      {/* Use data-theme to apply DaisyUI themes (light/dark/custom) */}
+      <div
+        data-theme="light" // or "dark", or dynamic via state
+        className="min-h-screen flex flex-col bg-base-100 text-base-content"
+      >
         {showNavbar && <Navbar />}
         <div className="flex-1 flex flex-col min-h-0">
           <ToastNotifications />
@@ -34,7 +39,6 @@ export default function Layout({ children, title, fullWidth, hideNavbar }: Layou
           >
             {children}
           </main>
-
         </div>
       </div>
     </>

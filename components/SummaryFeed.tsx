@@ -33,15 +33,15 @@ const DriverListModal = ({
   drivers: { driver: string; times: string[] }[];
 }) => {
   return (
-    <Modal open={open} onClose={onClose} className="max-w-lg">
-      <h2 className="text-lg font-semibold mb-4">{title}</h2>
-      <div className="max-h-80 overflow-y-auto">
-        <table className="w-full text-sm">
+    <Modal open={open} onClose={onClose} className="modal-box max-w-lg">
+      <h2 className="text-lg font-bold mb-4">{title}</h2>
+      <div className="overflow-x-auto">
+        <table className="table table-zebra w-full">
           <thead>
-            <tr className="border-b">
-              <th className="text-left py-1">Driver</th>
+            <tr>
+              <th className="text-left">Driver</th>
               {dates.map((d) => (
-                <th key={d} className="text-right py-1">
+                <th key={d} className="text-right">
                   {d.slice(5)}
                 </th>
               ))}
@@ -49,10 +49,10 @@ const DriverListModal = ({
           </thead>
           <tbody>
             {drivers.map((d) => (
-              <tr key={d.driver} className="border-b last:border-b-0">
-                <td className="pr-2 whitespace-nowrap">{d.driver}</td>
+              <tr key={d.driver}>
+                <td className="whitespace-nowrap">{d.driver}</td>
                 {d.times.map((t, idx) => (
-                  <td key={idx} className="text-right font-mono whitespace-nowrap">
+                  <td key={idx} className="text-right font-mono">
                     {t || '-'}
                   </td>
                 ))}
@@ -242,134 +242,131 @@ export default function SummaryFeed({ initialData }: { initialData?: FeedData })
     subheader = `${formatDisplayDate(startDate)} - ${formatDisplayDate(endDate)}`;
   }
 
-  const containerClass =
-    'flex flex-col space-y-4 p-4 overflow-y-auto rounded-2xl bg-white/70 dark:bg-black/50 backdrop-blur-md border border-white/20 dark:border-black/20 shadow-lg';
-
   return (
-    <div className={containerClass}>
+    <div className="card bg-base-100 shadow-xl p-4">
       {/* Date Picker */}
-      <div className="flex items-start justify-between">
-        <div className="flex items-center gap-2 text-sm">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-4">
+        <div className="flex items-center gap-2">
           <input
             type="date"
             value={start}
             onChange={(e) => setStart(e.target.value)}
-            className="border rounded px-1 py-0.5"
+            className="input input-bordered input-sm"
           />
           <span>-</span>
           <input
             type="date"
             value={end}
             onChange={(e) => setEnd(e.target.value)}
-            className="border rounded px-1 py-0.5"
+            className="input input-bordered input-sm"
           />
         </div>
         <div className="text-right">
-          <h2 className="text-sm font-semibold">{header}</h2>
-          {subheader && <p className="text-xs text-gray-500">{subheader}</p>}
+          <h2 className="text-lg font-bold">{header}</h2>
+          {subheader && <p className="text-sm text-base-content/60">{subheader}</p>}
         </div>
       </div>
 
       {/* Compact Statistics Bar */}
       {data && (
-        <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
-          <div className="bg-gradient-to-r from-black-200 to-black-600 rounded-xl p-3 text-white shadow-md ">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-blue-100 text-xs font-medium">Total Orders</p>
-                <p className="text-xl font-bold">{stats.total.toLocaleString()}</p>
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
+          <div className="card bg-primary text-primary-content shadow-md">
+            <div className="card-body p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm">Total Orders</p>
+                  <p className="text-xl font-bold">{stats.total.toLocaleString()}</p>
+                </div>
+                <Icon name="chart" className="text-2xl" />
               </div>
-              <Icon name="chart" className="text-2xl opacity-80" />
             </div>
           </div>
-
-          <div className="bg-gradient-to-r from-black-500 to-purple-600 rounded-xl p-3 text-white shadow-md">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-purple-100 text-xs font-medium">Success Rate</p>
-                <p className="text-xl font-bold">{stats.successRate}%</p>
+          <div className="card bg-success text-success-content shadow-md">
+            <div className="card-body p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm">Success Rate</p>
+                  <p className="text-xl font-bold">{stats.successRate}%</p>
+                </div>
+                <Icon name="award" className="text-2xl" />
               </div>
-              <Icon name="award" className="text-2xl opacity-80" />
             </div>
           </div>
-
-          <div className="bg-gradient-to-r from-green-500 to-black-600 rounded-xl p-3 text-white shadow-md">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-green-100 text-xs font-medium">Completed</p>
-                <p className="text-xl font-bold">{stats.complete.toLocaleString()}</p>
+          <div className="card bg-accent text-accent-content shadow-md">
+            <div className="card-body p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm">Completed</p>
+                  <p className="text-xl font-bold">{stats.complete.toLocaleString()}</p>
+                </div>
+                <Icon name="activity" className="text-2xl" />
               </div>
-              <Icon name="activity" className="text-2xl opacity-80" />
             </div>
           </div>
-
-
-
-          <div className="bg-gradient-to-r from-orange-500 to-red-600 rounded-xl p-3 text-white shadow-md">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-red-100 text-xs font-medium">Failed</p>
-                <p className="text-xl font-bold">{stats.failed}</p>
+          <div className="card bg-error text-error-content shadow-md">
+            <div className="card-body p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm">Failed</p>
+                  <p className="text-xl font-bold">{stats.failed}</p>
+                </div>
+                <Icon name="trending" className="text-2xl" />
               </div>
-              <Icon name="trending" className="text-2xl opacity-80" />
             </div>
           </div>
-          <div className="bg-gradient-to-r from-blue-500 to-black-600 rounded-xl p-3 text-white shadow-md">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-orange-100 text-xs font-medium">Late Arr</p>
-                <p className="text-xl font-bold">{stats.positiveArrivalTime}</p>
+          <div className="card bg-warning text-warning-content shadow-md">
+            <div className="card-body p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm">Late Arr</p>
+                  <p className="text-xl font-bold">{stats.positiveArrivalTime}</p>
+                </div>
+                <Icon name="clock" className="text-2xl" />
               </div>
-              <Icon name="clock" className="text-2xl opacity-80" />
             </div>
           </div>
-
-
-
-          <div className="bg-gradient-to-r from-blue-500 to-black-600 rounded-xl p-3 text-white shadow-md">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-yellow-100 text-xs font-medium">Late TC</p>
-                <p className="text-xl font-bold">{stats.positiveTimeCompleted}</p>
+          <div className="card bg-info text-info-content shadow-md">
+            <div className="card-body p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm">Late TC</p>
+                  <p className="text-xl font-bold">{stats.positiveTimeCompleted}</p>
+                </div>
+                <Icon name="clock" className="text-2xl" />
               </div>
-              <Icon name="clock" className="text-2xl opacity-80" />
             </div>
           </div>
-
-
-
-
-
-
         </div>
       )}
 
       {/* Main Grid Layout */}
-      <div className="grid grid-cols-1 gap-4 flex-1 min-h-0">
+      <div className="grid grid-cols-1 gap-4">
         {/* Stats Panel */}
-        <div className="grid grid-rows-2 gap-4">
+        <div className="grid grid-cols-1 gap-4">
           {/* Top Row - Rankings */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Top Contractors */}
             {topContractors.length > 0 && (
-              <div className="bg-gradient-to-br from-amber-50 to-orange-50 dark:from-gray-800 dark:to-gray-850 rounded-xl border border-amber-200/60 dark:border-gray-700/60 shadow-md overflow-hidden">
-                <div className="p-3 h-full flex flex-col">
+              <div className="card bg-base-100 shadow-md">
+                <div className="card-body">
                   <div className="flex items-center gap-2 mb-3">
-                    <div className="w-8 h-8 bg-gradient-to-br from-amber-500 to-orange-500 rounded-lg flex items-center justify-center">
-                      <Icon name="star" className="text-white text-sm" />
+                    <div className="avatar">
+                      <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center">
+                        <Icon name="star" className="text-white text-sm" />
+                      </div>
                     </div>
                     <div>
-                      <h3 className="text-sm font-bold text-gray-800 dark:text-gray-100">Top Contractors</h3>
-                      <p className="text-xs text-gray-600 dark:text-gray-400">Best performers</p>
+                      <h3 className="text-lg font-bold">Top Contractors</h3>
+                      <p className="text-sm text-base-content/60">Best performers</p>
                     </div>
                   </div>
-                  <div className="flex-1 overflow-y-auto space-y-2 scrollbar-thin scrollbar-thumb-amber-300 dark:scrollbar-thumb-gray-600 scrollbar-track-transparent">
+                  <div className="space-y-2">
                     {topContractors.slice(0, 4).map((c, index) => {
                       const getRankBadge = (pos: number) => {
-                        if (pos === 0) return { icon: '🥇', bg: 'from-yellow-400 to-yellow-600' };
-                        if (pos === 1) return { icon: '🥈', bg: 'from-gray-300 to-gray-500' };
-                        if (pos === 2) return { icon: '🥉', bg: 'from-orange-400 to-orange-600' };
-                        return { icon: (pos + 1).toString(), bg: 'from-amber-400 to-orange-400' };
+                        if (pos === 0) return { icon: '🥇', bg: 'bg-yellow-400' };
+                        if (pos === 1) return { icon: '🥈', bg: 'bg-gray-300' };
+                        if (pos === 2) return { icon: '🥉', bg: 'bg-orange-400' };
+                        return { icon: (pos + 1).toString(), bg: 'bg-amber-400' };
                       };
 
                       const badge = getRankBadge(index);
@@ -377,20 +374,18 @@ export default function SummaryFeed({ initialData }: { initialData?: FeedData })
                       return (
                         <div
                           key={c.contractor}
-                          className="bg-white/70 dark:bg-gray-700/50 rounded-lg p-2 border border-amber-200/40 dark:border-gray-600/40 hover:bg-white/90 dark:hover:bg-gray-700/70 transition-all duration-200"
+                          className="card bg-base-200 hover:bg-base-300 transition-all duration-200"
                         >
-                          <div className="flex items-center justify-between">
+                          <div className="card-body p-3 flex-row items-center justify-between">
                             <div className="flex items-center gap-2 flex-1 min-w-0">
                               <div
-                                className={`w-6 h-6 bg-gradient-to-br ${badge.bg} rounded-md flex items-center justify-center text-xs font-bold text-white`}
+                                className={`w-6 h-6 rounded-md ${badge.bg} flex items-center justify-center text-xs font-bold text-white`}
                               >
                                 {badge.icon}
                               </div>
-                              <span className="text-xs font-medium text-gray-800 dark:text-gray-200 truncate">
-                                {c.contractor}
-                              </span>
+                              <span className="text-sm truncate">{c.contractor}</span>
                             </div>
-                            <div className="text-xs font-bold text-amber-600 dark:text-amber-400">
+                            <div className="text-sm font-bold text-amber-600">
                               £{c.avgPrice.toFixed(0)}
                             </div>
                           </div>
@@ -404,24 +399,26 @@ export default function SummaryFeed({ initialData }: { initialData?: FeedData })
 
             {/* Top Drivers */}
             {topDrivers.length > 0 && (
-              <div className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-gray-800 dark:to-gray-850 rounded-xl border border-blue-200/60 dark:border-gray-700/60 shadow-md overflow-hidden">
-                <div className="p-3 h-full flex flex-col">
+              <div className="card bg-base-100 shadow-md">
+                <div className="card-body">
                   <div className="flex items-center gap-2 mb-3">
-                    <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-indigo-500 rounded-lg flex items-center justify-center">
-                      <Icon name="users" className="text-white text-sm" />
+                    <div className="avatar">
+                      <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-indigo-500 flex items-center justify-center">
+                        <Icon name="users" className="text-white text-sm" />
+                      </div>
                     </div>
                     <div>
-                      <h3 className="text-sm font-bold text-gray-800 dark:text-gray-100">Top Drivers</h3>
-                      <p className="text-xs text-gray-600 dark:text-gray-400">Best performers</p>
+                      <h3 className="text-lg font-bold">Top Drivers</h3>
+                      <p className="text-sm text-base-content/60">Best performers</p>
                     </div>
                   </div>
-                  <div className="flex-1 overflow-y-auto space-y-2 scrollbar-thin scrollbar-thumb-blue-300 dark:scrollbar-thumb-gray-600 scrollbar-track-transparent">
+                  <div className="space-y-2">
                     {topDrivers.slice(0, 4).map((d, index) => {
                       const getRankBadge = (pos: number) => {
-                        if (pos === 0) return { icon: '🥇', bg: 'from-yellow-400 to-yellow-600' };
-                        if (pos === 1) return { icon: '🥈', bg: 'from-gray-300 to-gray-500' };
-                        if (pos === 2) return { icon: '🥉', bg: 'from-orange-400 to-orange-600' };
-                        return { icon: (pos + 1).toString(), bg: 'from-blue-400 to-indigo-400' };
+                        if (pos === 0) return { icon: '🥇', bg: 'bg-yellow-400' };
+                        if (pos === 1) return { icon: '🥈', bg: 'bg-gray-300' };
+                        if (pos === 2) return { icon: '🥉', bg: 'bg-orange-400' };
+                        return { icon: (pos + 1).toString(), bg: 'bg-blue-400' };
                       };
 
                       const badge = getRankBadge(index);
@@ -429,20 +426,18 @@ export default function SummaryFeed({ initialData }: { initialData?: FeedData })
                       return (
                         <div
                           key={d.driver}
-                          className="bg-white/70 dark:bg-gray-700/50 rounded-lg p-2 border border-blue-200/40 dark:border-gray-600/40 hover:bg-white/90 dark:hover:bg-gray-700/70 transition-all duration-200"
+                          className="card bg-base-200 hover:bg-base-300 transition-all duration-200"
                         >
-                          <div className="flex items-center justify-between">
+                          <div className="card-body p-3 flex-row items-center justify-between">
                             <div className="flex items-center gap-2 flex-1 min-w-0">
                               <div
-                                className={`w-6 h-6 bg-gradient-to-br ${badge.bg} rounded-md flex items-center justify-center text-xs font-bold text-white`}
+                                className={`w-6 h-6 rounded-md ${badge.bg} flex items-center justify-center text-xs font-bold text-white`}
                               >
                                 {badge.icon}
                               </div>
-                              <span className="text-xs font-medium text-gray-800 dark:text-gray-200 truncate">
-                                {d.driver}
-                              </span>
+                              <span className="text-sm truncate">{d.driver}</span>
                             </div>
-                            <div className="text-xs font-bold text-blue-600 dark:text-blue-400">
+                            <div className="text-sm font-bold text-blue-600">
                               £{d.avgPrice.toFixed(0)}
                             </div>
                           </div>
@@ -460,30 +455,30 @@ export default function SummaryFeed({ initialData }: { initialData?: FeedData })
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* Early Birds */}
               <div
-                className=" rounded-2xl bg-white/70 dark:bg-black/50 backdrop-blur-md border border-white/20 dark:border-black/20 shadow-lg"
+                className="card bg-base-100 shadow-md cursor-pointer"
                 onClick={() => openDriverModal('early')}
               >
-                <div className="p-3">
+                <div className="card-body">
                   <div className="flex items-center gap-2 mb-3">
-                    <div className="w-8 h-8 bg-gradient-to-br from-emerald-500 to-teal-500 rounded-lg flex items-center justify-center">
-                      <span className="text-white text-sm">🌅</span>
+                    <div className="avatar">
+                      <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-emerald-500 to-teal-500 flex items-center justify-center">
+                        <span className="text-white text-sm">🌅</span>
+                      </div>
                     </div>
                     <div>
-                      <h3 className="text-sm font-bold text-gray-800 dark:text-gray-100">Early Birds</h3>
-                      <p className="text-xs text-gray-600 dark:text-gray-400">First starts</p>
+                      <h3 className="text-lg font-bold">Early Birds</h3>
+                      <p className="text-sm text-base-content/60">First starts</p>
                     </div>
                   </div>
-                  <div className="space-y-1">
+                  <div className="space-y-2">
                     {data.earliestDrivers.slice(0, 5).map((driver) => (
                       <div
                         key={driver.driver}
-                        className="bg-white/70 dark:bg-gray-700/50 rounded-lg p-2 border border-emerald-200/40 dark:border-gray-600/40"
+                        className="card bg-base-200"
                       >
-                        <div className="flex items-center justify-between">
-                          <span className="text-xs font-medium text-gray-800 dark:text-gray-200 truncate pr-2">
-                            {driver.driver}
-                          </span>
-                          <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400 font-mono">
+                        <div className="card-body p-3 flex-row items-center justify-between">
+                          <span className="text-sm truncate pr-2">{driver.driver}</span>
+                          <span className="text-sm font-bold text-emerald-600 font-mono">
                             {minutesToTime(driver.time)}
                           </span>
                         </div>
@@ -495,30 +490,30 @@ export default function SummaryFeed({ initialData }: { initialData?: FeedData })
 
               {/* Night Owls */}
               <div
-                className=" rounded-2xl bg-white/70 dark:bg-black/50 backdrop-blur-md border border-white/20 dark:border-black/20 shadow-lg"
+                className="card bg-base-100 shadow-md cursor-pointer"
                 onClick={() => openDriverModal('night')}
               >
-                <div className="p-3">
+                <div className="card-body">
                   <div className="flex items-center gap-2 mb-3">
-                    <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-pink-500 rounded-lg flex items-center justify-center">
-                      <span className="text-white text-sm">🌙</span>
+                    <div className="avatar">
+                      <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
+                        <span className="text-white text-sm">🌙</span>
+                      </div>
                     </div>
                     <div>
-                      <h3 className="text-sm font-bold text-gray-800 dark:text-gray-100">Night Owls</h3>
-                      <p className="text-xs text-gray-600 dark:text-gray-400">Latest ends</p>
+                      <h3 className="text-lg font-bold">Night Owls</h3>
+                      <p className="text-sm text-base-content/60">Latest ends</p>
                     </div>
                   </div>
-                  <div className="space-y-1">
+                  <div className="space-y-2">
                     {data.latestDrivers.slice(0, 5).map((driver) => (
                       <div
                         key={driver.driver}
-                        className="bg-white/70 dark:bg-gray-700/50 rounded-lg p-2 border border-purple-200/40 dark:border-gray-600/40"
+                        className="card bg-base-200"
                       >
-                        <div className="flex items-center justify-between">
-                          <span className="text-xs font-medium text-gray-800 dark:text-gray-200 truncate pr-2">
-                            {driver.driver}
-                          </span>
-                          <span className="text-xs font-bold text-purple-600 dark:text-purple-400 font-mono">
+                        <div className="card-body p-3 flex-row items-center justify-between">
+                          <span className="text-sm truncate pr-2">{driver.driver}</span>
+                          <span className="text-sm font-bold text-purple-600 font-mono">
                             {minutesToTime(driver.time)}
                           </span>
                         </div>
@@ -535,22 +530,22 @@ export default function SummaryFeed({ initialData }: { initialData?: FeedData })
       {/* Latest End Section */}
       {latest && (
         <div
-          className=" rounded-2xl bg-white/70 dark:bg-black/50 backdrop-blur-md border border-white/20 dark:border-black/20 shadow-lg"
+          className="card bg-base-100 shadow-md cursor-pointer"
           onClick={() => openDriverModal('latest')}
         >
-          <div className="flex items-center justify-between  rounded-2xl bg-white/70 dark:bg-black/50 backdrop-blur-md border border-white/20 dark:border-black/20 shadow-lg">
+          <div className="card-body p-4 flex-row items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 bg-gradient-to-br from-green-500 to-emerald-500 rounded-lg flex items-center justify-center">
-                <Icon name="clock" className="text-white text-sm" />
+              <div className="avatar">
+                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-green-500 to-emerald-500 flex items-center justify-center">
+                  <Icon name="clock" className="text-white text-sm" />
+                </div>
               </div>
               <div>
-                <h3 className="text-sm font-bold text-gray-800 dark:text-gray-100">Latest End</h3>
-                <span className="text-xs font-medium text-gray-700 dark:text-gray-300">{latest.driver}</span>
+                <h3 className="text-lg font-bold">Latest End</h3>
+                <span className="text-sm text-base-content/70">{latest.driver}</span>
               </div>
             </div>
-            <span className="text-sm text-gray-600 dark:text-gray-400 bg-white/60 dark:bg-gray-600/60 px-2 py-1 rounded font-mono">
-              {latest.time}
-            </span>
+            <span className="badge badge-neutral font-mono">{latest.time}</span>
           </div>
         </div>
       )}
