@@ -1,6 +1,7 @@
 # Proovia Report
 
 This project uses **Next.js** with Tailwind CSS (via the DaisyUI plugin) and a small SQLite database.
+The home page now relies entirely on DaisyUI components with a custom theme defined in `tailwind.config.js`.
 
 ## Development
 
