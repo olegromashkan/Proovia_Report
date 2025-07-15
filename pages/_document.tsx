@@ -10,10 +10,6 @@ export default function Document() {
         />
         <link
           rel="stylesheet"
-          href="https://cdn.jsdelivr.net/npm/daisyui@3.9.4/dist/full.css"
-        />
-        <link
-          rel="stylesheet"
           href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css"
         />
         <style>{`:root{--p:#b53133;--a:#b53133;}`}</style>

@@ -1,6 +1,6 @@
 # Proovia Report
 
-This project uses **Next.js** with Tailwind CSS and a small SQLite database.
+This project uses **Next.js** with Tailwind CSS (via the DaisyUI plugin) and a small SQLite database.
 
 ## Development
 
@@ -12,6 +12,9 @@ This project uses **Next.js** with Tailwind CSS and a small SQLite database.
 
    This project uses Plotly for the dashboard map, so make sure
    `react-plotly.js` and `plotly.js-dist` are installed.
+
+   Tailwind CSS is configured in `tailwind.config.cjs` and compiled automatically
+   when running the Next.js dev or build commands.
 
 2. Run the development server:
 

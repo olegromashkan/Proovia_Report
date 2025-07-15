@@ -2,6 +2,7 @@ import type { AppProps } from 'next/app';
 import Head from 'next/head';
 import Script from 'next/script';
 import { useEffect } from 'react';
+import '../styles/globals.css';
 
 export default function MyApp({ Component, pageProps }: AppProps) {
   useEffect(() => {
