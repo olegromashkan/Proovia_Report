@@ -1,6 +1,6 @@
 # Proovia Report
 
-This project uses **Next.js** with UnoCSS and a small SQLite database.
+This project uses **Next.js** with Tailwind CSS and a small SQLite database.
 
 ## Development
 
@@ -23,10 +23,9 @@ The navigation now includes a **Routes Table** page showing a spreadsheet-like
 interface for managing driver routes. It supports editable cells, keyboard
 navigation and copy/paste operations.
 
-For production builds the UnoCSS stylesheet must be generated first:
+For production builds just run:
 
 ```bash
-npm run unocss
 npm run build
 ```
 

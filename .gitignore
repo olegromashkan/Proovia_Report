@@ -5,3 +5,4 @@ npm-debug.log*
 .env
 database.db
 file:database.db*
+uno.css
