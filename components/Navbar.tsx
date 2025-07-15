@@ -152,6 +152,8 @@ export default function Navbar() {
                 <Sparkles className="w-5 h-5 text-gray-600 dark:text-gray-300" />
               </button>
               <NotificationCenter />
+                              <ThemeToggle />
+              
               <UserMenu />
             </div>
           </div>
