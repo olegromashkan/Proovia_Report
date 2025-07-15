@@ -31,26 +31,33 @@ export default function SummaryCards({ onSelect }: SummaryCardsProps) {
 
   return (
     <motion.div
-      className="grid grid-cols-2 sm:grid-cols-4 gap-4 w-full sm:w-auto"
+      className="grid grid-cols-2 sm:grid-cols-4 gap-4 w-full"
       initial={{ opacity: 0, x: 20 }}
       animate={{ opacity: 1, x: 0 }}
       transition={{ delay: 0.4, type: 'spring', stiffness: 80, damping: 15 }}
     >
       {isLoading
         ? Array.from({ length: 4 }).map((_, i) => (
-            <Skeleton key={i} className="h-20 rounded-xl" />
+            <div key={i} className="stat shadow bg-base-200 rounded">
+              <div className="stat-title">
+                <div className="skeleton h-4 w-3/4" />
+              </div>
+              <div className="stat-value">
+                <div className="skeleton h-6 w-1/2" />
+              </div>
+            </div>
           ))
         : cards.map((c) => (
             <motion.button
               key={c.id}
-              whileHover={{ scale: 1.05, rotate: 2 }}
+              whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               onClick={() => onSelect(c.id)}
-              className="bg-white/20 backdrop-blur-sm rounded-xl p-4 text-center border border-white/10 hover:bg-white/40 transition focus:outline-none focus:ring"
+              className="stat shadow cursor-pointer rounded bg-base-200 hover:bg-base-300 transition"
               type="button"
             >
-              <h3 className="text-sm font-semibold text-white">{c.title}</h3>
-              <p className="text-2xl font-bold text-white">{c.value}</p>
+              <div className="stat-title">{c.title}</div>
+              <div className="stat-value">{c.value}</div>
             </motion.button>
           ))}
     </motion.div>
