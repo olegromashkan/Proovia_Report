@@ -45,9 +45,9 @@ export default function Home() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ type: 'spring', stiffness: 80, damping: 15 }}
-        className="card bg-base-100 shadow-xl border border-base-200"
+        className="card bg-base-100 shadow"
       >
-        <div className="card-body flex flex-col sm:flex-row items-center justify-between gap-4 p-4">
+        <div className="card-body p-4">
           <SummaryCards onSelect={setSelected} />
         </div>
       </motion.div>
@@ -56,7 +56,7 @@ export default function Home() {
         <div className="flex-[3] w-full md:w-62">
           <Calendar />
         </div>
-        <div className="flex-[5] min-w-[900px] card bg-base-100/70 shadow-xl p-4">
+        <div className="flex-[5] min-w-[900px] card bg-base-100 shadow p-4">
           <SummaryFeed />
         </div>
       </div>

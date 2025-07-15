@@ -92,8 +92,8 @@ export default function Calendar() {
   };
 
   return (
-    <div className="">
-      <div className="p-4  rounded-2xl bg-white/70 dark:bg-black/50 border border-white/20 dark:border-black/20 shadow-lg">
+    <div>
+      <div className="card bg-base-100 shadow-md p-4">
         {/* Header */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 mb-4">
           <h2 className="text-xl font-bold">
@@ -102,20 +102,20 @@ export default function Calendar() {
           <div className="flex items-center gap-1">
             <button
               onClick={() => changeMonth(-1)}
-              className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 dark:hover:bg-gray-700"
+              className="btn btn-sm btn-square"
             >
               <Icon name="chevron-left" />
             </button>
             <span className="font-semibold text-md w-32 text-center">{months[month - 1]} {year}</span>
             <button
               onClick={() => changeMonth(1)}
-              className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 dark:hover:bg-gray-700"
+              className="btn btn-sm btn-square"
             >
               <Icon name="chevron-right" />
             </button>
             <button
               onClick={goToToday}
-              className="ml-2 px-3 py-1 text-sm rounded-md hover:bg-gray-100 dark:hover:bg-gray-700"
+              className="btn btn-sm ml-2"
             >
               Today
             </button>

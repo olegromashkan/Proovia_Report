@@ -38,19 +38,19 @@ export default function SummaryCards({ onSelect }: SummaryCardsProps) {
     >
       {isLoading
         ? Array.from({ length: 4 }).map((_, i) => (
-            <Skeleton key={i} className="h-20 rounded-xl" />
+            <Skeleton key={i} className="h-20 rounded-lg" />
           ))
         : cards.map((c) => (
             <motion.button
               key={c.id}
-              whileHover={{ scale: 1.05, rotate: 2 }}
+              whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               onClick={() => onSelect(c.id)}
-              className="bg-white/20 backdrop-blur-sm rounded-xl p-4 text-center border border-white/10 hover:bg-white/40 transition focus:outline-none focus:ring"
+              className="stat bg-base-200 hover:bg-base-300 text-center rounded-lg transition"
               type="button"
             >
-              <h3 className="text-sm font-semibold text-white">{c.title}</h3>
-              <p className="text-2xl font-bold text-white">{c.value}</p>
+              <div className="stat-title">{c.title}</div>
+              <div className="stat-value">{c.value}</div>
             </motion.button>
           ))}
     </motion.div>
