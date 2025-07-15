@@ -154,7 +154,7 @@ export default function Navbar() {
               <NotificationCenter />
                               <ThemeToggle />
               
-              <UserMenu />
+              <UserMenu showName />
             </div>
           </div>
         </div>

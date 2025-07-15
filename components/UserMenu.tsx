@@ -16,9 +16,13 @@ interface UserMenuProps {
    * should be opened programmatically from another element.
    */
   showButton?: boolean;
+  /**
+   * Display the user's name next to the avatar.
+   */
+  showName?: boolean;
 }
 
-export default function UserMenu({ showButton = true }: UserMenuProps) {
+export default function UserMenu({ showButton = true, showName = false }: UserMenuProps) {
   const router = useRouter();
   const menuRef = useRef<HTMLDivElement>(null);
   const { open, setOpen } = useUserMenu();
@@ -197,7 +201,7 @@ export default function UserMenu({ showButton = true }: UserMenuProps) {
   const trigger = showButton ? (
     <button
       onClick={() => setOpen(!open)}
-      className="relative p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-[#b53133] focus:ring-offset-2"
+      className="relative p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-[#b53133] focus:ring-offset-2 flex items-center gap-2"
       aria-label="User menu"
       aria-expanded={open}
       type="button"
@@ -212,7 +216,12 @@ export default function UserMenu({ showButton = true }: UserMenuProps) {
       ) : (
         <Icon name="person-circle" className="w-8 h-8 text-gray-600 dark:text-gray-400" />
       )}
-     
+      {showName && (
+        <span className="hidden sm:block text-sm font-semibold text-gray-700 dark:text-gray-200">
+          {userInfo?.name || userInfo?.displayName || username}
+        </span>
+      )}
+
     </button>
   ) : null;
 

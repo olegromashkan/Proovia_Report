@@ -5,22 +5,15 @@ import Layout from '../components/Layout';
 import Modal from '../components/Modal';
 import Calendar from '../components/Calendar';
 import SummaryFeed from '../components/SummaryFeed';
-import UserHeader from '../components/UserHeader';
 import SummaryCards from '../components/SummaryCards';
-import useUser from '../lib/useUser';
-import useCurrentUser from '../lib/useCurrentUser';
 
 // Dynamic imports for overlays improve initial load performance
 const WelcomeModal = dynamic(() => import('../components/WelcomeModal'), { ssr: false });
 const SearchOverlay = dynamic(() => import('../components/SearchOverlay'), { ssr: false });
 const TasksPanel = dynamic(() => import('../components/TasksPanel'), { ssr: false });
 const AiChatPanel = dynamic(() => import('../components/AiChatPanel'), { ssr: false });
-const UserMenu = dynamic(() => import('../components/UserMenu'), { ssr: false });
 
 export default function Home() {
-  const username = useUser();
-  const user = useCurrentUser();
-  const isLoadingUser = !!username && user === undefined;
 
   const [selected, setSelected] = useState<string | null>(null);
   const [searchOpen, setSearchOpen] = useState(false);
@@ -56,7 +49,6 @@ export default function Home() {
         className="relative rounded-2xl bg-white/0 dark:bg-black/50 border border-white/20 dark:border-black/20 shadow-lg"
       >
         <div className="relative flex flex-col sm:flex-row items-center justify-between p-4 gap-4">
-          <UserHeader user={user} isLoading={isLoadingUser} />
           <SummaryCards onSelect={setSelected} />
         </div>
       </motion.div>
@@ -89,7 +81,6 @@ export default function Home() {
       />
       <TasksPanel open={tasksOpen} onClose={() => setTasksOpen(false)} />
       <AiChatPanel open={aiOpen} onClose={() => setAiOpen(false)} initialText={aiText} />
-      <UserMenu showButton={false} />
     </Layout>
   );
 }
