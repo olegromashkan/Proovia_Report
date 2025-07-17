@@ -2,6 +2,7 @@ import { useEffect, useRef, useMemo } from 'react';
 import Modal from './Modal';
 import Icon from './Icon';
 import { getFailureReason } from '../lib/failureReason';
+import { parseTimeToMinutes } from '../lib/timeUtils';
 
 interface Trip {
   ID: string;
@@ -17,10 +18,8 @@ interface Props {
 const geoCache = new Map<string, { lat: number; lon: number }>();
 
 function parseMinutes(str: string | undefined): number {
-  if (!str) return 0;
-  const time = str.split(' ')[1] || str;
-  const [h = '0', m = '0', s = '0'] = time.split(':');
-  return Number(h) * 60 + Number(m) + Number(s) / 60;
+  const n = parseTimeToMinutes(str);
+  return n === null ? 0 : n;
 }
 
 export default function TripModal({ trip, onClose, allTrips }: Props) {

@@ -1,12 +1,9 @@
 import db from './db';
 import { parseDate } from './dateUtils';
+import { parseTimeToMinutes } from './timeUtils';
 
 function parseMinutes(str: string | undefined): number | null {
-  if (!str) return null;
-  const time = str.split(' ')[1] || str;
-  const [h = '0', m = '0', s = '0'] = time.split(':');
-  const val = Number(h) * 60 + Number(m) + Number(s) / 60;
-  return isFinite(val) ? val : null;
+  return parseTimeToMinutes(str);
 }
 
 function diffMinutes(a: string | undefined, b: string | undefined): number | null {

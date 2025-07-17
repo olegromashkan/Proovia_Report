@@ -1,6 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import db from '../../lib/db';
 import { parseDate } from '../../lib/dateUtils';
+import { parseTimeToMinutes } from '../../lib/timeUtils';
 
 export default function handler(req: NextApiRequest, res: NextApiResponse) {
   const { start, end, table } = req.query as {
@@ -99,13 +100,8 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
       }
 
       if (punctuality === null && arrival && done) {
-        const parseMinutes = (str: string) => {
-          const time = str.split(' ')[1] || str;
-          const [h = '0', m = '0', s = '0'] = time.split(':');
-          const result = Number(h) * 60 + Number(m) + Number(s) / 60;
-          return isFinite(result) ? result : 0;
-        };
-        punctuality = Math.round(parseMinutes(done) - parseMinutes(arrival));
+        const convert = (str: string) => parseTimeToMinutes(str) ?? 0;
+        punctuality = Math.round(convert(done) - convert(arrival));
       }
 
       const contractor = driverMap[driver.toLowerCase()] || 'Unknown';
