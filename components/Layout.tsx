@@ -22,11 +22,8 @@ export default function Layout({ children, title, fullWidth, hideNavbar }: Layou
         <meta name="viewport" content="width=device-width, initial-scale=1" />
       </Head>
 
-      {/* Use data-theme to apply DaisyUI themes (light/dark/custom) */}
-      <div
-        data-theme="light" // or "dark", or dynamic via state
-        className="min-h-screen flex flex-col bg-base-100 text-base-content"
-      >
+      {/* Theme is controlled globally on <html>, so no fixed theme here */}
+      <div className="min-h-screen flex flex-col bg-base-100 text-base-content">
         {showNavbar && <Navbar />}
         <div className="flex-1 flex flex-col min-h-0">
           <ToastNotifications />
