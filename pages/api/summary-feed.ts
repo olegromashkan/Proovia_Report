@@ -1,7 +1,27 @@
+// pages/api/summary-feed.ts
+
 import type { NextApiRequest, NextApiResponse } from 'next';
 import db from '../../lib/db';
 import { parseDate } from '../../lib/dateUtils';
 import { parseTimeToMinutes } from '../../lib/timeUtils';
+
+// Вспомогательная функция для безопасного получения значения поля из объекта
+// по списку возможных ключей без учета регистра и знаков препинания.
+const getField = (data: any, keys: string[]): any => {
+  if (!data) return null;
+  const normalize = (s: string) => s.replace(/[\s_.]/g, '').toLowerCase();
+  
+  for (const key of keys) {
+    const normalizedKey = normalize(key);
+    for (const dataKey of Object.keys(data)) {
+      if (normalize(dataKey) === normalizedKey) {
+        const val = data[dataKey];
+        if (val !== undefined && val !== null && val !== '') return val;
+      }
+    }
+  }
+  return null;
+};
 
 function parseMinutes(value: string | undefined): number | null {
   return parseTimeToMinutes(value);
@@ -31,7 +51,8 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
   driverRows.forEach((r: any) => {
     const d = JSON.parse(r.data);
     if (d.Full_Name) {
-      driverToContractor[d.Full_Name.trim()] = d.Contractor_Name || 'Unknown';
+      // Приводим ключ к нижнему регистру для надежного сопоставления
+      driverToContractor[d.Full_Name.trim().toLowerCase()] = d.Contractor_Name || 'Unknown';
     }
   });
 
@@ -50,59 +71,61 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
 
   tripRows.forEach((r: any) => {
     const item = JSON.parse(r.data);
-    const rawDate =
-      item.Start_Time || item['Start_Time'] || item['Trip.Start_Time'];
+    const rawDate = getField(item, ['Start_Time', 'Trip.Start_Time']);
     const iso = parseDate(String(rawDate).split(' ')[0]);
     if (!iso || iso < startDate || iso > endDate) return;
 
     total += 1;
-    const status = String(item.Status || '').toLowerCase();
+    const status = String(getField(item, ['Status']) || '').toLowerCase();
     if (status === 'complete') complete += 1;
     if (status === 'failed') failed += 1;
-    const driver = item.Driver1 || item.Driver || item['Trip.Driver1'] || 'Unknown';
-    const contractor = driverToContractor[driver] || 'Unknown';
-    const priceVal =
-      item.Order_Value || item['Order_Value'] || item.OrderValue || item['OrderValue'];
+    
+    const driverName = getField(item, ['Driver1', 'Driver', 'Trip.Driver1']) || 'Unknown';
+    // Используем нижний регистр для поиска
+    const contractor = driverToContractor[driverName.trim().toLowerCase()] || 'Unknown';
+    
+    const priceVal = getField(item, ['Total', 'Order.Price', 'Order_Value', 'OrderValue']);
     const price = priceVal !== undefined ? parseFloat(String(priceVal)) : NaN;
+    
     if (!isNaN(price)) {
-      if (!contractorStats[contractor]) contractorStats[contractor] = { sum: 0, count: 0 };
-      contractorStats[contractor].sum += price;
-      contractorStats[contractor].count += 1;
+      if (contractor !== 'Unknown') {
+        if (!contractorStats[contractor]) contractorStats[contractor] = { sum: 0, count: 0 };
+        contractorStats[contractor].sum += price;
+        contractorStats[contractor].count += 1;
+      }
 
-      if (!driverStats[driver]) driverStats[driver] = { contractor, sum: 0, count: 0 };
-      driverStats[driver].sum += price;
-      driverStats[driver].count += 1;
+      if (driverName !== 'Unknown') {
+        if (!driverStats[driverName]) driverStats[driverName] = { contractor, sum: 0, count: 0 };
+        driverStats[driverName].sum += price;
+        driverStats[driverName].count += 1;
+      }
     }
 
-    const startRaw = item.Start_Time || item['Start_Time'] || item['Trip.Start_Time'];
-    const endRaw =
-      item.Time_Completed || item['Time_Completed'] || item['Trip.Time_Completed'] || item.Arrival_Time || item['Arrival_Time'] || item['Trip.Arrival_Time'];
+    const startRaw = getField(item, ['Start_Time', 'Trip.Start_Time']);
+    const endRaw = getField(item, ['Time_Completed', 'Trip.Time_Completed', 'Arrival_Time', 'Trip.Arrival_Time']);
 
     const startMin = parseMinutes(startRaw);
     const endMin = parseMinutes(endRaw);
-    if (!driverTimes[driver]) driverTimes[driver] = { earliest: null, latest: null };
-    const times = driverTimes[driver];
-    if (startMin !== null) {
-      if (times.earliest === null || startMin < times.earliest) {
-        times.earliest = startMin;
-        times.labelStart = startRaw;
-      }
-    }
-    if (endMin !== null) {
-      if (times.latest === null || endMin > times.latest) {
-        times.latest = endMin;
-        times.labelEnd = endRaw;
-      }
+    if (driverName !== 'Unknown') {
+        if (!driverTimes[driverName]) driverTimes[driverName] = { earliest: null, latest: null };
+        const times = driverTimes[driverName];
+        if (startMin !== null) {
+          if (times.earliest === null || startMin < times.earliest) {
+            times.earliest = startMin;
+            times.labelStart = startRaw;
+          }
+        }
+        if (endMin !== null) {
+          if (times.latest === null || endMin > times.latest) {
+            times.latest = endMin;
+            times.labelEnd = endRaw;
+          }
+        }
     }
 
-    const wh =
-      item['Address.Working_Hours'] ||
-      item.Address_Working_Hours ||
-      item['Address.Working_Hours'];
-    const timeCompleted =
-      item.Time_Completed || item['Time_Completed'] || item['Trip.Time_Completed'];
-    const arrival =
-      item.Arrival_Time || item['Arrival_Time'] || item['Trip.Arrival_Time'];
+    const wh = getField(item, ['Address.Working_Hours', 'Address_Working_Hours']);
+    const timeCompleted = getField(item, ['Time_Completed', 'Trip.Time_Completed']);
+    const arrival = getField(item, ['Arrival_Time', 'Trip.Arrival_Time']);
 
     if (wh && timeCompleted && arrival) {
       const matches = String(wh).match(/\d{2}:\d{2}/g);
@@ -123,7 +146,7 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
   });
 
   const topContractors = Object.entries(contractorStats)
-    .map(([name, s]) => ({ contractor: name, avgPrice: s.sum / s.count }))
+    .map(([name, s]) => ({ contractor: name, avgPrice: s.count > 0 ? s.sum / s.count : 0 }))
     .sort((a, b) => b.avgPrice - a.avgPrice)
     .slice(0, 3);
 
@@ -131,12 +154,12 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
     .map(([driver, s]) => ({
       driver,
       contractor: s.contractor,
-      avgPrice: s.sum / s.count,
+      avgPrice: s.count > 0 ? s.sum / s.count : 0,
     }))
     .sort((a, b) => b.avgPrice - a.avgPrice)
     .slice(0, 3);
+    
   let latestEnd: { driver: string; time: string } | null = null;
-
   Object.entries(driverTimes).forEach(([drv, t]) => {
     if (t.latest !== null) {
       if (!latestEnd || t.latest > parseMinutes(latestEnd.time)!) {
