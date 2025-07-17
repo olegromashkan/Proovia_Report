@@ -44,7 +44,7 @@ module.exports = {
             },
             {
                 dark: {
-                    "primary": "#ff4e4e", // Чуть ярче, чтобы выделялся на чёрном фоне
+                    "primary": "#ff4e4e",
                     "primary-content": "oklch(100% 0 0)",
 
                     "secondary": "#31b567",
@@ -54,12 +54,12 @@ module.exports = {
                     "accent-content": "oklch(100% 0 0)",
 
                     "neutral": "#191919",
-                    "neutral-content": "oklch(90% 0 0)",
+                    "neutral-content": "oklch(100% 0 0)", // Изменено на белый
 
                     "base-100": "#0d0d0d",
                     "base-200": "#1a1a1a",
                     "base-300": "#2b2b2b",
-                    "base-content": "oklch(95% 0 0)",
+                    "base-content": "oklch(100% 0 0)", // Изменено на белый
 
                     "info": "#3b82f6",
                     "info-content": "oklch(100% 0 0)",
