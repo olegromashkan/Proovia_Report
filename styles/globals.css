@@ -7,3 +7,8 @@
   --a: #b53133;
 }
 
+/* Ensure readable text in dark mode */
+html.dark, [data-theme='dark'] {
+  color: #ffffff;
+}
+
