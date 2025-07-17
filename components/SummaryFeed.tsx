@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback, useMemo, Fragment } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import useSWR from 'swr';
 import Modal from './Modal'; // Предполагается, что у вас есть этот компонент
 import { parseTimeToMinutes } from '../lib/timeUtils';
@@ -150,6 +150,34 @@ const DriverListModal = ({ data, onClose }: { data: ModalData; onClose: () => vo
     </Modal>
 );
 
+const SummaryPostCard = ({ post }: { post: any }) => {
+    let content: any = null;
+    try {
+        content = JSON.parse(post.content);
+    } catch {
+        // not json
+    }
+    const date = new Date(post.created_at).toLocaleDateString('en-GB', {
+        day: '2-digit', month: 'short', year: 'numeric'
+    });
+    return (
+        <div className="card bg-base-200/50 shadow-md">
+            <div className="card-body p-4 space-y-1">
+                <h3 className="card-title text-base mb-2">{date}</h3>
+                {content ? (
+                    <ul className="text-sm space-y-1 list-disc list-inside">
+                        <li>Total: {content.total} Complete: {content.complete} Failed: {content.failed}</li>
+                        {content.best?.length && <li>Best Drivers: {content.best.join(', ')}</li>}
+                        {content.worst?.length && <li>Worst Drivers: {content.worst.join(', ')}</li>}
+                    </ul>
+                ) : (
+                    <p className="text-sm whitespace-pre-wrap">{post.content}</p>
+                )}
+            </div>
+        </div>
+    );
+};
+
 // ----------------------------------------------------------------------
 // 4. ЛОГИКА ОБРАБОТКИ ДАННЫХ
 // ----------------------------------------------------------------------
@@ -204,7 +232,7 @@ export default function SummaryFeed({ initialData }: { initialData?: FeedData })
     const [modalData, setModalData] = useState<ModalData>({ isOpen: false, title: '', dates: [], drivers: [] });
     const [start, setStart] = useState(() => {
         const d = new Date();
-        d.setDate(d.getDate() - 6);
+        d.setDate(d.getDate() - 29);
         return d.toISOString().split('T')[0];
     });
     const [end, setEnd] = useState(() => new Date().toISOString().split('T')[0]);
@@ -282,19 +310,19 @@ export default function SummaryFeed({ initialData }: { initialData?: FeedData })
                         <TimedListItem key={d.driver} name={d.driver} value={minutesToTime(d.time)} />
                     ))}
                 </InfoCard>
-                <InfoCard title="Night Owls" subtitle="Drivers with latest ends" icon="moon" onClick={() => handleOpenModal('night', 'Night Owls End Times')} isLoading={isLoading} isEmpty={!data?.latestDrivers?.length}>
+                <InfoCard title="Latest End" subtitle="Drivers with latest finish" icon="clock" onClick={() => handleOpenModal('latest', 'Latest End Times')} isLoading={isLoading} isEmpty={!data?.latestDrivers?.length}>
                      {(data?.latestDrivers || []).slice(0, 4).map((d) => (
                         <TimedListItem key={d.driver} name={d.driver} value={minutesToTime(d.time)} />
                     ))}
                 </InfoCard>
-                {data?.latestEnd && (
-                    <InfoCard title="Latest End" subtitle={data.latestEnd.driver} icon="clock" onClick={() => handleOpenModal('latest', 'Latest End Times')} isLoading={isLoading}>
-                        <div className="text-center p-4">
-                            <span className="font-mono text-4xl font-bold text-primary">{data.latestEnd.time}</span>
-                        </div>
-                    </InfoCard>
-                )}
             </main>
+            {data?.posts && data.posts.length > 0 && (
+                <div className="space-y-4 mt-6">
+                    {data.posts.map((p) => (
+                        <SummaryPostCard key={p.id} post={p} />
+                    ))}
+                </div>
+            )}
 
             <DriverListModal data={modalData} onClose={() => setModalData(prev => ({ ...prev, isOpen: false }))} />
         </div>
