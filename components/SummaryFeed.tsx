@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useCallback, useMemo, Fragment } from 'react';
 import useSWR from 'swr';
 import Modal from './Modal'; // Предполагается, что у вас есть этот компонент
+import { parseTimeToMinutes } from '../lib/timeUtils';
 
 // ----------------------------------------------------------------------
 // 1. ТИПЫ И КОНСТАНТЫ
@@ -149,9 +150,8 @@ const DriverListModal = ({ data, onClose }: { data: ModalData; onClose: () => vo
 async function fetchAndProcessModalData(start: string, end: string, type: 'early' | 'night' | 'latest') {
     // !!! ИСПРАВЛЕНИЕ: ВОЗВРАЩЕНА ФУНКЦИЯ ПАРСИНГА ВРЕМЕНИ !!!
     const parseMinutes = (str: string | null): number => {
-        if (!str) return 0;
-        const [h = '0', m = '0'] = str.split(':');
-        return Number(h) * 60 + Number(m);
+        const n = parseTimeToMinutes(str || undefined);
+        return n === null ? 0 : n;
     };
 
     const table = type === 'latest' ? 'copy_of_tomorrow_trips' : 'schedule_trips';

@@ -1,10 +1,9 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import db from '../../lib/db';
+import { parseTimeToMinutes } from '../../lib/timeUtils';
 
 function parseMinutes(str: string) {
-  const time = str.split(' ')[1] || str;
-  const [h = '0', m = '0', s = '0'] = time.split(':');
-  return Number(h) * 60 + Number(m) + Number(s) / 60;
+  return parseTimeToMinutes(str) ?? 0;
 }
 
 export default function handler(req: NextApiRequest, res: NextApiResponse) {

@@ -1,13 +1,10 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import db from '../../lib/db';
 import { parseDate } from '../../lib/dateUtils';
+import { parseTimeToMinutes } from '../../lib/timeUtils';
 
 function parseMinutes(value: string | undefined): number | null {
-  if (!value) return null;
-  const time = value.split(' ')[1] || value;
-  const [h = '0', m = '0', s = '0'] = time.split(':');
-  const n = Number(h) * 60 + Number(m) + Number(s) / 60;
-  return isFinite(n) ? n : null;
+  return parseTimeToMinutes(value);
 }
 
 export default function handler(req: NextApiRequest, res: NextApiResponse) {
