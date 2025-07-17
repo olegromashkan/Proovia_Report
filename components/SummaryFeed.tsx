@@ -91,6 +91,13 @@ const RankedListItem = ({ rank, name, value }: { rank: number, name: string, val
     );
 };
 
+const TimedListItem = ({ name, value }: { name: string; value: string }) => (
+    <div className="flex items-center justify-between p-2 rounded-lg hover:bg-base-content/5">
+        <span className="text-sm truncate">{name}</span>
+        <span className="font-mono text-sm">{value}</span>
+    </div>
+);
+
 const InfoCard = ({ title, icon, subtitle, onClick, children, isLoading, isEmpty }: React.PropsWithChildren<{ title: string; icon: string; subtitle: string; onClick?: () => void; isLoading?: boolean; isEmpty?: boolean }>) => (
     <div className={`card bg-base-200/50 shadow-md ${onClick ? 'cursor-pointer hover:bg-base-200 transition-all' : ''}`} onClick={onClick}>
         <div className="card-body p-4 sm:p-6">
