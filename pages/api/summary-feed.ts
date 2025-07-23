@@ -5,12 +5,10 @@ import db from '../../lib/db';
 import { parseDate } from '../../lib/dateUtils';
 import { parseTimeToMinutes } from '../../lib/timeUtils';
 
-// Вспомогательная функция для безопасного получения значения поля из объекта
-// по списку возможных ключей без учета регистра и знаков препинания.
 const getField = (data: any, keys: string[]): any => {
   if (!data) return null;
   const normalize = (s: string) => s.replace(/[\s_.]/g, '').toLowerCase();
-  
+
   for (const key of keys) {
     const normalizedKey = normalize(key);
     for (const dataKey of Object.keys(data)) {
@@ -51,7 +49,6 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
   driverRows.forEach((r: any) => {
     const d = JSON.parse(r.data);
     if (d.Full_Name) {
-      // Приводим ключ к нижнему регистру для надежного сопоставления
       driverToContractor[d.Full_Name.trim().toLowerCase()] = d.Contractor_Name || 'Unknown';
     }
   });
@@ -79,21 +76,18 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
     const status = String(getField(item, ['Status']) || '').toLowerCase();
     if (status === 'complete') complete += 1;
     if (status === 'failed') failed += 1;
-    
+
     const driverName = getField(item, ['Driver1', 'Driver', 'Trip.Driver1']) || 'Unknown';
-    // Используем нижний регистр для поиска
     const contractor = driverToContractor[driverName.trim().toLowerCase()] || 'Unknown';
-    
     const priceVal = getField(item, ['Total', 'Order.Price', 'Order_Value', 'OrderValue']);
     const price = priceVal !== undefined ? parseFloat(String(priceVal)) : NaN;
-    
+
     if (!isNaN(price)) {
       if (contractor !== 'Unknown') {
         if (!contractorStats[contractor]) contractorStats[contractor] = { sum: 0, count: 0 };
         contractorStats[contractor].sum += price;
         contractorStats[contractor].count += 1;
       }
-
       if (driverName !== 'Unknown') {
         if (!driverStats[driverName]) driverStats[driverName] = { contractor, sum: 0, count: 0 };
         driverStats[driverName].sum += price;
@@ -107,20 +101,20 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
     const startMin = parseMinutes(startRaw);
     const endMin = parseMinutes(endRaw);
     if (driverName !== 'Unknown') {
-        if (!driverTimes[driverName]) driverTimes[driverName] = { earliest: null, latest: null };
-        const times = driverTimes[driverName];
-        if (startMin !== null) {
-          if (times.earliest === null || startMin < times.earliest) {
-            times.earliest = startMin;
-            times.labelStart = startRaw;
-          }
+      if (!driverTimes[driverName]) driverTimes[driverName] = { earliest: null, latest: null };
+      const times = driverTimes[driverName];
+      if (startMin !== null) {
+        if (times.earliest === null || startMin < times.earliest) {
+          times.earliest = startMin;
+          times.labelStart = startRaw;
         }
-        if (endMin !== null) {
-          if (times.latest === null || endMin > times.latest) {
-            times.latest = endMin;
-            times.labelEnd = endRaw;
-          }
+      }
+      if (endMin !== null) {
+        if (times.latest === null || endMin > times.latest) {
+          times.latest = endMin;
+          times.labelEnd = endRaw;
         }
+      }
     }
 
     const wh = getField(item, ['Address.Working_Hours', 'Address_Working_Hours']);
@@ -148,7 +142,7 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
   const topContractors = Object.entries(contractorStats)
     .map(([name, s]) => ({ contractor: name, avgPrice: s.count > 0 ? s.sum / s.count : 0 }))
     .sort((a, b) => b.avgPrice - a.avgPrice)
-    .slice(0, 3);
+    .slice(0, 5);
 
   const topDrivers = Object.entries(driverStats)
     .map(([driver, s]) => ({
@@ -157,8 +151,8 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
       avgPrice: s.count > 0 ? s.sum / s.count : 0,
     }))
     .sort((a, b) => b.avgPrice - a.avgPrice)
-    .slice(0, 3);
-    
+    .slice(0, 5);
+
   let latestEnd: { driver: string; time: string } | null = null;
   Object.entries(driverTimes).forEach(([drv, t]) => {
     if (t.latest !== null) {

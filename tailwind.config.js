@@ -10,7 +10,7 @@ module.exports = {
     theme: {
         extend: {
             fontFamily: {
-                sans: ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+                sans: ['-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'Helvetica Neue', 'Arial', 'sans-serif'],
             },
             colors: {
                 brand: {
@@ -26,11 +26,17 @@ module.exports = {
                     900: '#7c2629',
                     950: '#441214',
                 },
+                glass: {
+                    bg: 'rgba(28, 28, 30, 0.65)', // iOS-like dark glass background
+                    border: 'rgba(255, 255, 255, 0.15)',
+                    text: '#ffffff',
+                    accent: '#007aff', // iOS system blue
+                },
             },
             animation: {
-                'fade-in': 'fadeIn 0.5s ease-in-out',
+                'fade-in': 'fadeIn 0.3s ease-out',
                 'slide-up': 'slideUp 0.3s ease-out',
-                'scale-in': 'scaleIn 0.2s ease-out',
+                'scale-in': 'scaleIn 0.3s ease-out',
             },
             keyframes: {
                 fadeIn: {
@@ -38,88 +44,125 @@ module.exports = {
                     '100%': { opacity: '1' },
                 },
                 slideUp: {
-                    '0%': { transform: 'translateY(10px)', opacity: '0' },
+                    '0%': { transform: 'translateY(8px)', opacity: '0' },
                     '100%': { transform: 'translateY(0)', opacity: '1' },
                 },
                 scaleIn: {
-                    '0%': { transform: 'scale(0.95)', opacity: '0' },
+                    '0%': { transform: 'scale(0.98)', opacity: '0' },
                     '100%': { transform: 'scale(1)', opacity: '1' },
                 },
             },
+            backdropBlur: {
+                xs: '2px',
+                sm: '4px',
+                md: '8px',
+                lg: '16px',
+                xl: '24px',
+            },
         },
     },
-    plugins: [require('daisyui')],
+    plugins: [
+        require('daisyui'),
+        function ({ addUtilities }) {
+            const newUtilities = {
+                '.glass': {
+                    'backdrop-filter': 'blur(20px)', // Enhanced blur for liquid glass effect
+                    '-webkit-backdrop-filter': 'blur(20px)', // Safari support
+                    'background-color': 'rgba(28, 28, 30, 0.65)', // Semi-transparent dark glass
+                    'border': '1px solid rgba(255, 255, 255, 0.15)',
+                    'border-radius': '1.5rem',
+                    'transition': 'all 0.3s ease-out',
+                },
+                '.glass-hover:hover': {
+                    'background-color': 'rgba(28, 28, 30, 0.75)',
+                    'box-shadow': '0 4px 12px rgba(0, 0, 0, 0.1)',
+                },
+                '.glass-light': {
+                    'backdrop-filter': 'blur(20px)',
+                    '-webkit-backdrop-filter': 'blur(20px)',
+                    'background-color': 'rgba(242, 242, 247, 0.65)', // Light mode glass
+                    'border': '1px solid rgba(0, 0, 0, 0.1)',
+                    'border-radius': '1.5rem',
+                },
+                '.glass-text': {
+                    color: '#ffffff',
+                    'text-shadow': '0 1px 2px rgba(0, 0, 0, 0.05)',
+                },
+            };
+            addUtilities(newUtilities, ['responsive', 'hover']);
+        },
+    ],
     daisyui: {
         themes: [
             {
                 light: {
-                    "primary": "#b53133",
-                    "primary-focus": "#962a2c",
+                    "primary": "#007aff", // iOS system blue for primary
+                    "primary-focus": "#005bb5",
                     "primary-content": "#ffffff",
 
-                    "secondary": "#059669",
-                    "secondary-focus": "#047857",
+                    "secondary": "#34c759",
+                    "secondary-focus": "#248a3d",
                     "secondary-content": "#ffffff",
 
-                    "accent": "#7c3aed",
-                    "accent-focus": "#6d28d9",
+                    "accent": "#5856d6",
+                    "accent-focus": "#4c4ab7",
                     "accent-content": "#ffffff",
 
-                    "neutral": "#374151",
-                    "neutral-focus": "#1f2937",
+                    "neutral": "#3c3c3e",
+                    "neutral-focus": "#2c2c2e",
                     "neutral-content": "#ffffff",
 
                     "base-100": "#ffffff",
-                    "base-200": "#f9fafb",
-                    "base-300": "#f3f4f6",
-                    "base-content": "#1f2937",
+                    "base-200": "#f2f2f7",
+                    "base-300": "#e5e5ea",
+                    "base-content": "#1c1c1e",
 
-                    "info": "#3b82f6",
+                    "info": "#007aff",
                     "info-content": "#ffffff",
 
-                    "success": "#10b981",
+                    "success": "#34c759",
                     "success-content": "#ffffff",
 
-                    "warning": "#f59e0b",
-                    "warning-content": "#ffffff",
+                    "warning": "#ffcc00",
+                    "warning-content": "#1c1c1e",
 
-                    "error": "#ef4444",
+                    "error": "#ff3b30",
                     "error-content": "#ffffff",
                 },
             },
             {
                 dark: {
-                    "primary": "#e74c4c",
-                    "primary-focus": "#d43f3f",
+                    "primary": "#0a84ff", // iOS dark system blue
+                    "primary-focus": "#006bd6",
                     "primary-content": "#ffffff",
 
-                    "secondary": "#10b981",
-                    "secondary-focus": "#059669",
+                    "secondary": "#32d74b",
+                    "secondary-focus": "#26a53a",
                     "secondary-content": "#ffffff",
 
-                    "accent": "#8b5cf6",
-                    "accent-focus": "#7c3aed",
+                    "accent": "#5e5ce6",
+                    "accent-focus": "#4d4ac7",
                     "accent-content": "#ffffff",
 
-                    "neutral": "#404040",
-                    "neutral-focus": "#2a2a2a",
-                    "neutral-content": "#e5e5e5",
+                    "neutral": "#3a3a3c",
+                    "neutral-focus": "#2a2a2c",
+                    "neutral-content": "#ebebf0",
 
-                    "base-100": "#0a0a0a",
-                    "base-200": "#1a1a1a",
-                    "base-300": "#2d2d2d",
-                    "base-content": "#e5e5e5",
+                    "base-100": "#1c1c1e",
+                    "base-200": "#2c2c2e",
+                    "base-300": "#3a3a3c",
+                    "base-content": "#ebebf0",
 
-                    "info": "#60a5fa",
+                    "info": "#0a84ff",
                     "info-content": "#ffffff",
 
-                    "success": "#34d399",
+                    "success": "#32d74b",
                     "success-content": "#ffffff",
 
-                    "warning": "#fbbf24",
-                    "warning-content": "#1a1a1a",
+                    "warning": "#ffd60a",
+                    "warning-content": "#1c1c1e",
 
-                    "error": "#f87171",
+                    "error": "#ff453a",
                     "error-content": "#ffffff",
                 }
             }

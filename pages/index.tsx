@@ -47,24 +47,24 @@ export default function Home() {
         transition={{ type: 'spring', stiffness: 80, damping: 15 }}
         className="card bg-base-100 shadow-xl border border-base-200"
       >
-        <div className="card-body flex flex-col sm:flex-row items-center justify-between gap-4 p-4">
+        <div className="card-body flex flex-col sm:flex-row items-center justify-between gap-3 p-3">
           <SummaryCards onSelect={setSelected} />
         </div>
       </motion.div>
 
-      <div className="flex flex-col md:flex-row gap-6 mt-6">
-        <div className="flex-[5] w-full md:w-62">
+      <div className="flex flex-col md:flex-row gap-4 mt-4">
+        <div className="flex-[2] w-full">
           <Calendar />
         </div>
-        <div className="flex-[3] min-w-[360px] card bg-base-100/70 shadow-xl p-4">
+        <div className="flex-[3] min-w-[300px] card bg-base-100/70 shadow-xl p-3">
           <SummaryFeed />
         </div>
       </div>
 
       <Modal open={!!selected} onClose={() => setSelected(null)}>
-        <div className="card bg-base-100 p-6 shadow-xl">
-          <h2 className="text-xl font-bold mb-4">{selected ? cardTitles[selected] : ''}</h2>
-          <div className="h-40 flex items-center justify-center text-base-content/50">
+        <div className="card bg-base-100 p-4 shadow-xl">
+          <h2 className="text-lg font-bold mb-3">{selected ? cardTitles[selected] : ''}</h2>
+          <div className="h-32 flex items-center justify-center text-base-content/50">
             Graph Placeholder
           </div>
         </div>

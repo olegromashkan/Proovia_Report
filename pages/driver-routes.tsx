@@ -140,7 +140,6 @@ export default function DriverRoutes() {
   const [columnMenuOpen, setColumnMenuOpen] = useState(false);
   const [visibleCols, setVisibleCols] = useState({
     start: true,
-    end: true,
     route: true,
     tasks: true,
     punctuality: true,
@@ -311,7 +310,7 @@ export default function DriverRoutes() {
 
   const dates = Array.from(dateSet).sort().reverse();
   const drivers = Array.from(driverSet).sort();
-  const colOrder: Array<keyof typeof visibleCols> = ['contractor', 'start', 'end', 'route', 'tasks', 'punctuality', 'price'];
+  const colOrder: Array<keyof typeof visibleCols> = ['contractor', 'start', 'route', 'tasks', 'punctuality', 'price'];
   const visibleKeys = colOrder.filter((k) => k !== 'contractor' && visibleCols[k]);
 
   const contractorCards = Object.entries(contractorStats)
@@ -345,7 +344,6 @@ export default function DriverRoutes() {
           if (field === 'route') return String(d.route || '');
           if (field === 'tasks') return Number(d.tasks) || 0;
           if (field === 'start') return String(d.start || '');
-          if (field === 'end') return String(d.end || '');
           if (field === 'punctuality') return d.punctuality ?? 0;
           if (field === 'price') return Number(d.price) || 0;
         }
@@ -509,13 +507,13 @@ return (
 
         {/* Таблица */}
         <div className="overflow-auto flex-1 border border-base-300 rounded-box">
-            <table className="table table-xs table-pin-rows table-pin-cols table-zebra">
+            <table className="table table-xs table-pin-rows table-pin-cols table-zebra w-max border-collapse">
                 <thead>
                     <tr>
-                        <th className="sticky left-0" onClick={() => { if (sortField?.field === 'driver') setSortDirection(d => d === 'asc' ? 'desc' : 'asc'); else setSortField({ field: 'driver' }); }}>Driver</th>
-                        {visibleCols.contractor && <th className="sticky left-[150px]" onClick={() => { if (sortField?.field === 'contractor') setSortDirection(d => d === 'asc' ? 'desc' : 'asc'); else setSortField({ field: 'contractor' }); }}>Contractor</th>}
+                        <th className="sticky left-0 z-20 bg-base-200 min-w-[200px] whitespace-nowrap" onClick={() => { if (sortField?.field === 'driver') setSortDirection(d => d === 'asc' ? 'desc' : 'asc'); else setSortField({ field: 'driver' }); }}>Driver</th>
+                        {visibleCols.contractor && <th className="sticky left-[200px] z-20 bg-base-200 min-w-[150px] whitespace-nowrap" onClick={() => { if (sortField?.field === 'contractor') setSortDirection(d => d === 'asc' ? 'desc' : 'asc'); else setSortField({ field: 'contractor' }); }}>Contractor</th>}
                         {dates.map((d) => (
-                            <th key={d} colSpan={visibleKeys.length}>
+                            <th key={d} colSpan={visibleKeys.length} className="bg-base-200 whitespace-nowrap">
                                 <div className="flex items-center justify-center gap-2">
                                     {formatDisplayDate(d)}
                                     <button className="btn btn-xs btn-ghost btn-circle" onClick={() => setModalDate(d)}><Icon name="refresh" className="w-3 h-3" /></button>
@@ -524,11 +522,11 @@ return (
                         ))}
                     </tr>
                     <tr>
-                        <th className="sticky left-0"></th>
-                        {visibleCols.contractor && <th className="sticky left-[150px]"></th>}
+                        <th className="sticky left-0 z-10 bg-base-200 min-w-[200px] whitespace-nowrap"></th>
+                        {visibleCols.contractor && <th className="sticky left-[200px] z-10 bg-base-200 min-w-[150px] whitespace-nowrap"></th>}
                         {dates.flatMap((d) =>
                             visibleKeys.map((key) => (
-                                <th key={`${d}-${key}`} onClick={() => { if (sortField?.field === key && sortField.date === d) setSortDirection(s => s === 'asc' ? 'desc' : 'asc'); else setSortField({ field: key, date: d }); }}>
+                                <th key={`${d}-${key}`} className="bg-base-200 min-w-[100px] whitespace-nowrap" onClick={() => { if (sortField?.field === key && sortField.date === d) setSortDirection(s => s === 'asc' ? 'desc' : 'asc'); else setSortField({ field: key, date: d }); }}>
                                     {key.charAt(0).toUpperCase() + key.slice(1)}
                                 </th>
                             ))
@@ -543,7 +541,7 @@ return (
                     ) : (
                         sortedDrivers.map((driver) => (
                             <tr key={driver} className="hover">
-                                <th className="sticky left-0">
+                                <th className="sticky left-0 z-10 bg-base-100 min-w-[200px] whitespace-nowrap border border-base-300">
                                     <div className="flex items-center gap-1.5">
                                         {driver}
                                         {earlyStarts[driver]?.count > 3 && (
@@ -553,7 +551,7 @@ return (
                                         )}
                                     </div>
                                 </th>
-                                {visibleCols.contractor && <th className="sticky left-[150px]">{driverContractor[driver] || '-'}</th>}
+                                {visibleCols.contractor && <th className="sticky left-[200px] z-10 bg-base-100 min-w-[150px] whitespace-nowrap border border-base-300">{driverContractor[driver] || '-'}</th>}
                                 {dates.flatMap((d) => {
                                     const data = map[driver]?.[d];
                                     return visibleKeys.map((key) => {
@@ -562,15 +560,15 @@ return (
                                         const editing = editingCell?.driver === driver && editingCell.date === d && editingCell.field === key;
                                         
                                         if (editing) {
-                                            return <td key={cellKey}><input type="text" autoFocus defaultValue={String(rawValue)} onBlur={(e) => { setCellValue(driver, d, key, e.target.value); setEditingCell(null); }} onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); if (e.key === 'Escape') setEditingCell(null); }} className="input input-xs w-full" /></td>;
+                                            return <td key={cellKey} className="min-w-[100px] whitespace-nowrap border border-base-300"><input type="text" autoFocus defaultValue={String(rawValue)} onBlur={(e) => { setCellValue(driver, d, key, e.target.value); setEditingCell(null); }} onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); if (e.key === 'Escape') setEditingCell(null); }} className="input input-xs w-full" /></td>;
                                         }
 
                                         let cellContent;
-                                        let cellClass = "";
+                                        let cellClass = "whitespace-nowrap border border-base-300 min-w-[100px]";
                                         switch (key) {
-                                            case 'route': cellContent = String(rawValue); cellClass = getRouteColorClass(String(rawValue)); break;
+                                            case 'route': cellContent = String(rawValue); cellClass += ` ${getRouteColorClass(String(rawValue))}`; break;
                                             case 'punctuality': cellContent = stylePunctuality(rawValue === '-' ? null : Number(rawValue)); break;
-                                            case 'price': cellContent = rawValue !== '-' ? `£${rawValue}`: '-'; cellClass = priceTextColor(rawValue); break;
+                                            case 'price': cellContent = rawValue !== '-' ? `£${rawValue}`: '-'; cellClass += ` text-[color:${priceTextColor(rawValue)}]`; break;
                                             default: cellContent = String(rawValue);
                                         }
 

@@ -121,31 +121,31 @@ export default function Calendar() {
   const SkeletonGrid = () => (
     <div className="grid grid-cols-7 gap-1 sm:gap-2">
       {DAY_NAMES.map(d => (
-        <div key={d} className="text-xs sm:text-sm font-bold text-base-content/50 pb-2 text-center">{d}</div>
+        <div key={d} className="text-xs font-semibold text-base-content/60 pb-2 text-center">{d}</div>
       ))}
       {Array.from({ length: 35 }).map((_, index) => (
-        <div key={index} className="aspect-square w-full rounded-lg bg-base-content/5 animate-pulse"></div>
+        <div key={index} className="aspect-square w-full rounded-lg bg-base-content/10 animate-pulse shadow-sm"></div>
       ))}
     </div>
   );
   
   // --- MAIN MARKUP ---
   return (
-    <div className="card card-glass shadow-xl backdrop-blur-lg">
-      <div className="card-body">
+    <div className="card card-glass shadow-2xl border border-base-300/20">
+      <div className="card-body p-4">
         {/* === HEADER AND NAVIGATION === */}
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-4">
-          <h2 className="card-title text-2xl">Activity Overview</h2>
+          <h2 className="card-title text-2xl font-bold">Activity Overview</h2>
           <div className="flex items-center gap-2">
-            <button onClick={() => changeMonth(-1)} className="btn btn-sm btn-circle btn-ghost" aria-label="Previous month">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" /></svg>
+            <button onClick={() => changeMonth(-1)} className="btn btn-xs btn-outline btn-circle" aria-label="Previous month">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" /></svg>
             </button>
             <span className="text-lg font-semibold w-40 text-center">{MONTH_NAMES[month - 1]} {year}</span>
-            <button onClick={() => changeMonth(1)} className="btn btn-sm btn-circle btn-ghost" aria-label="Next month">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" /></svg>
+            <button onClick={() => changeMonth(1)} className="btn btn-xs btn-outline btn-circle" aria-label="Next month">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" /></svg>
             </button>
             <div className="divider divider-horizontal mx-1"></div>
-            <button onClick={goToToday} className="btn btn-sm btn-ghost" aria-label="Go to today">
+            <button onClick={goToToday} className="btn btn-xs btn-outline" aria-label="Go to today">
               Today
             </button>
           </div>
@@ -155,7 +155,7 @@ export default function Calendar() {
         {loading ? <SkeletonGrid /> : (
           <div className="grid grid-cols-7 gap-1 sm:gap-2">
             {DAY_NAMES.map(d => (
-              <div key={d} className="text-xs sm:text-sm font-bold text-base-content/50 pb-2 text-center">{d}</div>
+              <div key={d} className="text-xs font-semibold text-base-content/60 pb-2 text-center">{d}</div>
             ))}
             {weeks.flat().map((day, index) => {
               const isClickable = day.stat && !day.isOtherMonth;
@@ -184,34 +184,34 @@ export default function Calendar() {
                     disabled={!isClickable}
                     aria-label={isClickable ? `Report for ${MONTH_NAMES[month - 1]} ${day.num}` : 'No data'}
                     className={`
-                      group aspect-square w-full rounded-lg flex flex-col p-1.5 justify-between text-center
+                      group aspect-square w-full rounded-lg flex flex-col p-1 justify-between text-center
                       transition-all duration-300 ease-out
-                      border border-transparent
-                      ${day.isOtherMonth ? 'opacity-30' : 'bg-base-100/40 hover:border-primary/50'}
-                      ${isClickable ? 'cursor-pointer' : 'cursor-default'}
-                      ${day.isToday && !day.isOtherMonth ? 'ring-2 ring-primary ring-offset-base-100 ring-offset-2' : ''}
+                      shadow-sm hover:shadow-md hover:shadow-primary/30
+                      ${day.isOtherMonth ? 'opacity-40 bg-base-200/50' : 'bg-base-200 hover:bg-base-300'}
+                      ${isClickable ? 'cursor-pointer hover:scale-105' : 'cursor-default'}
+                      ${day.isToday && !day.isOtherMonth ? 'ring-2 ring-primary ring-offset-2 ring-offset-base-100' : ''}
                     `}
                   >
-                    <div className={`text-left text-sm font-bold transition-colors ${day.isToday ? 'text-primary' : 'text-base-content/80 group-hover:text-primary'}`}>
+                    <div className={`text-left text-sm font-semibold transition-colors ${day.isToday ? 'text-primary' : 'text-base-content group-hover:text-primary'}`}>
                       {day.num}
                     </div>
 
                     {day.stat && !day.isOtherMonth ? (
-                      <div className="flex flex-col items-center justify-center -mt-2 transition-transform duration-300 group-hover:scale-105">
+                      <div className="flex flex-col items-center justify-center -mt-0.5 transition-transform duration-300 group-hover:scale-110">
                         <div
                           className={`radial-progress ${getProgressColor()}`}
-                          style={{ '--value': successRate, '--size': '3.2rem', '--thickness': '3px' } as React.CSSProperties}
+                          style={{ '--value': successRate, '--size': '2rem', '--thickness': '3px' } as React.CSSProperties}
                         >
-                          <span className="text-xs font-bold text-base-content/90">{successRate}%</span>
+                          <span className="text-xs font-bold text-base-content">{successRate}%</span>
                         </div>
-                        <div className="text-xs mt-1 font-semibold">
-                          <span className="text-error/80">{day.stat.failed}</span>
-                          <span className="text-base-content/40 mx-0.5">/</span>
-                          <span className="text-base-content/80">{day.stat.total}</span>
+                        <div className="text-[10px] mt-0.5 font-medium">
+                          <span className="text-error">{day.stat.failed}</span>
+                          <span className="text-base-content/50 mx-0.5">/</span>
+                          <span className="text-base-content">{day.stat.total}</span>
                         </div>
                       </div>
                     ) : (
-                      <div /> 
+                      <div className="h-8" /> // Placeholder for empty cells to maintain height
                     )}
                   </button>
                 </div>
