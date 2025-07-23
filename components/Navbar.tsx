@@ -50,6 +50,7 @@ export default function Navbar() {
         { href: '/full-report', icon: 'table-list', label: 'Full Report' },
         { href: '/monthly-report', icon: 'calendar', label: 'Monthly' },
         { href: '/van-state', icon: 'truck', label: 'Van State' },
+        { href: '/trengo-report', icon: 'chart-bar', label: 'Trengo' },
       ],
     },
     {
