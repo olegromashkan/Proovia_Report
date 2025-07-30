@@ -87,7 +87,7 @@ export default function ScheduleTool() {
             const res = await fetch(side === 'left' ? '/api/schedule-tool' : '/api/schedule-tool2', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ trips }),
+                body: JSON.stringify({ trips, preserveDrivers: true }),
             });
             if (!res.ok) throw new Error('Upload failed');
             load();

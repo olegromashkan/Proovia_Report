@@ -24,6 +24,7 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
 
         if (req.method === 'POST') {
             const payload = req.body;
+            const preserve = !!payload.preserveDrivers;
             let trips: any[] = [];
             if (Array.isArray(payload)) trips = payload;
             else if (Array.isArray(payload.trips)) trips = payload.trips;
@@ -32,6 +33,23 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
             else if (Array.isArray(payload.scheduleTrips)) trips = payload.scheduleTrips;
             if (!Array.isArray(trips)) {
                 return res.status(400).json({ message: 'No schedule trips found' });
+            }
+
+            if (preserve) {
+                const rows = db.prepare('SELECT id, data FROM schedule_trips_tool2').all();
+                const drivers: Record<string, any> = {};
+                rows.forEach((r: any) => {
+                    const obj = JSON.parse(r.data);
+                    if (obj.Driver1 !== undefined) drivers[r.id] = obj.Driver1;
+                });
+                trips = trips.map((it: any) => {
+                    const id = it.ID || it.id;
+                    if (!id) return it;
+                    if (drivers[id] !== undefined) {
+                        return { ...it, Driver1: drivers[id] };
+                    }
+                    return it;
+                });
             }
 
             const del = db.prepare('DELETE FROM schedule_trips_tool2');
