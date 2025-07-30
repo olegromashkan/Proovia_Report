@@ -128,144 +128,149 @@ export default function ScheduleTool() {
 
     return (
         <Layout title="Schedule Tool">
-            <h1 className="text-2xl font-bold mb-4">Schedule Trips Tool</h1>
-            <div className="flex flex-wrap gap-6">
-                <div className="flex-1 min-w-[300px]">
-                    <div
-                        className="border-2 border-dashed rounded-lg p-6 text-center cursor-pointer bg-white dark:bg-gray-700 dark:border-gray-500 dark:text-gray-200"
-                        onDrop={handleDropLeft}
-                        onDragOver={handleDrag}
-                    >
-                        <input id="fileLeft" type="file" accept=".json" onChange={handleInputLeft} className="hidden" />
-                        <label htmlFor="fileLeft" className="flex flex-col items-center gap-2">
-                            <Icon name="file-arrow-up" className="text-3xl" />
-                            <span>Drag schedule trips JSON here or click to select</span>
-                        </label>
-                    </div>
-                    <button onClick={clearAllLeft} className="btn btn-error mt-4">
-                        Clear All
-                    </button>
-                    <div className="overflow-auto mt-6">
-                        <table className="table table-sm table-zebra">
-                            <thead>
-                                <tr>
-                                    <th>Start_Time</th>
-                                    <th>End_Time</th>
-                                    <th>Driver1</th>
-                                    <th>Calendar_Name</th>
-                                    <th>Order_Value</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {itemsLeft.map((it, idx) => (
-                                    <tr key={it.ID}>
-                                        <td>{it.Start_Time}</td>
-                                        <td>{it.End_Time}</td>
-                                        <td
-                                            draggable
-                                            onDragStart={(e) => e.dataTransfer.setData('text/plain', JSON.stringify({ table: 'left', index: idx, name: it.Driver1 }))}
-                                            onDragOver={(e) => e.preventDefault()}
-                                            onDrop={(e) => {
-                                                e.preventDefault();
-                                                const data = JSON.parse(e.dataTransfer.getData('text/plain'));
-                                                const name = data.name;
-                                                if (!name) return;
-                                                setItemsLeft((arr) => {
-                                                    const copy = [...arr];
-                                                    copy[idx] = { ...copy[idx], Driver1: name };
-                                                    if (data.table === 'left') {
-                                                        copy[data.index] = { ...copy[data.index], Driver1: '' };
-                                                    }
-                                                    return copy;
-                                                });
-                                                if (data.table === 'right') {
-                                                    setItemsRight((arr) => {
-                                                        const copy = [...arr];
-                                                        copy[data.index] = { ...copy[data.index], Driver1: '' };
-                                                        return copy;
-                                                    });
-                                                }
-                                            }}
-                                        >
-                                            {it.Driver1}
-                                        </td>
-                                        <td>{it.Calendar_Name}</td>
-                                        <td>{it.Order_Value}</td>
+            <div className="w-full min-h-screen p-0 m-0">
+                <div className="flex gap-4 w-full min-h-full">
+                    <div className="flex-1 min-w-0 flex flex-col">
+                        <div className="flex items-center gap-2 mb-2">
+                            <div
+                                className="flex-1 border-2 border-dashed rounded-md p-3 text-center cursor-pointer bg-white dark:bg-gray-700 dark:border-gray-500 dark:text-gray-200"
+                                onDrop={handleDropLeft}
+                                onDragOver={handleDrag}
+                            >
+                                <input id="fileLeft" type="file" accept=".json" onChange={handleInputLeft} className="hidden" />
+                                <label htmlFor="fileLeft" className="flex items-center justify-center gap-1 text-sm">
+                                    <Icon name="file-arrow-up" className="text-xl" />
+                                    JSON
+                                </label>
+                            </div>
+                            <button onClick={clearAllLeft} className="btn btn-error btn-xs w-24">
+                                Clear
+                            </button>
+                        </div>
+                        <div className="overflow-auto flex-1 max-h-[calc(100vh-180px)]">
+                            <table className="table table-xs table-zebra w-full">
+                                <thead>
+                                    <tr>
+                                        <th>Start</th>
+                                        <th>End</th>
+                                        <th>Driver</th>
+                                        <th>Calendar</th>
+                                        <th>Order</th>
                                     </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-                <div className="flex-1 min-w-[300px]">
-                    <div
-                        className="border-2 border-dashed rounded-lg p-6 text-center cursor-pointer bg-white dark:bg-gray-700 dark:border-gray-500 dark:text-gray-200"
-                        onDrop={handleDropRight}
-                        onDragOver={handleDrag}
-                    >
-                        <input id="fileRight" type="file" accept=".json" onChange={handleInputRight} className="hidden" />
-                        <label htmlFor="fileRight" className="flex flex-col items-center gap-2">
-                            <Icon name="file-arrow-up" className="text-3xl" />
-                            <span>Drag schedule trips JSON here or click to select</span>
-                        </label>
-                    </div>
-                    <button onClick={clearAllRight} className="btn btn-error mt-4">
-                        Clear All
-                    </button>
-                    <div className="overflow-auto mt-6">
-                        <table className="table table-sm table-zebra">
-                            <thead>
-                                <tr>
-                                    <th>Start_Time</th>
-                                    <th>End_Time</th>
-                                    <th>Driver1</th>
-                                    <th>Calendar_Name</th>
-                                    <th>Order_Value</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {itemsRight.map((it, idx) => (
-                                    <tr key={it.ID}>
-                                        <td>{it.Start_Time}</td>
-                                        <td>{it.End_Time}</td>
-                                        <td
-                                            draggable
-                                            onDragStart={(e) => e.dataTransfer.setData('text/plain', JSON.stringify({ table: 'right', index: idx, name: it.Driver1 }))}
-                                            onDragOver={(e) => e.preventDefault()}
-                                            onDrop={(e) => {
-                                                e.preventDefault();
-                                                const data = JSON.parse(e.dataTransfer.getData('text/plain'));
-                                                const name = data.name;
-                                                if (!name) return;
-                                                setItemsRight((arr) => {
-                                                    const copy = [...arr];
-                                                    copy[idx] = { ...copy[idx], Driver1: name };
-                                                    if (data.table === 'right') {
-                                                        copy[data.index] = { ...copy[data.index], Driver1: '' };
-                                                    }
-                                                    return copy;
-                                                });
-                                                if (data.table === 'left') {
+                                </thead>
+                                <tbody>
+                                    {itemsLeft.map((it, idx) => (
+                                        <tr key={it.ID}>
+                                            <td>{it.Start_Time}</td>
+                                            <td>{it.End_Time}</td>
+                                            <td
+                                                draggable
+                                                onDragStart={(e) => e.dataTransfer.setData('text/plain', JSON.stringify({ table: 'left', index: idx, name: it.Driver1 }))}
+                                                onDragOver={(e) => e.preventDefault()}
+                                                onDrop={(e) => {
+                                                    e.preventDefault();
+                                                    const data = JSON.parse(e.dataTransfer.getData('text/plain'));
+                                                    const name = data.name;
+                                                    if (!name) return;
                                                     setItemsLeft((arr) => {
                                                         const copy = [...arr];
-                                                        copy[data.index] = { ...copy[data.index], Driver1: '' };
+                                                        copy[idx] = { ...copy[idx], Driver1: name };
+                                                        if (data.table === 'left') {
+                                                            copy[data.index] = { ...copy[data.index], Driver1: '' };
+                                                        }
                                                         return copy;
                                                     });
-                                                }
-                                            }}
-                                        >
-                                            {it.Driver1}
-                                        </td>
-                                        <td>{it.Calendar_Name}</td>
-                                        <td>{it.Order_Value}</td>
+                                                    if (data.table === 'right') {
+                                                        setItemsRight((arr) => {
+                                                            const copy = [...arr];
+                                                            copy[data.index] = { ...copy[data.index], Driver1: '' };
+                                                            return copy;
+                                                        });
+                                                    }
+                                                }}
+                                            >
+                                                {it.Driver1}
+                                            </td>
+                                            <td>{it.Calendar_Name}</td>
+                                            <td>{it.Order_Value}</td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div className="flex-1 min-w-0 flex flex-col">
+                        <div className="flex items-center gap-2 mb-2">
+                            <div
+                                className="flex-1 border-2 border-dashed rounded-md p-3 text-center cursor-pointer bg-white dark:bg-gray-700 dark:border-gray-500 dark:text-gray-200"
+                                onDrop={handleDropRight}
+                                onDragOver={handleDrag}
+                            >
+                                <input id="fileRight" type="file" accept=".json" onChange={handleInputRight} className="hidden" />
+                                <label htmlFor="fileRight" className="flex items-center justify-center gap-1 text-sm">
+                                    <Icon name="file-arrow-up" className="text-xl" />
+                                    JSON
+                                </label>
+                            </div>
+                            <button onClick={clearAllRight} className="btn btn-error btn-xs w-24">
+                                Clear
+                            </button>
+                        </div>
+                        <div className="overflow-auto flex-1 max-h-[calc(100vh-180px)]">
+                            <table className="table table-xs table-zebra w-full">
+                                <thead>
+                                    <tr>
+                                        <th>Start</th>
+                                        <th>End</th>
+                                        <th>Driver</th>
+                                        <th>Calendar</th>
+                                        <th>Order</th>
                                     </tr>
-                                ))}
-                            </tbody>
-                        </table>
+                                </thead>
+                                <tbody>
+                                    {itemsRight.map((it, idx) => (
+                                        <tr key={it.ID}>
+                                            <td>{it.Start_Time}</td>
+                                            <td>{it.End_Time}</td>
+                                            <td
+                                                draggable
+                                                onDragStart={(e) => e.dataTransfer.setData('text/plain', JSON.stringify({ table: 'right', index: idx, name: it.Driver1 }))}
+                                                onDragOver={(e) => e.preventDefault()}
+                                                onDrop={(e) => {
+                                                    e.preventDefault();
+                                                    const data = JSON.parse(e.dataTransfer.getData('text/plain'));
+                                                    const name = data.name;
+                                                    if (!name) return;
+                                                    setItemsRight((arr) => {
+                                                        const copy = [...arr];
+                                                        copy[idx] = { ...copy[idx], Driver1: name };
+                                                        if (data.table === 'right') {
+                                                            copy[data.index] = { ...copy[data.index], Driver1: '' };
+                                                        }
+                                                        return copy;
+                                                    });
+                                                    if (data.table === 'left') {
+                                                        setItemsLeft((arr) => {
+                                                            const copy = [...arr];
+                                                            copy[data.index] = { ...copy[data.index], Driver1: '' };
+                                                            return copy;
+                                                        });
+                                                    }
+                                                }}
+                                            >
+                                                {it.Driver1}
+                                            </td>
+                                            <td>{it.Calendar_Name}</td>
+                                            <td>{it.Order_Value}</td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
+                {error && <p className="text-red-600 mt-2 text-sm">{error}</p>}
             </div>
-            {error && <p className="text-red-600 mt-2">{error}</p>}
         </Layout>
     );
 }
