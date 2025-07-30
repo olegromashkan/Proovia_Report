@@ -12,15 +12,21 @@ interface Trip {
 }
 
 export default function ScheduleTool() {
-    const [items, setItems] = useState<Trip[]>([]);
+    const [itemsLeft, setItemsLeft] = useState<Trip[]>([]);
+    const [itemsRight, setItemsRight] = useState<Trip[]>([]);
     const [error, setError] = useState<string | null>(null);
 
     const load = async () => {
         try {
-            const res = await fetch('/api/schedule-tool');
-            if (!res.ok) throw new Error('failed');
-            const json = await res.json();
-            setItems(json);
+            const [lRes, rRes] = await Promise.all([
+                fetch('/api/schedule-tool'),
+                fetch('/api/schedule-tool2'),
+            ]);
+            if (!lRes.ok || !rRes.ok) throw new Error('failed');
+            const lJson = await lRes.json();
+            const rJson = await rRes.json();
+            setItemsLeft(lJson);
+            setItemsRight(rJson);
         } catch (err) {
             console.error(err);
             setError('Failed to load data');
@@ -31,7 +37,7 @@ export default function ScheduleTool() {
         load();
     }, []);
 
-    const processFiles = async (files: FileList | null) => {
+    const processFiles = async (files: FileList | null, side: 'left' | 'right') => {
         if (!files || files.length === 0) return;
         const file = files[0];
         try {
@@ -44,7 +50,7 @@ export default function ScheduleTool() {
             else if (Array.isArray(parsed.schedule_trips)) trips = parsed.schedule_trips;
             else if (Array.isArray(parsed.scheduleTrips)) trips = parsed.scheduleTrips;
             if (!Array.isArray(trips)) throw new Error('No schedule trips found');
-            const res = await fetch('/api/schedule-tool', {
+            const res = await fetch(side === 'left' ? '/api/schedule-tool' : '/api/schedule-tool2', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ trips }),
@@ -57,65 +63,181 @@ export default function ScheduleTool() {
         }
     };
 
-    const handleInput = (e: ChangeEvent<HTMLInputElement>) => {
-        processFiles(e.target.files);
+    const handleInputLeft = (e: ChangeEvent<HTMLInputElement>) => {
+        processFiles(e.target.files, 'left');
+        e.target.value = '';
+    };
+    const handleInputRight = (e: ChangeEvent<HTMLInputElement>) => {
+        processFiles(e.target.files, 'right');
         e.target.value = '';
     };
 
-    const handleDrop = (e: DragEvent<HTMLDivElement>) => {
+    const handleDropLeft = (e: DragEvent<HTMLDivElement>) => {
         e.preventDefault();
-        processFiles(e.dataTransfer.files);
+        processFiles(e.dataTransfer.files, 'left');
+    };
+    const handleDropRight = (e: DragEvent<HTMLDivElement>) => {
+        e.preventDefault();
+        processFiles(e.dataTransfer.files, 'right');
     };
 
     const handleDrag = (e: DragEvent<HTMLDivElement>) => e.preventDefault();
 
-    const clearAll = async () => {
+    const clearAllLeft = async () => {
         await fetch('/api/schedule-tool', { method: 'DELETE' });
-        setItems([]);
+        setItemsLeft([]);
+    };
+    const clearAllRight = async () => {
+        await fetch('/api/schedule-tool2', { method: 'DELETE' });
+        setItemsRight([]);
     };
 
     return (
         <Layout title="Schedule Tool">
             <h1 className="text-2xl font-bold mb-4">Schedule Trips Tool</h1>
-            <div
-                className="border-2 border-dashed rounded-lg p-6 text-center cursor-pointer bg-white dark:bg-gray-700 dark:border-gray-500 dark:text-gray-200"
-                onDrop={handleDrop}
-                onDragOver={handleDrag}
-            >
-                <input id="file" type="file" accept=".json" onChange={handleInput} className="hidden" />
-                <label htmlFor="file" className="flex flex-col items-center gap-2">
-                    <Icon name="file-arrow-up" className="text-3xl" />
-                    <span>Drag schedule trips JSON here or click to select</span>
-                </label>
+            <div className="flex flex-wrap gap-6">
+                <div className="flex-1 min-w-[300px]">
+                    <div
+                        className="border-2 border-dashed rounded-lg p-6 text-center cursor-pointer bg-white dark:bg-gray-700 dark:border-gray-500 dark:text-gray-200"
+                        onDrop={handleDropLeft}
+                        onDragOver={handleDrag}
+                    >
+                        <input id="fileLeft" type="file" accept=".json" onChange={handleInputLeft} className="hidden" />
+                        <label htmlFor="fileLeft" className="flex flex-col items-center gap-2">
+                            <Icon name="file-arrow-up" className="text-3xl" />
+                            <span>Drag schedule trips JSON here or click to select</span>
+                        </label>
+                    </div>
+                    <button onClick={clearAllLeft} className="btn btn-error mt-4">
+                        Clear All
+                    </button>
+                    <div className="overflow-auto mt-6">
+                        <table className="table table-sm table-zebra">
+                            <thead>
+                                <tr>
+                                    <th>Start_Time</th>
+                                    <th>End_Time</th>
+                                    <th>Driver1</th>
+                                    <th>Calendar_Name</th>
+                                    <th>Order_Value</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {itemsLeft.map((it, idx) => (
+                                    <tr key={it.ID}>
+                                        <td>{it.Start_Time}</td>
+                                        <td>{it.End_Time}</td>
+                                        <td
+                                            draggable
+                                            onDragStart={(e) => e.dataTransfer.setData('text/plain', JSON.stringify({ table: 'left', index: idx, name: it.Driver1 }))}
+                                            onDragOver={(e) => e.preventDefault()}
+                                            onDrop={(e) => {
+                                                e.preventDefault();
+                                                const data = JSON.parse(e.dataTransfer.getData('text/plain'));
+                                                const name = data.name;
+                                                if (!name) return;
+                                                setItemsLeft((arr) => {
+                                                    const copy = [...arr];
+                                                    copy[idx] = { ...copy[idx], Driver1: name };
+                                                    return copy;
+                                                });
+                                                if (data.table === 'left') {
+                                                    setItemsLeft((arr) => {
+                                                        const copy = [...arr];
+                                                        copy[data.index] = { ...copy[data.index], Driver1: '' };
+                                                        return copy;
+                                                    });
+                                                } else {
+                                                    setItemsRight((arr) => {
+                                                        const copy = [...arr];
+                                                        copy[data.index] = { ...copy[data.index], Driver1: '' };
+                                                        return copy;
+                                                    });
+                                                }
+                                            }}
+                                        >
+                                            {it.Driver1}
+                                        </td>
+                                        <td>{it.Calendar_Name}</td>
+                                        <td>{it.Order_Value}</td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div className="flex-1 min-w-[300px]">
+                    <div
+                        className="border-2 border-dashed rounded-lg p-6 text-center cursor-pointer bg-white dark:bg-gray-700 dark:border-gray-500 dark:text-gray-200"
+                        onDrop={handleDropRight}
+                        onDragOver={handleDrag}
+                    >
+                        <input id="fileRight" type="file" accept=".json" onChange={handleInputRight} className="hidden" />
+                        <label htmlFor="fileRight" className="flex flex-col items-center gap-2">
+                            <Icon name="file-arrow-up" className="text-3xl" />
+                            <span>Drag schedule trips JSON here or click to select</span>
+                        </label>
+                    </div>
+                    <button onClick={clearAllRight} className="btn btn-error mt-4">
+                        Clear All
+                    </button>
+                    <div className="overflow-auto mt-6">
+                        <table className="table table-sm table-zebra">
+                            <thead>
+                                <tr>
+                                    <th>Start_Time</th>
+                                    <th>End_Time</th>
+                                    <th>Driver1</th>
+                                    <th>Calendar_Name</th>
+                                    <th>Order_Value</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {itemsRight.map((it, idx) => (
+                                    <tr key={it.ID}>
+                                        <td>{it.Start_Time}</td>
+                                        <td>{it.End_Time}</td>
+                                        <td
+                                            draggable
+                                            onDragStart={(e) => e.dataTransfer.setData('text/plain', JSON.stringify({ table: 'right', index: idx, name: it.Driver1 }))}
+                                            onDragOver={(e) => e.preventDefault()}
+                                            onDrop={(e) => {
+                                                e.preventDefault();
+                                                const data = JSON.parse(e.dataTransfer.getData('text/plain'));
+                                                const name = data.name;
+                                                if (!name) return;
+                                                setItemsRight((arr) => {
+                                                    const copy = [...arr];
+                                                    copy[idx] = { ...copy[idx], Driver1: name };
+                                                    return copy;
+                                                });
+                                                if (data.table === 'left') {
+                                                    setItemsLeft((arr) => {
+                                                        const copy = [...arr];
+                                                        copy[data.index] = { ...copy[data.index], Driver1: '' };
+                                                        return copy;
+                                                    });
+                                                } else {
+                                                    setItemsRight((arr) => {
+                                                        const copy = [...arr];
+                                                        copy[data.index] = { ...copy[data.index], Driver1: '' };
+                                                        return copy;
+                                                    });
+                                                }
+                                            }}
+                                        >
+                                            {it.Driver1}
+                                        </td>
+                                        <td>{it.Calendar_Name}</td>
+                                        <td>{it.Order_Value}</td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
             </div>
             {error && <p className="text-red-600 mt-2">{error}</p>}
-            <button onClick={clearAll} className="btn btn-error mt-4">
-                Clear All
-            </button>
-            <div className="overflow-auto mt-6">
-                <table className="table table-sm table-zebra">
-                    <thead>
-                        <tr>
-                            <th>Start_Time</th>
-                            <th>End_Time</th>
-                            <th>Driver1</th>
-                            <th>Calendar_Name</th>
-                            <th>Order_Value</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {items.map((it) => (
-                            <tr key={it.ID}>
-                                <td>{it.Start_Time}</td>
-                                <td>{it.End_Time}</td>
-                                <td>{it.Driver1}</td>
-                                <td>{it.Calendar_Name}</td>
-                                <td>{it.Order_Value}</td>
-                            </tr>
-                        ))}
-                    </tbody>
-                </table>
-            </div>
         </Layout>
     );
 }

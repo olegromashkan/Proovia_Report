@@ -48,7 +48,12 @@ export function init() {
       data TEXT,
       created_at TEXT DEFAULT CURRENT_TIMESTAMP
     );
-        CREATE TABLE IF NOT EXISTS schedule_trips_tool (
+    CREATE TABLE IF NOT EXISTS schedule_trips_tool (
+      id TEXT PRIMARY KEY,
+      data TEXT,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP
+    );
+    CREATE TABLE IF NOT EXISTS schedule_trips_tool2 (
       id TEXT PRIMARY KEY,
       data TEXT,
       created_at TEXT DEFAULT CURRENT_TIMESTAMP
@@ -178,6 +183,7 @@ export function init() {
     'drivers_report',
     'schedule_trips',
     'schedule_trips_tool',
+    'schedule_trips_tool2',
     'csv_trips',
     'van_checks',
     'users',
