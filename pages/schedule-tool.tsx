@@ -16,6 +16,19 @@ export default function ScheduleTool() {
     const [itemsRight, setItemsRight] = useState<Trip[]>([]);
     const [error, setError] = useState<string | null>(null);
 
+    const saveItems = async (items: Trip[], side: 'left' | 'right') => {
+        try {
+            await fetch(side === 'left' ? '/api/schedule-tool' : '/api/schedule-tool2', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ trips: items }),
+            });
+        } catch (err) {
+            console.error(err);
+            setError('Failed to save data');
+        }
+    };
+
     const load = async () => {
         try {
             const [lRes, rRes] = await Promise.all([
@@ -136,24 +149,21 @@ export default function ScheduleTool() {
                                                 const data = JSON.parse(e.dataTransfer.getData('text/plain'));
                                                 const name = data.name;
                                                 if (!name) return;
-                                                setItemsLeft((arr) => {
-                                                    const copy = [...arr];
-                                                    copy[idx] = { ...copy[idx], Driver1: name };
-                                                    return copy;
-                                                });
+
+                                                const updatedLeft = [...itemsLeft];
+                                                updatedLeft[idx] = { ...updatedLeft[idx], Driver1: name };
+
                                                 if (data.table === 'left') {
-                                                    setItemsLeft((arr) => {
-                                                        const copy = [...arr];
-                                                        copy[data.index] = { ...copy[data.index], Driver1: '' };
-                                                        return copy;
-                                                    });
+                                                    updatedLeft[data.index] = { ...updatedLeft[data.index], Driver1: '' };
                                                 } else {
-                                                    setItemsRight((arr) => {
-                                                        const copy = [...arr];
-                                                        copy[data.index] = { ...copy[data.index], Driver1: '' };
-                                                        return copy;
-                                                    });
+                                                    const updatedRight = [...itemsRight];
+                                                    updatedRight[data.index] = { ...updatedRight[data.index], Driver1: '' };
+                                                    setItemsRight(updatedRight);
+                                                    saveItems(updatedRight, 'right');
                                                 }
+
+                                                setItemsLeft(updatedLeft);
+                                                saveItems(updatedLeft, 'left');
                                             }}
                                         >
                                             {it.Driver1}
@@ -206,24 +216,21 @@ export default function ScheduleTool() {
                                                 const data = JSON.parse(e.dataTransfer.getData('text/plain'));
                                                 const name = data.name;
                                                 if (!name) return;
-                                                setItemsRight((arr) => {
-                                                    const copy = [...arr];
-                                                    copy[idx] = { ...copy[idx], Driver1: name };
-                                                    return copy;
-                                                });
+
+                                                const updatedRight = [...itemsRight];
+                                                updatedRight[idx] = { ...updatedRight[idx], Driver1: name };
+
                                                 if (data.table === 'left') {
-                                                    setItemsLeft((arr) => {
-                                                        const copy = [...arr];
-                                                        copy[data.index] = { ...copy[data.index], Driver1: '' };
-                                                        return copy;
-                                                    });
+                                                    const updatedLeft = [...itemsLeft];
+                                                    updatedLeft[data.index] = { ...updatedLeft[data.index], Driver1: '' };
+                                                    setItemsLeft(updatedLeft);
+                                                    saveItems(updatedLeft, 'left');
                                                 } else {
-                                                    setItemsRight((arr) => {
-                                                        const copy = [...arr];
-                                                        copy[data.index] = { ...copy[data.index], Driver1: '' };
-                                                        return copy;
-                                                    });
+                                                    updatedRight[data.index] = { ...updatedRight[data.index], Driver1: '' };
                                                 }
+
+                                                setItemsRight(updatedRight);
+                                                saveItems(updatedRight, 'right');
                                             }}
                                         >
                                             {it.Driver1}
