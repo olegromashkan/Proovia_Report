@@ -1,4 +1,4 @@
-import { useEffect, useState, DragEvent, ChangeEvent } from 'react';
+import { useEffect, useState, DragEvent, ChangeEvent, useRef } from 'react';
 import Layout from '../components/Layout';
 import Icon from '../components/Icon';
 
@@ -15,6 +15,24 @@ export default function ScheduleTool() {
     const [itemsLeft, setItemsLeft] = useState<Trip[]>([]);
     const [itemsRight, setItemsRight] = useState<Trip[]>([]);
     const [error, setError] = useState<string | null>(null);
+    const leftLoaded = useRef(false);
+    const rightLoaded = useRef(false);
+
+    const saveLeft = async (items: Trip[]) => {
+        await fetch('/api/schedule-tool', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ trips: items }),
+        });
+    };
+
+    const saveRight = async (items: Trip[]) => {
+        await fetch('/api/schedule-tool2', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ trips: items }),
+        });
+    };
 
     const load = async () => {
         try {
@@ -36,6 +54,22 @@ export default function ScheduleTool() {
     useEffect(() => {
         load();
     }, []);
+
+    useEffect(() => {
+        if (leftLoaded.current) {
+            saveLeft(itemsLeft);
+        } else {
+            leftLoaded.current = true;
+        }
+    }, [itemsLeft]);
+
+    useEffect(() => {
+        if (rightLoaded.current) {
+            saveRight(itemsRight);
+        } else {
+            rightLoaded.current = true;
+        }
+    }, [itemsRight]);
 
     const processFiles = async (files: FileList | null, side: 'left' | 'right') => {
         if (!files || files.length === 0) return;
@@ -139,15 +173,12 @@ export default function ScheduleTool() {
                                                 setItemsLeft((arr) => {
                                                     const copy = [...arr];
                                                     copy[idx] = { ...copy[idx], Driver1: name };
+                                                    if (data.table === 'left') {
+                                                        copy[data.index] = { ...copy[data.index], Driver1: '' };
+                                                    }
                                                     return copy;
                                                 });
-                                                if (data.table === 'left') {
-                                                    setItemsLeft((arr) => {
-                                                        const copy = [...arr];
-                                                        copy[data.index] = { ...copy[data.index], Driver1: '' };
-                                                        return copy;
-                                                    });
-                                                } else {
+                                                if (data.table === 'right') {
                                                     setItemsRight((arr) => {
                                                         const copy = [...arr];
                                                         copy[data.index] = { ...copy[data.index], Driver1: '' };
@@ -209,16 +240,13 @@ export default function ScheduleTool() {
                                                 setItemsRight((arr) => {
                                                     const copy = [...arr];
                                                     copy[idx] = { ...copy[idx], Driver1: name };
+                                                    if (data.table === 'right') {
+                                                        copy[data.index] = { ...copy[data.index], Driver1: '' };
+                                                    }
                                                     return copy;
                                                 });
                                                 if (data.table === 'left') {
                                                     setItemsLeft((arr) => {
-                                                        const copy = [...arr];
-                                                        copy[data.index] = { ...copy[data.index], Driver1: '' };
-                                                        return copy;
-                                                    });
-                                                } else {
-                                                    setItemsRight((arr) => {
                                                         const copy = [...arr];
                                                         copy[data.index] = { ...copy[data.index], Driver1: '' };
                                                         return copy;
