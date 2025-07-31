@@ -435,6 +435,7 @@ export default function ScheduleTool() {
             >
                 Total: {stats.total}
             </span>
+
         </div>
     );
 
