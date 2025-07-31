@@ -442,21 +442,7 @@ export default function ScheduleTool() {
     return (
         <Layout title="Schedule Tool" fullWidth>
             <div className="w-full min-h-screen p-0 m-0">
-                <div className="flex items-center gap-2 mb-4">
-                    <div
-                        className="flex-1 border-2 border-dashed rounded-md p-3 text-center cursor-pointer bg-white dark:bg-gray-700 dark:border-gray-500 dark:text-gray-200"
-                        onDrop={handleDropFile}
-                    >
-                        <input id="fileAll" type="file" accept=".json" onChange={handleInputFile} className="hidden" />
-                        <label htmlFor="fileAll" className="flex items-center justify-center gap-1 text-sm">
-                            <Icon name="file-arrow-up" className="text-xl" />
-                            JSON
-                        </label>
-                    </div>
-                    <button onClick={() => { clearAllLeft(); clearAllRight(); }} className="btn btn-error btn-xs w-24">
-                        Clear All
-                    </button>
-                </div>
+
                 <div className="flex gap-4 w-full min-h-full">
                     <div className="flex-1 min-w-0 flex flex-col">
                         <div className="flex items-center gap-2 mb-2">
@@ -659,6 +645,21 @@ export default function ScheduleTool() {
                         </div>
                     </div>
                     <div className="w-72 flex flex-col gap-1 max-h-screen overflow-y-auto p-2">
+                        <div className="flex items-center gap-2 mb-4">
+                            <div
+                                className="flex-1 border-2 border-dashed rounded-md p-3 text-center cursor-pointer bg-white dark:bg-gray-700 dark:border-gray-500 dark:text-gray-200"
+                                onDrop={handleDropFile}
+                            >
+                                <input id="fileAll" type="file" accept=".json" onChange={handleInputFile} className="hidden" />
+                                <label htmlFor="fileAll" className="flex items-center justify-center gap-1 text-sm">
+                                    <Icon name="file-arrow-up" className="text-xl" />
+                                    JSON
+                                </label>
+                            </div>
+                            <button onClick={() => { clearAllLeft(); clearAllRight(); }} className="btn btn-error btn-xs w-24">
+                                Clear All
+                            </button>
+                        </div>
                         <div className="text-base font-bold text-base-content mb-1">Notes</div>
                         {PANELS.map((panel) => (
                             <div key={panel.name} className={`card ${panel.color} shadow-sm`}>
