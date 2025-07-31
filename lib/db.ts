@@ -58,6 +58,11 @@ export function init() {
       data TEXT,
       created_at TEXT DEFAULT CURRENT_TIMESTAMP
     );
+    CREATE TABLE IF NOT EXISTS schedule_notes (
+      panel TEXT PRIMARY KEY,
+      content TEXT,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP
+    );
     CREATE TABLE IF NOT EXISTS csv_trips (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       data TEXT,
@@ -184,6 +189,7 @@ export function init() {
     'schedule_trips',
     'schedule_trips_tool',
     'schedule_trips_tool2',
+    'schedule_notes',
     'csv_trips',
     'van_checks',
     'users',
