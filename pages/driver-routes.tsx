@@ -5,6 +5,7 @@ import Icon from '../components/Icon';
 import { motion, AnimatePresence } from 'framer-motion';
 import { debounce } from 'lodash';
 import { parseDate } from '../lib/dateUtils';
+import { parseTimeToMinutes } from '../lib/timeUtils';
 
 interface Item {
   driver: string;
@@ -246,7 +247,15 @@ export default function DriverRoutes() {
 
   const dateSet = new Set<string>();
   const driverSet = new Set<string>();
-  const map: Record<string, Record<string, { route: string; tasks: string; start?: string | null; end?: string | null; punctuality: number | null; price?: number | string }>> = {};
+  interface CellData {
+    route: string;
+    tasks: string;
+    start?: string | null;
+    end?: string | null;
+    punctuality: number | string | null;
+    price?: number | string | null;
+  }
+  const map: Record<string, Record<string, CellData>> = {};
   const driverContractor: Record<string, string> = {};
   const contractorStats: Record<string, { drivers: Set<string>; total: number; count: number }> = {};
   const driverStats: Record<string, { priceTotal: number; priceCount: number; tasksTotal: number; punctualityTotal: number; punctualityCount: number }> = {};
@@ -269,42 +278,50 @@ export default function DriverRoutes() {
       start: it.start_time ?? null,
       end: it.end_time ?? null,
       punctuality: it.punctuality ?? null,
-      price: it.price,
+      price: it.price ?? null,
     };
+  }
 
-    if (it.contractor) {
-      if (!contractorStats[it.contractor]) contractorStats[it.contractor] = { drivers: new Set(), total: 0, count: 0 };
-      contractorStats[it.contractor].drivers.add(it.driver);
-    }
+  for (const key of Object.keys(editedCells)) {
+    const [drv, dt, fld] = key.split('|');
+    if (!map[drv]) map[drv] = {};
+    if (!map[drv][dt]) map[drv][dt] = { route: '', tasks: '', start: null, end: null, punctuality: null, price: null };
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (map[drv][dt] as any)[fld] = editedCells[key];
+    dateSet.add(dt);
+    driverSet.add(drv);
+  }
 
-    if (!driverStats[it.driver]) {
-      driverStats[it.driver] = { priceTotal: 0, priceCount: 0, tasksTotal: 0, punctualityTotal: 0, punctualityCount: 0 };
-    }
-
-    if (isEarlyStart(it.start_time)) {
-      if (!earlyStarts[it.driver]) earlyStarts[it.driver] = { count: 0, dates: [] };
-      earlyStarts[it.driver].count += 1;
-      earlyStarts[it.driver].dates.push(it.date);
-    }
-
-    const priceNum = Number(it.price);
-    if (!isNaN(priceNum)) {
-      driverStats[it.driver].priceTotal += priceNum;
-      driverStats[it.driver].priceCount += 1;
-      if (it.contractor) {
-        contractorStats[it.contractor].total += priceNum;
-        contractorStats[it.contractor].count += 1;
+  for (const driver of Object.keys(map)) {
+    for (const dt of Object.keys(map[driver])) {
+      const cell = map[driver][dt];
+      if (isEarlyStart(cell.start || undefined)) {
+        if (!earlyStarts[driver]) earlyStarts[driver] = { count: 0, dates: [] };
+        earlyStarts[driver].count += 1;
+        earlyStarts[driver].dates.push(dt);
       }
-    }
-
-    const tasksNum = parseInt(tasks, 10);
-    if (!isNaN(tasksNum)) {
-      driverStats[it.driver].tasksTotal += tasksNum;
-    }
-
-    if (it.punctuality !== null && it.punctuality !== undefined) {
-      driverStats[it.driver].punctualityTotal += it.punctuality;
-      driverStats[it.driver].punctualityCount += 1;
+      if (!driverStats[driver]) {
+        driverStats[driver] = { priceTotal: 0, priceCount: 0, tasksTotal: 0, punctualityTotal: 0, punctualityCount: 0 };
+      }
+      const tNum = parseInt(String(cell.tasks), 10);
+      if (!isNaN(tNum)) driverStats[driver].tasksTotal += tNum;
+      const pNum = Number(cell.price);
+      if (!isNaN(pNum)) {
+        driverStats[driver].priceTotal += pNum;
+        driverStats[driver].priceCount += 1;
+        const contr = driverContractor[driver];
+        if (contr) {
+          if (!contractorStats[contr]) contractorStats[contr] = { drivers: new Set(), total: 0, count: 0 };
+          contractorStats[contr].drivers.add(driver);
+          contractorStats[contr].total += pNum;
+          contractorStats[contr].count += 1;
+        }
+      }
+      const pn = Number(cell.punctuality);
+      if (!isNaN(pn)) {
+        driverStats[driver].punctualityTotal += pn;
+        driverStats[driver].punctualityCount += 1;
+      }
     }
   }
 
@@ -343,8 +360,8 @@ export default function DriverRoutes() {
           if (!d) return field === 'route' || field === 'start' || field === 'end' ? '' : 0;
           if (field === 'route') return String(d.route || '');
           if (field === 'tasks') return Number(d.tasks) || 0;
-          if (field === 'start') return String(d.start || '');
-          if (field === 'punctuality') return d.punctuality ?? 0;
+          if (field === 'start') return parseTimeToMinutes(String(d.start || '')) ?? 0;
+          if (field === 'punctuality') return Number(d.punctuality) || 0;
           if (field === 'price') return Number(d.price) || 0;
         }
         const s = driverStats[driver];
