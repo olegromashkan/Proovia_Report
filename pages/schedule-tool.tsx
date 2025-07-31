@@ -1,6 +1,7 @@
 import { useEffect, useState, DragEvent, ChangeEvent, useRef, KeyboardEvent, useMemo } from 'react';
 import Layout from '../components/Layout';
 import Icon from '../components/Icon';
+import { parseTimeToMinutes } from '../lib/timeUtils';
 
 interface Trip {
     ID: string;
@@ -249,6 +250,13 @@ export default function ScheduleTool() {
         return index !== -1 ? text.substring(index + 1) : text;
     };
 
+    // Helper to parse HH:mm or similar time strings into minutes
+    const parseTime = (time?: string): number => {
+        if (!time) return NaN;
+        const minutes = parseTimeToMinutes(getTextAfterSpace(time));
+        return minutes === null ? NaN : minutes;
+    };
+
     // Helper to compute Actual End time = End_Time plus Punctuality minutes
     const getActualEnd = (endTime?: string, punctuality?: string) => {
         if (!endTime) return '';
@@ -389,11 +397,38 @@ export default function ScheduleTool() {
     };
 
     const sortBy = (arr: Trip[], key: string, dir: 'asc' | 'desc', isLeft = false): Trip[] => {
-        const allowedDrivers = (notes['Available Drivers'] || '').split('\n').map(d => d.trim()).filter(d => d);
+        const allowedDrivers = (notes['Available Drivers'] || '')
+            .split('\n')
+            .map(d => d.trim())
+            .filter(d => d);
+
         const getValue = (it: Trip): any => {
-            if (key === 'ActualEnd') return getActualEnd(it.End_Time, it.Punctuality);
-            return (it as any)[key];
+            switch (key) {
+                case 'Start':
+                    return parseTime(it.Start_Time);
+                case 'End':
+                    return parseTime(it.End_Time);
+                case 'ActualEnd':
+                    return parseTime(getActualEnd(it.End_Time, it.Punctuality));
+                case 'Driver1':
+                    return (it.Driver1 || '').toLowerCase();
+                case 'Contractor':
+                    return (it.Contractor || '').toLowerCase();
+                case 'VH':
+                    return getVH(it.Calendar_Name).toLowerCase();
+                case 'Route':
+                    return getRoute(it.Calendar_Name).toLowerCase();
+                case 'Tasks':
+                    return parseFloat(getTasks(it.Calendar_Name) || '0');
+                case 'Order_Value':
+                    return parseFloat(it.Order_Value || '0');
+                case 'Punctuality':
+                    return parseFloat(it.Punctuality || '0');
+                default:
+                    return (it as any)[key];
+            }
         };
+
         return [...arr].sort((a, b) => {
             if (isLeft) {
                 const aIsAllowed = allowedDrivers.includes(a.Driver1 || '');
@@ -401,10 +436,20 @@ export default function ScheduleTool() {
                 if (aIsAllowed && !bIsAllowed) return -1;
                 if (!aIsAllowed && bIsAllowed) return 1;
             }
-            const va = getValue(a) || '';
-            const vb = getValue(b) || '';
-            if (va < vb) return dir === 'asc' ? -1 : 1;
-            if (va > vb) return dir === 'asc' ? 1 : -1;
+            const va = getValue(a);
+            const vb = getValue(b);
+
+            if (typeof va === 'number' && typeof vb === 'number') {
+                if (isNaN(va) && isNaN(vb)) return 0;
+                if (isNaN(va)) return dir === 'asc' ? 1 : -1;
+                if (isNaN(vb)) return dir === 'asc' ? -1 : 1;
+                return dir === 'asc' ? va - vb : vb - va;
+            }
+
+            const sva = String(va);
+            const svb = String(vb);
+            if (sva < svb) return dir === 'asc' ? -1 : 1;
+            if (sva > svb) return dir === 'asc' ? 1 : -1;
             return 0;
         });
     };
@@ -545,14 +590,14 @@ export default function ScheduleTool() {
                             <table className="table table-xs table-zebra w-full">
                                 <thead>
                                     <tr>
-                                        <th onClick={() => applyLeftSort('Start_Time')}>Start</th>
-                                        <th onClick={() => applyLeftSort('End_Time')}>End</th>
+                                        <th onClick={() => applyLeftSort('Start')}>Start</th>
+                                        <th onClick={() => applyLeftSort('End')}>End</th>
                                         <th onClick={() => applyLeftSort('ActualEnd')}>Actual End</th>
                                         <th onClick={() => applyLeftSort('Driver1')}>Driver</th>
                                         <th onClick={() => applyLeftSort('Contractor')}>Contractor</th>
-                                        <th onClick={() => applyLeftSort('Calendar_Name')} className="text-right">VH</th>
-                                        <th onClick={() => applyLeftSort('Calendar_Name')}>Route</th>
-                                        <th onClick={() => applyLeftSort('Calendar_Name')}>Tasks</th>
+                                        <th onClick={() => applyLeftSort('VH')} className="text-right">VH</th>
+                                        <th onClick={() => applyLeftSort('Route')}>Route</th>
+                                        <th onClick={() => applyLeftSort('Tasks')}>Tasks</th>
                                         <th onClick={() => applyLeftSort('Order_Value')}>Amount</th>
                                         <th onClick={() => applyLeftSort('Punctuality')}>Punctuality</th>
                                     </tr>
@@ -617,13 +662,13 @@ export default function ScheduleTool() {
                             <table className="table table-xs table-zebra w-full">
                                 <thead>
                                     <tr>
-                                        <th onClick={() => applyRightSort('Start_Time')}>Start</th>
-                                        <th onClick={() => applyRightSort('End_Time')}>End</th>
+                                        <th onClick={() => applyRightSort('Start')}>Start</th>
+                                        <th onClick={() => applyRightSort('End')}>End</th>
                                         <th onClick={() => applyRightSort('Driver1')}>Driver</th>
                                         <th onClick={() => applyRightSort('Contractor')}>Contractor</th>
-                                        <th onClick={() => applyRightSort('Calendar_Name')} className="text-right">VH</th>
-                                        <th onClick={() => applyRightSort('Calendar_Name')}>Route</th>
-                                        <th onClick={() => applyRightSort('Calendar_Name')}>Tasks</th>
+                                        <th onClick={() => applyRightSort('VH')} className="text-right">VH</th>
+                                        <th onClick={() => applyRightSort('Route')}>Route</th>
+                                        <th onClick={() => applyRightSort('Tasks')}>Tasks</th>
                                         <th onClick={() => applyRightSort('Order_Value')}>Amount</th>
                                     </tr>
                                 </thead>
