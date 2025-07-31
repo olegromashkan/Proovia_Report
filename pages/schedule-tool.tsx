@@ -409,10 +409,10 @@ export default function ScheduleTool() {
 
     const getAmountColor = (val: string | undefined, range: { min: number; max: number }) => {
         const num = parseFloat(val || '');
-        if (isNaN(num)) return undefined;
+        if (isNaN(num)) return 'text-gray-500'; // Default color for invalid values
         const ratio = range.max === range.min ? 0 : (num - range.min) / (range.max - range.min);
-        const hue = 0 + ratio * 120;
-        return `hsl(${hue},70%,50%)`;
+        const hue = 0 + ratio * 120; // Red (0) to Green (120)
+        return `hsl(${hue}, 70%, 50%)`; // Suitable for text color
     };
 
     const renderStats = (stats: { counts: Record<string, number>, total: number }) => (
@@ -578,8 +578,9 @@ export default function ScheduleTool() {
                                                 <td className="whitespace-nowrap text-right">{getVH(it.Calendar_Name)}</td>
                                                 <td className={`whitespace-nowrap ${routeColor}`}>{getRoute(it.Calendar_Name)}</td>
                                                 <td className="whitespace-nowrap">{getTasks(it.Calendar_Name)}</td>
-                                                <td className="whitespace-nowrap" style={{ backgroundColor: getAmountColor(it.Order_Value, amountRangeLeft) }}>{it.Order_Value}</td>
-                                                <td className="whitespace-nowrap">{it.Punctuality}</td>
+                                                <td className="whitespace-nowrap" style={{ color: getAmountColor(it.Order_Value, amountRangeLeft) }}>
+                                                    {it.Order_Value}
+                                                </td>                                                <td className="whitespace-nowrap">{it.Punctuality}</td>
                                             </tr>
                                         );
                                     })}
@@ -704,8 +705,9 @@ export default function ScheduleTool() {
                                                 <td className="whitespace-nowrap text-right">{getVH(it.Calendar_Name)}</td>
                                                 <td className={`whitespace-nowrap ${routeColor}`}>{getRoute(it.Calendar_Name)}</td>
                                                 <td className="whitespace-nowrap">{getTasks(it.Calendar_Name)}</td>
-                                                <td className="whitespace-nowrap" style={{ backgroundColor: getAmountColor(it.Order_Value, amountRangeRight) }}>{it.Order_Value}</td>
-                                            </tr>
+                                                <td className="whitespace-nowrap" style={{ color: getAmountColor(it.Order_Value, amountRangeRight) }}>
+                                                    {it.Order_Value}
+                                                </td>                                            </tr>
                                         );
                                     })}
                                 </tbody>
