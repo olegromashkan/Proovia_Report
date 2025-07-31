@@ -7,6 +7,8 @@ interface Trip {
     Start_Time?: string;
     End_Time?: string;
     Driver1?: string;
+    Contractor?: string;
+    Punctuality?: string;
     Calendar_Name?: string;
     Order_Value?: string;
     isAssigned?: boolean;
@@ -240,6 +242,16 @@ export default function ScheduleTool() {
         if (!text) return '';
         const index = text.indexOf(' ');
         return index !== -1 ? text.substring(index + 1) : text;
+    };
+
+    // Helper to compute Actual End time = End_Time minus Punctuality minutes
+    const getActualEnd = (endTime?: string, punctuality?: string) => {
+        if (!endTime) return '';
+        const endDate = new Date(endTime);
+        if (isNaN(endDate.getTime())) return '';
+        const mins = parseInt(punctuality || '0', 10);
+        const actual = new Date(endDate.getTime() - (isNaN(mins) ? 0 : mins) * 60000);
+        return actual.toTimeString().slice(0, 5);
     };
 
     // Helper function to extract Calendar: after ":" up to "("
@@ -497,11 +509,14 @@ export default function ScheduleTool() {
                                     <tr>
                                         <th>Start</th>
                                         <th>End</th>
+                                        <th>Actual End</th>
                                         <th>Driver</th>
+                                        <th>Contractor</th>
                                         <th className="text-right">VH</th>
                                         <th>Route</th>
                                         <th>Tasks</th>
                                         <th>Amount</th>
+                                        <th>Punctuality</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -513,6 +528,7 @@ export default function ScheduleTool() {
                                             <tr key={it.ID}>
                                                 <td>{getTextAfterSpace(it.Start_Time)}</td>
                                                 <td>{getTextAfterSpace(it.End_Time)}</td>
+                                                <td>{getActualEnd(it.End_Time, it.Punctuality)}</td>
                                                 <td
                                                     draggable={isAllowed && !it.isAssigned}
                                                     onDragStart={(e) => e.dataTransfer.setData('text/plain', JSON.stringify({ table: 'left', index: idx, name: it.Driver1 }))}
@@ -537,10 +553,12 @@ export default function ScheduleTool() {
                                                         </>
                                                     )}
                                                 </td>
+                                                <td>{it.Contractor}</td>
                                                 <td className="whitespace-nowrap text-right">{getVH(it.Calendar_Name)}</td>
                                                 <td className={`whitespace-nowrap ${routeColor}`}>{getRoute(it.Calendar_Name)}</td>
                                                 <td className="whitespace-nowrap">{getTasks(it.Calendar_Name)}</td>
                                                 <td className="whitespace-nowrap">{it.Order_Value}</td>
+                                                <td className="whitespace-nowrap">{it.Punctuality}</td>
                                             </tr>
                                         );
                                     })}
@@ -572,11 +590,14 @@ export default function ScheduleTool() {
                                     <tr>
                                         <th>Start</th>
                                         <th>End</th>
+                                        <th>Actual End</th>
                                         <th>Driver</th>
+                                        <th>Contractor</th>
                                         <th className="text-right">VH</th>
                                         <th>Route</th>
                                         <th>Tasks</th>
                                         <th>Amount</th>
+                                        <th>Punctuality</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -588,6 +609,7 @@ export default function ScheduleTool() {
                                             <tr key={it.ID}>
                                                 <td>{getTextAfterSpace(it.Start_Time)}</td>
                                                 <td>{getTextAfterSpace(it.End_Time)}</td>
+                                                <td>{getActualEnd(it.End_Time, it.Punctuality)}</td>
                                                 <td
                                                     draggable
                                                     onDragStart={(e) => e.dataTransfer.setData('text/plain', JSON.stringify({ table: 'right', index: idx, name: it.Driver1 }))}
@@ -670,10 +692,12 @@ export default function ScheduleTool() {
                                                         it.Driver1
                                                     )}
                                                 </td>
+                                                <td>{it.Contractor}</td>
                                                 <td className="whitespace-nowrap text-right">{getVH(it.Calendar_Name)}</td>
                                                 <td className={`whitespace-nowrap ${routeColor}`}>{getRoute(it.Calendar_Name)}</td>
                                                 <td className="whitespace-nowrap">{getTasks(it.Calendar_Name)}</td>
                                                 <td className="whitespace-nowrap">{it.Order_Value}</td>
+                                                <td className="whitespace-nowrap">{it.Punctuality}</td>
                                             </tr>
                                         );
                                     })}
