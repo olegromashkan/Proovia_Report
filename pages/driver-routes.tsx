@@ -56,7 +56,7 @@ function getRouteColorClass(route: string): string {
   const pink = ['SP', 'BH', 'DT', 'TA', 'EX', 'TQ', 'PL', 'TR'];
   if (has(pink)) return 'text-pink-500';
   const light = ['ST', 'TF', 'WV', 'DY', 'HR', 'WR', 'B', 'WS', 'CV', 'NN'];
-  if (has(light)) return 'text-sky-500';
+  if (has(light)) return 'text-teal-300';
   return 'text-white';
 }
 
@@ -426,7 +426,7 @@ export default function DriverRoutes() {
 
   const handleDrag = (e: DragEvent<HTMLDivElement>) => e.preventDefault();
 
-return (
+  return (
     <Layout title="Driver Routes" fullWidth>
       <div className="flex flex-col h-full p-4 gap-4">
 
@@ -477,29 +477,29 @@ return (
 
         {/* Панель фильтров */}
         <div className="flex flex-wrap gap-2 items-center p-2 bg-base-200 rounded-box">
-            <input type="date" value={start} onChange={(e) => setStart(e.target.value)} className="input input-sm input-bordered" aria-label="Start date" />
-            <input type="date" value={end} onChange={(e) => setEnd(e.target.value)} className="input input-sm input-bordered" aria-label="End date" />
-            <input type="text" placeholder="Filter by Driver" value={driverFilter} onChange={(e) => setDriverFilter(e.target.value)} className="input input-sm input-bordered w-36" />
-            <input type="text" placeholder="Filter by Contractor" value={contractorFilter} onChange={(e) => setContractorFilter(e.target.value)} className="input input-sm input-bordered w-36" />
-            
-            <div className="dropdown dropdown-end">
-                <button tabIndex={0} role="button" className="btn btn-sm btn-ghost btn-circle" title="Toggle columns">
-                    <Icon name="eye" className="w-5 h-5" />
-                </button>
-                <ul tabIndex={0} className="dropdown-content z-[1] menu p-2 shadow bg-base-300 rounded-box w-52">
-                    {colOrder.map((key) => (
-                        <li key={key}>
-                            <label className="label cursor-pointer">
-                                <span className="label-text capitalize">{key.replace('_', ' ')}</span> 
-                                <input type="checkbox" checked={visibleCols[key]} onChange={() => setVisibleCols((v) => ({ ...v, [key]: !v[key] }))} className="toggle toggle-primary toggle-sm" />
-                            </label>
-                        </li>
-                    ))}
-                </ul>
-            </div>
-            <button onClick={() => setShowContractorCards(!showContractorCards)} className="btn btn-sm btn-outline btn-primary">{showContractorCards ? 'Hide Cards' : 'Show Cards'}</button>
+          <input type="date" value={start} onChange={(e) => setStart(e.target.value)} className="input input-sm input-bordered" aria-label="Start date" />
+          <input type="date" value={end} onChange={(e) => setEnd(e.target.value)} className="input input-sm input-bordered" aria-label="End date" />
+          <input type="text" placeholder="Filter by Driver" value={driverFilter} onChange={(e) => setDriverFilter(e.target.value)} className="input input-sm input-bordered w-36" />
+          <input type="text" placeholder="Filter by Contractor" value={contractorFilter} onChange={(e) => setContractorFilter(e.target.value)} className="input input-sm input-bordered w-36" />
+
+          <div className="dropdown dropdown-end">
+            <button tabIndex={0} role="button" className="btn btn-sm btn-ghost btn-circle" title="Toggle columns">
+              <Icon name="eye" className="w-5 h-5" />
+            </button>
+            <ul tabIndex={0} className="dropdown-content z-[1] menu p-2 shadow bg-base-300 rounded-box w-52">
+              {colOrder.map((key) => (
+                <li key={key}>
+                  <label className="label cursor-pointer">
+                    <span className="label-text capitalize">{key.replace('_', ' ')}</span>
+                    <input type="checkbox" checked={visibleCols[key]} onChange={() => setVisibleCols((v) => ({ ...v, [key]: !v[key] }))} className="toggle toggle-primary toggle-sm" />
+                  </label>
+                </li>
+              ))}
+            </ul>
+          </div>
+          <button onClick={() => setShowContractorCards(!showContractorCards)} className="btn btn-sm btn-outline btn-primary">{showContractorCards ? 'Hide Cards' : 'Show Cards'}</button>
         </div>
-        
+
         {/* Сводка */}
         <div className="px-2 py-1 text-sm opacity-80">
           Total drivers: {sortedDrivers.length} | Avg price: £{avgPrice.toFixed(2)} | Total tasks: {summary.totalTasks}
@@ -507,104 +507,104 @@ return (
 
         {/* Таблица */}
         <div className="overflow-auto flex-1 border border-base-300 rounded-box">
-            <table className="table table-xs table-pin-rows table-pin-cols table-zebra w-max border-collapse">
-                <thead>
-                    <tr>
-                        <th className="sticky left-0 z-20 bg-base-200 min-w-[200px] whitespace-nowrap" onClick={() => { if (sortField?.field === 'driver') setSortDirection(d => d === 'asc' ? 'desc' : 'asc'); else setSortField({ field: 'driver' }); }}>Driver</th>
-                        {visibleCols.contractor && <th className="sticky left-[200px] z-20 bg-base-200 min-w-[150px] whitespace-nowrap" onClick={() => { if (sortField?.field === 'contractor') setSortDirection(d => d === 'asc' ? 'desc' : 'asc'); else setSortField({ field: 'contractor' }); }}>Contractor</th>}
-                        {dates.map((d) => (
-                            <th key={d} colSpan={visibleKeys.length} className="bg-base-200 whitespace-nowrap">
-                                <div className="flex items-center justify-center gap-2">
-                                    {formatDisplayDate(d)}
-                                    <button className="btn btn-xs btn-ghost btn-circle" onClick={() => setModalDate(d)}><Icon name="refresh" className="w-3 h-3" /></button>
-                                </div>
-                            </th>
-                        ))}
-                    </tr>
-                    <tr>
-                        <th className="sticky left-0 z-10 bg-base-200 min-w-[200px] whitespace-nowrap"></th>
-                        {visibleCols.contractor && <th className="sticky left-[200px] z-10 bg-base-200 min-w-[150px] whitespace-nowrap"></th>}
-                        {dates.flatMap((d) =>
-                            visibleKeys.map((key) => (
-                                <th key={`${d}-${key}`} className="bg-base-200 min-w-[100px] whitespace-nowrap" onClick={() => { if (sortField?.field === key && sortField.date === d) setSortDirection(s => s === 'asc' ? 'desc' : 'asc'); else setSortField({ field: key, date: d }); }}>
-                                    {key.charAt(0).toUpperCase() + key.slice(1)}
-                                </th>
-                            ))
+          <table className="table table-xs table-pin-rows table-pin-cols table-zebra w-max border-collapse">
+            <thead>
+              <tr>
+                <th className="sticky left-0 z-20 bg-base-200 min-w-[200px] whitespace-nowrap" onClick={() => { if (sortField?.field === 'driver') setSortDirection(d => d === 'asc' ? 'desc' : 'asc'); else setSortField({ field: 'driver' }); }}>Driver</th>
+                {visibleCols.contractor && <th className="sticky left-[200px] z-20 bg-base-200 min-w-[150px] whitespace-nowrap" onClick={() => { if (sortField?.field === 'contractor') setSortDirection(d => d === 'asc' ? 'desc' : 'asc'); else setSortField({ field: 'contractor' }); }}>Contractor</th>}
+                {dates.map((d) => (
+                  <th key={d} colSpan={visibleKeys.length} className="bg-base-200 whitespace-nowrap">
+                    <div className="flex items-center justify-center gap-2">
+                      {formatDisplayDate(d)}
+                      <button className="btn btn-xs btn-ghost btn-circle" onClick={() => setModalDate(d)}><Icon name="refresh" className="w-3 h-3" /></button>
+                    </div>
+                  </th>
+                ))}
+              </tr>
+              <tr>
+                <th className="sticky left-0 z-10 bg-base-200 min-w-[200px] whitespace-nowrap"></th>
+                {visibleCols.contractor && <th className="sticky left-[200px] z-10 bg-base-200 min-w-[150px] whitespace-nowrap"></th>}
+                {dates.flatMap((d) =>
+                  visibleKeys.map((key) => (
+                    <th key={`${d}-${key}`} className="bg-base-200 min-w-[100px] whitespace-nowrap" onClick={() => { if (sortField?.field === key && sortField.date === d) setSortDirection(s => s === 'asc' ? 'desc' : 'asc'); else setSortField({ field: key, date: d }); }}>
+                      {key.charAt(0).toUpperCase() + key.slice(1)}
+                    </th>
+                  ))
+                )}
+              </tr>
+            </thead>
+            <tbody>
+              {loading ? (
+                <tr><td colSpan={2 + dates.length * visibleKeys.length} className="text-center p-4"><span className="loading loading-lg loading-spinner"></span></td></tr>
+              ) : sortedDrivers.length === 0 ? (
+                <tr><td colSpan={2 + dates.length * visibleKeys.length} className="text-center p-4">No data available</td></tr>
+              ) : (
+                sortedDrivers.map((driver) => (
+                  <tr key={driver} className="hover">
+                    <th className="sticky left-0 z-10 bg-base-100 min-w-[200px] whitespace-nowrap border border-base-300">
+                      <div className="flex items-center gap-1.5">
+                        {driver}
+                        {earlyStarts[driver]?.count > 3 && (
+                          <div className="tooltip" data-tip="Has frequent early starts">
+                            <button onClick={() => setHighlightDriver(highlightDriver === driver ? null : driver)} className="text-warning"><Icon name="clock" className="w-3 h-3" /></button>
+                          </div>
                         )}
-                    </tr>
-                </thead>
-                <tbody>
-                    {loading ? (
-                        <tr><td colSpan={2 + dates.length * visibleKeys.length} className="text-center p-4"><span className="loading loading-lg loading-spinner"></span></td></tr>
-                    ) : sortedDrivers.length === 0 ? (
-                        <tr><td colSpan={2 + dates.length * visibleKeys.length} className="text-center p-4">No data available</td></tr>
-                    ) : (
-                        sortedDrivers.map((driver) => (
-                            <tr key={driver} className="hover">
-                                <th className="sticky left-0 z-10 bg-base-100 min-w-[200px] whitespace-nowrap border border-base-300">
-                                    <div className="flex items-center gap-1.5">
-                                        {driver}
-                                        {earlyStarts[driver]?.count > 3 && (
-                                            <div className="tooltip" data-tip="Has frequent early starts">
-                                                <button onClick={() => setHighlightDriver(highlightDriver === driver ? null : driver)} className="text-warning"><Icon name="clock" className="w-3 h-3" /></button>
-                                            </div>
-                                        )}
-                                    </div>
-                                </th>
-                                {visibleCols.contractor && <th className="sticky left-[200px] z-10 bg-base-100 min-w-[150px] whitespace-nowrap border border-base-300">{driverContractor[driver] || '-'}</th>}
-                                {dates.flatMap((d) => {
-                                    const data = map[driver]?.[d];
-                                    return visibleKeys.map((key) => {
-                                        const cellKey = `${driver}|${d}|${key}`;
-                                        const rawValue = editedCells[cellKey] !== undefined ? editedCells[cellKey] : data?.[key] ?? '-';
-                                        const editing = editingCell?.driver === driver && editingCell.date === d && editingCell.field === key;
-                                        
-                                        if (editing) {
-                                            return <td key={cellKey} className="min-w-[100px] whitespace-nowrap border border-base-300"><input type="text" autoFocus defaultValue={String(rawValue)} onBlur={(e) => { setCellValue(driver, d, key, e.target.value); setEditingCell(null); }} onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); if (e.key === 'Escape') setEditingCell(null); }} className="input input-xs w-full" /></td>;
-                                        }
+                      </div>
+                    </th>
+                    {visibleCols.contractor && <th className="sticky left-[200px] z-10 bg-base-100 min-w-[150px] whitespace-nowrap border border-base-300">{driverContractor[driver] || '-'}</th>}
+                    {dates.flatMap((d) => {
+                      const data = map[driver]?.[d];
+                      return visibleKeys.map((key) => {
+                        const cellKey = `${driver}|${d}|${key}`;
+                        const rawValue = editedCells[cellKey] !== undefined ? editedCells[cellKey] : data?.[key] ?? '-';
+                        const editing = editingCell?.driver === driver && editingCell.date === d && editingCell.field === key;
 
-                                        let cellContent;
-                                        let cellClass = "whitespace-nowrap border border-base-300 min-w-[100px]";
-                                        switch (key) {
-                                            case 'route': cellContent = String(rawValue); cellClass += ` ${getRouteColorClass(String(rawValue))}`; break;
-                                            case 'punctuality': cellContent = stylePunctuality(rawValue === '-' ? null : Number(rawValue)); break;
-                                            case 'price': cellContent = rawValue !== '-' ? `£${rawValue}`: '-'; cellClass += ` text-[color:${priceTextColor(rawValue)}]`; break;
-                                            default: cellContent = String(rawValue);
-                                        }
+                        if (editing) {
+                          return <td key={cellKey} className="min-w-[100px] whitespace-nowrap border border-base-300"><input type="text" autoFocus defaultValue={String(rawValue)} onBlur={(e) => { setCellValue(driver, d, key, e.target.value); setEditingCell(null); }} onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); if (e.key === 'Escape') setEditingCell(null); }} className="input input-xs w-full" /></td>;
+                        }
 
-                                        return <td key={cellKey} onDoubleClick={() => setEditingCell({ driver, date: d, field: key })} className={cellClass}>{cellContent}</td>;
-                                    });
-                                })}
-                            </tr>
-                        ))
-                    )}
-                </tbody>
-            </table>
+                        let cellContent;
+                        let cellClass = "whitespace-nowrap border border-base-300 min-w-[100px]";
+                        switch (key) {
+                          case 'route': cellContent = String(rawValue); cellClass += ` ${getRouteColorClass(String(rawValue))}`; break;
+                          case 'punctuality': cellContent = stylePunctuality(rawValue === '-' ? null : Number(rawValue)); break;
+                          case 'price': cellContent = rawValue !== '-' ? `£${rawValue}` : '-'; cellClass += ` text-[color:${priceTextColor(rawValue)}]`; break;
+                          default: cellContent = String(rawValue);
+                        }
+
+                        return <td key={cellKey} onDoubleClick={() => setEditingCell({ driver, date: d, field: key })} className={cellClass}>{cellContent}</td>;
+                      });
+                    })}
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
         </div>
 
         {/* Модальное окно для загрузки файла */}
         <dialog id="upload_modal" className={`modal ${modalDate ? 'modal-open' : ''}`}>
-            <div className="modal-box" onDrop={handleDrop} onDragOver={handleDrag}>
-                <h3 className="font-bold text-lg">Update Schedule for {modalDate && formatDisplayDate(modalDate)}</h3>
-                <div className="py-4">
-                    <label htmlFor="file-upload" className="flex flex-col items-center justify-center w-full h-40 border-2 border-dashed rounded-lg cursor-pointer bg-base-200 hover:bg-base-300">
-                        <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                            <Icon name="file-arrow-up" className="w-12 h-12 mb-3 text-base-content/50" />
-                            <p className="mb-2 text-sm"><span className="font-semibold">Click to upload</span> or drag and drop</p>
-                            <p className="text-xs text-base-content/50">JSON files only</p>
-                        </div>
-                        <input id="file-upload" type="file" className="hidden" onChange={handleInput} accept=".json" />
-                    </label>
+          <div className="modal-box" onDrop={handleDrop} onDragOver={handleDrag}>
+            <h3 className="font-bold text-lg">Update Schedule for {modalDate && formatDisplayDate(modalDate)}</h3>
+            <div className="py-4">
+              <label htmlFor="file-upload" className="flex flex-col items-center justify-center w-full h-40 border-2 border-dashed rounded-lg cursor-pointer bg-base-200 hover:bg-base-300">
+                <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                  <Icon name="file-arrow-up" className="w-12 h-12 mb-3 text-base-content/50" />
+                  <p className="mb-2 text-sm"><span className="font-semibold">Click to upload</span> or drag and drop</p>
+                  <p className="text-xs text-base-content/50">JSON files only</p>
                 </div>
-                <div className="modal-action">
-                    <form method="dialog">
-                        <button className="btn" onClick={() => setModalDate(null)}>Close</button>
-                    </form>
-                </div>
+                <input id="file-upload" type="file" className="hidden" onChange={handleInput} accept=".json" />
+              </label>
             </div>
-            <form method="dialog" className="modal-backdrop">
-              <button onClick={() => setModalDate(null)}>close</button>
-            </form>
+            <div className="modal-action">
+              <form method="dialog">
+                <button className="btn" onClick={() => setModalDate(null)}>Close</button>
+              </form>
+            </div>
+          </div>
+          <form method="dialog" className="modal-backdrop">
+            <button onClick={() => setModalDate(null)}>close</button>
+          </form>
         </dialog>
       </div>
     </Layout>
