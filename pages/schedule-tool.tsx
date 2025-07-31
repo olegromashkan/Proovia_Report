@@ -35,6 +35,22 @@ export default function ScheduleTool() {
     const [editingRightIndex, setEditingRightIndex] = useState<number | null>(null);
     const [editValue, setEditValue] = useState<string>('');
 
+    const updateLeft = (updater: (arr: Trip[]) => Trip[]) => {
+        setItemsLeft((arr) => {
+            const updated = updater(arr);
+            if (leftLoaded.current) saveLeft(updated);
+            return updated;
+        });
+    };
+
+    const updateRight = (updater: (arr: Trip[]) => Trip[]) => {
+        setItemsRight((arr) => {
+            const updated = updater(arr);
+            if (rightLoaded.current) saveRight(updated);
+            return updated;
+        });
+    };
+
     const saveLeft = async (items: Trip[]) => {
         await fetch('/api/schedule-tool', {
             method: 'POST',
@@ -86,8 +102,8 @@ export default function ScheduleTool() {
             if (!lRes.ok || !rRes.ok) throw new Error('failed');
             const lJson = await lRes.json();
             const rJson = await rRes.json();
-            setItemsLeft(sortItems(lJson));
-            setItemsRight(rJson);
+            updateLeft(() => sortItems(lJson));
+            updateRight(() => rJson);
         } catch (err) {
             console.error(err);
             setError('Failed to load data');
@@ -100,20 +116,9 @@ export default function ScheduleTool() {
     }, []);
 
     useEffect(() => {
-        if (leftLoaded.current) {
-            saveLeft(itemsLeft);
-        } else {
-            leftLoaded.current = true;
-        }
-    }, [itemsLeft]);
-
-    useEffect(() => {
-        if (rightLoaded.current) {
-            saveRight(itemsRight);
-        } else {
-            rightLoaded.current = true;
-        }
-    }, [itemsRight]);
+        leftLoaded.current = true;
+        rightLoaded.current = true;
+    }, []);
 
     const processFiles = async (files: FileList | null, side: 'left' | 'right') => {
         if (!files || files.length === 0) return;
@@ -146,7 +151,7 @@ export default function ScheduleTool() {
         saveNote(panel, value);
         // Re-sort itemsLeft when Available Drivers note changes
         if (panel === 'Available Drivers') {
-            setItemsLeft(sortItems(itemsLeft));
+            updateLeft(() => sortItems(itemsLeft));
         }
     };
 
@@ -172,7 +177,7 @@ export default function ScheduleTool() {
         if (isDuplicate) {
             setWarningModal({
                 action: () => {
-                    setItemsRight((arr) => {
+                    updateRight((arr) => {
                         const copy = [...arr];
                         copy[idx] = { ...copy[idx], Driver1: name };
                         if (data.table === 'right') {
@@ -184,7 +189,7 @@ export default function ScheduleTool() {
                             }
                         } else if (data.table === 'left') {
                             copy[idx].fromLeftIndex = data.index;
-                            setItemsLeft((leftArr) => {
+                            updateLeft((leftArr) => {
                                 const leftCopy = [...leftArr];
                                 leftCopy[data.index] = { ...leftCopy[data.index], isAssigned: true };
                                 return sortItems(leftCopy);
@@ -197,7 +202,7 @@ export default function ScheduleTool() {
             });
             return;
         }
-        setItemsRight((arr) => {
+        updateRight((arr) => {
             const copy = [...arr];
             copy[idx] = { ...copy[idx], Driver1: name };
             if (data.table === 'right') {
@@ -209,7 +214,7 @@ export default function ScheduleTool() {
                 }
             } else if (data.table === 'left') {
                 copy[idx].fromLeftIndex = data.index;
-                setItemsLeft((leftArr) => {
+                updateLeft((leftArr) => {
                     const leftCopy = [...leftArr];
                     leftCopy[data.index] = { ...leftCopy[data.index], isAssigned: true };
                     return sortItems(leftCopy);
@@ -393,7 +398,7 @@ export default function ScheduleTool() {
     );
 
     const handleUndo = (leftIdx: number) => {
-        setItemsRight((arr) => {
+        updateRight((arr) => {
             const copy = [...arr];
             const rightIdx = copy.findIndex((item) => item.fromLeftIndex === leftIdx);
             if (rightIdx !== -1) {
@@ -401,7 +406,7 @@ export default function ScheduleTool() {
             }
             return copy;
         });
-        setItemsLeft((arr) => {
+        updateLeft((arr) => {
             const copy = [...arr];
             copy[leftIdx] = { ...copy[leftIdx], isAssigned: false };
             return sortItems(copy);
@@ -409,12 +414,12 @@ export default function ScheduleTool() {
     };
 
     const handleUndoFromRight = (leftIdx: number) => {
-        setItemsRight((arr) => {
+        updateRight((arr) => {
             const copy = [...arr];
             const rightIdx = copy.findIndex((item) => item.fromLeftIndex === leftIdx);
             if (rightIdx !== -1) {
                 copy[rightIdx] = { ...copy[rightIdx], Driver1: '', fromLeftIndex: undefined };
-                setItemsLeft((leftArr) => {
+                updateLeft((leftArr) => {
                     const leftCopy = [...leftArr];
                     leftCopy[leftIdx] = { ...leftCopy[leftIdx], isAssigned: false, Driver1: leftCopy[leftIdx].Driver1 || copy[rightIdx].Driver1 };
                     return sortItems(leftCopy);
@@ -429,7 +434,7 @@ export default function ScheduleTool() {
         if (newDriverName && itemsRight.some(item => item.Driver1 === newDriverName && item.ID !== itemsRight[idx].ID)) {
             setWarningModal({
                 action: () => {
-                    setItemsRight((arr) => {
+                    updateRight((arr) => {
                         const copy = [...arr];
                         const oldName = copy[idx].Driver1;
                         copy[idx] = { ...copy[idx], Driver1: newDriverName };
@@ -444,7 +449,7 @@ export default function ScheduleTool() {
             });
             return;
         }
-        setItemsRight((arr) => {
+        updateRight((arr) => {
             const copy = [...arr];
             const oldName = copy[idx].Driver1;
             copy[idx] = { ...copy[idx], Driver1: newDriverName };
@@ -596,7 +601,7 @@ export default function ScheduleTool() {
                                                         if (isDuplicate) {
                                                             setWarningModal({
                                                                 action: () => {
-                                                                    setItemsRight((arr) => {
+                                                                    updateRight((arr) => {
                                                                         const copy = [...arr];
                                                                         copy[idx] = { ...copy[idx], Driver1: name };
                                                                         if (data.table === 'right') {
@@ -608,7 +613,7 @@ export default function ScheduleTool() {
                                                                             }
                                                                         } else if (data.table === 'left') {
                                                                             copy[idx].fromLeftIndex = data.index;
-                                                                            setItemsLeft((leftArr) => {
+                                                                            updateLeft((leftArr) => {
                                                                                 const leftCopy = [...leftArr];
                                                                                 leftCopy[data.index] = { ...leftCopy[data.index], isAssigned: true };
                                                                                 return sortItems(leftCopy);
@@ -621,7 +626,7 @@ export default function ScheduleTool() {
                                                             });
                                                             return;
                                                         }
-                                                        setItemsRight((arr) => {
+                                                        updateRight((arr) => {
                                                             const copy = [...arr];
                                                             copy[idx] = { ...copy[idx], Driver1: name };
                                                             if (data.table === 'right') {
@@ -633,7 +638,7 @@ export default function ScheduleTool() {
                                                                 }
                                                             } else if (data.table === 'left') {
                                                                 copy[idx].fromLeftIndex = data.index;
-                                                                setItemsLeft((leftArr) => {
+                                                                updateLeft((leftArr) => {
                                                                     const leftCopy = [...leftArr];
                                                                     leftCopy[data.index] = { ...leftCopy[data.index], isAssigned: true };
                                                                     return sortItems(leftCopy);
