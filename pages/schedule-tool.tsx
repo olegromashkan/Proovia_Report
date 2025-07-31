@@ -244,13 +244,13 @@ export default function ScheduleTool() {
         return index !== -1 ? text.substring(index + 1) : text;
     };
 
-    // Helper to compute Actual End time = End_Time minus Punctuality minutes
+    // Helper to compute Actual End time = End_Time plus Punctuality minutes
     const getActualEnd = (endTime?: string, punctuality?: string) => {
         if (!endTime) return '';
         const endDate = new Date(endTime);
         if (isNaN(endDate.getTime())) return '';
         const mins = parseInt(punctuality || '0', 10);
-        const actual = new Date(endDate.getTime() - (isNaN(mins) ? 0 : mins) * 60000);
+        const actual = new Date(endDate.getTime() + (isNaN(mins) ? 0 : mins) * 60000);
         return actual.toTimeString().slice(0, 5);
     };
 
