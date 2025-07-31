@@ -21,6 +21,7 @@ const IGNORED_CALENDAR_PATTERNS = [
     'everyday',
     'every 2nd south-west',
     'every 2nd day south',
+    'South Wales 2nd',
 ];
 
 const filterIgnored = <T extends { Calendar_Name?: string }>(items: T[]) =>
