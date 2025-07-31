@@ -17,6 +17,16 @@ export default function ScheduleTool() {
     const [error, setError] = useState<string | null>(null);
     const leftLoaded = useRef(false);
     const rightLoaded = useRef(false);
+    const PANELS = [
+        'Newbie',
+        'Mechanic',
+        'Loading 2DT',
+        'Trainers',
+        'Agreements',
+        'Return 2DT',
+        'OFF/STB',
+    ];
+    const [notes, setNotes] = useState<Record<string, string>>({});
 
     const saveLeft = async (items: Trip[]) => {
         await fetch('/api/schedule-tool', {
@@ -32,6 +42,32 @@ export default function ScheduleTool() {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ trips: items }),
         });
+    };
+
+    const loadNotes = async () => {
+        try {
+            const res = await fetch('/api/schedule-notes');
+            if (!res.ok) throw new Error('failed');
+            const data = await res.json();
+            setNotes(data);
+        } catch (err) {
+            console.error(err);
+        }
+    };
+
+    const saveNote = async (panel: string, content: string) => {
+        await fetch('/api/schedule-notes', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ panel, content }),
+        });
+    };
+
+    const clearNote = async (panel: string) => {
+        await fetch(`/api/schedule-notes?panel=${encodeURIComponent(panel)}`, {
+            method: 'DELETE',
+        });
+        setNotes((n) => ({ ...n, [panel]: '' }));
     };
 
     const load = async () => {
@@ -53,6 +89,7 @@ export default function ScheduleTool() {
 
     useEffect(() => {
         load();
+        loadNotes();
     }, []);
 
     useEffect(() => {
@@ -97,6 +134,11 @@ export default function ScheduleTool() {
         }
     };
 
+    const handleNoteChange = (panel: string, value: string) => {
+        setNotes((n) => ({ ...n, [panel]: value }));
+        saveNote(panel, value);
+    };
+
     const handleInputLeft = (e: ChangeEvent<HTMLInputElement>) => {
         processFiles(e.target.files, 'left');
         e.target.value = '';
@@ -127,7 +169,7 @@ export default function ScheduleTool() {
     };
 
     return (
-        <Layout title="Schedule Tool">
+        <Layout title="Schedule Tool" fullWidth>
             <div className="w-full min-h-screen p-0 m-0">
                 <div className="flex gap-4 w-full min-h-full">
                     <div className="flex-1 min-w-0 flex flex-col">
@@ -267,6 +309,22 @@ export default function ScheduleTool() {
                                 </tbody>
                             </table>
                         </div>
+                    </div>
+                    <div className="w-72 flex flex-col gap-2">
+                        {PANELS.map((p) => (
+                            <div key={p} className="flex flex-col">
+                                <div className="flex items-center justify-between mb-1">
+                                    <span className="text-sm font-semibold">{p}</span>
+                                    <button onClick={() => clearNote(p)} className="btn btn-error btn-xs">Clear</button>
+                                </div>
+                                <textarea
+                                    className="textarea textarea-bordered w-full text-sm"
+                                    rows={4}
+                                    value={notes[p] || ''}
+                                    onChange={(e) => handleNoteChange(p, e.target.value)}
+                                />
+                            </div>
+                        ))}
                     </div>
                 </div>
                 {error && <p className="text-red-600 mt-2 text-sm">{error}</p>}
