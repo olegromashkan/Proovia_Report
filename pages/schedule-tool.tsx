@@ -1,4 +1,4 @@
-import { useEffect, useState, DragEvent, ChangeEvent, useRef, KeyboardEvent } from 'react';
+import { useEffect, useState, DragEvent, ChangeEvent, useRef, KeyboardEvent, useMemo } from 'react';
 import Layout from '../components/Layout';
 import Icon from '../components/Icon';
 
@@ -36,6 +36,8 @@ export default function ScheduleTool() {
     const [notes, setNotes] = useState<Record<string, string>>({});
     const [editingRightIndex, setEditingRightIndex] = useState<number | null>(null);
     const [editValue, setEditValue] = useState<string>('');
+    const [sortLeft, setSortLeft] = useState<{ key: string; dir: 'asc' | 'desc' } | null>(null);
+    const [sortRight, setSortRight] = useState<{ key: string; dir: 'asc' | 'desc' } | null>(null);
 
     const updateLeft = (updater: (arr: Trip[]) => Trip[]) => {
         setItemsLeft((arr) => {
@@ -195,6 +197,34 @@ export default function ScheduleTool() {
         setItemsRight([]);
     };
 
+    const applyLeftSort = (key: string) => {
+        const dir: 'asc' | 'desc' = sortLeft && sortLeft.key === key && sortLeft.dir === 'asc' ? 'desc' : 'asc';
+        setSortLeft({ key, dir });
+        updateLeft((arr) => {
+            const oldIndex: Record<string, number> = {};
+            arr.forEach((it, idx) => { if (it.ID) oldIndex[it.ID] = idx; });
+            const sorted = sortBy(arr, key, dir, true);
+            const newIndex: Record<string, number> = {};
+            sorted.forEach((it, idx) => { if (it.ID) newIndex[it.ID] = idx; });
+            updateRight((rArr) => rArr.map(r => {
+                if (r.fromLeftIndex !== undefined) {
+                    const leftItem = arr[r.fromLeftIndex];
+                    if (leftItem && leftItem.ID && newIndex[leftItem.ID] !== undefined) {
+                        return { ...r, fromLeftIndex: newIndex[leftItem.ID] };
+                    }
+                }
+                return r;
+            }));
+            return sorted;
+        });
+    };
+
+    const applyRightSort = (key: string) => {
+        const dir: 'asc' | 'desc' = sortRight && sortRight.key === key && sortRight.dir === 'asc' ? 'desc' : 'asc';
+        setSortRight({ key, dir });
+        updateRight((arr) => sortBy(arr, key, dir));
+    };
+
     // Helper function to extract text after the first space
     const getTextAfterSpace = (text?: string) => {
         if (!text) return '';
@@ -341,8 +371,49 @@ export default function ScheduleTool() {
         });
     };
 
+    const sortBy = (arr: Trip[], key: string, dir: 'asc' | 'desc', isLeft = false): Trip[] => {
+        const allowedDrivers = (notes['Available Drivers'] || '').split('\n').map(d => d.trim()).filter(d => d);
+        const getValue = (it: Trip): any => {
+            if (key === 'ActualEnd') return getActualEnd(it.End_Time, it.Punctuality);
+            return (it as any)[key];
+        };
+        return [...arr].sort((a, b) => {
+            if (isLeft) {
+                const aIsAllowed = allowedDrivers.includes(a.Driver1 || '');
+                const bIsAllowed = allowedDrivers.includes(b.Driver1 || '');
+                if (aIsAllowed && !bIsAllowed) return -1;
+                if (!aIsAllowed && bIsAllowed) return 1;
+            }
+            const va = getValue(a) || '';
+            const vb = getValue(b) || '';
+            if (va < vb) return dir === 'asc' ? -1 : 1;
+            if (va > vb) return dir === 'asc' ? 1 : -1;
+            return 0;
+        });
+    };
+
     const leftStats = computeStats(itemsLeft);
     const rightStats = computeStats(itemsRight);
+
+    const amountRangeLeft = useMemo(() => {
+        const vals = itemsLeft.map(it => parseFloat(it.Order_Value || '0')).filter(v => !isNaN(v));
+        if (vals.length === 0) return { min: 0, max: 0 };
+        return { min: Math.min(...vals), max: Math.max(...vals) };
+    }, [itemsLeft]);
+
+    const amountRangeRight = useMemo(() => {
+        const vals = itemsRight.map(it => parseFloat(it.Order_Value || '0')).filter(v => !isNaN(v));
+        if (vals.length === 0) return { min: 0, max: 0 };
+        return { min: Math.min(...vals), max: Math.max(...vals) };
+    }, [itemsRight]);
+
+    const getAmountColor = (val: string | undefined, range: { min: number; max: number }) => {
+        const num = parseFloat(val || '');
+        if (isNaN(num)) return undefined;
+        const ratio = range.max === range.min ? 0 : (num - range.min) / (range.max - range.min);
+        const hue = 0 + ratio * 120;
+        return `hsl(${hue},70%,50%)`;
+    };
 
     const renderStats = (stats: { counts: Record<string, number>, total: number }) => (
         <div className="text-xs mb-2 flex flex-wrap gap-2">
@@ -456,16 +527,16 @@ export default function ScheduleTool() {
                             <table className="table table-xs table-zebra w-full">
                                 <thead>
                                     <tr>
-                                        <th>Start</th>
-                                        <th>End</th>
-                                        <th>Actual End</th>
-                                        <th>Driver</th>
-                                        <th>Contractor</th>
-                                        <th className="text-right">VH</th>
-                                        <th>Route</th>
-                                        <th>Tasks</th>
-                                        <th>Amount</th>
-                                        <th>Punctuality</th>
+                                        <th onClick={() => applyLeftSort('Start_Time')}>Start</th>
+                                        <th onClick={() => applyLeftSort('End_Time')}>End</th>
+                                        <th onClick={() => applyLeftSort('ActualEnd')}>Actual End</th>
+                                        <th onClick={() => applyLeftSort('Driver1')}>Driver</th>
+                                        <th onClick={() => applyLeftSort('Contractor')}>Contractor</th>
+                                        <th onClick={() => applyLeftSort('Calendar_Name')} className="text-right">VH</th>
+                                        <th onClick={() => applyLeftSort('Calendar_Name')}>Route</th>
+                                        <th onClick={() => applyLeftSort('Calendar_Name')}>Tasks</th>
+                                        <th onClick={() => applyLeftSort('Order_Value')}>Amount</th>
+                                        <th onClick={() => applyLeftSort('Punctuality')}>Punctuality</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -474,7 +545,7 @@ export default function ScheduleTool() {
                                         const routeColor = getRouteColorClass(it.Calendar_Name);
                                         const isAllowed = allowedDrivers.includes(it.Driver1 || '');
                                         return (
-                                            <tr key={it.ID}>
+                                            <tr key={it.ID} className="hover:bg-gray-200 dark:hover:bg-gray-700">
                                                 <td>{getTextAfterSpace(it.Start_Time)}</td>
                                                 <td>{getTextAfterSpace(it.End_Time)}</td>
                                                 <td>{getActualEnd(it.End_Time, it.Punctuality)}</td>
@@ -506,7 +577,7 @@ export default function ScheduleTool() {
                                                 <td className="whitespace-nowrap text-right">{getVH(it.Calendar_Name)}</td>
                                                 <td className={`whitespace-nowrap ${routeColor}`}>{getRoute(it.Calendar_Name)}</td>
                                                 <td className="whitespace-nowrap">{getTasks(it.Calendar_Name)}</td>
-                                                <td className="whitespace-nowrap">{it.Order_Value}</td>
+                                                <td className="whitespace-nowrap" style={{ backgroundColor: getAmountColor(it.Order_Value, amountRangeLeft) }}>{it.Order_Value}</td>
                                                 <td className="whitespace-nowrap">{it.Punctuality}</td>
                                             </tr>
                                         );
@@ -527,16 +598,14 @@ export default function ScheduleTool() {
                             <table className="table table-xs table-zebra w-full">
                                 <thead>
                                     <tr>
-                                        <th>Start</th>
-                                        <th>End</th>
-                                        <th>Actual End</th>
-                                        <th>Driver</th>
-                                        <th>Contractor</th>
-                                        <th className="text-right">VH</th>
-                                        <th>Route</th>
-                                        <th>Tasks</th>
-                                        <th>Amount</th>
-                                        <th>Punctuality</th>
+                                        <th onClick={() => applyRightSort('Start_Time')}>Start</th>
+                                        <th onClick={() => applyRightSort('End_Time')}>End</th>
+                                        <th onClick={() => applyRightSort('Driver1')}>Driver</th>
+                                        <th onClick={() => applyRightSort('Contractor')}>Contractor</th>
+                                        <th onClick={() => applyRightSort('Calendar_Name')} className="text-right">VH</th>
+                                        <th onClick={() => applyRightSort('Calendar_Name')}>Route</th>
+                                        <th onClick={() => applyRightSort('Calendar_Name')}>Tasks</th>
+                                        <th onClick={() => applyRightSort('Order_Value')}>Amount</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -545,10 +614,9 @@ export default function ScheduleTool() {
                                         const routeColor = getRouteColorClass(it.Calendar_Name);
                                         const isEditing = editingRightIndex === idx;
                                         return (
-                                            <tr key={it.ID}>
+                                            <tr key={it.ID} className="hover:bg-gray-200 dark:hover:bg-gray-700">
                                                 <td>{getTextAfterSpace(it.Start_Time)}</td>
                                                 <td>{getTextAfterSpace(it.End_Time)}</td>
-                                                <td>{getActualEnd(it.End_Time, it.Punctuality)}</td>
                                                 <td
                                                     draggable
                                                     onDragStart={(e) => e.dataTransfer.setData('text/plain', JSON.stringify({ table: 'right', index: idx, name: it.Driver1 }))}
@@ -635,8 +703,7 @@ export default function ScheduleTool() {
                                                 <td className="whitespace-nowrap text-right">{getVH(it.Calendar_Name)}</td>
                                                 <td className={`whitespace-nowrap ${routeColor}`}>{getRoute(it.Calendar_Name)}</td>
                                                 <td className="whitespace-nowrap">{getTasks(it.Calendar_Name)}</td>
-                                                <td className="whitespace-nowrap">{it.Order_Value}</td>
-                                                <td className="whitespace-nowrap">{it.Punctuality}</td>
+                                                <td className="whitespace-nowrap" style={{ backgroundColor: getAmountColor(it.Order_Value, amountRangeRight) }}>{it.Order_Value}</td>
                                             </tr>
                                         );
                                     })}
@@ -710,15 +777,4 @@ export default function ScheduleTool() {
             </div>
         </Layout>
     );
-}
-
-// Helper function to sort items
-function sortItems(items: Trip[], allowedDrivers: string[]): Trip[] {
-    return [...items].sort((a, b) => {
-        const aIsAllowed = allowedDrivers.includes(a.Driver1 || '');
-        const bIsAllowed = allowedDrivers.includes(b.Driver1 || '');
-        if (aIsAllowed && !bIsAllowed) return -1;
-        if (!aIsAllowed && bIsAllowed) return 1;
-        return 0; // Maintain relative order within allowed and non-allowed groups
-    });
 }
