@@ -122,7 +122,7 @@ export default function ScheduleTool() {
         rightLoaded.current = true;
     }, []);
 
-    const processFiles = async (files: FileList | null, side: 'left' | 'right') => {
+    const processFile = async (files: FileList | null) => {
         if (!files || files.length === 0) return;
         const file = files[0];
         try {
@@ -135,12 +135,31 @@ export default function ScheduleTool() {
             else if (Array.isArray(parsed.schedule_trips)) trips = parsed.schedule_trips;
             else if (Array.isArray(parsed.scheduleTrips)) trips = parsed.scheduleTrips;
             if (!Array.isArray(trips)) throw new Error('No schedule trips found');
-            const res = await fetch(side === 'left' ? '/api/schedule-tool' : '/api/schedule-tool2', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ trips, preserveDrivers: true }),
+
+            const byDate: Record<string, any[]> = {};
+            trips.forEach(t => {
+                const d = t.Date_field;
+                if (!d) return;
+                if (!byDate[d]) byDate[d] = [];
+                byDate[d].push(t);
             });
-            if (!res.ok) throw new Error('Upload failed');
+            const dates = Object.keys(byDate).sort((a, b) => new Date(a).getTime() - new Date(b).getTime());
+            const leftTrips = dates[0] ? byDate[dates[0]] : [];
+            const rightTrips = dates[1] ? byDate[dates[1]] : [];
+
+            const [lRes, rRes] = await Promise.all([
+                fetch('/api/schedule-tool', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ trips: leftTrips, preserveDrivers: true }),
+                }),
+                fetch('/api/schedule-tool2', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ trips: rightTrips, preserveDrivers: true }),
+                }),
+            ]);
+            if (!lRes.ok || !rRes.ok) throw new Error('Upload failed');
             load();
         } catch (err) {
             console.error(err);
@@ -157,76 +176,15 @@ export default function ScheduleTool() {
         }
     };
 
-    const handleInputLeft = (e: ChangeEvent<HTMLInputElement>) => {
-        processFiles(e.target.files, 'left');
+    const handleInputFile = (e: ChangeEvent<HTMLInputElement>) => {
+        processFile(e.target.files);
         e.target.value = '';
     };
-    const handleInputRight = (e: ChangeEvent<HTMLInputElement>) => {
-        processFiles(e.target.files, 'right');
-        e.target.value = '';
+    const handleDropFile = (e: DragEvent<HTMLDivElement>) => {
+        e.preventDefault();
+        processFile(e.dataTransfer.files);
     };
 
-    const handleDropLeft = (e: DragEvent<HTMLDivElement>) => {
-        e.preventDefault();
-        processFiles(e.dataTransfer.files, 'left');
-    };
-    const handleDropRight = (e: DragEvent<HTMLTableCellElement>, idx: number) => {
-        e.preventDefault();
-        const data = JSON.parse(e.dataTransfer.getData('text/plain'));
-        const name = data.name;
-        if (!name) return;
-        const isDuplicate = itemsRight.some(item => item.Driver1 === name && item.ID !== itemsRight[idx]?.ID);
-        if (isDuplicate) {
-            setWarningModal({
-                action: () => {
-                    updateRight((arr) => {
-                        const copy = [...arr];
-                        copy[idx] = { ...copy[idx], Driver1: name };
-                        if (data.table === 'right') {
-                            if (data.index === idx) return copy; // self drop
-                            copy[data.index] = { ...copy[data.index], Driver1: '' };
-                            if (copy[data.index].fromLeftIndex !== undefined) {
-                                copy[idx].fromLeftIndex = copy[data.index].fromLeftIndex;
-                                copy[data.index].fromLeftIndex = undefined;
-                            }
-                        } else if (data.table === 'left') {
-                            copy[idx].fromLeftIndex = data.index;
-                            updateLeft((leftArr) => {
-                                const leftCopy = [...leftArr];
-                                leftCopy[data.index] = { ...leftCopy[data.index], isAssigned: true };
-                                return sortItems(leftCopy);
-                            });
-                        }
-                        return copy;
-                    });
-                    setWarningModal(null);
-                }
-            });
-            return;
-        }
-        updateRight((arr) => {
-            const copy = [...arr];
-            copy[idx] = { ...copy[idx], Driver1: name };
-            if (data.table === 'right') {
-                if (data.index === idx) return copy; // self drop
-                copy[data.index] = { ...copy[data.index], Driver1: '' };
-                if (copy[data.index].fromLeftIndex !== undefined) {
-                    copy[idx].fromLeftIndex = copy[data.index].fromLeftIndex;
-                    copy[data.index].fromLeftIndex = undefined;
-                }
-            } else if (data.table === 'left') {
-                copy[idx].fromLeftIndex = data.index;
-                updateLeft((leftArr) => {
-                    const leftCopy = [...leftArr];
-                    leftCopy[data.index] = { ...leftCopy[data.index], isAssigned: true };
-                    return sortItems(leftCopy);
-                });
-            }
-            return copy;
-        });
-    };
-
-    const handleDrag = (e: DragEvent<HTMLDivElement>) => e.preventDefault();
 
     const clearAllLeft = async () => {
         await fetch('/api/schedule-tool', { method: 'DELETE' });
@@ -484,20 +442,25 @@ export default function ScheduleTool() {
     return (
         <Layout title="Schedule Tool" fullWidth>
             <div className="w-full min-h-screen p-0 m-0">
+                <div className="flex items-center gap-2 mb-4">
+                    <div
+                        className="flex-1 border-2 border-dashed rounded-md p-3 text-center cursor-pointer bg-white dark:bg-gray-700 dark:border-gray-500 dark:text-gray-200"
+                        onDrop={handleDropFile}
+                    >
+                        <input id="fileAll" type="file" accept=".json" onChange={handleInputFile} className="hidden" />
+                        <label htmlFor="fileAll" className="flex items-center justify-center gap-1 text-sm">
+                            <Icon name="file-arrow-up" className="text-xl" />
+                            JSON
+                        </label>
+                    </div>
+                    <button onClick={() => { clearAllLeft(); clearAllRight(); }} className="btn btn-error btn-xs w-24">
+                        Clear All
+                    </button>
+                </div>
                 <div className="flex gap-4 w-full min-h-full">
                     <div className="flex-1 min-w-0 flex flex-col">
                         <div className="flex items-center gap-2 mb-2">
-                            <div
-                                className="flex-1 border-2 border-dashed rounded-md p-3 text-center cursor-pointer bg-white dark:bg-gray-700 dark:border-gray-500 dark:text-gray-200"
-                                onDrop={handleDropLeft}
-                                onDragOver={handleDrag}
-                            >
-                                <input id="fileLeft" type="file" accept=".json" onChange={handleInputLeft} className="hidden" />
-                                <label htmlFor="fileLeft" className="flex items-center justify-center gap-1 text-sm">
-                                    <Icon name="file-arrow-up" className="text-xl" />
-                                    JSON
-                                </label>
-                            </div>
+                            <div className="flex-1" />
                             <button onClick={clearAllLeft} className="btn btn-error btn-xs w-24">
                                 Clear
                             </button>
@@ -568,17 +531,7 @@ export default function ScheduleTool() {
                     </div>
                     <div className="flex-1 min-w-0 flex flex-col">
                         <div className="flex items-center gap-2 mb-2">
-                            <div
-                                className="flex-1 border-2 border-dashed rounded-md p-3 text-center cursor-pointer bg-white dark:bg-gray-700 dark:border-gray-500 dark:text-gray-200"
-                                onDrop={handleDropRight}
-                                onDragOver={handleDrag}
-                            >
-                                <input id="fileRight" type="file" accept=".json" onChange={handleInputRight} className="hidden" />
-                                <label htmlFor="fileRight" className="flex items-center justify-center gap-1 text-sm">
-                                    <Icon name="file-arrow-up" className="text-xl" />
-                                    JSON
-                                </label>
-                            </div>
+                            <div className="flex-1" />
                             <button onClick={clearAllRight} className="btn btn-error btn-xs w-24">
                                 Clear
                             </button>
