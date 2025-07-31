@@ -259,6 +259,16 @@ export default function ScheduleTool() {
         return actual.toTimeString().slice(0, 5);
     };
 
+    // Parse various time formats and return minutes since midnight
+    const parseTime = (val?: string): number => {
+        if (!val) return NaN;
+        const part = val.includes(' ') ? val.split(' ')[1] : val;
+        const match = part.match(/(\d{1,2}):(\d{2})/);
+        if (!match) return NaN;
+        const [, hh, mm] = match;
+        return parseInt(hh, 10) * 60 + parseInt(mm, 10);
+    };
+
     // Helper function to extract Calendar: after ":" up to "("
     const getCalendar = (text?: string) => {
         if (!text) return '';
@@ -391,8 +401,33 @@ export default function ScheduleTool() {
     const sortBy = (arr: Trip[], key: string, dir: 'asc' | 'desc', isLeft = false): Trip[] => {
         const allowedDrivers = (notes['Available Drivers'] || '').split('\n').map(d => d.trim()).filter(d => d);
         const getValue = (it: Trip): any => {
-            if (key === 'ActualEnd') return getActualEnd(it.End_Time, it.Punctuality);
-            return (it as any)[key];
+            switch (key) {
+                case 'Start_Time':
+                    return parseTime(it.Start_Time);
+                case 'End_Time':
+                    return parseTime(it.End_Time);
+                case 'ActualEnd':
+                    return parseTime(getActualEnd(it.End_Time, it.Punctuality));
+                case 'Driver1':
+                    return (it.Driver1 || '').toLowerCase();
+                case 'Contractor':
+                    return (it.Contractor || '').toLowerCase();
+                case 'VH': {
+                    const vh = getVH(it.Calendar_Name);
+                    const num = parseInt(vh.replace(/[^0-9]/g, ''), 10);
+                    return isNaN(num) ? vh : num;
+                }
+                case 'Route':
+                    return (getRoute(it.Calendar_Name) || '').toLowerCase();
+                case 'Tasks':
+                    return parseFloat(getTasks(it.Calendar_Name)) || 0;
+                case 'Order_Value':
+                    return parseFloat(it.Order_Value || '0');
+                case 'Punctuality':
+                    return parseFloat(it.Punctuality || '0');
+                default:
+                    return (it as any)[key];
+            }
         };
         return [...arr].sort((a, b) => {
             if (isLeft) {
@@ -401,8 +436,8 @@ export default function ScheduleTool() {
                 if (aIsAllowed && !bIsAllowed) return -1;
                 if (!aIsAllowed && bIsAllowed) return 1;
             }
-            const va = getValue(a) || '';
-            const vb = getValue(b) || '';
+            const va = getValue(a);
+            const vb = getValue(b);
             if (va < vb) return dir === 'asc' ? -1 : 1;
             if (va > vb) return dir === 'asc' ? 1 : -1;
             return 0;
@@ -550,9 +585,9 @@ export default function ScheduleTool() {
                                         <th onClick={() => applyLeftSort('ActualEnd')}>Actual End</th>
                                         <th onClick={() => applyLeftSort('Driver1')}>Driver</th>
                                         <th onClick={() => applyLeftSort('Contractor')}>Contractor</th>
-                                        <th onClick={() => applyLeftSort('Calendar_Name')} className="text-right">VH</th>
-                                        <th onClick={() => applyLeftSort('Calendar_Name')}>Route</th>
-                                        <th onClick={() => applyLeftSort('Calendar_Name')}>Tasks</th>
+                                        <th onClick={() => applyLeftSort('VH')} className="text-right">VH</th>
+                                        <th onClick={() => applyLeftSort('Route')}>Route</th>
+                                        <th onClick={() => applyLeftSort('Tasks')}>Tasks</th>
                                         <th onClick={() => applyLeftSort('Order_Value')}>Amount</th>
                                         <th onClick={() => applyLeftSort('Punctuality')}>Punctuality</th>
                                     </tr>
@@ -621,9 +656,9 @@ export default function ScheduleTool() {
                                         <th onClick={() => applyRightSort('End_Time')}>End</th>
                                         <th onClick={() => applyRightSort('Driver1')}>Driver</th>
                                         <th onClick={() => applyRightSort('Contractor')}>Contractor</th>
-                                        <th onClick={() => applyRightSort('Calendar_Name')} className="text-right">VH</th>
-                                        <th onClick={() => applyRightSort('Calendar_Name')}>Route</th>
-                                        <th onClick={() => applyRightSort('Calendar_Name')}>Tasks</th>
+                                        <th onClick={() => applyRightSort('VH')} className="text-right">VH</th>
+                                        <th onClick={() => applyRightSort('Route')}>Route</th>
+                                        <th onClick={() => applyRightSort('Tasks')}>Tasks</th>
                                         <th onClick={() => applyRightSort('Order_Value')}>Amount</th>
                                     </tr>
                                 </thead>
