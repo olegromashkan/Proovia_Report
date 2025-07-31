@@ -15,6 +15,21 @@ interface Trip {
     fromLeftIndex?: number; // For right trips, to track origin in left
 }
 
+const IGNORED_CALENDAR_PATTERNS = [
+    'every 2nd day north',
+    'everyday',
+    'every 2nd south-west',
+    'every 2nd day south',
+];
+
+const filterIgnored = <T extends { Calendar_Name?: string }>(items: T[]) =>
+    items.filter(
+        (it) =>
+            !IGNORED_CALENDAR_PATTERNS.some((pat) =>
+                (it.Calendar_Name || '').toLowerCase().includes(pat)
+            )
+    );
+
 export default function ScheduleTool() {
     const [itemsLeft, setItemsLeft] = useState<Trip[]>([]);
     const [itemsRight, setItemsRight] = useState<Trip[]>([]);
@@ -106,8 +121,8 @@ export default function ScheduleTool() {
             if (!lRes.ok || !rRes.ok) throw new Error('failed');
             const lJson = await lRes.json();
             const rJson = await rRes.json();
-            updateLeft(() => sortItems(lJson));
-            updateRight(() => rJson);
+            updateLeft(() => sortItems(filterIgnored(lJson)));
+            updateRight(() => filterIgnored(rJson));
         } catch (err) {
             console.error(err);
             setError('Failed to load data');
@@ -137,6 +152,8 @@ export default function ScheduleTool() {
             else if (Array.isArray(parsed.schedule_trips)) trips = parsed.schedule_trips;
             else if (Array.isArray(parsed.scheduleTrips)) trips = parsed.scheduleTrips;
             if (!Array.isArray(trips)) throw new Error('No schedule trips found');
+
+            trips = filterIgnored(trips);
 
             const byDate: Record<string, any[]> = {};
             trips.forEach(t => {

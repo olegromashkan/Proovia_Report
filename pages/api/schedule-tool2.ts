@@ -1,6 +1,21 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import db from '../../lib/db';
 
+const IGNORED_CALENDAR_PATTERNS = [
+    'every 2nd day north',
+    'everyday',
+    'every 2nd south-west',
+    'every 2nd day south',
+];
+
+const filterIgnored = (items: any[]) =>
+    items.filter(
+        (it) =>
+            !IGNORED_CALENDAR_PATTERNS.some((pat) =>
+                String(it.Calendar_Name || '').toLowerCase().includes(pat)
+            )
+    );
+
 export const config = {
     api: {
         bodyParser: {
@@ -14,7 +29,7 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
         if (req.method === 'GET') {
             const rows = db.prepare('SELECT data FROM schedule_trips_tool2').all();
             const items = rows.map((r: any) => JSON.parse(r.data));
-            return res.status(200).json(items);
+            return res.status(200).json(filterIgnored(items));
         }
 
         if (req.method === 'DELETE') {
@@ -54,6 +69,8 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
                     return it;
                 });
             }
+
+            trips = filterIgnored(trips);
 
             const del = db.prepare('DELETE FROM schedule_trips_tool2');
             del.run();
