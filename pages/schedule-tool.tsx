@@ -844,7 +844,7 @@ export default function ScheduleTool() {
                     </div>
                 </div>
                 {notification && (
-                    <div className="toast toast-top toast-center">
+                    <div className="toast toast-bottom toast-center">
                         <div className="alert alert-error">
                             <span>{notification}</span>
                         </div>
