@@ -124,6 +124,18 @@ export default function ScheduleTool() {
         setTimeSettings({ ...DEFAULT_TIME_SETTINGS });
     };
 
+    const safeFetch = async (url: string, options: RequestInit = {}) => {
+        try {
+            const res = await fetch(url, options);
+            if (!res.ok) throw new Error(`Request failed: ${res.status}`);
+            return res;
+        } catch (err) {
+            console.error(err);
+            setError('Network request failed');
+            throw err;
+        }
+    };
+
     const updateLeft = (updater: (arr: Trip[]) => Trip[]) => {
         setItemsLeft((arr) => {
             const updated = updater(arr);
@@ -141,58 +153,80 @@ export default function ScheduleTool() {
     };
 
     const saveLeft = async (items: Trip[]) => {
-        await fetch('/api/schedule-tool', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ trips: items }),
-        });
+        try {
+            await safeFetch('/api/schedule-tool', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ trips: items }),
+            });
+        } catch {
+            /* handled in safeFetch */
+        }
     };
 
     const saveRight = async (items: Trip[]) => {
-        await fetch('/api/schedule-tool2', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ trips: items }),
-        });
+        try {
+            await safeFetch('/api/schedule-tool2', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ trips: items }),
+            });
+        } catch {
+            /* handled in safeFetch */
+        }
     };
 
     const loadNotes = async () => {
         try {
-            const res = await fetch('/api/schedule-notes');
-            if (!res.ok) throw new Error('failed');
+            const res = await safeFetch('/api/schedule-notes');
             const data = await res.json();
             setNotes(data);
-        } catch (err) {
-            console.error(err);
+        } catch {
+            /* handled in safeFetch */
         }
     };
 
     const saveNote = async (panel: string, content: string) => {
-        await fetch('/api/schedule-notes', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ panel, content }),
-        });
+        try {
+            await safeFetch('/api/schedule-notes', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ panel, content }),
+            });
+        } catch {
+            /* handled in safeFetch */
+        }
     };
 
     const clearNote = async (panel: string) => {
-        await fetch(`/api/schedule-notes?panel=${encodeURIComponent(panel)}`, {
-            method: 'DELETE',
-        });
-        setNotes((n) => ({ ...n, [panel]: '' }));
+        try {
+            await safeFetch(`/api/schedule-notes?panel=${encodeURIComponent(panel)}`, {
+                method: 'DELETE',
+            });
+            setNotes((n) => ({ ...n, [panel]: '' }));
+        } catch {
+            /* handled in safeFetch */
+        }
     };
 
     const load = async () => {
         try {
-            const [lRes, rRes] = await Promise.all([
+            const [lRes, rRes] = await Promise.allSettled([
                 fetch('/api/schedule-tool'),
                 fetch('/api/schedule-tool2'),
             ]);
-            if (!lRes.ok || !rRes.ok) throw new Error('failed');
-            const lJson = await lRes.json();
-            const rJson = await rRes.json();
-            updateLeft(() => sortItems(filterIgnored(lJson)));
-            updateRight(() => filterIgnored(rJson));
+            if (lRes.status === 'fulfilled' && lRes.value.ok) {
+                const lJson = await lRes.value.json();
+                updateLeft(() => sortItems(filterIgnored(lJson)));
+            } else {
+                setError('Failed to load left data');
+            }
+            if (rRes.status === 'fulfilled' && rRes.value.ok) {
+                const rJson = await rRes.value.json();
+                updateRight(() => filterIgnored(rJson));
+            } else {
+                setError('Failed to load right data');
+            }
         } catch (err) {
             console.error(err);
             setError('Failed to load data');
@@ -237,21 +271,19 @@ export default function ScheduleTool() {
             const rightTrips = dates[1] ? byDate[dates[1]] : [];
 
             const [lRes, rRes] = await Promise.all([
-                fetch('/api/schedule-tool', {
+                safeFetch('/api/schedule-tool', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ trips: leftTrips, preserveDrivers: true }),
                 }),
-                fetch('/api/schedule-tool2', {
+                safeFetch('/api/schedule-tool2', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ trips: rightTrips, preserveDrivers: true }),
                 }),
             ]);
-            if (!lRes.ok || !rRes.ok) throw new Error('Upload failed');
             load();
-        } catch (err) {
-            console.error(err);
+        } catch {
             setError('Failed to upload file');
         }
     };
@@ -276,12 +308,20 @@ export default function ScheduleTool() {
 
 
     const clearAllLeft = async () => {
-        await fetch('/api/schedule-tool', { method: 'DELETE' });
-        setItemsLeft([]);
+        try {
+            await safeFetch('/api/schedule-tool', { method: 'DELETE' });
+            setItemsLeft([]);
+        } catch {
+            /* handled in safeFetch */
+        }
     };
     const clearAllRight = async () => {
-        await fetch('/api/schedule-tool2', { method: 'DELETE' });
-        setItemsRight([]);
+        try {
+            await safeFetch('/api/schedule-tool2', { method: 'DELETE' });
+            setItemsRight([]);
+        } catch {
+            /* handled in safeFetch */
+        }
     };
 
     const applyLeftSort = (key: string) => {
