@@ -691,6 +691,29 @@ export default function ScheduleTool() {
                                                         const data = JSON.parse(e.dataTransfer.getData('text/plain'));
                                                         const name = data.name;
                                                         if (!name) return;
+
+                                                        // Determine if rest warnings are needed when dragging from left table
+                                                        let restMessage = '';
+                                                        if (data.table === 'left') {
+                                                            const leftItem = itemsLeft[data.index];
+                                                            const actualEnd = parseTime(getActualEnd(leftItem?.End_Time, leftItem?.Punctuality));
+                                                            const targetStart = parseTime(it.Start_Time);
+                                                            if (!isNaN(actualEnd) && !isNaN(targetStart)) {
+                                                                if (actualEnd > 20 * 60 && targetStart < 7 * 60) {
+                                                                    restMessage = 'Driver has had too little rest between shifts.';
+                                                                } else if (actualEnd <= 17 * 60 && targetStart > 9 * 60) {
+                                                                    restMessage = 'Consider assigning this driver to an earlier start time.';
+                                                                }
+                                                            }
+                                                        }
+
+                                                        const showRestNotification = () => {
+                                                            if (restMessage) {
+                                                                setNotification(restMessage);
+                                                                setTimeout(() => setNotification(null), 4000);
+                                                            }
+                                                        };
+
                                                         const isDuplicate = itemsRight.some(item => item.Driver1 === name && item.ID !== it.ID);
                                                         if (isDuplicate) {
                                                             setWarningModal({
@@ -715,6 +738,7 @@ export default function ScheduleTool() {
                                                                         }
                                                                         return copy;
                                                                     });
+                                                                    showRestNotification();
                                                                     setWarningModal(null);
                                                                 }
                                                             });
@@ -740,6 +764,7 @@ export default function ScheduleTool() {
                                                             }
                                                             return copy;
                                                         });
+                                                        showRestNotification();
                                                     }}
                                                     className={driverColor}
                                                     onDoubleClick={() => {
