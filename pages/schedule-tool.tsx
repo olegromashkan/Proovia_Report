@@ -43,6 +43,17 @@ const DEFAULT_ROUTE_GROUPS: RouteGroup[] = [
     { name: 'West Midlands', codes: ['ST', 'TF', 'WV', 'DY', 'HR', 'WR', 'B', 'WS', 'CV', 'NN'], isFull: false, color: 'text-teal-300' },
 ];
 
+const DEFAULT_TIME_SETTINGS = {
+    lateEndHour: 20,
+    earlyStartHour: 7,
+    earlyEndHour: 17,
+    lateStartHour: 9,
+    restMessage: 'Driver has had too little rest between shifts.',
+    earlyMessage: 'Consider assigning this driver to an earlier start time.',
+    enableRestWarning: true,
+    enableEarlyWarning: true,
+};
+
 export default function ScheduleTool() {
     const [itemsLeft, setItemsLeft] = useState<Trip[]>([]);
     const [itemsRight, setItemsRight] = useState<Trip[]>([]);
@@ -68,14 +79,7 @@ export default function ScheduleTool() {
     const [sortRight, setSortRight] = useState<{ key: string; dir: 'asc' | 'desc' } | null>(null);
     const [routeGroups, setRouteGroups] = useState<RouteGroup[]>(DEFAULT_ROUTE_GROUPS);
     const [ignoredPatterns, setIgnoredPatterns] = useState<string[]>(DEFAULT_IGNORED_PATTERNS);
-    const [timeSettings, setTimeSettings] = useState({
-        lateEndHour: 20,
-        earlyStartHour: 7,
-        earlyEndHour: 17,
-        lateStartHour: 9,
-        restMessage: 'Driver has had too little rest between shifts.',
-        earlyMessage: 'Consider assigning this driver to an earlier start time.',
-    });
+    const [timeSettings, setTimeSettings] = useState(DEFAULT_TIME_SETTINGS);
     const [settingsOpen, setSettingsOpen] = useState(false);
 
     const filterIgnored = <T extends { Calendar_Name?: string }>(items: T[]) =>
@@ -91,7 +95,7 @@ export default function ScheduleTool() {
             try {
                 const parsed = JSON.parse(stored);
                 if (parsed.routeGroups) setRouteGroups(parsed.routeGroups);
-                if (parsed.timeSettings) setTimeSettings(parsed.timeSettings);
+                if (parsed.timeSettings) setTimeSettings({ ...DEFAULT_TIME_SETTINGS, ...parsed.timeSettings });
                 if (parsed.ignoredPatterns) setIgnoredPatterns(parsed.ignoredPatterns);
             } catch (e) {
                 console.error(e);
@@ -108,6 +112,12 @@ export default function ScheduleTool() {
 
     const updateGroup = (idx: number, group: RouteGroup) => {
         setRouteGroups(arr => arr.map((g, i) => (i === idx ? group : g)));
+    };
+
+    const resetSettings = () => {
+        setRouteGroups(DEFAULT_ROUTE_GROUPS.map(g => ({ ...g, codes: [...g.codes] })));
+        setIgnoredPatterns([...DEFAULT_IGNORED_PATTERNS]);
+        setTimeSettings({ ...DEFAULT_TIME_SETTINGS });
     };
 
     const updateLeft = (updater: (arr: Trip[]) => Trip[]) => {
@@ -737,9 +747,9 @@ export default function ScheduleTool() {
                                                             const actualEnd = parseTime(getActualEnd(leftItem?.End_Time, leftItem?.Punctuality));
                                                             const targetStart = parseTime(it.Start_Time);
                                                             if (!isNaN(actualEnd) && !isNaN(targetStart)) {
-                                                                if (actualEnd > timeSettings.lateEndHour * 60 && targetStart < timeSettings.earlyStartHour * 60) {
+                                                                if (timeSettings.enableRestWarning && actualEnd > timeSettings.lateEndHour * 60 && targetStart < timeSettings.earlyStartHour * 60) {
                                                                     restMessage = timeSettings.restMessage;
-                                                                } else if (actualEnd <= timeSettings.earlyEndHour * 60 && targetStart > timeSettings.lateStartHour * 60) {
+                                                                } else if (timeSettings.enableEarlyWarning && actualEnd <= timeSettings.earlyEndHour * 60 && targetStart > timeSettings.lateStartHour * 60) {
                                                                     restMessage = timeSettings.earlyMessage;
                                                                 }
                                                             }
@@ -882,118 +892,145 @@ export default function ScheduleTool() {
                     </div>
                 </div>
                 <Modal open={settingsOpen} onClose={() => setSettingsOpen(false)} className="max-w-4xl">
-                    <h3 className="font-bold text-lg mb-2">Settings</h3>
-                    <div className="space-y-4 max-h-[70vh] overflow-y-auto">
-                        <div>
-                            <h4 className="font-semibold mb-1">Time Logic</h4>
-                            <div className="grid grid-cols-2 gap-2">
-                                <label className="flex items-center gap-2 text-sm">
-                                    Late End Hour
-                                    <input
-                                        type="number"
-                                        className="input input-bordered input-sm w-20"
-                                        value={timeSettings.lateEndHour}
-                                        onChange={(e) => setTimeSettings({ ...timeSettings, lateEndHour: parseInt(e.target.value) })}
-                                    />
-                                </label>
-                                <label className="flex items-center gap-2 text-sm">
-                                    Early Start Hour
-                                    <input
-                                        type="number"
-                                        className="input input-bordered input-sm w-20"
-                                        value={timeSettings.earlyStartHour}
-                                        onChange={(e) => setTimeSettings({ ...timeSettings, earlyStartHour: parseInt(e.target.value) })}
-                                    />
-                                </label>
-                                <label className="flex items-center gap-2 text-sm">
-                                    Early End Hour
-                                    <input
-                                        type="number"
-                                        className="input input-bordered input-sm w-20"
-                                        value={timeSettings.earlyEndHour}
-                                        onChange={(e) => setTimeSettings({ ...timeSettings, earlyEndHour: parseInt(e.target.value) })}
-                                    />
-                                </label>
-                                <label className="flex items-center gap-2 text-sm">
-                                    Late Start Hour
-                                    <input
-                                        type="number"
-                                        className="input input-bordered input-sm w-20"
-                                        value={timeSettings.lateStartHour}
-                                        onChange={(e) => setTimeSettings({ ...timeSettings, lateStartHour: parseInt(e.target.value) })}
-                                    />
-                                </label>
-                            </div>
-                            <input
-                                type="text"
-                                className="input input-bordered input-sm w-full mt-2"
-                                value={timeSettings.restMessage}
-                                onChange={(e) => setTimeSettings({ ...timeSettings, restMessage: e.target.value })}
-                            />
-                            <input
-                                type="text"
-                                className="input input-bordered input-sm w-full mt-2"
-                                value={timeSettings.earlyMessage}
-                                onChange={(e) => setTimeSettings({ ...timeSettings, earlyMessage: e.target.value })}
-                            />
-                        </div>
-                        <div>
-                            <h4 className="font-semibold mb-1">Route Groups</h4>
-                            {routeGroups.map((group, idx) => (
-                                <div key={idx} className="border p-2 rounded-md mb-2 space-y-1">
-                                    <div className="flex items-center gap-2">
+                    <h3 className="font-bold text-xl mb-4">Settings</h3>
+                    <div className="space-y-6 max-h-[70vh] overflow-y-auto">
+                        <section className="card bg-base-100 shadow">
+                            <div className="card-body space-y-2">
+                                <h4 className="card-title mb-2">Time Logic</h4>
+                                <div className="grid grid-cols-2 gap-2">
+                                    <label className="flex items-center gap-2 text-sm">
+                                        Late End Hour
                                         <input
-                                            className="input input-bordered input-xs"
-                                            value={group.name}
-                                            onChange={(e) => updateGroup(idx, { ...group, name: e.target.value })}
+                                            type="number"
+                                            className="input input-bordered input-sm w-20"
+                                            value={timeSettings.lateEndHour}
+                                            onChange={(e) => setTimeSettings({ ...timeSettings, lateEndHour: parseInt(e.target.value) })}
                                         />
+                                    </label>
+                                    <label className="flex items-center gap-2 text-sm">
+                                        Early Start Hour
                                         <input
-                                            className="input input-bordered input-xs"
-                                            value={group.color}
-                                            onChange={(e) => updateGroup(idx, { ...group, color: e.target.value })}
+                                            type="number"
+                                            className="input input-bordered input-sm w-20"
+                                            value={timeSettings.earlyStartHour}
+                                            onChange={(e) => setTimeSettings({ ...timeSettings, earlyStartHour: parseInt(e.target.value) })}
                                         />
-                                        <label className="flex items-center gap-1 text-xs">
-                                            <input
-                                                type="checkbox"
-                                                checked={group.isFull}
-                                                onChange={(e) => updateGroup(idx, { ...group, isFull: e.target.checked })}
-                                            />
-                                            Full
-                                        </label>
-                                        <button
-                                            className="btn btn-xs btn-error ml-auto"
-                                            onClick={() => setRouteGroups(arr => arr.filter((_, i) => i !== idx))}
-                                        >
-                                            Remove
-                                        </button>
-                                    </div>
-                                    <textarea
-                                        className="textarea textarea-bordered w-full text-xs"
-                                        rows={2}
-                                        value={group.codes.join(', ')}
-                                        onChange={(e) => updateGroup(idx, { ...group, codes: e.target.value.split(',').map(c => c.trim().toUpperCase()).filter(Boolean) })}
-                                    />
+                                    </label>
+                                    <label className="flex items-center gap-2 text-sm">
+                                        Early End Hour
+                                        <input
+                                            type="number"
+                                            className="input input-bordered input-sm w-20"
+                                            value={timeSettings.earlyEndHour}
+                                            onChange={(e) => setTimeSettings({ ...timeSettings, earlyEndHour: parseInt(e.target.value) })}
+                                        />
+                                    </label>
+                                    <label className="flex items-center gap-2 text-sm">
+                                        Late Start Hour
+                                        <input
+                                            type="number"
+                                            className="input input-bordered input-sm w-20"
+                                            value={timeSettings.lateStartHour}
+                                            onChange={(e) => setTimeSettings({ ...timeSettings, lateStartHour: parseInt(e.target.value) })}
+                                        />
+                                    </label>
                                 </div>
-                            ))}
-                            <button
-                                className="btn btn-sm mt-2"
-                                onClick={() => setRouteGroups([...routeGroups, { name: 'New Group', codes: [], isFull: false, color: 'text-white' }])}
-                            >
-                                <Icon name="plus" className="w-4 h-4 mr-1" />
-                                Add Group
-                            </button>
-                        </div>
-                        <div>
-                            <h4 className="font-semibold mb-1">Ignored Calendar Patterns</h4>
-                            <textarea
-                                className="textarea textarea-bordered w-full text-xs"
-                                rows={4}
-                                value={ignoredPatterns.join('\n')}
-                                onChange={(e) => setIgnoredPatterns(e.target.value.split('\n').map(p => p.trim()).filter(Boolean))}
-                            />
-                        </div>
+                                <div className="grid grid-cols-2 gap-2 mt-2">
+                                    <label className="flex items-center gap-2 text-sm">
+                                        <input
+                                            type="checkbox"
+                                            className="toggle toggle-sm"
+                                            checked={timeSettings.enableRestWarning}
+                                            onChange={(e) => setTimeSettings({ ...timeSettings, enableRestWarning: e.target.checked })}
+                                        />
+                                        Show Rest Warnings
+                                    </label>
+                                    <label className="flex items-center gap-2 text-sm">
+                                        <input
+                                            type="checkbox"
+                                            className="toggle toggle-sm"
+                                            checked={timeSettings.enableEarlyWarning}
+                                            onChange={(e) => setTimeSettings({ ...timeSettings, enableEarlyWarning: e.target.checked })}
+                                        />
+                                        Show Early Warnings
+                                    </label>
+                                </div>
+                                <input
+                                    type="text"
+                                    className="input input-bordered input-sm w-full mt-2"
+                                    value={timeSettings.restMessage}
+                                    onChange={(e) => setTimeSettings({ ...timeSettings, restMessage: e.target.value })}
+                                />
+                                <input
+                                    type="text"
+                                    className="input input-bordered input-sm w-full mt-2"
+                                    value={timeSettings.earlyMessage}
+                                    onChange={(e) => setTimeSettings({ ...timeSettings, earlyMessage: e.target.value })}
+                                />
+                            </div>
+                        </section>
+                        <section className="card bg-base-100 shadow">
+                            <div className="card-body space-y-2">
+                                <h4 className="card-title mb-2">Route Groups</h4>
+                                {routeGroups.map((group, idx) => (
+                                    <div key={idx} className="border p-2 rounded-md mb-2 space-y-1">
+                                        <div className="flex items-center gap-2">
+                                            <input
+                                                className="input input-bordered input-xs"
+                                                value={group.name}
+                                                onChange={(e) => updateGroup(idx, { ...group, name: e.target.value })}
+                                            />
+                                            <input
+                                                className="input input-bordered input-xs"
+                                                value={group.color}
+                                                onChange={(e) => updateGroup(idx, { ...group, color: e.target.value })}
+                                            />
+                                            <label className="flex items-center gap-1 text-xs">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={group.isFull}
+                                                    onChange={(e) => updateGroup(idx, { ...group, isFull: e.target.checked })}
+                                                />
+                                                Full
+                                            </label>
+                                            <button
+                                                className="btn btn-xs btn-error ml-auto"
+                                                onClick={() => setRouteGroups(arr => arr.filter((_, i) => i !== idx))}
+                                            >
+                                                Remove
+                                            </button>
+                                        </div>
+                                        <textarea
+                                            className="textarea textarea-bordered w-full text-xs"
+                                            rows={2}
+                                            value={group.codes.join(', ')}
+                                            onChange={(e) => updateGroup(idx, { ...group, codes: e.target.value.split(',').map(c => c.trim().toUpperCase()).filter(Boolean) })}
+                                        />
+                                    </div>
+                                ))}
+                                <button
+                                    className="btn btn-sm mt-2"
+                                    onClick={() => setRouteGroups([...routeGroups, { name: 'New Group', codes: [], isFull: false, color: 'text-white' }])}
+                                >
+                                    <Icon name="plus" className="w-4 h-4 mr-1" />
+                                    Add Group
+                                </button>
+                            </div>
+                        </section>
+                        <section className="card bg-base-100 shadow">
+                            <div className="card-body space-y-2">
+                                <h4 className="card-title mb-2">Ignored Calendar Patterns</h4>
+                                <textarea
+                                    className="textarea textarea-bordered w-full text-xs"
+                                    rows={4}
+                                    value={ignoredPatterns.join('\n')}
+                                    onChange={(e) => setIgnoredPatterns(e.target.value.split('\n').map(p => p.trim()).filter(Boolean))}
+                                />
+                            </div>
+                        </section>
                     </div>
                     <div className="modal-action">
+                        <button className="btn btn-outline mr-auto" onClick={resetSettings}>Reset Defaults</button>
                         <button className="btn" onClick={() => setSettingsOpen(false)}>Close</button>
                     </div>
                 </Modal>
