@@ -1,6 +1,7 @@
 import { useEffect, useState, DragEvent, ChangeEvent, useRef, KeyboardEvent, useMemo } from 'react';
 import Layout from '../components/Layout';
 import Icon from '../components/Icon';
+import Modal from '../components/Modal';
 import { parseTimeToMinutes } from '../lib/timeUtils';
 
 interface Trip {
@@ -16,7 +17,14 @@ interface Trip {
     fromLeftIndex?: number; // For right trips, to track origin in left
 }
 
-const IGNORED_CALENDAR_PATTERNS = [
+interface RouteGroup {
+    name: string;
+    codes: string[];
+    isFull: boolean;
+    color: string;
+}
+
+const DEFAULT_IGNORED_PATTERNS = [
     'every 2nd day north',
     'everyday',
     'every 2nd south-west',
@@ -24,13 +32,16 @@ const IGNORED_CALENDAR_PATTERNS = [
     'South Wales 2nd',
 ];
 
-const filterIgnored = <T extends { Calendar_Name?: string }>(items: T[]) =>
-    items.filter(
-        (it) =>
-            !IGNORED_CALENDAR_PATTERNS.some((pat) =>
-                (it.Calendar_Name || '').toLowerCase().includes(pat)
-            )
-    );
+const DEFAULT_ROUTE_GROUPS: RouteGroup[] = [
+    { name: '2DT', codes: ['EDINBURGH', 'GLASGOW', 'INVERNESS', 'ABERDEEN', 'EX+TR', 'TQ+PL'], isFull: true, color: 'text-gray-400' },
+    { name: 'London', codes: ['WD', 'HA', 'UB', 'TW', 'KT', 'CR', 'BR', 'DA', 'RM', 'IG', 'EN', 'SM', 'W', 'NW', 'N', 'E', 'EC', 'SE', 'WC'], isFull: false, color: 'text-purple-500' },
+    { name: 'Wales', codes: ['LL', 'SY', 'SA'], isFull: false, color: 'text-yellow-500' },
+    { name: 'North', codes: ['LA', 'CA', 'NE', 'DL', 'DH', 'SR', 'TS', 'HG', 'YO', 'HU', 'BD'], isFull: false, color: 'text-red-500' },
+    { name: 'East Midlands', codes: ['NR', 'IP', 'CO'], isFull: false, color: 'text-blue-500' },
+    { name: 'South East', codes: ['ME', 'CT', 'TN', 'RH', 'BN', 'GU', 'PO', 'SO'], isFull: false, color: 'text-green-500' },
+    { name: 'South West', codes: ['SP', 'BH', 'DT', 'TA', 'EX', 'TQ', 'PL', 'TR'], isFull: false, color: 'text-pink-500' },
+    { name: 'West Midlands', codes: ['ST', 'TF', 'WV', 'DY', 'HR', 'WR', 'B', 'WS', 'CV', 'NN'], isFull: false, color: 'text-teal-300' },
+];
 
 export default function ScheduleTool() {
     const [itemsLeft, setItemsLeft] = useState<Trip[]>([]);
@@ -55,6 +66,49 @@ export default function ScheduleTool() {
     const [editValue, setEditValue] = useState<string>('');
     const [sortLeft, setSortLeft] = useState<{ key: string; dir: 'asc' | 'desc' } | null>(null);
     const [sortRight, setSortRight] = useState<{ key: string; dir: 'asc' | 'desc' } | null>(null);
+    const [routeGroups, setRouteGroups] = useState<RouteGroup[]>(DEFAULT_ROUTE_GROUPS);
+    const [ignoredPatterns, setIgnoredPatterns] = useState<string[]>(DEFAULT_IGNORED_PATTERNS);
+    const [timeSettings, setTimeSettings] = useState({
+        lateEndHour: 20,
+        earlyStartHour: 7,
+        earlyEndHour: 17,
+        lateStartHour: 9,
+        restMessage: 'Driver has had too little rest between shifts.',
+        earlyMessage: 'Consider assigning this driver to an earlier start time.',
+    });
+    const [settingsOpen, setSettingsOpen] = useState(false);
+
+    const filterIgnored = <T extends { Calendar_Name?: string }>(items: T[]) =>
+        items.filter(it =>
+            !ignoredPatterns.some(pat =>
+                (it.Calendar_Name || '').toLowerCase().includes(pat)
+            )
+        );
+
+    useEffect(() => {
+        const stored = typeof window !== 'undefined' ? localStorage.getItem('scheduleSettings') : null;
+        if (stored) {
+            try {
+                const parsed = JSON.parse(stored);
+                if (parsed.routeGroups) setRouteGroups(parsed.routeGroups);
+                if (parsed.timeSettings) setTimeSettings(parsed.timeSettings);
+                if (parsed.ignoredPatterns) setIgnoredPatterns(parsed.ignoredPatterns);
+            } catch (e) {
+                console.error(e);
+            }
+        }
+    }, []);
+
+    useEffect(() => {
+        const toSave = { routeGroups, timeSettings, ignoredPatterns };
+        if (typeof window !== 'undefined') {
+            localStorage.setItem('scheduleSettings', JSON.stringify(toSave));
+        }
+    }, [routeGroups, timeSettings, ignoredPatterns]);
+
+    const updateGroup = (idx: number, group: RouteGroup) => {
+        setRouteGroups(arr => arr.map((g, i) => (i === idx ? group : g)));
+    };
 
     const updateLeft = (updater: (arr: Trip[]) => Trip[]) => {
         setItemsLeft((arr) => {
@@ -329,41 +383,20 @@ export default function ScheduleTool() {
     const getRouteColorClass = (route?: string): string => {
         if (!route) return 'text-white';
         const upper = route.toUpperCase();
-        const grey = ['EDINBURGH', 'GLASGOW', 'INVERNESS', 'ABERDEEN', 'EX+TR', 'TQ+PL'];
-        if (grey.includes(upper)) return 'text-gray-400';
-        const parts = upper.split('+');
-        const has = (arr: string[]) => parts.some(p => arr.includes(p));
-        const purple = ['WD', 'HA', 'UB', 'TW', 'KT', 'CR', 'BR', 'DA', 'RM', 'IG', 'EN', 'SM', 'W', 'NW', 'N', 'E', 'EC', 'SE', 'WC'];
-        if (has(purple)) return 'text-purple-500';
-        const yellow = ['LL', 'SY', 'SA'];
-        if (has(yellow)) return 'text-yellow-500';
-        const red = ['LA', 'CA', 'NE', 'DL', 'DH', 'SR', 'TS', 'HG', 'YO', 'HU', 'BD'];
-        if (has(red)) return 'text-red-500';
-        const blue = ['NR', 'IP', 'CO'];
-        if (has(blue)) return 'text-blue-500';
-        const green = ['ME', 'CT', 'TN', 'RH', 'BN', 'GU', 'PO', 'SO'];
-        if (has(green)) return 'text-green-500';
-        const pink = ['SP', 'BH', 'DT', 'TA', 'EX', 'TQ', 'PL', 'TR'];
-        if (has(pink)) return 'text-pink-500';
-        const light = ['ST', 'TF', 'WV', 'DY', 'HR', 'WR', 'B', 'WS', 'CV', 'NN'];
-        if (has(light)) return 'text-teal-300';
+        for (const group of routeGroups) {
+            if (group.isFull) {
+                if (group.codes.includes(upper)) return group.color;
+            } else {
+                const parts = upper.split('+').map(p => p.trim());
+                if (parts.some(p => group.codes.includes(p))) return group.color;
+            }
+        }
         return 'text-white';
     };
 
-    const categories = [
-        { name: '2DT', codes: ['EDINBURGH', 'GLASGOW', 'INVERNESS', 'ABERDEEN', 'EX+TR', 'TQ+PL'], isFull: true, color: 'text-gray-400' },
-        { name: 'London', codes: ['WD', 'HA', 'UB', 'TW', 'KT', 'CR', 'BR', 'DA', 'RM', 'IG', 'EN', 'SM', 'W', 'NW', 'N', 'E', 'EC', 'SE', 'WC'], isFull: false, color: 'text-purple-500' },
-        { name: 'Wales', codes: ['LL', 'SY', 'SA'], isFull: false, color: 'text-yellow-500' },
-        { name: 'North', codes: ['LA', 'CA', 'NE', 'DL', 'DH', 'SR', 'TS', 'HG', 'YO', 'HU', 'BD'], isFull: false, color: 'text-red-500' },
-        { name: 'East Midlands', codes: ['NR', 'IP', 'CO'], isFull: false, color: 'text-blue-500' },
-        { name: 'South East', codes: ['ME', 'CT', 'TN', 'RH', 'BN', 'GU', 'PO', 'SO'], isFull: false, color: 'text-green-500' },
-        { name: 'South West', codes: ['SP', 'BH', 'DT', 'TA', 'EX', 'TQ', 'PL', 'TR'], isFull: false, color: 'text-pink-500' },
-        { name: 'West Midlands', codes: ['ST', 'TF', 'WV', 'DY', 'HR', 'WR', 'B', 'WS', 'CV', 'NN'], isFull: false, color: 'text-teal-300' },
-    ];
-
     const getCategory = (route: string): string => {
         const upper = route.toUpperCase();
-        for (const cat of categories) {
+        for (const cat of routeGroups) {
             if (cat.isFull) {
                 if (cat.codes.includes(upper)) return cat.name;
             } else {
@@ -480,7 +513,7 @@ export default function ScheduleTool() {
 
     const renderStats = (stats: { counts: Record<string, number>, total: number }) => (
         <div className="text-xs mb-2 flex flex-wrap gap-2">
-            {categories.map(cat => (
+            {routeGroups.map(cat => (
                 <span
                     key={cat.name}
                     className={`px-2 py-1 rounded-full ${cat.color} bg-opacity-20 ${cat.color.replace('text-', 'bg-')} font-semibold`}
@@ -577,7 +610,12 @@ export default function ScheduleTool() {
     return (
         <Layout title="Schedule Tool" fullWidth>
             <div className="w-full min-h-screen p-0 m-0">
-
+                <div className="flex justify-end mb-2">
+                    <button className="btn btn-sm" onClick={() => setSettingsOpen(true)}>
+                        <Icon name="gear" className="w-4 h-4 mr-1" />
+                        Settings
+                    </button>
+                </div>
                 <div className="flex gap-4 w-full min-h-full">
                     <div className="flex-1 min-w-0 flex flex-col">
                         <div className="flex items-center gap-2 mb-2">
@@ -699,10 +737,10 @@ export default function ScheduleTool() {
                                                             const actualEnd = parseTime(getActualEnd(leftItem?.End_Time, leftItem?.Punctuality));
                                                             const targetStart = parseTime(it.Start_Time);
                                                             if (!isNaN(actualEnd) && !isNaN(targetStart)) {
-                                                                if (actualEnd > 20 * 60 && targetStart < 7 * 60) {
-                                                                    restMessage = 'Driver has had too little rest between shifts.';
-                                                                } else if (actualEnd <= 17 * 60 && targetStart > 9 * 60) {
-                                                                    restMessage = 'Consider assigning this driver to an earlier start time.';
+                                                                if (actualEnd > timeSettings.lateEndHour * 60 && targetStart < timeSettings.earlyStartHour * 60) {
+                                                                    restMessage = timeSettings.restMessage;
+                                                                } else if (actualEnd <= timeSettings.earlyEndHour * 60 && targetStart > timeSettings.lateStartHour * 60) {
+                                                                    restMessage = timeSettings.earlyMessage;
                                                                 }
                                                             }
                                                         }
@@ -843,6 +881,122 @@ export default function ScheduleTool() {
                         ))}
                     </div>
                 </div>
+                <Modal open={settingsOpen} onClose={() => setSettingsOpen(false)} className="max-w-4xl">
+                    <h3 className="font-bold text-lg mb-2">Settings</h3>
+                    <div className="space-y-4 max-h-[70vh] overflow-y-auto">
+                        <div>
+                            <h4 className="font-semibold mb-1">Time Logic</h4>
+                            <div className="grid grid-cols-2 gap-2">
+                                <label className="flex items-center gap-2 text-sm">
+                                    Late End Hour
+                                    <input
+                                        type="number"
+                                        className="input input-bordered input-sm w-20"
+                                        value={timeSettings.lateEndHour}
+                                        onChange={(e) => setTimeSettings({ ...timeSettings, lateEndHour: parseInt(e.target.value) })}
+                                    />
+                                </label>
+                                <label className="flex items-center gap-2 text-sm">
+                                    Early Start Hour
+                                    <input
+                                        type="number"
+                                        className="input input-bordered input-sm w-20"
+                                        value={timeSettings.earlyStartHour}
+                                        onChange={(e) => setTimeSettings({ ...timeSettings, earlyStartHour: parseInt(e.target.value) })}
+                                    />
+                                </label>
+                                <label className="flex items-center gap-2 text-sm">
+                                    Early End Hour
+                                    <input
+                                        type="number"
+                                        className="input input-bordered input-sm w-20"
+                                        value={timeSettings.earlyEndHour}
+                                        onChange={(e) => setTimeSettings({ ...timeSettings, earlyEndHour: parseInt(e.target.value) })}
+                                    />
+                                </label>
+                                <label className="flex items-center gap-2 text-sm">
+                                    Late Start Hour
+                                    <input
+                                        type="number"
+                                        className="input input-bordered input-sm w-20"
+                                        value={timeSettings.lateStartHour}
+                                        onChange={(e) => setTimeSettings({ ...timeSettings, lateStartHour: parseInt(e.target.value) })}
+                                    />
+                                </label>
+                            </div>
+                            <input
+                                type="text"
+                                className="input input-bordered input-sm w-full mt-2"
+                                value={timeSettings.restMessage}
+                                onChange={(e) => setTimeSettings({ ...timeSettings, restMessage: e.target.value })}
+                            />
+                            <input
+                                type="text"
+                                className="input input-bordered input-sm w-full mt-2"
+                                value={timeSettings.earlyMessage}
+                                onChange={(e) => setTimeSettings({ ...timeSettings, earlyMessage: e.target.value })}
+                            />
+                        </div>
+                        <div>
+                            <h4 className="font-semibold mb-1">Route Groups</h4>
+                            {routeGroups.map((group, idx) => (
+                                <div key={idx} className="border p-2 rounded-md mb-2 space-y-1">
+                                    <div className="flex items-center gap-2">
+                                        <input
+                                            className="input input-bordered input-xs"
+                                            value={group.name}
+                                            onChange={(e) => updateGroup(idx, { ...group, name: e.target.value })}
+                                        />
+                                        <input
+                                            className="input input-bordered input-xs"
+                                            value={group.color}
+                                            onChange={(e) => updateGroup(idx, { ...group, color: e.target.value })}
+                                        />
+                                        <label className="flex items-center gap-1 text-xs">
+                                            <input
+                                                type="checkbox"
+                                                checked={group.isFull}
+                                                onChange={(e) => updateGroup(idx, { ...group, isFull: e.target.checked })}
+                                            />
+                                            Full
+                                        </label>
+                                        <button
+                                            className="btn btn-xs btn-error ml-auto"
+                                            onClick={() => setRouteGroups(arr => arr.filter((_, i) => i !== idx))}
+                                        >
+                                            Remove
+                                        </button>
+                                    </div>
+                                    <textarea
+                                        className="textarea textarea-bordered w-full text-xs"
+                                        rows={2}
+                                        value={group.codes.join(', ')}
+                                        onChange={(e) => updateGroup(idx, { ...group, codes: e.target.value.split(',').map(c => c.trim().toUpperCase()).filter(Boolean) })}
+                                    />
+                                </div>
+                            ))}
+                            <button
+                                className="btn btn-sm mt-2"
+                                onClick={() => setRouteGroups([...routeGroups, { name: 'New Group', codes: [], isFull: false, color: 'text-white' }])}
+                            >
+                                <Icon name="plus" className="w-4 h-4 mr-1" />
+                                Add Group
+                            </button>
+                        </div>
+                        <div>
+                            <h4 className="font-semibold mb-1">Ignored Calendar Patterns</h4>
+                            <textarea
+                                className="textarea textarea-bordered w-full text-xs"
+                                rows={4}
+                                value={ignoredPatterns.join('\n')}
+                                onChange={(e) => setIgnoredPatterns(e.target.value.split('\n').map(p => p.trim()).filter(Boolean))}
+                            />
+                        </div>
+                    </div>
+                    <div className="modal-action">
+                        <button className="btn" onClick={() => setSettingsOpen(false)}>Close</button>
+                    </div>
+                </Modal>
                 {notification && (
                     <div className="toast toast-bottom toast-center">
                         <div className="alert alert-error">
