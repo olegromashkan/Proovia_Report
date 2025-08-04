@@ -12,6 +12,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@heroicons/react": "^2.2.0",
     "@tanstack/react-virtual": "^3.13.12",
     "better-sqlite3": "^9.0.0",
     "emoji-picker-react": "^4.12.2",

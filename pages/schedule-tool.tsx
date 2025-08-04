@@ -63,14 +63,18 @@ export default function ScheduleTool() {
     const leftLoaded = useRef(false);
     const rightLoaded = useRef(false);
     const PANELS = [
-        { name: 'Newbie', color: 'bg-green-50 dark:bg-green-900/30 border-green-200 dark:border-green-700 text-green-700 dark:text-green-300' },
-        { name: 'Mechanic', color: 'bg-blue-50 dark:bg-blue-900/30 border-blue-200 dark:border-blue-700 text-blue-700 dark:text-blue-300' },
-        { name: 'Loading 2DT', color: 'bg-orange-50 dark:bg-orange-900/30 border-orange-200 dark:border-orange-700 text-orange-700 dark:text-orange-300' },
-        { name: 'Trainers', color: 'bg-pink-50 dark:bg-pink-900/30 border-pink-200 dark:border-pink-700 text-pink-700 dark:text-pink-300' },
-        { name: 'Agreements', color: 'bg-yellow-50 dark:bg-green-900/30 border-yellow-200 dark:border-yellow-700 text-yellow-700 dark:text-yellow-300' },
-        { name: 'Return 2DT', color: 'bg-red-50 dark:bg-red-900/30 border-red-200 dark:border-red-700 text-red-700 dark:text-red-300' },
-        { name: 'OFF/STB', color: 'bg-purple-50 dark:bg-purple-900/30 border-purple-200 dark:border-purple-700 text-purple-700 dark:text-purple-300' },
-        { name: 'Available Drivers', color: 'bg-gray-50 dark:bg-gray-900/30 border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300' },
+        { name: 'Newbie', color: 'bg-green-50 dark:bg-green-900/30 border-green-200 dark:border-green-700 text-green-700 dark:text-green-300', icon: 'person' },
+        { name: 'Mechanic', color: 'bg-blue-50 dark:bg-blue-900/30 border-blue-200 dark:border-blue-700 text-blue-700 dark:text-blue-300', icon: 'wrench' },
+        { name: 'Loading 2DT', color: 'bg-orange-50 dark:bg-orange-900/30 border-orange-200 dark:border-orange-700 text-orange-700 dark:text-orange-300', icon: 'truck' },
+        { name: 'Trainers', color: 'bg-pink-50 dark:bg-pink-900/30 border-pink-200 dark:border-pink-700 text-pink-700 dark:text-pink-300', icon: 'journal-check' },
+        {
+            name: 'Agreements', color: 'bg-yellow-50 dark:bg-green-900/30 border-yellow-200 dark:border-yellow-700 text-yellow-700 dark:text-yellow-300', icon: 'check2-all'
+        },
+        { name: 'Return 2DT', color: 'bg-red-50 dark:bg-red-900/30 border-red-200 dark:border-red-700 text-red-700 dark:text-red-300', icon: 'arrow-return-right' },
+        {
+            name: 'OFF/STB', color: 'bg-purple-50 dark:bg-purple-900/30 border-purple-200 dark:border-purple-700 text-purple-700 dark:text-purple-300', icon: 'cup-hot'
+        },
+        { name: 'Available Drivers', color: 'bg-gray-50 dark:bg-gray-900/30 border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300', icon: 'rocket-takeoff' },
     ];
     const [notes, setNotes] = useState<Record<string, string>>({});
     const [editingRightIndex, setEditingRightIndex] = useState<number | null>(null);
@@ -619,259 +623,287 @@ export default function ScheduleTool() {
 
     return (
         <Layout title="Schedule Tool" fullWidth>
-            <div className="w-full min-h-screen p-0 m-0">
-                <div className="flex justify-end mb-2">
-                    <button className="btn btn-sm" onClick={() => setSettingsOpen(true)}>
-                        <Icon name="gear" className="w-4 h-4 mr-1" />
-                        Settings
-                    </button>
+
+            <div className="flex gap-4 w-full h-[calc(100vh-4.5rem)]">
+                {/* Left Table */}
+                <div className="flex-1 min-w-0 flex flex-col">
+                    <div className="flex items-center gap-2 mb-2">
+                        <div className="flex-1" />
+                        <button onClick={clearAllLeft} className="btn btn-error btn-xs w-24">
+                            Clear
+                        </button>
+                    </div>
+                    {renderStats(leftStats)}
+                    <div className="flex-1 overflow-y-auto">
+                        <table className="table table-xs table-zebra w-full">
+                            <thead>
+                                <tr>
+                                    <th onClick={() => applyLeftSort('Start')}>Start</th>
+                                    <th onClick={() => applyLeftSort('End')}>End</th>
+                                    <th onClick={() => applyLeftSort('ActualEnd')}>Actual End</th>
+                                    <th onClick={() => applyLeftSort('Driver1')}>Driver</th>
+                                    <th onClick={() => applyLeftSort('Contractor')}>Contractor</th>
+                                    <th onClick={() => applyLeftSort('VH')} className="text-right">VH</th>
+                                    <th onClick={() => applyLeftSort('Route')}>Route</th>
+                                    <th onClick={() => applyLeftSort('Tasks')}>Tasks</th>
+                                    <th onClick={() => applyLeftSort('Order_Value')}>Amount</th>
+                                    <th onClick={() => applyLeftSort('Punctuality')}>Punctuality</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {itemsLeft.map((it, idx) => {
+                                    const driverColor = getDriverColor(it.Driver1);
+                                    const routeColor = getRouteColorClass(it.Calendar_Name);
+                                    const isAllowed = allowedDrivers.includes(it.Driver1 || '');
+                                    return (
+                                        <tr key={it.ID} className="hover:bg-gray-200 dark:hover:bg-gray-700">
+                                            <td>{getTextAfterSpace(it.Start_Time)}</td>
+                                            <td>{getTextAfterSpace(it.End_Time)}</td>
+                                            <td>{getActualEnd(it.End_Time, it.Punctuality)}</td>
+                                            <td
+                                                draggable={isAllowed && !it.isAssigned}
+                                                onDragStart={(e) => e.dataTransfer.setData('text/plain', JSON.stringify({ table: 'left', index: idx, name: it.Driver1 }))}
+                                                onDragOver={(e) => e.preventDefault()}
+                                                className={`${driverColor} ${it.isAssigned ? 'text-gray-500 line-through' : ''}`}
+                                            >
+                                                {hasSpecialCode(it.Calendar_Name) && <span className="text-orange-500 font-bold">!! </span>}
+                                                {it.isAssigned ? (
+                                                    <div className="relative inline-block">
+                                                        <span>{it.Driver1}</span>
+                                                        <span
+                                                            className="underline cursor-pointer text-blue-500 ml-2"
+                                                            onClick={() => handleUndoFromRight(idx)}
+                                                        >
+                                                            undo
+                                                        </span>
+                                                    </div>
+                                                ) : (
+                                                    <>
+                                                        {!isAllowed && <span className="inline-block w-2 h-2 bg-red-500 rounded-full mr-1"></span>}
+                                                        <span className={!isAllowed ? 'text-gray-500' : ''}>{it.Driver1}</span>
+                                                    </>
+                                                )}
+                                            </td>
+                                            <td>{it.Contractor}</td>
+                                            <td className="whitespace-nowrap text-right">{getVH(it.Calendar_Name)}</td>
+                                            <td className={`whitespace-nowrap ${routeColor}`}>{getRoute(it.Calendar_Name)}</td>
+                                            <td className="whitespace-nowrap">{getTasks(it.Calendar_Name)}</td>
+                                            <td className="whitespace-nowrap" style={{ color: getAmountColor(it.Order_Value, amountRangeLeft) }}>
+                                                {it.Order_Value}
+                                            </td>
+                                            <td className="whitespace-nowrap">{it.Punctuality}</td>
+                                        </tr>
+                                    );
+                                })}
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
-                <div className="flex gap-4 w-full min-h-full">
-                    <div className="flex-1 min-w-0 flex flex-col">
-                        <div className="flex items-center gap-2 mb-2">
-                            <div className="flex-1" />
-                            <button onClick={clearAllLeft} className="btn btn-error btn-xs w-24">
-                                Clear
-                            </button>
-                        </div>
-                        {renderStats(leftStats)}
-                        <div className="overflow-auto flex-1 max-h-[calc(100vh-180px)]">
-                            <table className="table table-xs table-zebra w-full">
-                                <thead>
-                                    <tr>
-                                        <th onClick={() => applyLeftSort('Start')}>Start</th>
-                                        <th onClick={() => applyLeftSort('End')}>End</th>
-                                        <th onClick={() => applyLeftSort('ActualEnd')}>Actual End</th>
-                                        <th onClick={() => applyLeftSort('Driver1')}>Driver</th>
-                                        <th onClick={() => applyLeftSort('Contractor')}>Contractor</th>
-                                        <th onClick={() => applyLeftSort('VH')} className="text-right">VH</th>
-                                        <th onClick={() => applyLeftSort('Route')}>Route</th>
-                                        <th onClick={() => applyLeftSort('Tasks')}>Tasks</th>
-                                        <th onClick={() => applyLeftSort('Order_Value')}>Amount</th>
-                                        <th onClick={() => applyLeftSort('Punctuality')}>Punctuality</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {itemsLeft.map((it, idx) => {
-                                        const driverColor = getDriverColor(it.Driver1);
-                                        const routeColor = getRouteColorClass(it.Calendar_Name);
-                                        const isAllowed = allowedDrivers.includes(it.Driver1 || '');
-                                        return (
-                                            <tr key={it.ID} className="hover:bg-gray-200 dark:hover:bg-gray-700">
-                                                <td>{getTextAfterSpace(it.Start_Time)}</td>
-                                                <td>{getTextAfterSpace(it.End_Time)}</td>
-                                                <td>{getActualEnd(it.End_Time, it.Punctuality)}</td>
-                                                <td
-                                                    draggable={isAllowed && !it.isAssigned}
-                                                    onDragStart={(e) => e.dataTransfer.setData('text/plain', JSON.stringify({ table: 'left', index: idx, name: it.Driver1 }))}
-                                                    onDragOver={(e) => e.preventDefault()}
-                                                    className={`${driverColor} ${it.isAssigned ? 'text-gray-500 line-through' : ''}`}
-                                                >
-                                                    {hasSpecialCode(it.Calendar_Name) && <span className="text-orange-500 font-bold">!! </span>}
-                                                    {it.isAssigned ? (
-                                                        <div className="relative inline-block">
-                                                            <span>{it.Driver1}</span>
-                                                            <span
-                                                                className="underline cursor-pointer text-blue-500 ml-2"
-                                                                onClick={() => handleUndoFromRight(idx)}
-                                                            >
-                                                                undo
-                                                            </span>
-                                                        </div>
-                                                    ) : (
-                                                        <>
-                                                            {!isAllowed && <span className="inline-block w-2 h-2 bg-red-500 rounded-full mr-1"></span>}
-                                                            <span className={!isAllowed ? 'text-gray-500' : ''}>{it.Driver1}</span>
-                                                        </>
-                                                    )}
-                                                </td>
-                                                <td>{it.Contractor}</td>
-                                                <td className="whitespace-nowrap text-right">{getVH(it.Calendar_Name)}</td>
-                                                <td className={`whitespace-nowrap ${routeColor}`}>{getRoute(it.Calendar_Name)}</td>
-                                                <td className="whitespace-nowrap">{getTasks(it.Calendar_Name)}</td>
-                                                <td className="whitespace-nowrap" style={{ color: getAmountColor(it.Order_Value, amountRangeLeft) }}>
-                                                    {it.Order_Value}
-                                                </td>                                                <td className="whitespace-nowrap">{it.Punctuality}</td>
-                                            </tr>
-                                        );
-                                    })}
-                                </tbody>
-                            </table>
-                        </div>
+                {/* Right Table */}
+                <div className="flex-1 min-w-0 flex flex-col">
+                    <div className="flex items-center gap-2 mb-2">
+                        <div className="flex-1" />
+                        <button onClick={clearAllRight} className="btn btn-error btn-xs w-24">
+                            Clear
+                        </button>
                     </div>
-                    <div className="flex-1 min-w-0 flex flex-col">
-                        <div className="flex items-center gap-2 mb-2">
-                            <div className="flex-1" />
-                            <button onClick={clearAllRight} className="btn btn-error btn-xs w-24">
-                                Clear
-                            </button>
-                        </div>
-                        {renderStats(rightStats)}
-                        <div className="overflow-auto flex-1 max-h-[calc(100vh-180px)]">
-                            <table className="table table-xs table-zebra w-full">
-                                <thead>
-                                    <tr>
-                                        <th onClick={() => applyRightSort('Start')}>Start</th>
-                                        <th onClick={() => applyRightSort('End')}>End</th>
-                                        <th onClick={() => applyRightSort('Driver1')}>Driver</th>
-                                        <th onClick={() => applyRightSort('Contractor')}>Contractor</th>
-                                        <th onClick={() => applyRightSort('VH')} className="text-right">VH</th>
-                                        <th onClick={() => applyRightSort('Route')}>Route</th>
-                                        <th onClick={() => applyRightSort('Tasks')}>Tasks</th>
-                                        <th onClick={() => applyRightSort('Order_Value')}>Amount</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {itemsRight.map((it, idx) => {
-                                        const driverColor = getDriverColor(it.Driver1);
-                                        const routeColor = getRouteColorClass(it.Calendar_Name);
-                                        const isEditing = editingRightIndex === idx;
-                                        return (
-                                            <tr key={it.ID} className="hover:bg-gray-200 dark:hover:bg-gray-700">
-                                                <td>{getTextAfterSpace(it.Start_Time)}</td>
-                                                <td>{getTextAfterSpace(it.End_Time)}</td>
-                                                <td
-                                                    draggable
-                                                    onDragStart={(e) => e.dataTransfer.setData('text/plain', JSON.stringify({ table: 'right', index: idx, name: it.Driver1 }))}
-                                                    onDragOver={(e) => e.preventDefault()}
-                                                    onDrop={(e) => {
-                                                        e.preventDefault();
-                                                        const data = JSON.parse(e.dataTransfer.getData('text/plain'));
-                                                        const name = data.name;
-                                                        if (!name) return;
+                    {renderStats(rightStats)}
+                    <div className="flex-1 overflow-y-auto">
+                        <table className="table table-xs table-zebra w-full">
+                            <thead>
+                                <tr>
+                                    <th onClick={() => applyRightSort('Start')}>Start</th>
+                                    <th onClick={() => applyRightSort('End')}>End</th>
+                                    <th onClick={() => applyRightSort('Driver1')}>Driver</th>
+                                    <th onClick={() => applyRightSort('Contractor')}>Contractor</th>
+                                    <th onClick={() => applyRightSort('VH')} className="text-right">VH</th>
+                                    <th onClick={() => applyRightSort('Route')}>Route</th>
+                                    <th onClick={() => applyRightSort('Tasks')}>Tasks</th>
+                                    <th onClick={() => applyRightSort('Order_Value')}>Amount</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {itemsRight.map((it, idx) => {
+                                    const driverColor = getDriverColor(it.Driver1);
+                                    const routeColor = getRouteColorClass(it.Calendar_Name);
+                                    const isEditing = editingRightIndex === idx;
+                                    return (
+                                        <tr key={it.ID} className="hover:bg-gray-200 dark:hover:bg-gray-700">
+                                            <td>{getTextAfterSpace(it.Start_Time)}</td>
+                                            <td>{getTextAfterSpace(it.End_Time)}</td>
+                                            <td
+                                                draggable
+                                                onDragStart={(e) => e.dataTransfer.setData('text/plain', JSON.stringify({ table: 'right', index: idx, name: it.Driver1 }))}
+                                                onDragOver={(e) => e.preventDefault()}
+                                                onDrop={(e) => {
+                                                    e.preventDefault();
+                                                    const data = JSON.parse(e.dataTransfer.getData('text/plain'));
+                                                    const name = data.name;
+                                                    if (!name) return;
 
-                                                        // Determine if rest warnings are needed when dragging from left table
-                                                        let restMessage = '';
-                                                        if (data.table === 'left') {
-                                                            const leftItem = itemsLeft[data.index];
-                                                            const actualEnd = parseTime(getActualEnd(leftItem?.End_Time, leftItem?.Punctuality));
-                                                            const targetStart = parseTime(it.Start_Time);
-                                                            if (!isNaN(actualEnd) && !isNaN(targetStart)) {
-                                                                if (timeSettings.enableRestWarning && actualEnd > timeSettings.lateEndHour * 60 && targetStart < timeSettings.earlyStartHour * 60) {
-                                                                    restMessage = timeSettings.restMessage;
-                                                                } else if (timeSettings.enableEarlyWarning && actualEnd <= timeSettings.earlyEndHour * 60 && targetStart > timeSettings.lateStartHour * 60) {
-                                                                    restMessage = timeSettings.earlyMessage;
-                                                                }
+                                                    let restMessage = '';
+                                                    if (data.table === 'left') {
+                                                        const leftItem = itemsLeft[data.index];
+                                                        const actualEnd = parseTime(getActualEnd(leftItem?.End_Time, leftItem?.Punctuality));
+                                                        const targetStart = parseTime(it.Start_Time);
+                                                        if (!isNaN(actualEnd) && !isNaN(targetStart)) {
+                                                            if (timeSettings.enableRestWarning && actualEnd > timeSettings.lateEndHour * 60 && targetStart < timeSettings.earlyStartHour * 60) {
+                                                                restMessage = timeSettings.restMessage;
+                                                            } else if (timeSettings.enableEarlyWarning && actualEnd <= timeSettings.earlyEndHour * 60 && targetStart > timeSettings.lateStartHour * 60) {
+                                                                restMessage = timeSettings.earlyMessage;
                                                             }
                                                         }
+                                                    }
 
-                                                        const showRestNotification = () => {
-                                                            if (restMessage) {
-                                                                setNotification(restMessage);
-                                                                setTimeout(() => setNotification(null), 4000);
-                                                            }
-                                                        };
+                                                    const showRestNotification = () => {
+                                                        if (restMessage) {
+                                                            setNotification(restMessage);
+                                                            setTimeout(() => setNotification(null), 4000);
+                                                        }
+                                                    };
 
-                                                        const isDuplicate = itemsRight.some(item => item.Driver1 === name && item.ID !== it.ID);
-                                                        if (isDuplicate) {
-                                                            setWarningModal({
-                                                                action: () => {
-                                                                    updateRight((arr) => {
-                                                                        const copy = [...arr];
-                                                                        copy[idx] = { ...copy[idx], Driver1: name };
-                                                                        if (data.table === 'right') {
-                                                                            if (data.index === idx) return copy; // self drop
-                                                                            copy[data.index] = { ...copy[data.index], Driver1: '' };
-                                                                            if (copy[data.index].fromLeftIndex !== undefined) {
-                                                                                copy[idx].fromLeftIndex = copy[data.index].fromLeftIndex;
-                                                                                copy[data.index].fromLeftIndex = undefined;
-                                                                            }
-                                                                        } else if (data.table === 'left') {
-                                                                            copy[idx].fromLeftIndex = data.index;
-                                                                            updateLeft((leftArr) => {
-                                                                                const leftCopy = [...leftArr];
-                                                                                leftCopy[data.index] = { ...leftCopy[data.index], isAssigned: true };
-                                                                                return sortItems(leftCopy);
-                                                                            });
+                                                    const isDuplicate = itemsRight.some(item => item.Driver1 === name && item.ID !== it.ID);
+                                                    if (isDuplicate) {
+                                                        setWarningModal({
+                                                            action: () => {
+                                                                updateRight((arr) => {
+                                                                    const copy = [...arr];
+                                                                    copy[idx] = { ...copy[idx], Driver1: name };
+                                                                    if (data.table === 'right') {
+                                                                        if (data.index === idx) return copy;
+                                                                        copy[data.index] = { ...copy[data.index], Driver1: '' };
+                                                                        if (copy[data.index].fromLeftIndex !== undefined) {
+                                                                            copy[idx].fromLeftIndex = copy[data.index].fromLeftIndex;
+                                                                            copy[data.index].fromLeftIndex = undefined;
                                                                         }
-                                                                        return copy;
-                                                                    });
-                                                                    showRestNotification();
-                                                                    setWarningModal(null);
-                                                                }
-                                                            });
-                                                            return;
-                                                        }
-                                                        updateRight((arr) => {
-                                                            const copy = [...arr];
-                                                            copy[idx] = { ...copy[idx], Driver1: name };
-                                                            if (data.table === 'right') {
-                                                                if (data.index === idx) return copy; // self drop
-                                                                copy[data.index] = { ...copy[data.index], Driver1: '' };
-                                                                if (copy[data.index].fromLeftIndex !== undefined) {
-                                                                    copy[idx].fromLeftIndex = copy[data.index].fromLeftIndex;
-                                                                    copy[data.index].fromLeftIndex = undefined;
-                                                                }
-                                                            } else if (data.table === 'left') {
-                                                                copy[idx].fromLeftIndex = data.index;
-                                                                updateLeft((leftArr) => {
-                                                                    const leftCopy = [...leftArr];
-                                                                    leftCopy[data.index] = { ...leftCopy[data.index], isAssigned: true };
-                                                                    return sortItems(leftCopy);
+                                                                    } else if (data.table === 'left') {
+                                                                        copy[idx].fromLeftIndex = data.index;
+                                                                        updateLeft((leftArr) => {
+                                                                            const leftCopy = [...leftArr];
+                                                                            leftCopy[data.index] = { ...leftCopy[data.index], isAssigned: true };
+                                                                            return sortItems(leftCopy);
+                                                                        });
+                                                                    }
+                                                                    return copy;
                                                                 });
+                                                                showRestNotification();
+                                                                setWarningModal(null);
                                                             }
-                                                            return copy;
                                                         });
-                                                        showRestNotification();
-                                                    }}
-                                                    className={driverColor}
-                                                    onDoubleClick={() => {
-                                                        if (!isEditing) {
-                                                            setEditingRightIndex(idx);
-                                                            setEditValue(it.Driver1 || '');
+                                                        return;
+                                                    }
+                                                    updateRight((arr) => {
+                                                        const copy = [...arr];
+                                                        copy[idx] = { ...copy[idx], Driver1: name };
+                                                        if (data.table === 'right') {
+                                                            if (data.index === idx) return copy;
+                                                            copy[data.index] = { ...copy[data.index], Driver1: '' };
+                                                            if (copy[data.index].fromLeftIndex !== undefined) {
+                                                                copy[idx].fromLeftIndex = copy[data.index].fromLeftIndex;
+                                                                copy[data.index].fromLeftIndex = undefined;
+                                                            }
+                                                        } else if (data.table === 'left') {
+                                                            copy[idx].fromLeftIndex = data.index;
+                                                            updateLeft((leftArr) => {
+                                                                const leftCopy = [...leftArr];
+                                                                leftCopy[data.index] = { ...leftCopy[data.index], isAssigned: true };
+                                                                return sortItems(leftCopy);
+                                                            });
                                                         }
-                                                    }}
-                                                >
-                                                    {hasSpecialCode(it.Calendar_Name) && <span className="text-orange-500 font-bold">!! </span>}
-                                                    {isEditing ? (
-                                                        <input
-                                                            type="text"
-                                                            value={editValue}
-                                                            onChange={(e) => setEditValue(e.target.value)}
-                                                            onBlur={() => handleEditBlur(idx)}
-                                                            onKeyDown={(e) => handleEditKeyDown(e, idx)}
-                                                            autoFocus
-                                                            className="input input-xs w-full"
-                                                        />
-                                                    ) : (
-                                                        it.Driver1
-                                                    )}
-                                                </td>
-                                                <td>{it.Contractor}</td>
-                                                <td className="whitespace-nowrap text-right">{getVH(it.Calendar_Name)}</td>
-                                                <td className={`whitespace-nowrap ${routeColor}`}>{getRoute(it.Calendar_Name)}</td>
-                                                <td className="whitespace-nowrap">{getTasks(it.Calendar_Name)}</td>
-                                                <td className="whitespace-nowrap" style={{ color: getAmountColor(it.Order_Value, amountRangeRight) }}>
-                                                    {it.Order_Value}
-                                                </td>                                            </tr>
-                                        );
-                                    })}
-                                </tbody>
-                            </table>
-                        </div>
+                                                        return copy;
+                                                    });
+                                                    showRestNotification();
+                                                }}
+                                                className={driverColor}
+                                                onDoubleClick={() => {
+                                                    if (!isEditing) {
+                                                        setEditingRightIndex(idx);
+                                                        setEditValue(it.Driver1 || '');
+                                                    }
+                                                }}
+                                            >
+                                                {hasSpecialCode(it.Calendar_Name) && <span className="text-orange-500 font-bold">!! </span>}
+                                                {isEditing ? (
+                                                    <input
+                                                        type="text"
+                                                        value={editValue}
+                                                        onChange={(e) => setEditValue(e.target.value)}
+                                                        onBlur={() => handleEditBlur(idx)}
+                                                        onKeyDown={(e) => handleEditKeyDown(e, idx)}
+                                                        autoFocus
+                                                        className="input input-xs w-full"
+                                                    />
+                                                ) : (
+                                                    it.Driver1
+                                                )}
+                                            </td>
+                                            <td>{it.Contractor}</td>
+                                            <td className="whitespace-nowrap text-right">{getVH(it.Calendar_Name)}</td>
+                                            <td className={`whitespace-nowrap ${routeColor}`}>{getRoute(it.Calendar_Name)}</td>
+                                            <td className="whitespace-nowrap">{getTasks(it.Calendar_Name)}</td>
+                                            <td className="whitespace-nowrap" style={{ color: getAmountColor(it.Order_Value, amountRangeRight) }}>
+                                                {it.Order_Value}
+                                            </td>
+                                        </tr>
+                                    );
+                                })}
+                            </tbody>
+                        </table>
                     </div>
-                    <div className="w-72 flex flex-col gap-1 max-h-screen overflow-y-auto p-2">
-                        <div className="flex items-center gap-2 mb-4">
-                            <div
-                                className="flex-1 border-2 border-dashed rounded-md p-3 text-center cursor-pointer bg-white dark:bg-gray-700 dark:border-gray-500 dark:text-gray-200"
-                                onDrop={handleDropFile}
+                </div>
+                {/* Notes Sidebar */}
+                <div className="w-72 flex flex-col gap-1 h-full overflow-y-auto p-2">
+                    <div className="flex items-start gap-2">
+                        <div
+                            className="flex-1 border-2 border-dashed rounded-md p-3 text-center cursor-pointer bg-white dark:bg-gray-700 dark:border-gray-500 dark:text-gray-200"
+                            onDrop={handleDropFile}
+                        >
+                            <input
+                                id="fileAll"
+                                type="file"
+                                accept=".json"
+                                onChange={handleInputFile}
+                                className="hidden"
+                            />
+                            <label
+                                htmlFor="fileAll"
+                                className="flex items-center justify-center gap-1 text-sm"
                             >
-                                <input id="fileAll" type="file" accept=".json" onChange={handleInputFile} className="hidden" />
-                                <label htmlFor="fileAll" className="flex items-center justify-center gap-1 text-sm">
-                                    <Icon name="file-arrow-up" className="text-xl" />
-                                    JSON
-                                </label>
-                            </div>
-                            <button onClick={() => { clearAllLeft(); clearAllRight(); }} className="btn btn-error btn-xs w-24">
-                                Clear All
+                                <Icon name="file-arrow-up" className="text-xl" />
+                                JSON
+                            </label>
+                        </div>
+                        <div className="flex flex-col gap-2">
+                            <button
+                                onClick={() => {
+                                    clearAllLeft();
+                                    clearAllRight();
+                                }}
+                                className="btn btn-error btn-xs w-24 flex items-center justify-center gap-1"
+                            >
+                                <Icon name="trash" className="w-4 h-4" />
+                            </button>
+                            <button
+                                className="btn btn-xs w-24 flex items-center justify-center gap-1"
+                                onClick={() => setSettingsOpen(true)}
+                            >
+                                <Icon name="gear" className="w-4 h-4" />
                             </button>
                         </div>
-                        <div className="text-base font-bold text-base-content mb-1">Notes</div>
+                    </div>
+                    <div className="text-base font-bold text-base-content mb-1">Notes</div>
+                    <div className="flex flex-col gap-2">
                         {PANELS.map((panel) => (
-                            <div key={panel.name} className={`card ${panel.color} shadow-sm`}>
+                            <div
+                                key={panel.name}
+                                className={`card ${panel.color} shadow-sm`}
+                            >
                                 <div className="card-body p-2">
                                     <div className="flex items-center justify-between mb-1">
-                                        <h3 className="text-xs font-semibold">{panel.name}</h3>
+                                        <h3 className="text-xs font-semibold flex items-center gap-1">
+                                            <Icon name={panel.icon} className="w-4 h-4" />
+                                            {panel.name}
+                                        </h3>
                                         <button
                                             onClick={() => clearNote(panel.name)}
                                             className="btn btn-ghost btn-xs p-0.5 min-h-0 h-4 w-4 opacity-60 hover:opacity-100"
@@ -880,8 +912,7 @@ export default function ScheduleTool() {
                                         </button>
                                     </div>
                                     <textarea
-                                        className="textarea w-full text-xs bg-white dark:bg-gray-800 bg-opacity-90 dark:bg-opacity-90 focus:bg-opacity-100 dark:focus:bg-opacity-100 transition-all duration-200 resize-none border-[0.5px] dark:border-opacity-50 p-1.5 rounded-md"
-                                        rows={6}
+                                        className="textarea w-full text-xs bg-white dark:bg-gray-800 bg-opacity-90 dark:bg-opacity-90 focus:bg-opacity-100 dark:focus:bg-opacity-100 transition-all duration-200 resize-none border-[0.5px] dark:border-opacity-50 p-1.5 rounded-md h-32 overflow-y-auto"
                                         placeholder={`Notes for ${panel.name}...`}
                                         value={notes[panel.name] || ''}
                                         onChange={(e) => handleNoteChange(panel.name, e.target.value)}
@@ -891,172 +922,172 @@ export default function ScheduleTool() {
                         ))}
                     </div>
                 </div>
-                <Modal open={settingsOpen} onClose={() => setSettingsOpen(false)} className="max-w-4xl">
-                    <h3 className="font-bold text-xl mb-4">Settings</h3>
-                    <div className="space-y-6 max-h-[70vh] overflow-y-auto">
-                        <section className="card bg-base-100 shadow">
-                            <div className="card-body space-y-2">
-                                <h4 className="card-title mb-2">Time Logic</h4>
-                                <div className="grid grid-cols-2 gap-2">
-                                    <label className="flex items-center gap-2 text-sm">
-                                        Late End Hour
-                                        <input
-                                            type="number"
-                                            className="input input-bordered input-sm w-20"
-                                            value={timeSettings.lateEndHour}
-                                            onChange={(e) => setTimeSettings({ ...timeSettings, lateEndHour: parseInt(e.target.value) })}
-                                        />
-                                    </label>
-                                    <label className="flex items-center gap-2 text-sm">
-                                        Early Start Hour
-                                        <input
-                                            type="number"
-                                            className="input input-bordered input-sm w-20"
-                                            value={timeSettings.earlyStartHour}
-                                            onChange={(e) => setTimeSettings({ ...timeSettings, earlyStartHour: parseInt(e.target.value) })}
-                                        />
-                                    </label>
-                                    <label className="flex items-center gap-2 text-sm">
-                                        Early End Hour
-                                        <input
-                                            type="number"
-                                            className="input input-bordered input-sm w-20"
-                                            value={timeSettings.earlyEndHour}
-                                            onChange={(e) => setTimeSettings({ ...timeSettings, earlyEndHour: parseInt(e.target.value) })}
-                                        />
-                                    </label>
-                                    <label className="flex items-center gap-2 text-sm">
-                                        Late Start Hour
-                                        <input
-                                            type="number"
-                                            className="input input-bordered input-sm w-20"
-                                            value={timeSettings.lateStartHour}
-                                            onChange={(e) => setTimeSettings({ ...timeSettings, lateStartHour: parseInt(e.target.value) })}
-                                        />
-                                    </label>
-                                </div>
-                                <div className="grid grid-cols-2 gap-2 mt-2">
-                                    <label className="flex items-center gap-2 text-sm">
-                                        <input
-                                            type="checkbox"
-                                            className="toggle toggle-sm"
-                                            checked={timeSettings.enableRestWarning}
-                                            onChange={(e) => setTimeSettings({ ...timeSettings, enableRestWarning: e.target.checked })}
-                                        />
-                                        Show Rest Warnings
-                                    </label>
-                                    <label className="flex items-center gap-2 text-sm">
-                                        <input
-                                            type="checkbox"
-                                            className="toggle toggle-sm"
-                                            checked={timeSettings.enableEarlyWarning}
-                                            onChange={(e) => setTimeSettings({ ...timeSettings, enableEarlyWarning: e.target.checked })}
-                                        />
-                                        Show Early Warnings
-                                    </label>
-                                </div>
-                                <input
-                                    type="text"
-                                    className="input input-bordered input-sm w-full mt-2"
-                                    value={timeSettings.restMessage}
-                                    onChange={(e) => setTimeSettings({ ...timeSettings, restMessage: e.target.value })}
-                                />
-                                <input
-                                    type="text"
-                                    className="input input-bordered input-sm w-full mt-2"
-                                    value={timeSettings.earlyMessage}
-                                    onChange={(e) => setTimeSettings({ ...timeSettings, earlyMessage: e.target.value })}
-                                />
-                            </div>
-                        </section>
-                        <section className="card bg-base-100 shadow">
-                            <div className="card-body space-y-2">
-                                <h4 className="card-title mb-2">Route Groups</h4>
-                                {routeGroups.map((group, idx) => (
-                                    <div key={idx} className="border p-2 rounded-md mb-2 space-y-1">
-                                        <div className="flex items-center gap-2">
-                                            <input
-                                                className="input input-bordered input-xs"
-                                                value={group.name}
-                                                onChange={(e) => updateGroup(idx, { ...group, name: e.target.value })}
-                                            />
-                                            <input
-                                                className="input input-bordered input-xs"
-                                                value={group.color}
-                                                onChange={(e) => updateGroup(idx, { ...group, color: e.target.value })}
-                                            />
-                                            <label className="flex items-center gap-1 text-xs">
-                                                <input
-                                                    type="checkbox"
-                                                    checked={group.isFull}
-                                                    onChange={(e) => updateGroup(idx, { ...group, isFull: e.target.checked })}
-                                                />
-                                                Full
-                                            </label>
-                                            <button
-                                                className="btn btn-xs btn-error ml-auto"
-                                                onClick={() => setRouteGroups(arr => arr.filter((_, i) => i !== idx))}
-                                            >
-                                                Remove
-                                            </button>
-                                        </div>
-                                        <textarea
-                                            className="textarea textarea-bordered w-full text-xs"
-                                            rows={2}
-                                            value={group.codes.join(', ')}
-                                            onChange={(e) => updateGroup(idx, { ...group, codes: e.target.value.split(',').map(c => c.trim().toUpperCase()).filter(Boolean) })}
-                                        />
-                                    </div>
-                                ))}
-                                <button
-                                    className="btn btn-sm mt-2"
-                                    onClick={() => setRouteGroups([...routeGroups, { name: 'New Group', codes: [], isFull: false, color: 'text-white' }])}
-                                >
-                                    <Icon name="plus" className="w-4 h-4 mr-1" />
-                                    Add Group
-                                </button>
-                            </div>
-                        </section>
-                        <section className="card bg-base-100 shadow">
-                            <div className="card-body space-y-2">
-                                <h4 className="card-title mb-2">Ignored Calendar Patterns</h4>
-                                <textarea
-                                    className="textarea textarea-bordered w-full text-xs"
-                                    rows={4}
-                                    value={ignoredPatterns.join('\n')}
-                                    onChange={(e) => setIgnoredPatterns(e.target.value.split('\n').map(p => p.trim()).filter(Boolean))}
-                                />
-                            </div>
-                        </section>
-                    </div>
-                    <div className="modal-action">
-                        <button className="btn btn-outline mr-auto" onClick={resetSettings}>Reset Defaults</button>
-                        <button className="btn" onClick={() => setSettingsOpen(false)}>Close</button>
-                    </div>
-                </Modal>
-                {notification && (
-                    <div className="toast toast-bottom toast-center">
-                        <div className="alert alert-error">
-                            <span>{notification}</span>
-                        </div>
-                    </div>
-                )}
-                {warningModal && (
-                    <div className="modal modal-open">
-                        <div className="modal-box">
-                            <h3 className="font-bold text-lg">Warning: Driver already exists in the right table!</h3>
-                            <p className="py-4">Do you want to continue anyway?</p>
-                            <div className="modal-action">
-                                <button className="btn" onClick={() => setWarningModal(null)}>Cancel</button>
-                                <button className="btn btn-warning" onClick={() => {
-                                    warningModal.action();
-                                }}>Continue anyway</button>
-                            </div>
-                        </div>
-                    </div>
-                )}
-                {error && <p className="text-red-600 mt-2 text-sm">{error}</p>}
             </div>
+            <Modal open={settingsOpen} onClose={() => setSettingsOpen(false)} className="max-w-4xl">
+                <h3 className="font-bold text-xl mb-4">Settings</h3>
+                <div className="space-y-6 max-h-[70vh] overflow-y-auto">
+                    <section className="card bg-base-100 shadow">
+                        <div className="card-body space-y-2">
+                            <h4 className="card-title mb-2">Time Logic</h4>
+                            <div className="grid grid-cols-2 gap-2">
+                                <label className="flex items-center gap-2 text-sm">
+                                    Late End Hour
+                                    <input
+                                        type="number"
+                                        className="input input-bordered input-sm w-20"
+                                        value={timeSettings.lateEndHour}
+                                        onChange={(e) => setTimeSettings({ ...timeSettings, lateEndHour: parseInt(e.target.value) })}
+                                    />
+                                </label>
+                                <label className="flex items-center gap-2 text-sm">
+                                    Early Start Hour
+                                    <input
+                                        type="number"
+                                        className="input input-bordered input-sm w-20"
+                                        value={timeSettings.earlyStartHour}
+                                        onChange={(e) => setTimeSettings({ ...timeSettings, earlyStartHour: parseInt(e.target.value) })}
+                                    />
+                                </label>
+                                <label className="flex items-center gap-2 text-sm">
+                                    Early End Hour
+                                    <input
+                                        type="number"
+                                        className="input input-bordered input-sm w-20"
+                                        value={timeSettings.earlyEndHour}
+                                        onChange={(e) => setTimeSettings({ ...timeSettings, earlyEndHour: parseInt(e.target.value) })}
+                                    />
+                                </label>
+                                <label className="flex items-center gap-2 text-sm">
+                                    Late Start Hour
+                                    <input
+                                        type="number"
+                                        className="input input-bordered input-sm w-20"
+                                        value={timeSettings.lateStartHour}
+                                        onChange={(e) => setTimeSettings({ ...timeSettings, lateStartHour: parseInt(e.target.value) })}
+                                    />
+                                </label>
+                            </div>
+                            <div className="grid grid-cols-2 gap-2 mt-2">
+                                <label className="flex items-center gap-2 text-sm">
+                                    <input
+                                        type="checkbox"
+                                        className="toggle toggle-sm"
+                                        checked={timeSettings.enableRestWarning}
+                                        onChange={(e) => setTimeSettings({ ...timeSettings, enableRestWarning: e.target.checked })}
+                                    />
+                                    Show Rest Warnings
+                                </label>
+                                <label className="flex items-center gap-2 text-sm">
+                                    <input
+                                        type="checkbox"
+                                        className="toggle toggle-sm"
+                                        checked={timeSettings.enableEarlyWarning}
+                                        onChange={(e) => setTimeSettings({ ...timeSettings, enableEarlyWarning: e.target.checked })}
+                                    />
+                                    Show Early Warnings
+                                </label>
+                            </div>
+                            <input
+                                type="text"
+                                className="input input-bordered input-sm w-full mt-2"
+                                value={timeSettings.restMessage}
+                                onChange={(e) => setTimeSettings({ ...timeSettings, restMessage: e.target.value })}
+                            />
+                            <input
+                                type="text"
+                                className="input input-bordered input-sm w-full mt-2"
+                                value={timeSettings.earlyMessage}
+                                onChange={(e) => setTimeSettings({ ...timeSettings, earlyMessage: e.target.value })}
+                            />
+                        </div>
+                    </section>
+                    <section className="card bg-base-100 shadow">
+                        <div className="card-body space-y-2">
+                            <h4 className="card-title mb-2">Route Groups</h4>
+                            {routeGroups.map((group, idx) => (
+                                <div key={idx} className="border p-2 rounded-md mb-2 space-y-1">
+                                    <div className="flex items-center gap-2">
+                                        <input
+                                            className="input input-bordered input-xs"
+                                            value={group.name}
+                                            onChange={(e) => updateGroup(idx, { ...group, name: e.target.value })}
+                                        />
+                                        <input
+                                            className="input input-bordered input-xs"
+                                            value={group.color}
+                                            onChange={(e) => updateGroup(idx, { ...group, color: e.target.value })}
+                                        />
+                                        <label className="flex items-center gap-1 text-xs">
+                                            <input
+                                                type="checkbox"
+                                                checked={group.isFull}
+                                                onChange={(e) => updateGroup(idx, { ...group, isFull: e.target.checked })}
+                                            />
+                                            Full
+                                        </label>
+                                        <button
+                                            className="btn btn-xs btn-error ml-auto"
+                                            onClick={() => setRouteGroups(arr => arr.filter((_, i) => i !== idx))}
+                                        >
+                                            Remove
+                                        </button>
+                                    </div>
+                                    <textarea
+                                        className="textarea textarea-bordered w-full text-xs"
+                                        rows={2}
+                                        value={group.codes.join(', ')}
+                                        onChange={(e) => updateGroup(idx, { ...group, codes: e.target.value.split(',').map(c => c.trim().toUpperCase()).filter(Boolean) })}
+                                    />
+                                </div>
+                            ))}
+                            <button
+                                className="btn btn-sm mt-2"
+                                onClick={() => setRouteGroups([...routeGroups, { name: 'New Group', codes: [], isFull: false, color: 'text-white' }])}
+                            >
+                                <Icon name="plus" className="w-4 h-4 mr-1" />
+                                Add Group
+                            </button>
+                        </div>
+                    </section>
+                    <section className="card bg-base-100 shadow">
+                        <div className="card-body space-y-2">
+                            <h4 className="card-title mb-2">Ignored Calendar Patterns</h4>
+                            <textarea
+                                className="textarea textarea-bordered w-full text-xs"
+                                rows={4}
+                                value={ignoredPatterns.join('\n')}
+                                onChange={(e) => setIgnoredPatterns(e.target.value.split('\n').map(p => p.trim()).filter(Boolean))}
+                            />
+                        </div>
+                    </section>
+                </div>
+                <div className="modal-action">
+                    <button className="btn btn-outline mr-auto" onClick={resetSettings}>Reset Defaults</button>
+                    <button className="btn" onClick={() => setSettingsOpen(false)}>Close</button>
+                </div>
+            </Modal>
+            {notification && (
+                <div className="toast toast-bottom toast-center">
+                    <div className="alert alert-error">
+                        <span>{notification}</span>
+                    </div>
+                </div>
+            )}
+            {warningModal && (
+                <div className="modal modal-open">
+                    <div className="modal-box">
+                        <h3 className="font-bold text-lg">Warning: Driver already exists in the right table!</h3>
+                        <p className="py-4">Do you want to continue anyway?</p>
+                        <div className="modal-action">
+                            <button className="btn" onClick={() => setWarningModal(null)}>Cancel</button>
+                            <button className="btn btn-warning" onClick={() => {
+                                warningModal.action();
+                            }}>Continue anyway</button>
+                        </div>
+                    </div>
+                </div>
+            )}
+            {error && <p className="text-red-600 mt-2 text-sm">{error}</p>}
         </Layout>
     );
 }
