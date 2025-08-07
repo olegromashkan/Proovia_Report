@@ -91,7 +91,7 @@ export default function ScheduleTool() {
     const [lockCopy, setLockCopy] = useState(true);
     const [disableRowSelection, setDisableRowSelection] = useState(true);
     const [lockedRight, setLockedRight] = useState<Set<number>>(new Set());
-    const [showLockAnimation, setShowLockAnimation] = useState(false);
+    const [animatingLocks, setAnimatingLocks] = useState<Set<number>>(new Set());
     const filterIgnored = <T extends { Calendar_Name?: string }>(items: T[]) =>
         items.filter(it =>
             !ignoredPatterns.some(pat =>
@@ -120,7 +120,6 @@ export default function ScheduleTool() {
                 console.error('Failed to save settings to localStorage:', e);
             }
         }
-
     }, [routeGroups, timeSettings, ignoredPatterns]);
     const updateGroup = (idx: number, group: RouteGroup) => {
         setRouteGroups(arr => arr.map((g, i) => (i === idx ? group : g)));
@@ -903,8 +902,18 @@ export default function ScheduleTool() {
         const isLocking = !newSet.has(idx);
         if (isLocking) {
             newSet.add(idx);
-            setShowLockAnimation(true);
-            setTimeout(() => setShowLockAnimation(false), 3000);
+            setAnimatingLocks(prev => {
+                const newAnimating = new Set(prev);
+                newAnimating.add(idx);
+                return newAnimating;
+            });
+            setTimeout(() => {
+                setAnimatingLocks(prev => {
+                    const newAnimating = new Set(prev);
+                    newAnimating.delete(idx);
+                    return newAnimating;
+                });
+            }, 3000);
         } else {
             newSet.delete(idx);
         }
@@ -1225,6 +1234,7 @@ export default function ScheduleTool() {
                                                             <span
                                                                 className={`inline-flex items-center gap-1 px-2 py-0.5 rounded bg-gray-200 dark:bg-gray-600 hover:shadow-md transition-all duration-150 transform hover:scale-105`}
                                                             >
+                                                                {isLocked && <div className="w-2 h-2 bg-green-500 rounded-full"></div>}
                                                                 <span>{it.Driver1}</span>
                                                                 {it.fromLeftIndex !== undefined && (
                                                                     <span
@@ -1242,6 +1252,7 @@ export default function ScheduleTool() {
                                                                 >
                                                                     <Icon name={isLocked ? 'lock' : 'unlock'} className="w-3 h-3" />
                                                                 </button>
+                                                                {animatingLocks.has(idx) && <img src="/success-gif.gif" alt="success" className="w-6 h-6 ml-2" />}
                                                             </span>
                                                         ) : (
                                                             <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-400 italic rounded border border-dashed border-gray-300 dark:border-gray-600">
@@ -1581,13 +1592,6 @@ export default function ScheduleTool() {
                     <div className="alert alert-error">
                         <span>{error}</span>
                     </div>
-                </div>
-            )}
-            {showLockAnimation && (
-                <div className="fixed inset-0 flex items-center justify-center z-50 pointer-events-none">
-                    <div className="text-6xl animate-bounce mr-4">🐱</div>
-                    <div className="text-6xl animate-ping">🎉</div>
-                    <div className="text-6xl animate-spin ml-4">🎆</div>
                 </div>
             )}
         </Layout>

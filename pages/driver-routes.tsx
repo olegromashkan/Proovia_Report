@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { debounce } from 'lodash';
 import { parseDate } from '../lib/dateUtils';
 import { parseTimeToMinutes } from '../lib/timeUtils';
+import Head from 'next/head';
 
 interface Item {
   driver: string;
@@ -504,6 +505,10 @@ export default function DriverRoutes() {
 
   return (
     <Layout title="Driver Routes" fullWidth>
+      <Head>
+        <link rel="icon" href="/routes.png" type="image/png" />
+
+      </Head>
       <div className="flex flex-col h-full p-4 gap-4">
         {/* Error message */}
         <AnimatePresence>

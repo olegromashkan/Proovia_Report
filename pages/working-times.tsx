@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import Layout from '../components/Layout';
 import AnalogClock from '../components/AnalogClock';
+import Head from 'next/head';
 
 function weekNumber(dateStr: string): number {
   const d = new Date(dateStr);
@@ -50,7 +51,7 @@ export default function WorkingTimes() {
   const formatHM = (val: number): string => {
     const h = Math.floor(val);
     const m = Math.round((val - h) * 60);
-    return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`;
+    return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
   };
 
   const getValue = (row: ApiWeekData, key: string): number | string => {
@@ -117,11 +118,14 @@ export default function WorkingTimes() {
 
   return (
     <Layout title="Working Times" fullWidth>
+      <Head>
+        <link rel="icon" href="/hours.png" />
+      </Head>
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Working Times</h1>
         </div>
-        
+
         {contractors.length > 0 && (
           <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-gray-800 dark:to-gray-900 rounded-2xl p-6 shadow-sm border border-gray-200 dark:border-gray-700">
             <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Contractor Overview</h2>
@@ -289,7 +293,7 @@ export default function WorkingTimes() {
                                 const hue = 0 + ratio * 120; // red to green
                                 const lightness = dark ? 25 : 90;
                                 const saturation = 50;
-                                style = { 
+                                style = {
                                   backgroundColor: `hsl(${hue}, ${saturation}%, ${lightness}%)`,
                                   color: dark ? '#fff' : '#000'
                                 };

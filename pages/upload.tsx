@@ -2,6 +2,7 @@ import { useState, useEffect, DragEvent, ChangeEvent } from 'react';
 import Layout from '../components/Layout';
 import Icon from '../components/Icon';
 import UploadHistory from '../components/UploadHistory';
+import Head from 'next/head';
 
 export default function Upload() {
   const [files, setFiles] = useState<File[]>([]);
@@ -118,6 +119,9 @@ export default function Upload() {
 
   return (
     <Layout title="Upload Files">
+      <Head>
+        <link rel="icon" href="/upload.png" />
+      </Head>
       <h1 className="text-2xl font-bold mb-4">Upload Files</h1>
       <div
         className="border-2 border-dashed rounded-lg p-6 text-center bg-white dark:bg-gray-700 dark:border-gray-500 dark:text-gray-200 cursor-pointer"
