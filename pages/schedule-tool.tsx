@@ -90,6 +90,8 @@ export default function ScheduleTool() {
     const [startRightIndex, setStartRightIndex] = useState<number | null>(null);
     const [lockCopy, setLockCopy] = useState(true);
     const [disableRowSelection, setDisableRowSelection] = useState(true);
+    const [lockedRight, setLockedRight] = useState<Set<number>>(new Set());
+    const [showLockAnimation, setShowLockAnimation] = useState(false);
     const filterIgnored = <T extends { Calendar_Name?: string }>(items: T[]) =>
         items.filter(it =>
             !ignoredPatterns.some(pat =>
@@ -881,11 +883,38 @@ export default function ScheduleTool() {
         e.dataTransfer?.setDragImage(ghost, 10, 10);
         setTimeout(() => document.body.removeChild(ghost), 0);
     };
+    const handleLeftDrop = (e: DragEvent<HTMLDivElement>) => {
+        e.preventDefault();
+        try {
+            const data = JSON.parse(e.dataTransfer.getData('text/plain'));
+            if (data.table === 'right') {
+                const name = data.name;
+                const leftIdx = itemsLeft.findIndex(it => it.Driver1 === name && it.isAssigned);
+                if (leftIdx !== -1) {
+                    handleUndoFromRight(leftIdx);
+                }
+            }
+        } catch (err) {
+            console.error('Drop error:', err);
+        }
+    };
+    const toggleLock = (idx: number) => {
+        const newSet = new Set(lockedRight);
+        const isLocking = !newSet.has(idx);
+        if (isLocking) {
+            newSet.add(idx);
+            setShowLockAnimation(true);
+            setTimeout(() => setShowLockAnimation(false), 3000);
+        } else {
+            newSet.delete(idx);
+        }
+        setLockedRight(newSet);
+    };
     return (
         <Layout title="Schedule Tool" fullWidth>
             <div className="flex gap-2 w-full h-[calc(100vh-4.5rem)] bg-base-100 dark:bg-base-100">
                 {/* Left Table */}
-                <div className="flex-1 min-w-0 flex flex-col border-r border-gray-200 dark:border-gray-700 relative" onMouseUp={handleMouseUpLeft}>
+                <div className="flex-1 min-w-0 flex flex-col border-r border-gray-200 dark:border-gray-700 relative" onMouseUp={handleMouseUpLeft} onDragOver={(e) => e.preventDefault()} onDrop={handleLeftDrop}>
                     {renderStats(leftStats, clearAllLeft)}
                     <div className="flex-1 overflow-auto relative">
                         {isLoading ? (
@@ -1048,6 +1077,7 @@ export default function ScheduleTool() {
                                         const isHovered = hoveredRightIndex === idx;
                                         const isSelected = selectedRight.includes(idx);
                                         const showColorBadge = !is2DT;
+                                        const isLocked = lockedRight.has(idx);
                                         return (
                                             <tr
                                                 key={it.ID || `right-${idx}`}
@@ -1075,15 +1105,24 @@ export default function ScheduleTool() {
                                                     )}
                                                 </td>
                                                 <td
-                                                    draggable={false}
+                                                    draggable={!!it.Driver1 && !isLocked}
+                                                    onDragStart={(e) => {
+                                                        if (!!it.Driver1 && !isLocked) {
+                                                            e.dataTransfer.setData('text/plain', JSON.stringify({ table: 'right', index: idx, name: it.Driver1 }));
+                                                            setDragImage(e, it.Driver1 || '');
+                                                        }
+                                                    }}
                                                     onDragOver={(e) => {
-                                                        e.preventDefault();
-                                                        e.currentTarget.classList.add('bg-gray-900', 'dark:bg-gray-900/30', 'border-dashed', 'border-2', 'border-blue-300');
+                                                        if (!isLocked) {
+                                                            e.preventDefault();
+                                                            e.currentTarget.classList.add('bg-gray-900', 'dark:bg-gray-900/30', 'border-dashed', 'border-2', 'border-blue-300');
+                                                        }
                                                     }}
                                                     onDragLeave={(e) => {
                                                         e.currentTarget.classList.remove('bg-gray-900', 'dark:bg-gray-900/30', 'border-dashed', 'border-2', 'border-blue-300');
                                                     }}
                                                     onDrop={(e) => {
+                                                        if (isLocked) return;
                                                         e.preventDefault();
                                                         e.currentTarget.classList.remove('bg-gray-900', 'dark:bg-gray-900/30', 'border-dashed', 'border-2', 'border-blue-300');
                                                         try {
@@ -1102,6 +1141,20 @@ export default function ScheduleTool() {
                                                                         restMessage = timeSettings.earlyMessage;
                                                                     }
                                                                 }
+                                                            } else if (data.table === 'right') {
+                                                                const sourceIdx = data.index;
+                                                                if (sourceIdx === idx) return;
+                                                                updateRight((arr) => {
+                                                                    const copy = [...arr];
+                                                                    const tempDriver = copy[idx].Driver1;
+                                                                    const tempFrom = copy[idx].fromLeftIndex;
+                                                                    copy[idx].Driver1 = copy[sourceIdx].Driver1;
+                                                                    copy[idx].fromLeftIndex = copy[sourceIdx].fromLeftIndex;
+                                                                    copy[sourceIdx].Driver1 = tempDriver;
+                                                                    copy[sourceIdx].fromLeftIndex = tempFrom;
+                                                                    return copy;
+                                                                });
+                                                                return;
                                                             }
                                                             const showRestNotification = () => {
                                                                 if (restMessage) {
@@ -1173,7 +1226,7 @@ export default function ScheduleTool() {
                                                                 className={`inline-flex items-center gap-1 px-2 py-0.5 rounded bg-gray-200 dark:bg-gray-600 hover:shadow-md transition-all duration-150 transform hover:scale-105`}
                                                             >
                                                                 <span>{it.Driver1}</span>
-                                                                {isHovered && it.fromLeftIndex !== undefined && (
+                                                                {it.fromLeftIndex !== undefined && (
                                                                     <span
                                                                         className="underline cursor-pointer text-blue-500 text-xs ml-1"
                                                                         onClick={() => handleUndoFromRight(it.fromLeftIndex)}
@@ -1182,6 +1235,13 @@ export default function ScheduleTool() {
                                                                         <Icon name="arrow-counterclockwise" className="w-3 h-3" />
                                                                     </span>
                                                                 )}
+                                                                <button
+                                                                    className="text-gray-500 hover:text-gray-700 ml-1"
+                                                                    onClick={() => toggleLock(idx)}
+                                                                    title={isLocked ? 'Unlock' : 'Lock'}
+                                                                >
+                                                                    <Icon name={isLocked ? 'lock' : 'unlock'} className="w-3 h-3" />
+                                                                </button>
                                                             </span>
                                                         ) : (
                                                             <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-400 italic rounded border border-dashed border-gray-300 dark:border-gray-600">
@@ -1521,6 +1581,13 @@ export default function ScheduleTool() {
                     <div className="alert alert-error">
                         <span>{error}</span>
                     </div>
+                </div>
+            )}
+            {showLockAnimation && (
+                <div className="fixed inset-0 flex items-center justify-center z-50 pointer-events-none">
+                    <div className="text-6xl animate-bounce mr-4">🐱</div>
+                    <div className="text-6xl animate-ping">🎉</div>
+                    <div className="text-6xl animate-spin ml-4">🎆</div>
                 </div>
             )}
         </Layout>
