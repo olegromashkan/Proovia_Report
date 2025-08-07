@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { debounce } from 'lodash';
 import { parseDate } from '../lib/dateUtils';
 import { parseTimeToMinutes } from '../lib/timeUtils';
+import DCNavbar from '../components/DCNavbar';
 
 interface Item {
   driver: string;
@@ -503,7 +504,8 @@ export default function DriverRoutes() {
   const handleDrag = (e: DragEvent<HTMLDivElement>) => e.preventDefault();
 
   return (
-    <Layout title="Driver Routes" fullWidth>
+    <Layout title="Driver Routes" fullWidth hideNavbar>
+      <DCNavbar />
       <div className="flex flex-col h-full p-4 gap-4">
         {/* Error message */}
         <AnimatePresence>

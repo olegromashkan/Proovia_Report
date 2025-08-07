@@ -2,6 +2,7 @@ import { useEffect, useState, DragEvent, ChangeEvent, useRef, KeyboardEvent, use
 import Layout from '../components/Layout';
 import Icon from '../components/Icon';
 import Modal from '../components/Modal';
+import DCNavbar from '../components/DCNavbar';
 import { parseTimeToMinutes } from '../lib/timeUtils';
 interface Trip {
     ID: string;
@@ -911,7 +912,8 @@ export default function ScheduleTool() {
         setLockedRight(newSet);
     };
     return (
-        <Layout title="Schedule Tool" fullWidth>
+        <Layout title="Schedule Tool" fullWidth hideNavbar>
+            <DCNavbar />
             <div className="flex gap-2 w-full h-[calc(100vh-4.5rem)] bg-base-100 dark:bg-base-100">
                 {/* Left Table */}
                 <div className="flex-1 min-w-0 flex flex-col border-r border-gray-200 dark:border-gray-700 relative" onMouseUp={handleMouseUpLeft} onDragOver={(e) => e.preventDefault()} onDrop={handleLeftDrop}>

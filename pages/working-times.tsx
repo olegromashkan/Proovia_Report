@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import Layout from '../components/Layout';
 import AnalogClock from '../components/AnalogClock';
+import DCNavbar from '../components/DCNavbar';
 
 function weekNumber(dateStr: string): number {
   const d = new Date(dateStr);
@@ -116,7 +117,8 @@ export default function WorkingTimes() {
   }, []);
 
   return (
-    <Layout title="Working Times" fullWidth>
+    <Layout title="Working Times" fullWidth hideNavbar>
+      <DCNavbar />
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Working Times</h1>
