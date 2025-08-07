@@ -13,6 +13,9 @@ export default function ContractorsPanel() {
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState('');
   const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [newName, setNewName] = useState('');
+  const [newContractor, setNewContractor] = useState('');
+  const [bulkContractor, setBulkContractor] = useState('');
 
   const load = async () => {
     setLoading(true);
@@ -22,6 +25,7 @@ export default function ContractorsPanel() {
         const data = await res.json();
         setDrivers(data.drivers || []);
         setContractors(data.contractors || []);
+        setBulkContractor(data.contractors?.[0] || '');
       }
     } finally {
       setLoading(false);
@@ -66,9 +70,67 @@ export default function ContractorsPanel() {
     setDrivers(ds => ds.map(d => (d.id === id ? { ...d, contractor: value } : d)));
   };
 
+  const addDriver = async () => {
+    const name = newName.trim();
+    const contractor = newContractor.trim();
+    if (!name || !contractor) return;
+    const res = await fetch('/api/drivers', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, contractor }),
+    });
+    if (res.ok) {
+      const data = await res.json();
+      setDrivers(ds => [...ds, data.driver].sort((a, b) => a.name.localeCompare(b.name)));
+      setNewName('');
+      setNewContractor('');
+      setContractors(cs =>
+        cs.includes(contractor) ? cs : [...cs, contractor].sort()
+      );
+    }
+  };
+
+  const assignSelected = async () => {
+    if (selected.size === 0) return;
+    await fetch('/api/drivers', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ids: Array.from(selected), contractor: bulkContractor }),
+    });
+    setDrivers(ds =>
+      ds.map(d =>
+        selected.has(d.id) ? { ...d, contractor: bulkContractor } : d
+      ),
+    );
+    setSelected(new Set());
+  };
+
   return (
     <div className="space-y-4">
       <h2 className="text-xl font-bold">Contractors</h2>
+      <div className="flex flex-wrap items-end gap-2">
+        <input
+          className="input input-bordered w-full max-w-xs"
+          placeholder="Driver name"
+          value={newName}
+          onChange={e => setNewName(e.target.value)}
+        />
+        <input
+          className="input input-bordered w-full max-w-xs"
+          placeholder="Contractor"
+          list="contractor-list"
+          value={newContractor}
+          onChange={e => setNewContractor(e.target.value)}
+        />
+        <datalist id="contractor-list">
+          {contractors.map(c => (
+            <option key={c} value={c} />
+          ))}
+        </datalist>
+        <button className="btn btn-success" onClick={addDriver}>
+          Add
+        </button>
+      </div>
       <input
         className="input input-bordered w-full max-w-xs"
         placeholder="Search driver"
@@ -81,8 +143,28 @@ export default function ContractorsPanel() {
         ) : (
           <>
             {selected.size > 0 && (
-              <div className="mb-2">
-                <button onClick={deleteSelected} className="btn btn-error btn-xs">
+              <div className="mb-2 flex flex-wrap items-center gap-2">
+                <select
+                  className="select select-xs select-bordered"
+                  value={bulkContractor}
+                  onChange={e => setBulkContractor(e.target.value)}
+                >
+                  {contractors.map(c => (
+                    <option key={c} value={c}>
+                      {c}
+                    </option>
+                  ))}
+                </select>
+                <button
+                  onClick={assignSelected}
+                  className="btn btn-primary btn-xs"
+                >
+                  Assign
+                </button>
+                <button
+                  onClick={deleteSelected}
+                  className="btn btn-error btn-xs"
+                >
                   Delete Selected
                 </button>
               </div>

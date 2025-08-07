@@ -1,5 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import db from '../../lib/db';
+import { randomUUID } from 'crypto';
 
 export default function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method === 'GET') {
@@ -44,22 +45,68 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
     }
   }
 
-  if (req.method === 'PUT') {
-    const { id, contractor } = req.body || {};
-    if (!id || typeof contractor !== 'string') {
+  if (req.method === 'POST') {
+    const { name, contractor } = req.body || {};
+    if (typeof name !== 'string' || typeof contractor !== 'string') {
       return res.status(400).json({ message: 'Invalid data' });
     }
     try {
+      const id = randomUUID();
+      const data = {
+        Full_Name: name,
+        Contractor_Name: contractor,
+      };
+      db
+        .prepare('INSERT INTO drivers_report (id, data) VALUES (?, ?)')
+        .run(id, JSON.stringify(data));
+      return res
+        .status(201)
+        .json({ driver: { id, name, contractor, routes: 0 } });
+    } catch (err) {
+      console.error('drivers POST error', err);
+      return res.status(500).json({ message: 'Server error' });
+    }
+  }
+
+  if (req.method === 'PUT') {
+    const { id, ids, contractor } = req.body || {};
+    if (!contractor || typeof contractor !== 'string') {
+      return res.status(400).json({ message: 'Invalid data' });
+    }
+    try {
+      if (Array.isArray(ids)) {
+        const getStmt = db.prepare(
+          'SELECT data FROM drivers_report WHERE id = ?'
+        );
+        const updateStmt = db.prepare(
+          'UPDATE drivers_report SET data = ? WHERE id = ?'
+        );
+        const tr = db.transaction((arr: string[]) => {
+          arr.forEach((driverId: string) => {
+            const row = getStmt.get(driverId);
+            if (!row) return;
+            const data = JSON.parse(row.data);
+            data.Contractor_Name = contractor;
+            updateStmt.run(JSON.stringify(data), driverId);
+          });
+        });
+        tr(ids);
+        return res.status(200).json({ message: 'Updated' });
+      }
+
+      if (!id) {
+        return res.status(400).json({ message: 'Invalid data' });
+      }
+
       const row = db
         .prepare('SELECT data FROM drivers_report WHERE id = ?')
         .get(id);
       if (!row) return res.status(404).json({ message: 'Not found' });
       const data = JSON.parse(row.data);
       data.Contractor_Name = contractor;
-      db.prepare('UPDATE drivers_report SET data = ? WHERE id = ?').run(
-        JSON.stringify(data),
-        id,
-      );
+      db
+        .prepare('UPDATE drivers_report SET data = ? WHERE id = ?')
+        .run(JSON.stringify(data), id);
       return res.status(200).json({ message: 'Updated' });
     } catch (err) {
       console.error('drivers PUT error', err);
