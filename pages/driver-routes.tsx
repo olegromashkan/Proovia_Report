@@ -37,7 +37,6 @@ function formatDate(d: Date): string {
   return d.toISOString().slice(0, 10);
 }
 
-
 function getRouteColorClass(route: string): string {
   const upper = route.toUpperCase();
   const grey = ['EDINBURGH', 'GLASGOW', 'INVERNESS', 'ABERDEEN', 'EX+TR', 'TQ+PL'];
@@ -73,8 +72,6 @@ function stylePunctuality(val: number | null) {
   return <span className="text-green-600 font-medium">{val}</span>;
 }
 
-
-
 function priceTextColor(val?: number | string, isDarkTheme = false) {
   const num = Number(val);
   if (isNaN(num)) return 'inherit';
@@ -87,7 +84,7 @@ function priceTextColor(val?: number | string, isDarkTheme = false) {
   let hue: number;
 
   if (num <= min) {
-    hue = 50; // красный
+    hue = 50; // red
   } else if (num <= mid) {
     const ratio = (num - min) / (mid - min);
     hue = 0 + ratio * 60;
@@ -98,10 +95,10 @@ function priceTextColor(val?: number | string, isDarkTheme = false) {
     const ratio = (num - high) / (max - high);
     hue = 120 + ratio * 90;
   } else {
-    hue = 210; // синий
+    hue = 210; // blue
   }
 
-  const lightness = isDarkTheme ? 50 : 40; // тёмный, чтоб не выжигал глаза
+  const lightness = isDarkTheme ? 50 : 40;
   const saturation = 100;
   return `hsl(${hue}, ${saturation}%, ${lightness}%)`;
 }
@@ -111,15 +108,6 @@ function isEarlyStart(time?: string | null): boolean {
   const hour = parseInt(time.split(':')[0] || '0', 10);
   return hour < 7;
 }
-
-
-
-
-
-
-
-
-
 
 function formatDisplayDate(dateStr: string): string {
   const date = new Date(dateStr);
@@ -286,12 +274,12 @@ export default function DriverRoutes() {
     const [drv, dt, fld] = key.split('|');
     if (!map[drv]) map[drv] = {};
     if (!map[drv][dt]) map[drv][dt] = { route: '', tasks: '', start: null, end: null, punctuality: null, price: null };
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (map[drv][dt] as any)[fld] = editedCells[key];
     dateSet.add(dt);
     driverSet.add(drv);
   }
 
+  // Process early starts and check for consecutive dates
   for (const driver of Object.keys(map)) {
     for (const dt of Object.keys(map[driver])) {
       const cell = map[driver][dt];
@@ -398,6 +386,77 @@ export default function DriverRoutes() {
   );
   const avgPrice = summary.priceCount ? summary.totalPrice / summary.priceCount : 0;
 
+  // Precompute highlight groups for consecutive early start dates
+  const highlightGroups: Record<string, { start: number; end: number }[]> = {};
+  const consecutiveEarlyStarts: Record<string, { count: number; dates: string[] }> = {};
+  for (const driver in earlyStarts) {
+    const earlyDates = earlyStarts[driver].dates.sort();
+    const consecutiveGroups: { start: number; end: number }[] = [];
+    const consecutiveDates: string[] = [];
+
+    // Check for consecutive dates
+    for (let i = 0; i < earlyDates.length - 1; i++) {
+      const currentDate = new Date(earlyDates[i]);
+      const nextDate = new Date(earlyDates[i + 1]);
+      const diffDays = (nextDate.getTime() - currentDate.getTime()) / (1000 * 60 * 60 * 24);
+      if (diffDays === 1) {
+        consecutiveDates.push(earlyDates[i]);
+        if (i === earlyDates.length - 2) {
+          consecutiveDates.push(earlyDates[i + 1]);
+        }
+      } else if (consecutiveDates.length > 0) {
+        consecutiveDates.push(earlyDates[i]);
+        const indices = consecutiveDates.map((date) => dates.indexOf(date)).filter((i) => i !== -1).sort((a, b) => a - b);
+        if (indices.length >= 2) {
+          let currentStart = indices[0];
+          let currentEnd = indices[0];
+          for (let j = 1; j < indices.length; j++) {
+            if (indices[j] === currentEnd + 1) {
+              currentEnd = indices[j];
+            } else {
+              consecutiveGroups.push({ start: currentStart, end: currentEnd });
+              currentStart = indices[j];
+              currentEnd = indices[j];
+            }
+          }
+          consecutiveGroups.push({ start: currentStart, end: currentEnd });
+        }
+        consecutiveDates.length = 0; // Reset for the next group
+      }
+    }
+
+    if (consecutiveDates.length > 0) {
+      consecutiveDates.push(earlyDates[earlyDates.length - 1]);
+      const indices = consecutiveDates.map((date) => dates.indexOf(date)).filter((i) => i !== -1).sort((a, b) => a - b);
+      if (indices.length >= 2) {
+        let currentStart = indices[0];
+        let currentEnd = indices[0];
+        for (let j = 1; j < indices.length; j++) {
+          if (indices[j] === currentEnd + 1) {
+            currentEnd = indices[j];
+          } else {
+            consecutiveGroups.push({ start: currentStart, end: currentEnd });
+            currentStart = indices[j];
+            currentEnd = indices[j];
+          }
+        }
+        consecutiveGroups.push({ start: currentStart, end: currentEnd });
+      }
+    }
+
+    if (consecutiveGroups.length > 0) {
+      highlightGroups[driver] = consecutiveGroups;
+      consecutiveEarlyStarts[driver] = {
+        count: consecutiveDates.length || earlyDates.length,
+        dates: consecutiveDates.length ? consecutiveDates : earlyDates.filter((d) => {
+          const index = earlyDates.indexOf(d);
+          return (index > 0 && (new Date(earlyDates[index]).getTime() - new Date(earlyDates[index - 1]).getTime()) / (1000 * 60 * 60 * 24) === 1) ||
+            (index < earlyDates.length - 1 && (new Date(earlyDates[index + 1]).getTime() - new Date(earlyDates[index]).getTime()) / (1000 * 60 * 60 * 24) === 1);
+        }),
+      };
+    }
+  }
+
   const handleFile = async (dateStr: string, file: File) => {
     try {
       const text = await file.text();
@@ -446,8 +505,7 @@ export default function DriverRoutes() {
   return (
     <Layout title="Driver Routes" fullWidth>
       <div className="flex flex-col h-full p-4 gap-4">
-
-        {/* Сообщение об ошибке */}
+        {/* Error message */}
         <AnimatePresence>
           {error && (
             <motion.div
@@ -464,7 +522,7 @@ export default function DriverRoutes() {
           )}
         </AnimatePresence>
 
-        {/* Карточки подрядчиков */}
+        {/* Contractor cards */}
         <AnimatePresence>
           {showContractorCards && contractorCards.length > 0 && (
             <motion.div
@@ -492,7 +550,7 @@ export default function DriverRoutes() {
           )}
         </AnimatePresence>
 
-        {/* Панель фильтров */}
+        {/* Filter panel */}
         <div className="flex flex-wrap gap-2 items-center p-2 bg-base-200 rounded-box">
           <input type="date" value={start} onChange={(e) => setStart(e.target.value)} className="input input-sm input-bordered" aria-label="Start date" />
           <input type="date" value={end} onChange={(e) => setEnd(e.target.value)} className="input input-sm input-bordered" aria-label="End date" />
@@ -503,7 +561,7 @@ export default function DriverRoutes() {
             <button tabIndex={0} role="button" className="btn btn-sm btn-ghost btn-circle" title="Toggle columns">
               <Icon name="eye" className="w-5 h-5" />
             </button>
-            <ul tabIndex={0} className="dropdown-content z-[1] menu p-2 shadow bg-base-300 rounded-box w-52">
+            <ul tabIndex={0} className="dropdown-content z-[1] menu p-2 shadow bg-base-200 rounded-box w-52">
               {colOrder.map((key) => (
                 <li key={key}>
                   <label className="label cursor-pointer">
@@ -517,12 +575,12 @@ export default function DriverRoutes() {
           <button onClick={() => setShowContractorCards(!showContractorCards)} className="btn btn-sm btn-outline btn-primary">{showContractorCards ? 'Hide Cards' : 'Show Cards'}</button>
         </div>
 
-        {/* Сводка */}
+        {/* Summary */}
         <div className="px-2 py-1 text-sm opacity-80">
           Total drivers: {sortedDrivers.length} | Avg price: £{avgPrice.toFixed(2)} | Total tasks: {summary.totalTasks}
         </div>
 
-        {/* Таблица */}
+        {/* Table */}
         <div className="overflow-auto flex-1 border border-base-300 rounded-box">
           <table className="table table-xs table-pin-rows table-pin-cols table-zebra w-max border-collapse">
             <thead>
@@ -561,9 +619,9 @@ export default function DriverRoutes() {
                     <th className="sticky left-0 z-10 bg-base-100 min-w-[200px] whitespace-nowrap border border-base-300">
                       <div className="flex items-center gap-1.5">
                         {driver}
-                        {earlyStarts[driver]?.count > 3 && (
-                          <div className="tooltip" data-tip="Has frequent early starts">
-                            <button onClick={() => setHighlightDriver(highlightDriver === driver ? null : driver)} className="text-warning"><Icon name="clock" className="w-3 h-3" /></button>
+                        {consecutiveEarlyStarts[driver]?.dates.length >= 2 && (
+                          <div className="tooltip" data-tip={`Has consecutive early starts on: ${consecutiveEarlyStarts[driver].dates.map(formatDisplayDate).join(', ')}`}>
+                            <button onClick={() => setHighlightDriver(highlightDriver === driver ? null : driver)} className={`text-warning ${highlightDriver === driver ? 'bg-warning/20 rounded' : ''}`}><Icon name="clock" className="w-3 h-3" /></button>
                           </div>
                         )}
                       </div>
@@ -571,6 +629,9 @@ export default function DriverRoutes() {
                     {visibleCols.contractor && <th className="sticky left-[200px] z-10 bg-base-100 min-w-[150px] whitespace-nowrap border border-base-300">{driverContractor[driver] || '-'}</th>}
                     {dates.flatMap((d) => {
                       const data = map[driver]?.[d];
+                      const dateIndex = dates.indexOf(d);
+                      const isHighlighted = highlightDriver === driver && consecutiveEarlyStarts[driver]?.dates.includes(d);
+                      const group = isHighlighted ? highlightGroups[driver]?.find((g) => g.start <= dateIndex && g.end >= dateIndex) : undefined;
                       return visibleKeys.map((key) => {
                         const cellKey = `${driver}|${d}|${key}`;
                         const rawValue = editedCells[cellKey] !== undefined ? editedCells[cellKey] : data?.[key] ?? '-';
@@ -589,6 +650,22 @@ export default function DriverRoutes() {
                           default: cellContent = String(rawValue);
                         }
 
+                        if (isHighlighted && group) {
+                          const isFirstDateInGroup = dateIndex === group.start;
+                          const isLastDateInGroup = dateIndex === group.end;
+                          const keyIndex = visibleKeys.indexOf(key);
+                          const isFirstCellInDate = keyIndex === 0;
+                          const isLastCellInDate = keyIndex === visibleKeys.length - 1;
+                          let extraClass = ' border-t-2 border-b-2 border-warning ';
+                          if (isFirstDateInGroup && isFirstCellInDate) {
+                            extraClass += ' border-l-2 border-warning ';
+                          }
+                          if (isLastDateInGroup && isLastCellInDate) {
+                            extraClass += ' border-r-2 border-warning ';
+                          }
+                          cellClass += extraClass;
+                        }
+
                         return <td key={cellKey} onDoubleClick={() => setEditingCell({ driver, date: d, field: key })} className={cellClass}>{cellContent}</td>;
                       });
                     })}
@@ -599,7 +676,7 @@ export default function DriverRoutes() {
           </table>
         </div>
 
-        {/* Модальное окно для загрузки файла */}
+        {/* File upload modal */}
         <dialog id="upload_modal" className={`modal ${modalDate ? 'modal-open' : ''}`}>
           <div className="modal-box" onDrop={handleDrop} onDragOver={handleDrag}>
             <h3 className="font-bold text-lg">Update Schedule for {modalDate && formatDisplayDate(modalDate)}</h3>
