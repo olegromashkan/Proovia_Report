@@ -39,11 +39,12 @@ export default function Navbar() {
     {
       label: 'Driver Control',
       links: [
+        { href: '/dc', icon: 'house', label: 'Hub' },
         { href: '/upload', icon: 'upload', label: 'Upload' },
         { href: '/driver-routes', icon: 'signpost', label: 'Driver Routes' },
         { href: '/working-times', icon: 'clock', label: 'Working Times' },
         { href: '/schedule-tool', icon: 'database', label: 'Schedule Tool' },
-
+        { href: '/start-time', icon: 'clock-history', label: 'Start Time' },
       ],
     },
     {
