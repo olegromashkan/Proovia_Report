@@ -118,6 +118,7 @@ export default function ScheduleTool() {
                 console.error('Failed to save settings to localStorage:', e);
             }
         }
+
     }, [routeGroups, timeSettings, ignoredPatterns]);
     const updateGroup = (idx: number, group: RouteGroup) => {
         setRouteGroups(arr => arr.map((g, i) => (i === idx ? group : g)));
