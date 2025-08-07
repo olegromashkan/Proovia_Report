@@ -20,6 +20,7 @@ const iconMap: Record<string, string> = {
   'chevron-down': 'chevron-down',
   check: 'check',
   clock: 'clock',
+  'clock-history': 'clock-history',
   pen: 'pencil',
   copy: 'clipboard',
   ban: 'ban',
