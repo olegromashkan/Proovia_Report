@@ -1,6 +1,11 @@
 import { Trip } from '../hooks/useScheduleData';
 import { RouteGroup } from '../hooks/useScheduleSettings';
 
+export interface SortConfig {
+  key: string;
+  dir: 'asc' | 'desc';
+}
+
 export function getRouteColorClass(routeGroups: RouteGroup[], calendarName?: string) {
   if (!calendarName) return '';
   const code = calendarName.split(/\s+/)[0].toUpperCase();
@@ -32,4 +37,17 @@ export function computeStats(trips: Trip[]) {
   const total = trips.length;
   const assigned = trips.filter(t => t.isAssigned).length;
   return { total, assigned };
+}
+
+export function getNextSort(current: SortConfig | null, key: string): SortConfig {
+  const dir = current?.key === key && current.dir === 'asc' ? 'desc' : 'asc';
+  return { key, dir };
+}
+
+export function sortTrips(trips: Trip[], key: string, dir: 'asc' | 'desc'): Trip[] {
+  return [...trips].sort((a: any, b: any) => {
+    const av = (a[key] ?? '') as string;
+    const bv = (b[key] ?? '') as string;
+    return av.localeCompare(bv) * (dir === 'asc' ? 1 : -1);
+  });
 }

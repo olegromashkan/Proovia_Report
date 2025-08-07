@@ -1,11 +1,17 @@
 import { useEffect, useState } from 'react';
 import Layout from '../components/Layout';
-import ScheduleTable from '../components/schedule/ScheduleTable';
+import ScheduleTable, { ColumnConfig } from '../components/schedule/ScheduleTable';
 import NotesSidebar from '../components/schedule/NotesSidebar';
 import SettingsModal from '../components/schedule/SettingsModal';
 import { useScheduleData } from '../hooks/useScheduleData';
 import { useScheduleSettings } from '../hooks/useScheduleSettings';
 import { useTableSelection } from '../hooks/useTableSelection';
+import {
+  getRouteColorClass,
+  getNextSort,
+  sortTrips,
+  SortConfig,
+} from '../lib/scheduleUtils';
 
 export default function ScheduleTool() {
   const {
@@ -28,36 +34,34 @@ export default function ScheduleTool() {
   const leftSelection = useTableSelection();
   const rightSelection = useTableSelection();
   const [notes, setNotes] = useState<Record<string, string>>({});
-  const [sortLeft, setSortLeft] = useState<{ key: string; dir: 'asc' | 'desc' } | null>(null);
-  const [sortRight, setSortRight] = useState<{ key: string; dir: 'asc' | 'desc' } | null>(null);
+  const [sortLeft, setSortLeft] = useState<SortConfig | null>(null);
+  const [sortRight, setSortRight] = useState<SortConfig | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
+
+  const columns: ColumnConfig[] = [
+    { key: 'Driver1', label: 'Driver' },
+    { key: 'Start_Time', label: 'Start' },
+    {
+      key: 'End_Time',
+      label: 'End',
+      className: item => getRouteColorClass(routeGroups, item.Calendar_Name),
+    },
+  ];
 
   useEffect(() => {
     loadData();
   }, [loadData]);
 
   const handleSortLeft = (key: string) => {
-    const dir = sortLeft?.key === key && sortLeft.dir === 'asc' ? 'desc' : 'asc';
-    setSortLeft({ key, dir });
-    updateLeft(arr =>
-      [...arr].sort((a: any, b: any) => {
-        const av = a[key] || '';
-        const bv = b[key] || '';
-        return av.localeCompare(bv) * (dir === 'asc' ? 1 : -1);
-      })
-    );
+    const next = getNextSort(sortLeft, key);
+    setSortLeft(next);
+    updateLeft(arr => sortTrips(arr, key, next.dir));
   };
 
   const handleSortRight = (key: string) => {
-    const dir = sortRight?.key === key && sortRight.dir === 'asc' ? 'desc' : 'asc';
-    setSortRight({ key, dir });
-    updateRight(arr =>
-      [...arr].sort((a: any, b: any) => {
-        const av = a[key] || '';
-        const bv = b[key] || '';
-        return av.localeCompare(bv) * (dir === 'asc' ? 1 : -1);
-      })
-    );
+    const next = getNextSort(sortRight, key);
+    setSortRight(next);
+    updateRight(arr => sortTrips(arr, key, next.dir));
   };
 
   const handleNoteChange = (panel: string, value: string) => {
@@ -79,25 +83,25 @@ export default function ScheduleTool() {
         <div className="flex-1 overflow-auto">
           <ScheduleTable
             items={itemsLeft}
+            columns={columns}
             sortConfig={sortLeft}
             onSort={handleSortLeft}
             selectedRows={leftSelection.selectedRows}
             onRowMouseDown={leftSelection.handleMouseDown}
             onRowMouseOver={leftSelection.handleMouseOver}
             onRowMouseUp={leftSelection.handleMouseUp}
-            routeGroups={routeGroups}
           />
         </div>
         <div className="flex-1 overflow-auto">
           <ScheduleTable
             items={itemsRight}
+            columns={columns}
             sortConfig={sortRight}
             onSort={handleSortRight}
             selectedRows={rightSelection.selectedRows}
             onRowMouseDown={rightSelection.handleMouseDown}
             onRowMouseOver={rightSelection.handleMouseOver}
             onRowMouseUp={rightSelection.handleMouseUp}
-            routeGroups={routeGroups}
           />
         </div>
         <NotesSidebar notes={notes} onNoteChange={handleNoteChange} />
