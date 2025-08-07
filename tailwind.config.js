@@ -96,8 +96,8 @@ module.exports = {
         themes: [
             {
                 light: {
-                    "primary": "#007aff", // iOS system blue for primary
-                    "primary-focus": "#005bb5",
+                    "primary": "#b53133", // iOS system blue for primary
+                    "primary-focus": "#96292aff",
                     "primary-content": "#ffffff",
 
                     "secondary": "#34c759",
@@ -132,8 +132,8 @@ module.exports = {
             },
             {
                 dark: {
-                    "primary": "#0a84ff", // iOS dark system blue
-                    "primary-focus": "#006bd6",
+                    "primary": "#b53133", // iOS dark system blue
+                    "primary-focus": "#96292aff",
                     "primary-content": "#ffffff",
 
                     "secondary": "#32d74b",

@@ -3,7 +3,6 @@ import Layout from '../components/Layout';
 import Icon from '../components/Icon';
 import Modal from '../components/Modal';
 import { parseTimeToMinutes } from '../lib/timeUtils';
-
 interface Trip {
     ID: string;
     Start_Time?: string;
@@ -16,14 +15,12 @@ interface Trip {
     isAssigned?: boolean;
     fromLeftIndex?: number; // For right trips, to track origin in left
 }
-
 interface RouteGroup {
     name: string;
     codes: string[];
     isFull: boolean;
     color: string;
 }
-
 const DEFAULT_IGNORED_PATTERNS = [
     'every 2nd day north',
     'everyday',
@@ -31,7 +28,6 @@ const DEFAULT_IGNORED_PATTERNS = [
     'every 2nd day south',
     'South Wales 2nd',
 ];
-
 const DEFAULT_ROUTE_GROUPS: RouteGroup[] = [
     { name: '2DT', codes: ['EDINBURGH', 'GLASGOW', 'INVERNESS', 'ABERDEEN', 'EX+TR', 'TQ+PL'], isFull: true, color: 'text-gray-400' },
     { name: 'London', codes: ['WD', 'HA', 'UB', 'TW', 'KT', 'CR', 'BR', 'DA', 'RM', 'IG', 'EN', 'SM', 'W', 'NW', 'N', 'E', 'EC', 'SE', 'WC'], isFull: false, color: 'text-purple-500' },
@@ -42,7 +38,6 @@ const DEFAULT_ROUTE_GROUPS: RouteGroup[] = [
     { name: 'South West', codes: ['SP', 'BH', 'DT', 'TA', 'EX', 'TQ', 'PL', 'TR'], isFull: false, color: 'text-pink-500' },
     { name: 'West Midlands', codes: ['ST', 'TF', 'WV', 'DY', 'HR', 'WR', 'B', 'WS', 'CV', 'NN'], isFull: false, color: 'text-teal-300' },
 ];
-
 const DEFAULT_TIME_SETTINGS = {
     lateEndHour: 20,
     earlyStartHour: 7,
@@ -53,13 +48,13 @@ const DEFAULT_TIME_SETTINGS = {
     enableRestWarning: true,
     enableEarlyWarning: true,
 };
-
 export default function ScheduleTool() {
     const [itemsLeft, setItemsLeft] = useState<Trip[]>([]);
     const [itemsRight, setItemsRight] = useState<Trip[]>([]);
     const [error, setError] = useState<string | null>(null);
     const [notification, setNotification] = useState<string | null>(null);
     const [warningModal, setWarningModal] = useState<{ action: () => void } | null>(null);
+    const [mergeModal, setMergeModal] = useState<{ original: string; suggested: string }[] | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const leftLoaded = useRef(false);
     const rightLoaded = useRef(false);
@@ -94,14 +89,13 @@ export default function ScheduleTool() {
     const [isSelectingRight, setIsSelectingRight] = useState(false);
     const [startRightIndex, setStartRightIndex] = useState<number | null>(null);
     const [lockCopy, setLockCopy] = useState(true);
-
+    const [disableRowSelection, setDisableRowSelection] = useState(true);
     const filterIgnored = <T extends { Calendar_Name?: string }>(items: T[]) =>
         items.filter(it =>
             !ignoredPatterns.some(pat =>
                 (it.Calendar_Name || '').toLowerCase().includes(pat.toLowerCase())
             )
         );
-
     useEffect(() => {
         const stored = typeof window !== 'undefined' ? localStorage.getItem('scheduleSettings') : null;
         if (stored) {
@@ -115,7 +109,6 @@ export default function ScheduleTool() {
             }
         }
     }, []);
-
     useEffect(() => {
         const toSave = { routeGroups, timeSettings, ignoredPatterns };
         if (typeof window !== 'undefined') {
@@ -126,17 +119,14 @@ export default function ScheduleTool() {
             }
         }
     }, [routeGroups, timeSettings, ignoredPatterns]);
-
     const updateGroup = (idx: number, group: RouteGroup) => {
         setRouteGroups(arr => arr.map((g, i) => (i === idx ? group : g)));
     };
-
     const resetSettings = () => {
         setRouteGroups(DEFAULT_ROUTE_GROUPS.map(g => ({ ...g, codes: [...g.codes] })));
         setIgnoredPatterns([...DEFAULT_IGNORED_PATTERNS]);
         setTimeSettings({ ...DEFAULT_TIME_SETTINGS });
     };
-
     const safeFetch = async (url: string, options: RequestInit = {}) => {
         try {
             const res = await fetch(url, options);
@@ -148,7 +138,6 @@ export default function ScheduleTool() {
             throw err;
         }
     };
-
     const updateLeft = (updater: (arr: Trip[]) => Trip[]) => {
         setItemsLeft((arr) => {
             const updated = updater(arr);
@@ -156,7 +145,6 @@ export default function ScheduleTool() {
             return updated;
         });
     };
-
     const updateRight = (updater: (arr: Trip[]) => Trip[]) => {
         setItemsRight((arr) => {
             const updated = updater(arr);
@@ -164,7 +152,6 @@ export default function ScheduleTool() {
             return updated;
         });
     };
-
     const saveLeft = async (items: Trip[]) => {
         try {
             await safeFetch('/api/schedule-tool', {
@@ -176,7 +163,6 @@ export default function ScheduleTool() {
             // handled in safeFetch
         }
     };
-
     const saveRight = async (items: Trip[]) => {
         try {
             await safeFetch('/api/schedule-tool2', {
@@ -188,7 +174,6 @@ export default function ScheduleTool() {
             // handled in safeFetch
         }
     };
-
     const loadNotes = async () => {
         try {
             const res = await safeFetch('/api/schedule-notes');
@@ -198,7 +183,6 @@ export default function ScheduleTool() {
             // handled in safeFetch
         }
     };
-
     const saveNote = async (panel: string, content: string) => {
         try {
             await safeFetch('/api/schedule-notes', {
@@ -210,7 +194,6 @@ export default function ScheduleTool() {
             // handled in safeFetch
         }
     };
-
     const clearNote = async (panel: string) => {
         try {
             await safeFetch(`/api/schedule-notes?panel=${encodeURIComponent(panel)}`, {
@@ -221,7 +204,6 @@ export default function ScheduleTool() {
             // handled in safeFetch
         }
     };
-
     const load = async () => {
         setIsLoading(true);
         try {
@@ -239,17 +221,14 @@ export default function ScheduleTool() {
             setIsLoading(false);
         }
     };
-
     useEffect(() => {
         load();
         loadNotes();
     }, []);
-
     useEffect(() => {
         leftLoaded.current = true;
         rightLoaded.current = true;
     }, []);
-
     const processFile = async (files: FileList | null) => {
         if (!files || files.length === 0) return;
         const file = files[0];
@@ -295,37 +274,59 @@ export default function ScheduleTool() {
             setIsLoading(false);
         }
     };
-
+    const updateAvailableDrivers = (allowed: string[]) => {
+        updateLeft((arr) => {
+            const allowedSet = new Set(allowed);
+            const withoutOldDummies = arr.filter(it => !it.ID?.startsWith('extra-') || allowedSet.has(it.Driver1 || '') || it.isAssigned);
+            const currentDrivers = new Set(withoutOldDummies.map(it => it.Driver1?.trim()).filter(Boolean));
+            const missing = allowed.filter(d => !currentDrivers.has(d));
+            const newDummies = missing.map(d => ({
+                ID: `extra-${d.replace(/\s/g, '_')}`,
+                Driver1: d,
+                isAssigned: false,
+            }));
+            return sortItems([...withoutOldDummies, ...newDummies]);
+        });
+    };
     const handleNoteChange = (panel: string, value: string) => {
         setNotes((n) => ({ ...n, [panel]: value }));
         saveNote(panel, value);
         if (panel === 'Available Drivers') {
-            updateLeft((arr) => {
-                const allowed = value.split('\n').map(d => d.trim()).filter(d => d);
-                const allowedSet = new Set(allowed);
-                const withoutOldDummies = arr.filter(it => !it.ID?.startsWith('extra-') || allowedSet.has(it.Driver1 || '') || it.isAssigned);
-                const currentDrivers = new Set(withoutOldDummies.map(it => it.Driver1?.trim()).filter(Boolean));
-                const missing = allowed.filter(d => !currentDrivers.has(d));
-                const newDummies = missing.map(d => ({
-                    ID: `extra-${d.replace(/\s/g, '_')}`,
-                    Driver1: d,
-                    isAssigned: false,
-                }));
-                return sortItems([...withoutOldDummies, ...newDummies]);
-            });
+            const allowed = value.split('\n').map(d => d.trim()).filter(d => d);
+            const realDrivers = new Set(
+                itemsLeft
+                    .filter(it => !it.ID?.startsWith('extra-'))
+                    .map(it => it.Driver1?.trim())
+                    .filter(Boolean)
+            );
+            const potentialMerges = allowed
+                .filter(avail => !realDrivers.has(avail))
+                .map(avail => {
+                    const parts = avail.split(/\s+/).filter(Boolean);
+                    if (parts.length === 2) {
+                        const reversed = `${parts[1]} ${parts[0]}`;
+                        if (realDrivers.has(reversed)) {
+                            return { original: avail, suggested: reversed };
+                        }
+                    }
+                    return null;
+                })
+                .filter(Boolean) as { original: string; suggested: string }[];
+            if (potentialMerges.length > 0) {
+                setMergeModal(potentialMerges);
+            } else {
+                updateAvailableDrivers(allowed);
+            }
         }
     };
-
     const handleInputFile = (e: ChangeEvent<HTMLInputElement>) => {
         processFile(e.target.files);
         e.target.value = '';
     };
-
     const handleDropFile = (e: DragEvent<HTMLDivElement>) => {
         e.preventDefault();
         processFile(e.dataTransfer.files);
     };
-
     const clearAllLeft = async () => {
         try {
             await safeFetch('/api/schedule-tool', { method: 'DELETE' });
@@ -335,7 +336,6 @@ export default function ScheduleTool() {
             // handled in safeFetch
         }
     };
-
     const clearAllRight = async () => {
         try {
             await safeFetch('/api/schedule-tool2', { method: 'DELETE' });
@@ -345,7 +345,6 @@ export default function ScheduleTool() {
             // handled in safeFetch
         }
     };
-
     const applyLeftSort = (key: string) => {
         const dir: 'asc' | 'desc' = sortLeft && sortLeft.key === key && sortLeft.dir === 'asc' ? 'desc' : 'asc';
         setSortLeft({ key, dir });
@@ -367,27 +366,23 @@ export default function ScheduleTool() {
             return sorted;
         });
     };
-
     const applyRightSort = (key: string) => {
         const dir: 'asc' | 'desc' = sortRight && sortRight.key === key && sortRight.dir === 'asc' ? 'desc' : 'asc';
         setSortRight({ key, dir });
         updateRight((arr) => sortBy(arr, key, dir));
     };
-
     // Helper function to extract text after the first space
     const getTextAfterSpace = (text?: string) => {
         if (!text) return '';
         const index = text.indexOf(' ');
         return index !== -1 ? text.substring(index + 1) : text;
     };
-
     // Helper to parse HH:mm or similar time strings into minutes
     const parseTime = (time?: string): number => {
         if (!time) return NaN;
         const minutes = parseTimeToMinutes(getTextAfterSpace(time));
         return minutes === null ? NaN : minutes;
     };
-
     // Helper to compute Actual End time = End_Time plus Punctuality minutes
     const getActualEnd = (endTime?: string, punctuality?: string) => {
         if (!endTime) return '';
@@ -397,7 +392,6 @@ export default function ScheduleTool() {
         const actual = new Date(endDate.getTime() + (isNaN(mins) ? 0 : mins) * 60000);
         return actual.toTimeString().slice(0, 5);
     };
-
     // Helper function to extract Calendar: after ":" up to "("
     const getCalendar = (text?: string) => {
         if (!text) return '';
@@ -407,12 +401,10 @@ export default function ScheduleTool() {
         if (parenIndex === -1) return text.substring(colonIndex + 1).trim();
         return text.substring(colonIndex + 1, parenIndex).trim();
     };
-
     // Helper function to get Route: just getCalendar
     const getRoute = (text?: string) => {
         return getCalendar(text);
     };
-
     // Helper function to extract Tasks: after "(" up to ")"
     const getTasks = (text?: string) => {
         if (!text) return '';
@@ -422,7 +414,6 @@ export default function ScheduleTool() {
         if (closeParen === -1) return text.substring(openParen + 1).trim();
         return text.substring(openParen + 1, closeParen).trim();
     };
-
     // Helper function to extract VH: after "-" up to next "-"
     const getVH = (text?: string) => {
         if (!text) return '';
@@ -437,9 +428,7 @@ export default function ScheduleTool() {
         if (secondDash === -1) return text.substring(firstDash + 1).trim();
         return text.substring(firstDash + 1, secondDash).trim();
     };
-
     const specialCodes = new Set(['LA', 'EX', 'CA', 'TQ', 'NE', 'ME', 'CT', 'SA', 'NR']);
-
     // Helper function to check if route has special code
     const hasSpecialCode = (calendarName?: string) => {
         const calendar = getCalendar(calendarName);
@@ -448,7 +437,6 @@ export default function ScheduleTool() {
         const parts = calendar.split(/[\s+]+/).map(p => p.trim()).filter(Boolean);
         return parts.some(part => specialCodes.has(part));
     };
-
     // Helper function to get color class for driver based on notes
     const getDriverColor = (driverName: string | undefined) => {
         if (!driverName) return '';
@@ -459,7 +447,6 @@ export default function ScheduleTool() {
         }
         return '';
     };
-
     // Helper function to get color class for route
     const getRouteColorClass = (route?: string): string => {
         if (!route) return 'text-white';
@@ -474,7 +461,6 @@ export default function ScheduleTool() {
         }
         return 'text-white';
     };
-
     const getCategory = (route: string): string => {
         let upper = route.toUpperCase().replace(/[\s+]+/g, '+');
         for (const cat of routeGroups) {
@@ -487,7 +473,6 @@ export default function ScheduleTool() {
         }
         return 'Other';
     };
-
     const computeStats = (items: Trip[]) => {
         const counts: Record<string, number> = {};
         let total = 0;
@@ -499,14 +484,12 @@ export default function ScheduleTool() {
         });
         return { counts, total };
     };
-
     const sortItems = (items: Trip[]): Trip[] => {
         const allowedDrivers = (notes['Available Drivers'] || '').split('\n').map(d => d.trim()).filter(d => d);
         const allowed = items.filter(it => allowedDrivers.includes(it.Driver1 || ''));
         const notAllowed = items.filter(it => !allowedDrivers.includes(it.Driver1 || ''));
         return [...allowed, ...notAllowed];
     };
-
     const sortBy = (arr: Trip[], key: string, dir: 'asc' | 'desc', isLeft = false): Trip[] => {
         const allowedDrivers = (notes['Available Drivers'] || '')
             .split('\n')
@@ -567,30 +550,48 @@ export default function ScheduleTool() {
             return [...sortedAllowed, ...notAllowed];
         }
     };
-
     const leftStats = useMemo(() => computeStats(itemsLeft), [itemsLeft, routeGroups]);
     const rightStats = useMemo(() => computeStats(itemsRight), [itemsRight, routeGroups]);
-
     const amountRangeLeft = useMemo(() => {
         const vals = itemsLeft.map(it => parseFloat(it.Order_Value || '0')).filter(v => !isNaN(v));
-        if (vals.length === 0) return { min: 0, max: 0 };
-        return { min: Math.min(...vals), max: Math.max(...vals) };
+        if (vals.length === 0) return { min: 0, max: 0, lower: 0, upper: 0 };
+        const sorted = [...vals].sort((a, b) => a - b);
+        const q1Index = Math.floor(sorted.length * 0.25);
+        const q3Index = Math.floor(sorted.length * 0.75);
+        const q1 = sorted[q1Index];
+        const q3 = sorted[q3Index];
+        const iqr = q3 - q1;
+        const lower = q1 - 1.5 * iqr;
+        const upper = q3 + 1.5 * iqr;
+        const nonOutliers = vals.filter(v => v >= lower && v <= upper);
+        const minNonOutlier = nonOutliers.length > 0 ? Math.min(...nonOutliers) : Math.min(...vals);
+        const maxNonOutlier = nonOutliers.length > 0 ? Math.max(...nonOutliers) : Math.max(...vals);
+        return { min: minNonOutlier, max: maxNonOutlier, lower, upper };
     }, [itemsLeft]);
-
     const amountRangeRight = useMemo(() => {
         const vals = itemsRight.map(it => parseFloat(it.Order_Value || '0')).filter(v => !isNaN(v));
-        if (vals.length === 0) return { min: 0, max: 0 };
-        return { min: Math.min(...vals), max: Math.max(...vals) };
+        if (vals.length === 0) return { min: 0, max: 0, lower: 0, upper: 0 };
+        const sorted = [...vals].sort((a, b) => a - b);
+        const q1Index = Math.floor(sorted.length * 0.25);
+        const q3Index = Math.floor(sorted.length * 0.75);
+        const q1 = sorted[q1Index];
+        const q3 = sorted[q3Index];
+        const iqr = q3 - q1;
+        const lower = q1 - 1.5 * iqr;
+        const upper = q3 + 1.5 * iqr;
+        const nonOutliers = vals.filter(v => v >= lower && v <= upper);
+        const minNonOutlier = nonOutliers.length > 0 ? Math.min(...nonOutliers) : Math.min(...vals);
+        const maxNonOutlier = nonOutliers.length > 0 ? Math.max(...nonOutliers) : Math.max(...vals);
+        return { min: minNonOutlier, max: maxNonOutlier, lower, upper };
     }, [itemsRight]);
-
-    const getAmountColor = (val: string | undefined, range: { min: number; max: number }) => {
+    const getAmountColor = (val: string | undefined, range: { min: number; max: number; lower: number; upper: number }) => {
         const num = parseFloat(val || '');
         if (isNaN(num)) return 'text-gray-500';
+        if (num < range.lower || num > range.upper) return 'text-gray-800';
         const ratio = range.max === range.min ? 0 : (num - range.min) / (range.max - range.min);
         const hue = 0 + ratio * 120;
         return `hsl(${hue}, 70%, 50%)`;
     };
-
     const getTimeColor = (val: number, range: { min: number; max: number }) => {
         if (isNaN(val)) return '';
         const ratio = range.max === range.min ? 0 : (val - range.min) / (range.max - range.min);
@@ -609,7 +610,6 @@ export default function ScheduleTool() {
             return `hsl(${hue}, 60%, ${lightness}%)`;
         }
     };
-
     const renderStats = (stats: { counts: Record<string, number>, total: number }, clearFn: () => void) => (
         <div className="text-xs flex flex-wrap gap-1 items-center bg-base-200 dark:bg-base-100 p-1 rounded-md shadow-sm">
             {routeGroups.map(cat => (
@@ -635,7 +635,6 @@ export default function ScheduleTool() {
             </button>
         </div>
     );
-
     const renderSelectedStats = (selected: number[], items: Trip[], isLeft: boolean) => {
         if (selected.length <= 1) return null;
         const selectedItems = items.filter((_, i) => selected.includes(i));
@@ -693,7 +692,6 @@ export default function ScheduleTool() {
             </div>
         );
     };
-
     const handleUndo = (leftIdx: number) => {
         updateRight((arr) => {
             const copy = [...arr];
@@ -709,7 +707,6 @@ export default function ScheduleTool() {
             return sortItems(copy);
         });
     };
-
     const handleUndoFromRight = (leftIdx: number) => {
         updateRight((arr) => {
             const copy = [...arr];
@@ -725,7 +722,6 @@ export default function ScheduleTool() {
             return copy;
         });
     };
-
     const handleEditBlur = (idx: number) => {
         const newDriverName = editValue.trim();
         if (newDriverName && itemsRight.some(item => item.Driver1 === newDriverName && item.ID !== itemsRight[idx].ID)) {
@@ -757,7 +753,6 @@ export default function ScheduleTool() {
         });
         setEditingRightIndex(null);
     };
-
     const handleEditKeyDown = (e: KeyboardEvent<HTMLInputElement>, idx: number) => {
         if (e.key === 'Enter') {
             handleEditBlur(idx);
@@ -765,9 +760,7 @@ export default function ScheduleTool() {
             setEditingRightIndex(null);
         }
     };
-
     const allowedDrivers = useMemo(() => (notes['Available Drivers'] || '').split('\n').map(d => d.trim()).filter(d => d), [notes]);
-
     const getStartClass = (startTime: string) => {
         switch (startTime) {
             case '06:00':
@@ -786,26 +779,22 @@ export default function ScheduleTool() {
                 return 'bg-gray-200 text-black';
         }
     };
-
     const timeRangeLeft = useMemo(() => {
         const vals = itemsLeft.map(it => parseTime(getActualEnd(it.End_Time, it.Punctuality))).filter(v => !isNaN(v));
         if (vals.length === 0) return { min: 0, max: 0 };
         return { min: Math.min(...vals), max: Math.max(...vals) };
     }, [itemsLeft]);
-
     const timeRangeRightEnd = useMemo(() => {
         const vals = itemsRight.map(it => parseTime(it.End_Time)).filter(v => !isNaN(v));
         if (vals.length === 0) return { min: 0, max: 0 };
         return { min: Math.min(...vals), max: Math.max(...vals) };
     }, [itemsRight]);
-
     const formatDuration = (minutes: number): string => {
         if (isNaN(minutes) || minutes < 0) return '--:--';
         const hours = Math.floor(minutes / 60);
         const mins = minutes % 60;
         return `${hours.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}`;
     };
-
     const getDuration = (it: Trip, isLeft: boolean) => {
         if (isLeft) {
             const start = parseTime(it.Start_Time);
@@ -817,8 +806,8 @@ export default function ScheduleTool() {
             return isNaN(start) || isNaN(end) ? NaN : end - start;
         }
     };
-
     const handleMouseDownLeft = (e: MouseEvent<HTMLTableRowElement>, idx: number) => {
+        if (disableRowSelection) return;
         if (e.ctrlKey || e.metaKey) {
             setSelectedLeft(prev => prev.includes(idx) ? prev.filter(i => i !== idx) : [...prev, idx]);
         } else if (e.shiftKey && startLeftIndex !== null) {
@@ -831,21 +820,21 @@ export default function ScheduleTool() {
             setSelectedLeft([idx]);
         }
     };
-
     const handleMouseOverLeft = (idx: number) => {
+        if (disableRowSelection) return;
         if (isSelectingLeft && startLeftIndex !== null) {
             const start = Math.min(startLeftIndex, idx);
             const end = Math.max(startLeftIndex, idx);
             setSelectedLeft(Array.from({ length: end - start + 1 }, (_, i) => start + i));
         }
     };
-
     const handleMouseUpLeft = () => {
+        if (disableRowSelection) return;
         setIsSelectingLeft(false);
         // Do not reset startLeftIndex to allow shift select
     };
-
     const handleMouseDownRight = (e: MouseEvent<HTMLTableRowElement>, idx: number) => {
+        if (disableRowSelection) return;
         if (e.ctrlKey || e.metaKey) {
             setSelectedRight(prev => prev.includes(idx) ? prev.filter(i => i !== idx) : [...prev, idx]);
         } else if (e.shiftKey && startRightIndex !== null) {
@@ -858,20 +847,19 @@ export default function ScheduleTool() {
             setSelectedRight([idx]);
         }
     };
-
     const handleMouseOverRight = (idx: number) => {
+        if (disableRowSelection) return;
         if (isSelectingRight && startRightIndex !== null) {
             const start = Math.min(startRightIndex, idx);
             const end = Math.max(startRightIndex, idx);
             setSelectedRight(Array.from({ length: end - start + 1 }, (_, i) => start + i));
         }
     };
-
     const handleMouseUpRight = () => {
+        if (disableRowSelection) return;
         setIsSelectingRight(false);
         // Do not reset startRightIndex to allow shift select
     };
-
     const setDragImage = (e: DragEvent<HTMLTableCellElement>, name: string) => {
         const ghost = document.createElement('div');
         ghost.style.position = 'absolute';
@@ -892,12 +880,11 @@ export default function ScheduleTool() {
         e.dataTransfer?.setDragImage(ghost, 10, 10);
         setTimeout(() => document.body.removeChild(ghost), 0);
     };
-
     return (
         <Layout title="Schedule Tool" fullWidth>
             <div className="flex gap-2 w-full h-[calc(100vh-4.5rem)] bg-base-100 dark:bg-base-100">
                 {/* Left Table */}
-                <div className="flex-1 min-w-0 flex flex-col border-r border-gray-200 dark:border-gray-700 relative">
+                <div className="flex-1 min-w-0 flex flex-col border-r border-gray-200 dark:border-gray-700 relative" onMouseUp={handleMouseUpLeft}>
                     {renderStats(leftStats, clearAllLeft)}
                     <div className="flex-1 overflow-auto relative">
                         {isLoading ? (
@@ -1229,9 +1216,9 @@ export default function ScheduleTool() {
                 </div>
                 {/* Notes Sidebar */}
                 <div className="w-64 flex flex-col gap-1 h-full overflow-y-auto p-1 bg-base-200 dark:bg-base-100 rounded-md shadow-inner lg:w-64 md:w-48 sm:w-full sm:overflow-x-auto">
-                    <div className="flex items-center gap-1 mb-1">
+                    <div className="flex flex-col gap-1 mb-1">
                         <div
-                            className="flex-1 border border-dashed rounded p-1 text-center cursor-pointer bg-white dark:bg-gray-700 dark:border-gray-500 dark:text-gray-200"
+                            className="border border-dashed rounded p-1 text-center cursor-pointer bg-white dark:bg-gray-700 dark:border-gray-500 dark:text-gray-200"
                             onDrop={handleDropFile}
                             onDragOver={(e) => e.preventDefault()}
                             onDragEnter={(e) => e.currentTarget.classList.add('bg-gray-900', 'dark:bg-gray-900/30')}
@@ -1252,7 +1239,7 @@ export default function ScheduleTool() {
                                 Upload JSON
                             </label>
                         </div>
-                        <div className="flex flex-col gap-1">
+                        <div className="flex flex-row gap-1 justify-center">
                             <button
                                 onClick={() => {
                                     clearAllLeft();
@@ -1269,6 +1256,20 @@ export default function ScheduleTool() {
                                 title={lockCopy ? 'Unlock copy' : 'Lock copy'}
                             >
                                 <Icon name={lockCopy ? 'lock' : 'unlock'} className="w-3 h-3" />
+                            </button>
+                            <button
+                                className="btn btn-xs flex items-center justify-center"
+                                onClick={() => {
+                                    const newValue = !disableRowSelection;
+                                    setDisableRowSelection(newValue);
+                                    if (newValue) {
+                                        setSelectedLeft([]);
+                                        setSelectedRight([]);
+                                    }
+                                }}
+                                title={disableRowSelection ? 'Unlock row selection' : 'Lock row selection'}
+                            >
+                                <Icon name={disableRowSelection ? 'lock' : 'unlock'} className="w-3 h-3" />
                             </button>
                             <button
                                 className="btn btn-xs flex items-center justify-center"
@@ -1475,6 +1476,42 @@ export default function ScheduleTool() {
                     <div className="modal-action">
                         <button className="btn" onClick={() => setWarningModal(null)}>Cancel</button>
                         <button className="btn btn-warning" onClick={warningModal.action}>Continue</button>
+                    </div>
+                </Modal>
+            )}
+            {mergeModal && (
+                <Modal open={true} onClose={() => {
+                    setMergeModal(null);
+                    const allowed = (notes['Available Drivers'] || '').split('\n').map(d => d.trim()).filter(d => d);
+                    updateAvailableDrivers(allowed);
+                }}>
+                    <h3 className="font-bold text-lg">Potential Name Format Mismatches</h3>
+                    <p className="py-2">The following names in Available Drivers may have reversed first/last names compared to the data table:</p>
+                    <ul className="list-disc pl-5">
+                        {mergeModal.map((m, i) => (
+                            <li key={i}>
+                                <span className="font-medium">{m.original}</span> → <span className="font-medium">{m.suggested}</span>
+                            </li>
+                        ))}
+                    </ul>
+                    <p className="py-2">Merge will update the Available Drivers list to match the table format.</p>
+                    <div className="modal-action">
+                        <button className="btn" onClick={() => {
+                            setMergeModal(null);
+                            const allowed = (notes['Available Drivers'] || '').split('\n').map(d => d.trim()).filter(d => d);
+                            updateAvailableDrivers(allowed);
+                        }}>Cancel</button>
+                        <button className="btn btn-primary" onClick={() => {
+                            const lines = (notes['Available Drivers'] || '').split('\n');
+                            const newLines = lines.map(line => {
+                                const trim = line.trim();
+                                const m = mergeModal.find(mm => mm.original === trim);
+                                return m ? line.replace(trim, m.suggested) : line;
+                            });
+                            const newValue = newLines.join('\n');
+                            handleNoteChange('Available Drivers', newValue);
+                            setMergeModal(null);
+                        }}>Merge All</button>
                     </div>
                 </Modal>
             )}
