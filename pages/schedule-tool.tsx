@@ -1177,7 +1177,11 @@ export default function ScheduleTool() {
                                     <Icon name="plus" className="w-3 h-3" />
                                 </button>
                                 {driverMenuIndex === idx && (
-                                    <div className="absolute z-50 left-0 top-full mt-1 min-w-[300px] bg-base-100 dark:bg-gray-700 border border-gray-300 rounded-lg shadow-lg max-h-80 overflow-y-auto">
+                                    <div
+                                        className="absolute z-50 left-0 top-full mt-1 min-w-[300px] bg-base-100 dark:bg-gray-700 border border-gray-300 rounded-lg shadow-lg max-h-80 overflow-y-auto"
+                                        onScroll={(e) => e.stopPropagation()}
+                                        onWheel={(e) => e.stopPropagation()}
+                                    >
                                         {getAvailableDrivers(it).length === 0 ? (
                                             <div className="px-4 py-3 text-gray-400 text-sm">No drivers available</div>
                                         ) : (
@@ -1202,7 +1206,7 @@ export default function ScheduleTool() {
                                                             {d.prevRoute || '-'}
                                                         </span>
                                                         {d.diff >= 0 && (
-                                                            <span className="text-gray-500">{d.diff} min rest</span>
+                                                            <span className="text-gray-500">{formatDuration(d.diff)} rest</span>
                                                         )}
                                                     </div>
                                                     {d.restWarning && (
