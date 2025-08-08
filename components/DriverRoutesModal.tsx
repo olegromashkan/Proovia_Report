@@ -1,11 +1,13 @@
 import { useEffect, useState } from 'react';
 import Modal from './Modal';
-import { getActualEnd } from '../lib/scheduleUtils';
+import { getActualEnd, getRoute, getRouteColorClass } from '../lib/scheduleUtils';
+import { RouteGroup } from '../types/schedule';
 
 interface Item {
     driver: string;
     date: string;
-    route: string;
+    route?: string;
+    calendar: string;
     start_time?: string | null;
     end_time?: string | null;
     punctuality?: number | null;
@@ -22,28 +24,16 @@ function formatDate(d: Date): string {
     return d.toISOString().slice(0, 10);
 }
 
-function getRouteColorClass(route: string): string {
-    const upper = route.toUpperCase();
-    const grey = ['EDINBURGH', 'GLASGOW', 'INVERNESS', 'ABERDEEN', 'EX+TR', 'TQ+PL'];
-    if (grey.includes(upper)) return 'text-gray-400';
-    const parts = upper.split('+');
-    const has = (arr: string[]) => parts.some(p => arr.includes(p));
-    const purple = ['WD', 'HA', 'UB', 'TW', 'KT', 'CR', 'BR', 'DA', 'RM', 'IG', 'EN', 'SM', 'W', 'NW', 'N', 'E', 'EC', 'SE', 'WC'];
-    if (has(purple)) return 'text-purple-500';
-    const yellow = ['LL', 'SY', 'SA'];
-    if (has(yellow)) return 'text-yellow-500';
-    const red = ['LA', 'CA', 'NE', 'DL', 'DH', 'SR', 'TS', 'HG', 'YO', 'HU', 'BD'];
-    if (has(red)) return 'text-red-500';
-    const blue = ['NR', 'IP', 'CO'];
-    if (has(blue)) return 'text-blue-500';
-    const green = ['ME', 'CT', 'TN', 'RH', 'BN', 'GU', 'PO', 'SO'];
-    if (has(green)) return 'text-green-500';
-    const pink = ['SP', 'BH', 'DT', 'TA', 'EX', 'TQ', 'PL', 'TR'];
-    if (has(pink)) return 'text-pink-500';
-    const light = ['ST', 'TF', 'WV', 'DY', 'HR', 'WR', 'B', 'WS', 'CV', 'NN'];
-    if (has(light)) return 'text-teal-300';
-    return 'text-white';
-}
+const DEFAULT_ROUTE_GROUPS: RouteGroup[] = [
+    { name: '2DT', codes: ['EDINBURGH', 'GLASGOW', 'INVERNESS', 'ABERDEEN', 'EX+TR', 'TQ+PL'], isFull: true, color: 'text-gray-400' },
+    { name: 'London', codes: ['WD', 'HA', 'UB', 'TW', 'KT', 'CR', 'BR', 'DA', 'RM', 'IG', 'EN', 'SM', 'W', 'NW', 'N', 'E', 'EC', 'SE', 'WC'], isFull: false, color: 'text-purple-500' },
+    { name: 'Wales', codes: ['LL', 'SY', 'SA'], isFull: false, color: 'text-yellow-500' },
+    { name: 'North', codes: ['LA', 'CA', 'NE', 'DL', 'DH', 'SR', 'TS', 'HG', 'YO', 'HU', 'BD'], isFull: false, color: 'text-red-500' },
+    { name: 'East Midlands', codes: ['NR', 'IP', 'CO'], isFull: false, color: 'text-blue-500' },
+    { name: 'South East', codes: ['ME', 'CT', 'TN', 'RH', 'BN', 'GU', 'PO', 'SO'], isFull: false, color: 'text-green-500' },
+    { name: 'South West', codes: ['SP', 'BH', 'DT', 'TA', 'EX', 'TQ', 'PL', 'TR'], isFull: false, color: 'text-pink-500' },
+    { name: 'West Midlands', codes: ['ST', 'TF', 'WV', 'DY', 'HR', 'WR', 'B', 'WS', 'CV', 'NN'], isFull: false, color: 'text-teal-300' },
+];
 
 function priceTextColor(val?: number | string) {
     const num = Number(val);
@@ -161,10 +151,11 @@ export default function DriverRoutesModal({ open, onClose, driver }: DriverRoute
                                     it.end_time ? `${it.date}T${it.end_time}` : undefined,
                                     String(it.punctuality ?? '0')
                                 );
+                                const route = getRoute(it.calendar);
                                 return (
                                     <tr key={idx}>
                                         <td>{it.date}</td>
-                                        <td className={getRouteColorClass(it.route)}>{it.route}</td>
+                                        <td className={getRouteColorClass(it.calendar, DEFAULT_ROUTE_GROUPS)}>{route || '-'}</td>
                                         <td>{it.start_time || '-'}</td>
                                         <td>{actualEnd || '-'}</td>
                                         <td>{stylePunctuality(it.punctuality ?? null)}</td>

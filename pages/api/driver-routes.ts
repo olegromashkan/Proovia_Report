@@ -66,6 +66,9 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
       const start_time = rawStart ? String(rawStart).split(' ')[1] || String(rawStart) : null;
 
       const rawEnd =
+        item.End_Time ||
+        item['End_Time'] ||
+        item['Trip.End_Time'] ||
         item.Time_Completed ||
         item['Time_Completed'] ||
         item['Trip.Time_Completed'] ||
