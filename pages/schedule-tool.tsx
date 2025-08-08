@@ -1178,10 +1178,13 @@ export default function ScheduleTool() {
                                 </button>
                                 {driverMenuIndex === idx && (
                                     <div
-                                        className="absolute z-50 left-0 top-full mt-1 min-w-[300px] bg-base-100 dark:bg-gray-700 border border-gray-300 rounded-lg shadow-lg max-h-80 overflow-y-auto"
+                                        className="absolute z-50 left-0 top-full mt-1 min-w-[300px] max-h-80 overflow-y-auto bg-base-100 dark:bg-gray-700 border border-gray-300 rounded-lg shadow-lg"
                                         onScroll={(e) => e.stopPropagation()}
                                         onWheel={(e) => e.stopPropagation()}
+                                        onMouseDown={(e) => e.stopPropagation()}
+                                        onClick={(e) => e.stopPropagation()}
                                     >
+
                                         {getAvailableDrivers(it).length === 0 ? (
                                             <div className="px-4 py-3 text-gray-400 text-sm">No drivers available</div>
                                         ) : (
