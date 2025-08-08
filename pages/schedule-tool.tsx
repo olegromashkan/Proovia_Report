@@ -9,7 +9,7 @@ import {
     useSensors,
     DragOverlay,
 } from '@dnd-kit/core';
-import { SortableContext, useSortable } from '@dnd-kit/sortable';
+import { SortableContext, useSortable, rectSwappingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import Layout from '../components/Layout';
 import Icon from '../components/Icon';
@@ -759,6 +759,12 @@ export default function ScheduleTool() {
             return copy;
         });
     };
+    const handleRightDragStart = (e: DragEvent<HTMLTableCellElement>, idx: number) => {
+        const it = itemsRight[idx];
+        if (!it.Driver1) return;
+        e.dataTransfer.setData('text/plain', JSON.stringify({ table: 'right', index: idx, name: it.Driver1, fromLeftIndex: it.fromLeftIndex }));
+        setDragImage(e, it.Driver1);
+    };
     const handleDragOverCell = (e: DragEvent<HTMLTableCellElement>) => {
         e.preventDefault();
         e.currentTarget.classList.add('bg-gray-900', 'dark:bg-gray-900/30', 'border-dashed', 'border-2', 'border-blue-300');
@@ -766,60 +772,74 @@ export default function ScheduleTool() {
     const handleDragLeaveCell = (e: DragEvent<HTMLTableCellElement>) => {
         e.currentTarget.classList.remove('bg-gray-900', 'dark:bg-gray-900/30', 'border-dashed', 'border-2', 'border-blue-300');
     };
-    const handleDropFromLeft = (e: DragEvent<HTMLTableCellElement>, idx: number) => {
+    const handleDrop = (e: DragEvent<HTMLTableCellElement>, idx: number) => {
         e.preventDefault();
         handleDragLeaveCell(e);
         try {
             const data = JSON.parse(e.dataTransfer.getData('text/plain'));
-            if (data.table !== 'left') return;
-            const name = data.name;
-            if (!name) return;
-            const leftItem = itemsLeft[data.index];
-            let restMessage = '';
-            const actualEnd = parseTime(getActualEnd(leftItem?.End_Time, leftItem?.Punctuality));
-            const targetStart = parseTime(itemsRight[idx].Start_Time);
-            if (!isNaN(actualEnd) && !isNaN(targetStart)) {
-                if (timeSettings.enableRestWarning && actualEnd > timeSettings.lateEndHour * 60 && targetStart < timeSettings.earlyStartHour * 60) {
-                    restMessage = timeSettings.restMessage;
-                } else if (timeSettings.enableEarlyWarning && actualEnd <= timeSettings.earlyEndHour * 60 && targetStart > timeSettings.lateStartHour * 60) {
-                    restMessage = timeSettings.earlyMessage;
+            if (data.table === 'left') {
+                const name = data.name;
+                if (!name) return;
+                const leftItem = itemsLeft[data.index];
+                let restMessage = '';
+                const actualEnd = parseTime(getActualEnd(leftItem?.End_Time, leftItem?.Punctuality));
+                const targetStart = parseTime(itemsRight[idx].Start_Time);
+                if (!isNaN(actualEnd) && !isNaN(targetStart)) {
+                    if (timeSettings.enableRestWarning && actualEnd > timeSettings.lateEndHour * 60 && targetStart < timeSettings.earlyStartHour * 60) {
+                        restMessage = timeSettings.restMessage;
+                    } else if (timeSettings.enableEarlyWarning && actualEnd <= timeSettings.earlyEndHour * 60 && targetStart > timeSettings.lateStartHour * 60) {
+                        restMessage = timeSettings.earlyMessage;
+                    }
                 }
-            }
-            const showRestNotification = () => {
-                if (restMessage) {
-                    setNotification(restMessage);
-                    setTimeout(() => setNotification(null), 4000);
+                const showRestNotification = () => {
+                    if (restMessage) {
+                        setNotification(restMessage);
+                        setTimeout(() => setNotification(null), 4000);
+                    }
+                };
+                const isDuplicate = itemsRight.some(item => item.Driver1 === name && item.ID !== itemsRight[idx].ID);
+                const action = () => {
+                    updateRight(arr => {
+                        const copy = [...arr];
+                        const oldFromLeftIndex = copy[idx].fromLeftIndex;
+                        const oldDriver1 = copy[idx].Driver1;
+                        copy[idx] = { ...copy[idx], Driver1: name, fromLeftIndex: data.index };
+                        updateLeft(leftArr => {
+                            const leftCopy = [...leftArr];
+                            leftCopy[data.index] = { ...leftCopy[data.index], isAssigned: true };
+                            if (oldFromLeftIndex !== undefined && oldDriver1) {
+                                leftCopy[oldFromLeftIndex] = { ...leftCopy[oldFromLeftIndex], isAssigned: false };
+                            }
+                            return sortItems(leftCopy);
+                        });
+                        return copy;
+                    });
+                    showRestNotification();
+                };
+                if (isDuplicate) {
+                    setWarningModal({
+                        action: () => {
+                            action();
+                            setWarningModal(null);
+                        }
+                    });
+                    return;
                 }
-            };
-            const isDuplicate = itemsRight.some(item => item.Driver1 === name && item.ID !== itemsRight[idx].ID);
-            const action = () => {
+                action();
+            } else if (data.table === 'right') {
+                const sourceIdx = data.index;
+                if (sourceIdx === idx) return;
                 updateRight(arr => {
                     const copy = [...arr];
-                    const oldFromLeftIndex = copy[idx].fromLeftIndex;
-                    const oldDriver1 = copy[idx].Driver1;
-                    copy[idx] = { ...copy[idx], Driver1: name, fromLeftIndex: data.index };
-                    updateLeft(leftArr => {
-                        const leftCopy = [...leftArr];
-                        leftCopy[data.index] = { ...leftCopy[data.index], isAssigned: true };
-                        if (oldFromLeftIndex !== undefined && oldDriver1) {
-                            leftCopy[oldFromLeftIndex] = { ...leftCopy[oldFromLeftIndex], isAssigned: false };
-                        }
-                        return sortItems(leftCopy);
-                    });
+                    const tempDriver = copy[idx].Driver1;
+                    const tempFrom = copy[idx].fromLeftIndex;
+                    copy[idx].Driver1 = data.name;
+                    copy[idx].fromLeftIndex = data.fromLeftIndex;
+                    copy[sourceIdx].Driver1 = tempDriver;
+                    copy[sourceIdx].fromLeftIndex = tempFrom;
                     return copy;
                 });
-                showRestNotification();
-            };
-            if (isDuplicate) {
-                setWarningModal({
-                    action: () => {
-                        action();
-                        setWarningModal(null);
-                    }
-                });
-                return;
             }
-            action();
         } catch (err) {
             console.error('Drop error:', err);
         }
@@ -849,7 +869,7 @@ export default function ScheduleTool() {
         });
         const style = {
             transform: CSS.Transform.toString(transform),
-            transition,
+            transition: transition || 'transform 200ms ease',
         };
         return (
             <tr
@@ -881,9 +901,11 @@ export default function ScheduleTool() {
                     style={allowDnD ? style : undefined}
                     {...(allowDnD ? attributes : {})}
                     {...(allowDnD && it.Driver1 ? listeners : {})}
+                    draggable={allowDnD && !!it.Driver1}
+                    onDragStart={allowDnD && it.Driver1 ? (e) => handleRightDragStart(e, idx) : undefined}
                     onDragOver={allowDnD ? handleDragOverCell : undefined}
                     onDragLeave={allowDnD ? handleDragLeaveCell : undefined}
-                    onDrop={allowDnD ? (e) => handleDropFromLeft(e, idx) : undefined}
+                    onDrop={allowDnD ? (e) => handleDrop(e, idx) : undefined}
                     className={`${driverColor} py-1 px-2 cursor-pointer relative group ${allowDnD && isOver ? 'bg-gray-900 dark:bg-gray-900/30 border-dashed border-2 border-blue-300' : ''}`}
                     onMouseEnter={() => setHoveredRightIndex(idx)}
                     onMouseLeave={() => setHoveredRightIndex(null)}
@@ -1109,7 +1131,7 @@ export default function ScheduleTool() {
                                             <th className="cursor-pointer" onClick={() => applyRightSort('Duration')}>Duration</th>
                                         </tr>
                                     </thead>
-                                    <SortableContext items={itemsRight.map((_, idx) => idx)}>
+                                    <SortableContext items={itemsRight.map((_, idx) => idx)} strategy={rectSwappingStrategy}>
                                         <tbody className={lockCopy ? 'select-none' : ''}>
                                             {itemsRight.map((it, idx) => (
                                                 <SortableRow key={it.ID || `right-${idx}`} it={it} idx={idx} />
