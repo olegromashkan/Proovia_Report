@@ -1156,16 +1156,37 @@ export default function ScheduleTool() {
                                     <Icon name="plus" className="w-3 h-3" />
                                 </button>
                                 {driverMenuIndex === idx && (
-                                    <div className="absolute z-50 left-0 top-full mt-1 bg-base-100 dark:bg-gray-700 border border-gray-300 rounded shadow max-h-60 overflow-auto">
-                                        {getAvailableDrivers(it).map((d) => (
-                                            <div
-                                                key={d.leftIdx}
-                                                className={`px-2 py-1 cursor-pointer hover:bg-gray-200 ${d.diff < 0 ? 'text-gray-400' : ''}`}
-                                                onClick={() => assignDriverFromMenu(d.leftIdx, idx)}
-                                            >
-                                                {d.name}
-                                            </div>
-                                        ))}
+                                    <div className="absolute z-50 left-0 top-full mt-1 min-w-[220px] bg-base-100 dark:bg-gray-700 border border-gray-300 rounded shadow-lg max-h-72 overflow-auto">
+                                        {getAvailableDrivers(it).length === 0 ? (
+                                            <div className="px-3 py-2 text-gray-400 text-sm">No drivers available</div>
+                                        ) : (
+                                            getAvailableDrivers(it).map((d) => (
+                                                <div
+                                                    key={d.leftIdx}
+                                                    className={`flex items-center gap-2 px-3 py-2 cursor-pointer hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-colors ${d.diff < 0 ? 'text-gray-400' : 'text-gray-900 dark:text-gray-100'
+                                                        }`}
+                                                    onClick={() => assignDriverFromMenu(d.leftIdx, idx)}
+                                                    title={d.diff < 0 ? 'Not enough rest between shifts' : undefined}
+                                                >
+                                                    <span className="font-medium">{d.name}</span>
+                                                    {d.diff < 0 && (
+                                                        <span className="ml-2 text-xs text-orange-500 flex items-center gap-1">
+                                                            <Icon name="exclamation-triangle" className="w-3 h-3" />
+                                                            not enough rest
+                                                        </span>
+                                                    )}
+                                                    {d.isAssigned && (
+                                                        <span className="ml-2 text-xs text-green-500 flex items-center gap-1">
+                                                            <Icon name="check2" className="w-3 h-3" />
+                                                            already assigned
+                                                        </span>
+                                                    )}
+                                                    {d.diff >= 0 && (
+                                                        <span className="ml-auto text-xs text-gray-500">{d.diff} min rest</span>
+                                                    )}
+                                                </div>
+                                            ))
+                                        )}
                                     </div>
                                 )}
                             </span>
