@@ -622,34 +622,50 @@ export default function ScheduleTool() {
     };
     const handleEditBlur = (idx: number) => {
         const newDriverName = editValue.trim();
+        const route = getRoute(itemsRight[idx].Calendar_Name);
+        const oldName = itemsRight[idx].Driver1;
         if (newDriverName && itemsRight.some(item => item.Driver1 === newDriverName && item.ID !== itemsRight[idx].ID)) {
             setWarningModal({
                 action: () => {
                     updateRight((arr) => {
                         const copy = [...arr];
-                        const oldName = copy[idx].Driver1;
+                        const prevName = copy[idx].Driver1;
                         copy[idx] = { ...copy[idx], Driver1: newDriverName };
-                        if (copy[idx].fromLeftIndex !== undefined && newDriverName !== oldName) {
+                        if (copy[idx].fromLeftIndex !== undefined && newDriverName !== prevName) {
                             copy[idx].fromLeftIndex = undefined;
                         }
                         return copy;
                     });
                     setWarningModal(null);
                     setEditingRightIndex(null);
+                    if (newDriverName && !oldName) {
+                        logAction(`Assigned ${newDriverName} to route ${route}`);
+                    } else if (!newDriverName && oldName) {
+                        logAction(`Unassigned ${oldName} from route ${route}`);
+                    } else if (newDriverName !== oldName) {
+                        logAction(`Changed driver from ${oldName} to ${newDriverName} on route ${route}`);
+                    }
                 }
             });
             return;
         }
         updateRight((arr) => {
             const copy = [...arr];
-            const oldName = copy[idx].Driver1;
+            const prevName = copy[idx].Driver1;
             copy[idx] = { ...copy[idx], Driver1: newDriverName };
-            if (copy[idx].fromLeftIndex !== undefined && newDriverName !== oldName) {
+            if (copy[idx].fromLeftIndex !== undefined && newDriverName !== prevName) {
                 copy[idx].fromLeftIndex = undefined;
             }
             return copy;
         });
         setEditingRightIndex(null);
+        if (newDriverName && !oldName) {
+            logAction(`Assigned ${newDriverName} to route ${route}`);
+        } else if (!newDriverName && oldName) {
+            logAction(`Unassigned ${oldName} from route ${route}`);
+        } else if (newDriverName !== oldName) {
+            logAction(`Changed driver from ${oldName} to ${newDriverName} on route ${route}`);
+        }
     };
     const handleEditKeyDown = (e: ReactKeyboardEvent<HTMLInputElement>, idx: number) => {
         if (e.key === 'Enter') {
@@ -887,6 +903,10 @@ export default function ScheduleTool() {
         const sourceIdx = active.data.current?.index;
         const targetIdx = over.data.current?.index;
         if (sourceIdx === undefined || targetIdx === undefined || sourceIdx === targetIdx) return;
+        const sourceDriver = itemsRight[sourceIdx]?.Driver1;
+        const targetDriver = itemsRight[targetIdx]?.Driver1;
+        const sourceRoute = getRoute(itemsRight[sourceIdx]?.Calendar_Name);
+        const targetRoute = getRoute(itemsRight[targetIdx]?.Calendar_Name);
         updateRight(arr => {
             const copy = [...arr];
             const tempDriver = copy[targetIdx].Driver1;
@@ -897,6 +917,10 @@ export default function ScheduleTool() {
             copy[sourceIdx].fromLeftIndex = tempFrom;
             return copy;
         });
+        if (sourceDriver)
+            logAction(`Moved ${sourceDriver} from route ${sourceRoute} to route ${targetRoute}`);
+        if (targetDriver)
+            logAction(`Moved ${targetDriver} from route ${targetRoute} to route ${sourceRoute}`);
     };
     const handleRightDragStart = (e: DragEvent<HTMLTableCellElement>, idx: number) => {
         const it = itemsRight[idx];
@@ -938,6 +962,8 @@ export default function ScheduleTool() {
                     }
                 };
                 const isDuplicate = itemsRight.some(item => item.Driver1 === name && item.ID !== itemsRight[idx].ID);
+                const route = getRoute(itemsRight[idx].Calendar_Name);
+                const oldDriver = itemsRight[idx].Driver1;
                 const action = () => {
                     updateRight(arr => {
                         const copy = [...arr];
@@ -955,6 +981,11 @@ export default function ScheduleTool() {
                         return copy;
                     });
                     showRestNotification();
+                    historyRef.current.push({ leftIdx: data.index });
+                    if (oldDriver && oldDriver !== name) {
+                        logAction(`Unassigned ${oldDriver} from route ${route}`);
+                    }
+                    logAction(`Assigned ${name} to route ${route}`);
                 };
                 if (isDuplicate) {
                     setWarningModal({
@@ -969,6 +1000,10 @@ export default function ScheduleTool() {
             } else if (data.table === 'right') {
                 const sourceIdx = data.index;
                 if (sourceIdx === idx) return;
+                const sourceDriver = data.name;
+                const targetDriver = itemsRight[idx].Driver1;
+                const sourceRoute = getRoute(itemsRight[sourceIdx].Calendar_Name);
+                const targetRoute = getRoute(itemsRight[idx].Calendar_Name);
                 updateRight(arr => {
                     const copy = [...arr];
                     const tempDriver = copy[idx].Driver1;
@@ -979,6 +1014,8 @@ export default function ScheduleTool() {
                     copy[sourceIdx].fromLeftIndex = tempFrom;
                     return copy;
                 });
+                if (sourceDriver) logAction(`Moved ${sourceDriver} from route ${sourceRoute} to route ${targetRoute}`);
+                if (targetDriver) logAction(`Moved ${targetDriver} from route ${targetRoute} to route ${sourceRoute}`);
             }
         } catch (err) {
             console.error('Drop error:', err);
