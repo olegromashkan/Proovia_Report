@@ -2,25 +2,11 @@ import { useEffect, useState, DragEvent, ChangeEvent, useRef, KeyboardEvent, use
 import Layout from '../components/Layout';
 import Icon from '../components/Icon';
 import Modal from '../components/Modal';
+import ScheduleNotesSidebar from '../components/ScheduleNotesSidebar';
+import ScheduleSettingsModal from '../components/ScheduleSettingsModal';
+import ScheduleSelectedStats from '../components/ScheduleSelectedStats';
+import { Trip, RouteGroup, TimeSettings } from '../types/schedule';
 import { parseTimeToMinutes } from '../lib/timeUtils';
-interface Trip {
-    ID: string;
-    Start_Time?: string;
-    End_Time?: string;
-    Driver1?: string;
-    Contractor?: string;
-    Punctuality?: string;
-    Calendar_Name?: string;
-    Order_Value?: string;
-    isAssigned?: boolean;
-    fromLeftIndex?: number; // For right trips, to track origin in left
-}
-interface RouteGroup {
-    name: string;
-    codes: string[];
-    isFull: boolean;
-    color: string;
-}
 const DEFAULT_IGNORED_PATTERNS = [
     'every 2nd day north',
     'everyday',
@@ -38,7 +24,7 @@ const DEFAULT_ROUTE_GROUPS: RouteGroup[] = [
     { name: 'South West', codes: ['SP', 'BH', 'DT', 'TA', 'EX', 'TQ', 'PL', 'TR'], isFull: false, color: 'text-pink-500' },
     { name: 'West Midlands', codes: ['ST', 'TF', 'WV', 'DY', 'HR', 'WR', 'B', 'WS', 'CV', 'NN'], isFull: false, color: 'text-teal-300' },
 ];
-const DEFAULT_TIME_SETTINGS = {
+const DEFAULT_TIME_SETTINGS: TimeSettings = {
     lateEndHour: 20,
     earlyStartHour: 7,
     earlyEndHour: 17,
@@ -79,7 +65,7 @@ export default function ScheduleTool() {
     const [sortRight, setSortRight] = useState<{ key: string; dir: 'asc' | 'desc' } | null>(null);
     const [routeGroups, setRouteGroups] = useState<RouteGroup[]>(DEFAULT_ROUTE_GROUPS);
     const [ignoredPatterns, setIgnoredPatterns] = useState<string[]>(DEFAULT_IGNORED_PATTERNS);
-    const [timeSettings, setTimeSettings] = useState(DEFAULT_TIME_SETTINGS);
+    const [timeSettings, setTimeSettings] = useState<TimeSettings>(DEFAULT_TIME_SETTINGS);
     const [settingsOpen, setSettingsOpen] = useState(false);
     const [hoveredRightIndex, setHoveredRightIndex] = useState<number | null>(null);
     const [selectedLeft, setSelectedLeft] = useState<number[]>([]);
@@ -637,63 +623,6 @@ export default function ScheduleTool() {
             </button>
         </div>
     );
-    const renderSelectedStats = (selected: number[], items: Trip[], isLeft: boolean) => {
-        if (selected.length <= 1) return null;
-        const selectedItems = items.filter((_, i) => selected.includes(i));
-        let totalTasks = 0, countTasks = 0, totalAmount = 0, countAmount = 0, totalPunct = 0, countPunct = 0, totalDuration = 0, countDuration = 0;
-        const uniqueDrivers = new Set(selectedItems.map(it => it.Driver1).filter(Boolean)).size;
-        selectedItems.forEach(it => {
-            const tasks = parseFloat(getTasks(it.Calendar_Name) || '0');
-            if (!isNaN(tasks)) {
-                totalTasks += tasks;
-                countTasks++;
-            }
-            const amount = parseFloat(it.Order_Value || '0');
-            if (!isNaN(amount)) {
-                totalAmount += amount;
-                countAmount++;
-            }
-            const punct = parseFloat(it.Punctuality || '0');
-            if (!isNaN(punct)) {
-                totalPunct += punct;
-                countPunct++;
-            }
-            const dur = getDuration(it, isLeft);
-            if (!isNaN(dur)) {
-                totalDuration += dur;
-                countDuration++;
-            }
-        });
-        const avgTasks = countTasks > 0 ? totalTasks / countTasks : 0;
-        const avgAmount = countAmount > 0 ? totalAmount / countAmount : 0;
-        const avgPunct = countPunct > 0 ? totalPunct / countPunct : 0;
-        const avgDuration = countDuration > 0 ? totalDuration / countDuration : 0;
-        const avgDurationFormatted = formatDuration(avgDuration);
-        return (
-            <div className="text-xs flex flex-wrap gap-1.5 items-center bg-gray-800 dark:bg-gray-900/80 p-1.5 rounded-lg shadow-md sticky bottom-0 z-10 border-t border-gray-700 dark:border-gray-600">
-                <span className="px-1.5 py-0.5 bg-gray-700 dark:bg-gray-800/50 rounded-md font-medium text-gray-200 dark:text-gray-300 flex items-center gap-1">
-                    <Icon name="list-ul" className="w-3 h-3" />
-                    {selected.length} ({uniqueDrivers})
-                </span>
-                <span className="px-1.5 py-0.5 bg-gray-700 dark:bg-gray-800/50 rounded-md font-medium text-gray-200 dark:text-gray-300 flex items-center gap-1">
-                    <Icon name="check-square" className="w-3 h-3" />
-                    {totalTasks.toFixed(2)} / {avgTasks.toFixed(2)}
-                </span>
-                <span className="px-1.5 py-0.5 bg-gray-700 dark:bg-gray-800/50 rounded-md font-medium text-gray-200 dark:text-gray-300 flex items-center gap-1">
-                    <Icon name="currency-dollar" className="w-3 h-3" />
-                    {totalAmount.toFixed(2)} / {avgAmount.toFixed(2)}
-                </span>
-                <span className="px-1.5 py-0.5 bg-gray-700 dark:bg-gray-800/50 rounded-md font-medium text-gray-200 dark:text-gray-300 flex items-center gap-1">
-                    <Icon name="clock" className="w-3 h-3" />
-                    {avgPunct.toFixed(2)}
-                </span>
-                <span className="px-1.5 py-0.5 bg-gray-700 dark:bg-gray-800/50 rounded-md font-medium text-gray-200 dark:text-gray-300 flex items-center gap-1">
-                    <Icon name="hourglass" className="w-3 h-3" />
-                    {avgDurationFormatted}
-                </span>
-            </div>
-        );
-    };
     const handleUndo = (leftIdx: number) => {
         updateRight((arr) => {
             const copy = [...arr];
@@ -1044,7 +973,14 @@ export default function ScheduleTool() {
                             </table>
                         )}
                     </div>
-                    {renderSelectedStats(selectedLeft, itemsLeft, true)}
+                    <ScheduleSelectedStats
+                        selected={selectedLeft}
+                        items={itemsLeft}
+                        isLeft={true}
+                        getTasks={getTasks}
+                        getDuration={getDuration}
+                        formatDuration={formatDuration}
+                    />
                 </div>
                 {/* Right Table */}
                 <div className="flex-1 min-w-0 flex flex-col relative">
@@ -1284,256 +1220,45 @@ export default function ScheduleTool() {
                             </table>
                         )}
                     </div>
-                    {renderSelectedStats(selectedRight, itemsRight, false)}
+                    <ScheduleSelectedStats
+                        selected={selectedRight}
+                        items={itemsRight}
+                        isLeft={false}
+                        getTasks={getTasks}
+                        getDuration={getDuration}
+                        formatDuration={formatDuration}
+                    />
                 </div>
-                {/* Notes Sidebar */}
-                <div className="w-64 flex flex-col gap-1 h-full overflow-y-auto p-1 bg-base-200 dark:bg-base-100 rounded-md shadow-inner lg:w-64 md:w-48 sm:w-full sm:overflow-x-auto">
-                    <div className="flex flex-col gap-1 mb-1">
-                        <div
-                            className="border border-dashed rounded p-1 text-center cursor-pointer bg-white dark:bg-gray-700 dark:border-gray-500 dark:text-gray-200"
-                            onDrop={handleDropFile}
-                            onDragOver={(e) => e.preventDefault()}
-                            onDragEnter={(e) => e.currentTarget.classList.add('bg-gray-900', 'dark:bg-gray-900/30')}
-                            onDragLeave={(e) => e.currentTarget.classList.remove('bg-gray-900', 'dark:bg-gray-900/30')}
-                        >
-                            <input
-                                id="fileAll"
-                                type="file"
-                                accept=".json"
-                                onChange={handleInputFile}
-                                className="hidden"
-                            />
-                            <label
-                                htmlFor="fileAll"
-                                className="flex items-center justify-center gap-1 text-xs cursor-pointer"
-                            >
-                                <Icon name="file-arrow-up" className="text-base" />
-                                Upload JSON
-                            </label>
-                        </div>
-                        <div className="flex flex-row gap-1 justify-center">
-                            <button
-                                onClick={() => {
-                                    clearAllLeft();
-                                    clearAllRight();
-                                }}
-                                className="btn btn-error btn-outline btn-xs flex items-center justify-center"
-                                title="Clear all data"
-                            >
-                                <Icon name="trash" className="w-3 h-3" />
-                            </button>
-                            <button
-                                className="btn btn-xs flex items-center justify-center"
-                                onClick={() => setLockCopy(!lockCopy)}
-                                title={lockCopy ? 'Unlock copy' : 'Lock copy'}
-                            >
-                                <Icon name={lockCopy ? 'lock' : 'unlock'} className="w-3 h-3" />
-                            </button>
-                            <button
-                                className="btn btn-xs flex items-center justify-center"
-                                onClick={() => {
-                                    const newValue = !disableRowSelection;
-                                    setDisableRowSelection(newValue);
-                                    if (newValue) {
-                                        setSelectedLeft([]);
-                                        setSelectedRight([]);
-                                    }
-                                }}
-                                title={disableRowSelection ? 'Unlock row selection' : 'Lock row selection'}
-                            >
-                                <Icon name={disableRowSelection ? 'lock' : 'unlock'} className="w-3 h-3" />
-                            </button>
-                            <button
-                                className="btn btn-xs flex items-center justify-center"
-                                onClick={() => setSettingsOpen(true)}
-                                title="Open settings"
-                            >
-                                <Icon name="gear" className="w-3 h-3" />
-                            </button>
-                        </div>
-                    </div>
-                    <div className="text-sm font-semibold text-base-content mb-1">Notes</div>
-                    <div className="flex flex-col gap-1">
-                        {PANELS.map((panel) => (
-                            <div
-                                key={panel.name}
-                                className={`card ${panel.color} shadow rounded-md overflow-hidden`}
-                            >
-                                <div className="p-1">
-                                    <div className="flex items-center justify-between mb-0.5">
-                                        <h3 className="text-xs font-medium flex items-center gap-1">
-                                            <Icon name={panel.icon} className="w-3 h-3" />
-                                            {panel.name}
-                                        </h3>
-                                        <button
-                                            onClick={() => clearNote(panel.name)}
-                                            className="btn btn-ghost btn-xs p-0 min-h-0 h-3 w-3 opacity-60 hover:opacity-100"
-                                            title="Clear note"
-                                        >
-                                            ✕
-                                        </button>
-                                    </div>
-                                    <textarea
-                                        className="textarea w-full text-xs bg-white dark:bg-base-100 border border-gray-300 dark:border-gray-600 p-1 rounded resize-none h-24 overflow-y-auto focus:outline-none focus:border-blue-500"
-                                        placeholder={`Notes for ${panel.name}...`}
-                                        value={notes[panel.name] || ''}
-                                        onChange={(e) => handleNoteChange(panel.name, e.target.value)}
-                                    />
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                </div>
+                <ScheduleNotesSidebar
+                    panels={PANELS}
+                    notes={notes}
+                    handleNoteChange={handleNoteChange}
+                    clearNote={clearNote}
+                    handleInputFile={handleInputFile}
+                    handleDropFile={handleDropFile}
+                    clearAllLeft={clearAllLeft}
+                    clearAllRight={clearAllRight}
+                    lockCopy={lockCopy}
+                    setLockCopy={setLockCopy}
+                    disableRowSelection={disableRowSelection}
+                    setDisableRowSelection={setDisableRowSelection}
+                    setSelectedLeft={setSelectedLeft}
+                    setSelectedRight={setSelectedRight}
+                    setSettingsOpen={setSettingsOpen}
+                />
             </div>
-            <Modal open={settingsOpen} onClose={() => setSettingsOpen(false)} className="max-w-4xl">
-                <h3 className="font-bold text-xl mb-4">Settings</h3>
-                <div className="space-y-4 max-h-[70vh] overflow-y-auto pr-2">
-                    <section className="card bg-base-100 shadow p-4">
-                        <h4 className="card-title text-lg mb-2">Time Logic</h4>
-                        <div className="grid grid-cols-2 gap-2">
-                            <label className="flex items-center gap-2 text-sm">
-                                Late End Hour
-                                <input
-                                    type="number"
-                                    className="input input-bordered input-sm w-20"
-                                    value={timeSettings.lateEndHour}
-                                    onChange={(e) => setTimeSettings({ ...timeSettings, lateEndHour: parseInt(e.target.value) || 20 })}
-                                    min={0}
-                                    max={24}
-                                />
-                            </label>
-                            <label className="flex items-center gap-2 text-sm">
-                                Early Start Hour
-                                <input
-                                    type="number"
-                                    className="input input-bordered input-sm w-20"
-                                    value={timeSettings.earlyStartHour}
-                                    onChange={(e) => setTimeSettings({ ...timeSettings, earlyStartHour: parseInt(e.target.value) || 7 })}
-                                    min={0}
-                                    max={24}
-                                />
-                            </label>
-                            <label className="flex items-center gap-2 text-sm">
-                                Early End Hour
-                                <input
-                                    type="number"
-                                    className="input input-bordered input-sm w-20"
-                                    value={timeSettings.earlyEndHour}
-                                    onChange={(e) => setTimeSettings({ ...timeSettings, earlyEndHour: parseInt(e.target.value) || 17 })}
-                                    min={0}
-                                    max={24}
-                                />
-                            </label>
-                            <label className="flex items-center gap-2 text-sm">
-                                Late Start Hour
-                                <input
-                                    type="number"
-                                    className="input input-bordered input-sm w-20"
-                                    value={timeSettings.lateStartHour}
-                                    onChange={(e) => setTimeSettings({ ...timeSettings, lateStartHour: parseInt(e.target.value) || 9 })}
-                                    min={0}
-                                    max={24}
-                                />
-                            </label>
-                        </div>
-                        <div className="grid grid-cols-2 gap-2 mt-2">
-                            <label className="flex items-center gap-2 text-sm">
-                                <input
-                                    type="checkbox"
-                                    className="toggle toggle-sm"
-                                    checked={timeSettings.enableRestWarning}
-                                    onChange={(e) => setTimeSettings({ ...timeSettings, enableRestWarning: e.target.checked })}
-                                />
-                                Show Rest Warnings
-                            </label>
-                            <label className="flex items-center gap-2 text-sm">
-                                <input
-                                    type="checkbox"
-                                    className="toggle toggle-sm"
-                                    checked={timeSettings.enableEarlyWarning}
-                                    onChange={(e) => setTimeSettings({ ...timeSettings, enableEarlyWarning: e.target.checked })}
-                                />
-                                Show Early Warnings
-                            </label>
-                        </div>
-                        <input
-                            type="text"
-                            className="input input-bordered input-sm w-full mt-2"
-                            value={timeSettings.restMessage}
-                            onChange={(e) => setTimeSettings({ ...timeSettings, restMessage: e.target.value })}
-                            placeholder="Rest warning message"
-                        />
-                        <input
-                            type="text"
-                            className="input input-bordered input-sm w-full mt-2"
-                            value={timeSettings.earlyMessage}
-                            onChange={(e) => setTimeSettings({ ...timeSettings, earlyMessage: e.target.value })}
-                            placeholder="Early warning message"
-                        />
-                    </section>
-                    <section className="card bg-base-100 shadow p-4">
-                        <h4 className="card-title text-lg mb-2">Route Groups</h4>
-                        {routeGroups.map((group, idx) => (
-                            <div key={idx} className="border p-2 rounded-md mb-2 space-y-1">
-                                <div className="flex items-center gap-2">
-                                    <input
-                                        className="input input-bordered input-xs flex-1"
-                                        value={group.name}
-                                        onChange={(e) => updateGroup(idx, { ...group, name: e.target.value })}
-                                        placeholder="Group name"
-                                    />
-                                    <input
-                                        className="input input-bordered input-xs w-32"
-                                        value={group.color}
-                                        onChange={(e) => updateGroup(idx, { ...group, color: e.target.value })}
-                                        placeholder="text-color-500"
-                                    />
-                                    <label className="flex items-center gap-1 text-xs">
-                                        <input
-                                            type="checkbox"
-                                            checked={group.isFull}
-                                            onChange={(e) => updateGroup(idx, { ...group, isFull: e.target.checked })}
-                                        />
-                                        Full
-                                    </label>
-                                    <button
-                                        className="btn btn-xs btn-error"
-                                        onClick={() => setRouteGroups(arr => arr.filter((_, i) => i !== idx))}
-                                    >
-                                        Remove
-                                    </button>
-                                </div>
-                                <textarea
-                                    className="textarea textarea-bordered w-full text-xs h-16"
-                                    value={group.codes.join(', ')}
-                                    onChange={(e) => updateGroup(idx, { ...group, codes: e.target.value.split(',').map(c => c.trim().toUpperCase()).filter(Boolean) })}
-                                    placeholder="Codes, separated by comma"
-                                />
-                            </div>
-                        ))}
-                        <button
-                            className="btn btn-sm mt-2"
-                            onClick={() => setRouteGroups([...routeGroups, { name: 'New Group', codes: [], isFull: false, color: 'text-white' }])}
-                        >
-                            <Icon name="plus" className="w-4 h-4 mr-1" />
-                            Add Group
-                        </button>
-                    </section>
-                    <section className="card bg-base-100 shadow p-4">
-                        <h4 className="card-title text-lg mb-2">Ignored Calendar Patterns</h4>
-                        <textarea
-                            className="textarea textarea-bordered w-full text-xs h-24"
-                            value={ignoredPatterns.join('\n')}
-                            onChange={(e) => setIgnoredPatterns(e.target.value.split('\n').map(p => p.trim()).filter(Boolean))}
-                            placeholder="One pattern per line"
-                        />
-                    </section>
-                </div>
-                <div className="modal-action">
-                    <button className="btn btn-outline mr-auto" onClick={resetSettings}>Reset Defaults</button>
-                    <button className="btn" onClick={() => setSettingsOpen(false)}>Close</button>
-                </div>
-            </Modal>
+            <ScheduleSettingsModal
+                open={settingsOpen}
+                onClose={() => setSettingsOpen(false)}
+                routeGroups={routeGroups}
+                setRouteGroups={setRouteGroups}
+                updateGroup={updateGroup}
+                ignoredPatterns={ignoredPatterns}
+                setIgnoredPatterns={setIgnoredPatterns}
+                timeSettings={timeSettings}
+                setTimeSettings={setTimeSettings}
+                resetSettings={resetSettings}
+            />
             {notification && (
                 <div className="toast toast-bottom toast-center z-50">
                     <div className="alert alert-info">
