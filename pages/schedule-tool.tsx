@@ -118,6 +118,7 @@ export default function ScheduleTool() {
     const [lockedRight, setLockedRight] = useState<Set<number>>(new Set());
     const [animatingLocks, setAnimatingLocks] = useState<Set<number>>(new Set());
     const [driverMenuIndex, setDriverMenuIndex] = useState<number | null>(null);
+    const [driverMenuPage, setDriverMenuPage] = useState(0);
     const [contextMenu, setContextMenu] = useState<{ x: number; y: number; visible: boolean }>({ x: 0, y: 0, visible: false });
     const [contextMenuDriver, setContextMenuDriver] = useState<string | null>(null);
     const [routesModalDriver, setRoutesModalDriver] = useState<string | null>(null);
@@ -126,6 +127,9 @@ export default function ScheduleTool() {
         setContextMenu({ x: 0, y: 0, visible: false });
         setContextMenuDriver(null);
     };
+    useEffect(() => {
+        setDriverMenuPage(0);
+    }, [driverMenuIndex]);
     const historyRef = useRef<{ leftIdx: number }[]>([]);
     const [actionLog, setActionLog] = useState<{ user: string; action: string; time: number }[]>([]);
     const [logOpen, setLogOpen] = useState(false);
@@ -1176,59 +1180,90 @@ export default function ScheduleTool() {
                                 >
                                     <Icon name="plus" className="w-3 h-3" />
                                 </button>
-                                {driverMenuIndex === idx && (
-                                    <div
-                                        className="absolute z-50 left-0 top-full mt-1 min-w-[300px] max-h-80 overflow-y-auto bg-base-100 dark:bg-gray-700 border border-gray-300 rounded-lg shadow-lg"
-                                        onScroll={(e) => e.stopPropagation()}
-                                        onWheel={(e) => e.stopPropagation()}
-                                        onMouseDown={(e) => e.stopPropagation()}
-                                        onClick={(e) => e.stopPropagation()}
-                                    >
-
-                                        {getAvailableDrivers(it).length === 0 ? (
-                                            <div className="px-4 py-3 text-gray-400 text-sm">No drivers available</div>
-                                        ) : (
-                                            getAvailableDrivers(it).map((d) => (
-                                                <div
-                                                    key={d.leftIdx}
-                                                    className={`px-4 py-3 cursor-pointer hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-colors ${d.restWarning ? 'text-gray-400' : 'text-gray-900 dark:text-gray-100'}`}
-                                                    onClick={() => assignDriverFromMenu(d.leftIdx, idx)}
-                                                    title={d.restWarning ? 'Not enough rest between shifts' : undefined}
-                                                >
-                                                    <div className="flex items-center justify-between">
-                                                        <span className="font-medium">{d.name}</span>
-                                                        {d.routeMatch === 0 && (
-                                                            <span className="text-xs text-green-600 font-semibold">Best match</span>
+                                {driverMenuIndex === idx && (() => {
+                                    const availableDrivers = getAvailableDrivers(it);
+                                    const PAGE_SIZE = 15;
+                                    const totalPages = Math.ceil(availableDrivers.length / PAGE_SIZE);
+                                    const start = driverMenuPage * PAGE_SIZE;
+                                    const pageDrivers = availableDrivers.slice(start, start + PAGE_SIZE);
+                                    return (
+                                        <div
+                                            className="absolute z-50 left-0 top-full mt-1 min-w-[300px] bg-base-100 dark:bg-gray-700 border border-gray-300 rounded-lg shadow-lg"
+                                            onMouseDown={(e) => e.stopPropagation()}
+                                            onClick={(e) => e.stopPropagation()}
+                                        >
+                                            {pageDrivers.length === 0 ? (
+                                                <div className="px-4 py-3 text-gray-400 text-sm">No drivers available</div>
+                                            ) : (
+                                                pageDrivers.map((d) => (
+                                                    <div
+                                                        key={d.leftIdx}
+                                                        className={`px-4 py-3 cursor-pointer hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-colors ${d.restWarning ? 'text-gray-400' : 'text-gray-900 dark:text-gray-100'}`}
+                                                        onClick={() => assignDriverFromMenu(d.leftIdx, idx)}
+                                                        title={d.restWarning ? 'Not enough rest between shifts' : undefined}
+                                                    >
+                                                        <div className="flex items-center justify-between">
+                                                            <span className="font-medium">{d.name}</span>
+                                                            {d.routeMatch === 0 && (
+                                                                <span className="text-xs text-green-600 font-semibold">Best match</span>
+                                                            )}
+                                                            {d.routeMatch === 1 && (
+                                                                <span className="text-xs text-blue-600">Similar</span>
+                                                            )}
+                                                        </div>
+                                                        <div className="flex items-center justify-between text-xs mt-1">
+                                                            <span className={getRouteColorClass(d.prevCalendar, routeGroups)}>
+                                                                {d.prevRoute || '-'}
+                                                            </span>
+                                                            {d.diff >= 0 && (
+                                                                <span className="text-gray-500">{formatDuration(d.diff)} rest</span>
+                                                            )}
+                                                        </div>
+                                                        {d.restWarning && (
+                                                            <span className="mt-1 text-xs text-orange-500 flex items-center gap-1">
+                                                                <Icon name="exclamation-triangle" className="w-3 h-3" />
+                                                                not enough rest
+                                                            </span>
                                                         )}
-                                                        {d.routeMatch === 1 && (
-                                                            <span className="text-xs text-blue-600">Similar</span>
+                                                        {d.isAssigned && (
+                                                            <span className="mt-1 text-xs text-green-500 flex items-center gap-1">
+                                                                <Icon name="check2" className="w-3 h-3" />
+                                                                already assigned
+                                                            </span>
                                                         )}
                                                     </div>
-                                                    <div className="flex items-center justify-between text-xs mt-1">
-                                                        <span className={getRouteColorClass(d.prevCalendar, routeGroups)}>
-                                                            {d.prevRoute || '-'}
-                                                        </span>
-                                                        {d.diff >= 0 && (
-                                                            <span className="text-gray-500">{formatDuration(d.diff)} rest</span>
-                                                        )}
-                                                    </div>
-                                                    {d.restWarning && (
-                                                        <span className="mt-1 text-xs text-orange-500 flex items-center gap-1">
-                                                            <Icon name="exclamation-triangle" className="w-3 h-3" />
-                                                            not enough rest
-                                                        </span>
-                                                    )}
-                                                    {d.isAssigned && (
-                                                        <span className="mt-1 text-xs text-green-500 flex items-center gap-1">
-                                                            <Icon name="check2" className="w-3 h-3" />
-                                                            already assigned
-                                                        </span>
-                                                    )}
+                                                ))
+                                            )}
+                                            {totalPages > 1 && (
+                                                <div className="flex items-center justify-between px-4 py-2 border-t border-gray-200 text-xs">
+                                                    <button
+                                                        className="btn btn-ghost btn-xs"
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            setDriverMenuPage((p) => Math.max(p - 1, 0));
+                                                        }}
+                                                        disabled={driverMenuPage === 0}
+                                                    >
+                                                        Prev
+                                                    </button>
+                                                    <span>
+                                                        Page {driverMenuPage + 1} of {totalPages}
+                                                    </span>
+                                                    <button
+                                                        className="btn btn-ghost btn-xs"
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            setDriverMenuPage((p) => Math.min(p + 1, totalPages - 1));
+                                                        }}
+                                                        disabled={driverMenuPage >= totalPages - 1}
+                                                    >
+                                                        Next
+                                                    </button>
                                                 </div>
-                                            ))
-                                        )}
-                                    </div>
-                                )}
+                                            )}
+                                        </div>
+                                    );
+                                })()}
                             </span>
                         )
                     )}
