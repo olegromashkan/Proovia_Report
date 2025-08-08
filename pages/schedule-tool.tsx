@@ -14,6 +14,7 @@ import { CSS } from '@dnd-kit/utilities';
 import Layout from '../components/Layout';
 import Icon from '../components/Icon';
 import Modal from '../components/Modal';
+import ActionLogModal from '../components/ActionLogModal';
 import ScheduleNotesSidebar from '../components/ScheduleNotesSidebar';
 import ScheduleSettingsModal from '../components/ScheduleSettingsModal';
 import ScheduleSelectedStats from '../components/ScheduleSelectedStats';
@@ -33,6 +34,7 @@ import {
     getTimeColor,
     getTextAfterSpace,
 } from '../lib/scheduleUtils';
+import useCurrentUser from '../lib/useCurrentUser';
 const DEFAULT_IGNORED_PATTERNS = [
     'every 2nd day north',
     'everyday',
@@ -104,6 +106,12 @@ export default function ScheduleTool() {
     const [disableRowSelection, setDisableRowSelection] = useState(true);
     const [lockedRight, setLockedRight] = useState<Set<number>>(new Set());
     const [animatingLocks, setAnimatingLocks] = useState<Set<number>>(new Set());
+    const [driverMenuIndex, setDriverMenuIndex] = useState<number | null>(null);
+    const [contextMenu, setContextMenu] = useState<{ x: number; y: number; visible: boolean }>({ x: 0, y: 0, visible: false });
+    const historyRef = useRef<{ leftIdx: number }[]>([]);
+    const [actionLog, setActionLog] = useState<{ user: string; action: string; time: number }[]>([]);
+    const [logOpen, setLogOpen] = useState(false);
+    const currentUser = useCurrentUser();
     const sensors = useSensors(
         useSensor(MouseSensor, { activationConstraint: { distance: 5 } }),
         useSensor(TouchSensor)
@@ -557,6 +565,12 @@ export default function ScheduleTool() {
             return copy;
         });
     };
+    const undoLastAction = () => {
+        const last = historyRef.current.pop();
+        if (!last) return;
+        handleUndo(last.leftIdx);
+        logAction('Undo last assignment');
+    };
     const handleEditBlur = (idx: number) => {
         const newDriverName = editValue.trim();
         if (newDriverName && itemsRight.some(item => item.Driver1 === newDriverName && item.ID !== itemsRight[idx].ID)) {
@@ -596,6 +610,77 @@ export default function ScheduleTool() {
         }
     };
     const allowedDrivers = useMemo(() => (notes['Available Drivers'] || '').split('\n').map(d => d.trim()).filter(d => d), [notes]);
+    const logAction = (action: string) => {
+        const user = currentUser?.username || currentUser?.name || 'Unknown';
+        setActionLog(log => [...log, { user, action, time: Date.now() }]);
+    };
+    const getAvailableDrivers = (trip: Trip) => {
+        const start = parseTime(trip.Start_Time);
+        return itemsLeft
+            .map((leftIt, idx) => {
+                const end = parseTime(getActualEnd(leftIt.End_Time, leftIt.Punctuality));
+                return { name: leftIt.Driver1 || '', leftIdx: idx, diff: start - end, isAssigned: leftIt.isAssigned };
+            })
+            .filter(d => allowedDrivers.includes(d.name) && !d.isAssigned)
+            .sort((a, b) => {
+                const aDiff = a.diff < 0 ? Infinity : a.diff;
+                const bDiff = b.diff < 0 ? Infinity : b.diff;
+                return aDiff - bDiff;
+            });
+    };
+    const assignDriverFromMenu = (leftIdx: number, rightIdx: number) => {
+        const name = itemsLeft[leftIdx]?.Driver1;
+        if (!name) return;
+        const leftItem = itemsLeft[leftIdx];
+        let restMessage = '';
+        const actualEnd = parseTime(getActualEnd(leftItem?.End_Time, leftItem?.Punctuality));
+        const targetStart = parseTime(itemsRight[rightIdx].Start_Time);
+        if (!isNaN(actualEnd) && !isNaN(targetStart)) {
+            if (timeSettings.enableRestWarning && actualEnd > timeSettings.lateEndHour * 60 && targetStart < timeSettings.earlyStartHour * 60) {
+                restMessage = timeSettings.restMessage;
+            } else if (timeSettings.enableEarlyWarning && actualEnd <= timeSettings.earlyEndHour * 60 && targetStart > timeSettings.lateStartHour * 60) {
+                restMessage = timeSettings.earlyMessage;
+            }
+        }
+        const showRestNotification = () => {
+            if (restMessage) {
+                setNotification(restMessage);
+                setTimeout(() => setNotification(null), 4000);
+            }
+        };
+        const isDuplicate = itemsRight.some(item => item.Driver1 === name && item.ID !== itemsRight[rightIdx].ID);
+        const action = () => {
+            updateRight(arr => {
+                const copy = [...arr];
+                const oldFromLeftIndex = copy[rightIdx].fromLeftIndex;
+                const oldDriver1 = copy[rightIdx].Driver1;
+                copy[rightIdx] = { ...copy[rightIdx], Driver1: name, fromLeftIndex: leftIdx };
+                updateLeft(leftArr => {
+                    const leftCopy = [...leftArr];
+                    leftCopy[leftIdx] = { ...leftCopy[leftIdx], isAssigned: true };
+                    if (oldFromLeftIndex !== undefined && oldDriver1) {
+                        leftCopy[oldFromLeftIndex] = { ...leftCopy[oldFromLeftIndex], isAssigned: false };
+                    }
+                    return sortItems(leftCopy);
+                });
+                return copy;
+            });
+            showRestNotification();
+            historyRef.current.push({ leftIdx });
+            logAction(`Assigned ${name} to route ${getRoute(itemsRight[rightIdx].Calendar_Name)}`);
+        };
+        if (isDuplicate) {
+            setWarningModal({
+                action: () => {
+                    action();
+                    setWarningModal(null);
+                }
+            });
+            return;
+        }
+        action();
+        setDriverMenuIndex(null);
+    };
     const getStartClass = (startTime: string) => {
         switch (startTime) {
             case '06:00':
@@ -960,8 +1045,28 @@ export default function ScheduleTool() {
                                 {animatingLocks.has(idx) && <img src="/success-gif.gif" alt="success" className="w-6 h-6 ml-2" />}
                             </span>
                         ) : (
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-400 italic rounded border border-dashed border-gray-300 dark:border-gray-600">
-                                <Icon name="plus" className="w-3 h-3" />
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-400 italic rounded border border-dashed border-gray-300 dark:border-gray-600 relative">
+                                <button
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        setDriverMenuIndex(idx);
+                                    }}
+                                >
+                                    <Icon name="plus" className="w-3 h-3" />
+                                </button>
+                                {driverMenuIndex === idx && (
+                                    <div className="absolute z-50 left-0 top-full mt-1 bg-base-100 dark:bg-gray-700 border border-gray-300 rounded shadow max-h-60 overflow-auto">
+                                        {getAvailableDrivers(it).map((d) => (
+                                            <div
+                                                key={d.leftIdx}
+                                                className={`px-2 py-1 cursor-pointer hover:bg-gray-200 ${d.diff < 0 ? 'text-gray-400' : ''}`}
+                                                onClick={() => assignDriverFromMenu(d.leftIdx, idx)}
+                                            >
+                                                {d.name}
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
                             </span>
                         )
                     )}
@@ -986,7 +1091,17 @@ export default function ScheduleTool() {
     };
     return (
         <Layout title="Schedule Tool" fullWidth>
-            <div className="flex gap-2 w-full h-[calc(100vh-4.5rem)] bg-base-100 dark:bg-base-100">
+            <div
+                className="flex gap-2 w-full h-[calc(100vh-4.5rem)] bg-base-100 dark:bg-base-100"
+                onClick={() => {
+                    setDriverMenuIndex(null);
+                    setContextMenu({ x: 0, y: 0, visible: false });
+                }}
+                onContextMenu={(e) => {
+                    e.preventDefault();
+                    setContextMenu({ x: e.clientX, y: e.clientY, visible: true });
+                }}
+            >
                 {/* Left Table */}
                 <div className="flex-1 min-w-0 flex flex-col border-r border-gray-200 dark:border-gray-700 relative" onMouseUp={handleMouseUpLeft} onDragOver={(e) => e.preventDefault()} onDrop={handleLeftDrop}>
                     {renderStats(leftStats, clearAllLeft)}
@@ -1252,6 +1367,20 @@ export default function ScheduleTool() {
                     </div>
                 </div>
             )}
+            {contextMenu.visible && (
+                <ul
+                    className="menu menu-sm bg-base-200 dark:bg-gray-700 rounded-box absolute z-50"
+                    style={{ top: contextMenu.y, left: contextMenu.x }}
+                >
+                    <li>
+                        <a onClick={undoLastAction}>Undo</a>
+                    </li>
+                    <li>
+                        <a onClick={() => setLogOpen(true)}>View Log</a>
+                    </li>
+                </ul>
+            )}
+            <ActionLogModal open={logOpen} onClose={() => setLogOpen(false)} log={actionLog} />
         </Layout>
     );
 }
