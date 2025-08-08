@@ -8,6 +8,7 @@ import {
     useMemo,
     MouseEvent as ReactMouseEvent,
 } from 'react';
+import { createPortal } from 'react-dom';
 import {
     DndContext,
     DragEndEvent,
@@ -118,6 +119,7 @@ export default function ScheduleTool() {
     const [lockedRight, setLockedRight] = useState<Set<number>>(new Set());
     const [animatingLocks, setAnimatingLocks] = useState<Set<number>>(new Set());
     const [driverMenuIndex, setDriverMenuIndex] = useState<number | null>(null);
+    const [driverMenuPos, setDriverMenuPos] = useState<{ x: number; y: number } | null>(null);
     const [contextMenu, setContextMenu] = useState<{ x: number; y: number; visible: boolean }>({ x: 0, y: 0, visible: false });
     const [contextMenuDriver, setContextMenuDriver] = useState<string | null>(null);
     const [routesModalDriver, setRoutesModalDriver] = useState<string | null>(null);
@@ -774,6 +776,7 @@ export default function ScheduleTool() {
         }
         action();
         setDriverMenuIndex(null);
+        setDriverMenuPos(null);
     };
     const getStartClass = (startTime: string) => {
         switch (startTime) {
@@ -1121,6 +1124,7 @@ export default function ScheduleTool() {
                         e.preventDefault();
                         e.stopPropagation();
                         setDriverMenuIndex(null);
+                        setDriverMenuPos(null);
                         if (it.Driver1) setContextMenuDriver(it.Driver1);
                         setContextMenu({ x: e.clientX, y: e.clientY, visible: true });
                     }}
@@ -1167,68 +1171,71 @@ export default function ScheduleTool() {
                                 {animatingLocks.has(idx) && <img src="/success-gif.gif" alt="success" className="w-6 h-6 ml-2" />}
                             </span>
                         ) : (
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-400 italic rounded border border-dashed border-gray-300 dark:border-gray-600 relative">
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-400 italic rounded border border-dashed border-gray-300 dark:border-gray-600">
                                 <button
                                     onClick={(e) => {
                                         e.stopPropagation();
+                                        const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+                                        setDriverMenuPos({ x: rect.left + window.scrollX, y: rect.bottom + window.scrollY });
                                         setDriverMenuIndex(idx);
                                     }}
                                 >
                                     <Icon name="plus" className="w-3 h-3" />
                                 </button>
-                                {driverMenuIndex === idx && (
-                                    <div
-                                        className="absolute z-50 left-0 top-full mt-1 min-w-[300px] max-h-80 overflow-y-auto bg-base-100 dark:bg-gray-700 border border-gray-300 rounded-lg shadow-lg"
-                                        onScroll={(e) => e.stopPropagation()}
-                                        onWheel={(e) => e.stopPropagation()}
-                                        onMouseDown={(e) => e.stopPropagation()}
-                                        onClick={(e) => e.stopPropagation()}
-                                    >
-
-                                        {getAvailableDrivers(it).length === 0 ? (
-                                            <div className="px-4 py-3 text-gray-400 text-sm">No drivers available</div>
-                                        ) : (
-                                            getAvailableDrivers(it).map((d) => (
-                                                <div
-                                                    key={d.leftIdx}
-                                                    className={`px-4 py-3 cursor-pointer hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-colors ${d.restWarning ? 'text-gray-400' : 'text-gray-900 dark:text-gray-100'}`}
-                                                    onClick={() => assignDriverFromMenu(d.leftIdx, idx)}
-                                                    title={d.restWarning ? 'Not enough rest between shifts' : undefined}
-                                                >
-                                                    <div className="flex items-center justify-between">
-                                                        <span className="font-medium">{d.name}</span>
-                                                        {d.routeMatch === 0 && (
-                                                            <span className="text-xs text-green-600 font-semibold">Best match</span>
+                                {driverMenuIndex === idx && driverMenuPos &&
+                                    createPortal(
+                                        <div
+                                            className="z-50 min-w-[300px] max-h-80 overflow-y-auto bg-base-100 dark:bg-gray-700 border border-gray-300 rounded-lg shadow-lg"
+                                            style={{ position: 'absolute', left: driverMenuPos.x, top: driverMenuPos.y }}
+                                            onWheel={(e) => e.stopPropagation()}
+                                            onMouseDown={(e) => e.stopPropagation()}
+                                            onClick={(e) => e.stopPropagation()}
+                                        >
+                                            {getAvailableDrivers(it).length === 0 ? (
+                                                <div className="px-4 py-3 text-gray-400 text-sm">No drivers available</div>
+                                            ) : (
+                                                getAvailableDrivers(it).map((d) => (
+                                                    <div
+                                                        key={d.leftIdx}
+                                                        className={`px-4 py-3 cursor-pointer hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-colors ${d.restWarning ? 'text-gray-400' : 'text-gray-900 dark:text-gray-100'}`}
+                                                        onClick={() => assignDriverFromMenu(d.leftIdx, idx)}
+                                                        title={d.restWarning ? 'Not enough rest between shifts' : undefined}
+                                                    >
+                                                        <div className="flex items-center justify-between">
+                                                            <span className="font-medium">{d.name}</span>
+                                                            {d.routeMatch === 0 && (
+                                                                <span className="text-xs text-green-600 font-semibold">Best match</span>
+                                                            )}
+                                                            {d.routeMatch === 1 && (
+                                                                <span className="text-xs text-blue-600">Similar</span>
+                                                            )}
+                                                        </div>
+                                                        <div className="flex items-center justify-between text-xs mt-1">
+                                                            <span className={getRouteColorClass(d.prevCalendar, routeGroups)}>
+                                                                {d.prevRoute || '-'}
+                                                            </span>
+                                                            {d.diff >= 0 && (
+                                                                <span className="text-gray-500">{formatDuration(d.diff)} rest</span>
+                                                            )}
+                                                        </div>
+                                                        {d.restWarning && (
+                                                            <span className="mt-1 text-xs text-orange-500 flex items-center gap-1">
+                                                                <Icon name="exclamation-triangle" className="w-3 h-3" />
+                                                                not enough rest
+                                                            </span>
                                                         )}
-                                                        {d.routeMatch === 1 && (
-                                                            <span className="text-xs text-blue-600">Similar</span>
+                                                        {d.isAssigned && (
+                                                            <span className="mt-1 text-xs text-green-500 flex items-center gap-1">
+                                                                <Icon name="check2" className="w-3 h-3" />
+                                                                already assigned
+                                                            </span>
                                                         )}
                                                     </div>
-                                                    <div className="flex items-center justify-between text-xs mt-1">
-                                                        <span className={getRouteColorClass(d.prevCalendar, routeGroups)}>
-                                                            {d.prevRoute || '-'}
-                                                        </span>
-                                                        {d.diff >= 0 && (
-                                                            <span className="text-gray-500">{formatDuration(d.diff)} rest</span>
-                                                        )}
-                                                    </div>
-                                                    {d.restWarning && (
-                                                        <span className="mt-1 text-xs text-orange-500 flex items-center gap-1">
-                                                            <Icon name="exclamation-triangle" className="w-3 h-3" />
-                                                            not enough rest
-                                                        </span>
-                                                    )}
-                                                    {d.isAssigned && (
-                                                        <span className="mt-1 text-xs text-green-500 flex items-center gap-1">
-                                                            <Icon name="check2" className="w-3 h-3" />
-                                                            already assigned
-                                                        </span>
-                                                    )}
-                                                </div>
-                                            ))
-                                        )}
-                                    </div>
-                                )}
+                                                ))
+                                            )}
+                                        </div>,
+                                        document.body
+                                    )}
                             </span>
                         )
                     )}
@@ -1257,10 +1264,12 @@ export default function ScheduleTool() {
                 className="flex gap-2 w-full h-[calc(100vh-4.5rem)] bg-base-100 dark:bg-base-100"
                 onClick={() => {
                     setDriverMenuIndex(null);
+                    setDriverMenuPos(null);
                 }}
                 onContextMenu={(e) => {
                     e.preventDefault();
                     setDriverMenuIndex(null);
+                    setDriverMenuPos(null);
                     setContextMenuDriver(null);
                     setContextMenu({ x: e.clientX, y: e.clientY, visible: true });
                 }}
