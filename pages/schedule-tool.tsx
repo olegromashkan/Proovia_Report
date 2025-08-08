@@ -1,4 +1,16 @@
 import { useEffect, useState, DragEvent, ChangeEvent, useRef, KeyboardEvent, useMemo, MouseEvent } from 'react';
+import {
+    DndContext,
+    DragEndEvent,
+    DragStartEvent,
+    MouseSensor,
+    TouchSensor,
+    useSensor,
+    useSensors,
+    DragOverlay,
+} from '@dnd-kit/core';
+import { SortableContext, useSortable } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 import Layout from '../components/Layout';
 import Icon from '../components/Icon';
 import Modal from '../components/Modal';
@@ -92,6 +104,12 @@ export default function ScheduleTool() {
     const [disableRowSelection, setDisableRowSelection] = useState(true);
     const [lockedRight, setLockedRight] = useState<Set<number>>(new Set());
     const [animatingLocks, setAnimatingLocks] = useState<Set<number>>(new Set());
+    const sensors = useSensors(
+        useSensor(MouseSensor, { activationConstraint: { distance: 5 } }),
+        useSensor(TouchSensor)
+    );
+    const [activeDragId, setActiveDragId] = useState<number | null>(null);
+    const [activeDragName, setActiveDragName] = useState<string>('');
     const filterIgnored = <T extends { Calendar_Name?: string }>(items: T[]) =>
         items.filter(it =>
             !ignoredPatterns.some(pat =>
@@ -716,6 +734,96 @@ export default function ScheduleTool() {
         }
         setLockedRight(newSet);
     };
+    const handleDragStart = (event: DragStartEvent) => {
+        const idx = event.active.data.current?.index as number | undefined;
+        if (idx === undefined) return;
+        setActiveDragId(idx);
+        setActiveDragName(itemsRight[idx]?.Driver1 || '');
+    };
+    const handleDragEnd = (event: DragEndEvent) => {
+        const { active, over } = event;
+        setActiveDragId(null);
+        setActiveDragName('');
+        if (!over) return;
+        const sourceIdx = active.data.current?.index;
+        const targetIdx = over.data.current?.index;
+        if (sourceIdx === undefined || targetIdx === undefined || sourceIdx === targetIdx) return;
+        updateRight(arr => {
+            const copy = [...arr];
+            const tempDriver = copy[targetIdx].Driver1;
+            const tempFrom = copy[targetIdx].fromLeftIndex;
+            copy[targetIdx].Driver1 = copy[sourceIdx].Driver1;
+            copy[targetIdx].fromLeftIndex = copy[sourceIdx].fromLeftIndex;
+            copy[sourceIdx].Driver1 = tempDriver;
+            copy[sourceIdx].fromLeftIndex = tempFrom;
+            return copy;
+        });
+    };
+    const handleDragOverCell = (e: DragEvent<HTMLTableCellElement>) => {
+        e.preventDefault();
+        e.currentTarget.classList.add('bg-gray-900', 'dark:bg-gray-900/30', 'border-dashed', 'border-2', 'border-blue-300');
+    };
+    const handleDragLeaveCell = (e: DragEvent<HTMLTableCellElement>) => {
+        e.currentTarget.classList.remove('bg-gray-900', 'dark:bg-gray-900/30', 'border-dashed', 'border-2', 'border-blue-300');
+    };
+    const handleDropFromLeft = (e: DragEvent<HTMLTableCellElement>, idx: number) => {
+        e.preventDefault();
+        handleDragLeaveCell(e);
+        try {
+            const data = JSON.parse(e.dataTransfer.getData('text/plain'));
+            if (data.table !== 'left') return;
+            const name = data.name;
+            if (!name) return;
+            const leftItem = itemsLeft[data.index];
+            let restMessage = '';
+            const actualEnd = parseTime(getActualEnd(leftItem?.End_Time, leftItem?.Punctuality));
+            const targetStart = parseTime(itemsRight[idx].Start_Time);
+            if (!isNaN(actualEnd) && !isNaN(targetStart)) {
+                if (timeSettings.enableRestWarning && actualEnd > timeSettings.lateEndHour * 60 && targetStart < timeSettings.earlyStartHour * 60) {
+                    restMessage = timeSettings.restMessage;
+                } else if (timeSettings.enableEarlyWarning && actualEnd <= timeSettings.earlyEndHour * 60 && targetStart > timeSettings.lateStartHour * 60) {
+                    restMessage = timeSettings.earlyMessage;
+                }
+            }
+            const showRestNotification = () => {
+                if (restMessage) {
+                    setNotification(restMessage);
+                    setTimeout(() => setNotification(null), 4000);
+                }
+            };
+            const isDuplicate = itemsRight.some(item => item.Driver1 === name && item.ID !== itemsRight[idx].ID);
+            const action = () => {
+                updateRight(arr => {
+                    const copy = [...arr];
+                    const oldFromLeftIndex = copy[idx].fromLeftIndex;
+                    const oldDriver1 = copy[idx].Driver1;
+                    copy[idx] = { ...copy[idx], Driver1: name, fromLeftIndex: data.index };
+                    updateLeft(leftArr => {
+                        const leftCopy = [...leftArr];
+                        leftCopy[data.index] = { ...leftCopy[data.index], isAssigned: true };
+                        if (oldFromLeftIndex !== undefined && oldDriver1) {
+                            leftCopy[oldFromLeftIndex] = { ...leftCopy[oldFromLeftIndex], isAssigned: false };
+                        }
+                        return sortItems(leftCopy);
+                    });
+                    return copy;
+                });
+                showRestNotification();
+            };
+            if (isDuplicate) {
+                setWarningModal({
+                    action: () => {
+                        action();
+                        setWarningModal(null);
+                    }
+                });
+                return;
+            }
+            action();
+        } catch (err) {
+            console.error('Drop error:', err);
+        }
+    };
     return (
         <Layout title="Schedule Tool" fullWidth>
             <div className="flex gap-2 w-full h-[calc(100vh-4.5rem)] bg-base-100 dark:bg-base-100">
@@ -856,21 +964,23 @@ export default function ScheduleTool() {
                                 <div className="loading loading-spinner loading-lg"></div>
                             </div>
                         ) : (
-                            <table className="table table-xs table-zebra table-pin-rows w-full text-xs">
-                                <thead className="bg-base-200 dark:bg-base-100 sticky top-0 z-10">
-                                    <tr>
-                                        <th className="cursor-pointer" onClick={() => applyRightSort('Start')}>Start</th>
-                                        <th className="cursor-pointer" onClick={() => applyRightSort('End')}>End</th>
-                                        <th className="cursor-pointer" onClick={() => applyRightSort('Driver1')}>Driver</th>
-                                        <th className="cursor-pointer" onClick={() => applyRightSort('Route')}>Route</th>
-                                        <th className="cursor-pointer" onClick={() => applyRightSort('Tasks')}>Tasks</th>
-                                        <th className="cursor-pointer" onClick={() => applyRightSort('Order_Value')}>Amount</th>
-                                        <th className="cursor-pointer" onClick={() => applyRightSort('Contractor')}>Contractor</th>
-                                        <th className="cursor-pointer" onClick={() => applyRightSort('Duration')}>Duration</th>
-                                    </tr>
-                                </thead>
-                                <tbody className={lockCopy ? 'select-none' : ''}>
-                                    {itemsRight.map((it, idx) => {
+                            <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
+                                <table className="table table-xs table-zebra table-pin-rows w-full text-xs">
+                                    <thead className="bg-base-200 dark:bg-base-100 sticky top-0 z-10">
+                                        <tr>
+                                            <th className="cursor-pointer" onClick={() => applyRightSort('Start')}>Start</th>
+                                            <th className="cursor-pointer" onClick={() => applyRightSort('End')}>End</th>
+                                            <th className="cursor-pointer" onClick={() => applyRightSort('Driver1')}>Driver</th>
+                                            <th className="cursor-pointer" onClick={() => applyRightSort('Route')}>Route</th>
+                                            <th className="cursor-pointer" onClick={() => applyRightSort('Tasks')}>Tasks</th>
+                                            <th className="cursor-pointer" onClick={() => applyRightSort('Order_Value')}>Amount</th>
+                                            <th className="cursor-pointer" onClick={() => applyRightSort('Contractor')}>Contractor</th>
+                                            <th className="cursor-pointer" onClick={() => applyRightSort('Duration')}>Duration</th>
+                                        </tr>
+                                    </thead>
+                                    <SortableContext items={itemsRight.map((_, idx) => idx)}>
+                                        <tbody className={lockCopy ? 'select-none' : ''}>
+                                            {itemsRight.map((it, idx) => {
                                         const driverColor = getDriverColor(it.Driver1);
                                         const routeColor = getRouteColorClass(it.Calendar_Name, routeGroups);
                                         const isEditing = editingRightIndex === idx;
@@ -884,10 +994,19 @@ export default function ScheduleTool() {
                                         const rowClass = is2DT ? 'text-gray-500' : '';
                                         const duration = getDuration(it, false);
                                         const durationFormatted = formatDuration(duration);
-                                        const isHovered = hoveredRightIndex === idx;
                                         const isSelected = selectedRight.includes(idx);
                                         const showColorBadge = !is2DT;
                                         const isLocked = lockedRight.has(idx);
+                                        const allowDnD = !is2DT && !isLocked;
+                                        const { attributes, listeners, setNodeRef, isOver, transform, transition } = useSortable({
+                                            id: idx,
+                                            data: { index: idx },
+                                            disabled: !allowDnD,
+                                        });
+                                        const style = {
+                                            transform: CSS.Transform.toString(transform),
+                                            transition,
+                                        };
                                         return (
                                             <tr
                                                 key={it.ID || `right-${idx}`}
@@ -915,102 +1034,14 @@ export default function ScheduleTool() {
                                                     )}
                                                 </td>
                                                 <td
-                                                    draggable={!!it.Driver1 && !isLocked}
-                                                    onDragStart={(e) => {
-                                                        if (!!it.Driver1 && !isLocked) {
-                                                            e.dataTransfer.setData('text/plain', JSON.stringify({ table: 'right', index: idx, name: it.Driver1 }));
-                                                            setDragImage(e, it.Driver1 || '');
-                                                        }
-                                                    }}
-                                                    onDragOver={(e) => {
-                                                        if (!isLocked) {
-                                                            e.preventDefault();
-                                                            e.currentTarget.classList.add('bg-gray-900', 'dark:bg-gray-900/30', 'border-dashed', 'border-2', 'border-blue-300');
-                                                        }
-                                                    }}
-                                                    onDragLeave={(e) => {
-                                                        e.currentTarget.classList.remove('bg-gray-900', 'dark:bg-gray-900/30', 'border-dashed', 'border-2', 'border-blue-300');
-                                                    }}
-                                                    onDrop={(e) => {
-                                                        if (isLocked) return;
-                                                        e.preventDefault();
-                                                        e.currentTarget.classList.remove('bg-gray-900', 'dark:bg-gray-900/30', 'border-dashed', 'border-2', 'border-blue-300');
-                                                        try {
-                                                            const data = JSON.parse(e.dataTransfer.getData('text/plain'));
-                                                            const name = data.name;
-                                                            if (!name) return;
-                                                            let restMessage = '';
-                                                            if (data.table === 'left') {
-                                                                const leftItem = itemsLeft[data.index];
-                                                                const actualEnd = parseTime(getActualEnd(leftItem?.End_Time, leftItem?.Punctuality));
-                                                                const targetStart = parseTime(it.Start_Time);
-                                                                if (!isNaN(actualEnd) && !isNaN(targetStart)) {
-                                                                    if (timeSettings.enableRestWarning && actualEnd > timeSettings.lateEndHour * 60 && targetStart < timeSettings.earlyStartHour * 60) {
-                                                                        restMessage = timeSettings.restMessage;
-                                                                    } else if (timeSettings.enableEarlyWarning && actualEnd <= timeSettings.earlyEndHour * 60 && targetStart > timeSettings.lateStartHour * 60) {
-                                                                        restMessage = timeSettings.earlyMessage;
-                                                                    }
-                                                                }
-                                                            } else if (data.table === 'right') {
-                                                                const sourceIdx = data.index;
-                                                                if (sourceIdx === idx) return;
-                                                                updateRight((arr) => {
-                                                                    const copy = [...arr];
-                                                                    const tempDriver = copy[idx].Driver1;
-                                                                    const tempFrom = copy[idx].fromLeftIndex;
-                                                                    copy[idx].Driver1 = copy[sourceIdx].Driver1;
-                                                                    copy[idx].fromLeftIndex = copy[sourceIdx].fromLeftIndex;
-                                                                    copy[sourceIdx].Driver1 = tempDriver;
-                                                                    copy[sourceIdx].fromLeftIndex = tempFrom;
-                                                                    return copy;
-                                                                });
-                                                                return;
-                                                            }
-                                                            const showRestNotification = () => {
-                                                                if (restMessage) {
-                                                                    setNotification(restMessage);
-                                                                    setTimeout(() => setNotification(null), 4000);
-                                                                }
-                                                            };
-                                                            const isDuplicate = itemsRight.some(item => item.Driver1 === name && item.ID !== it.ID);
-                                                            const action = () => {
-                                                                updateRight((arr) => {
-                                                                    const copy = [...arr];
-                                                                    const oldFromLeftIndex = copy[idx].fromLeftIndex;
-                                                                    const oldDriver1 = copy[idx].Driver1;
-                                                                    copy[idx] = { ...copy[idx], Driver1: name };
-                                                                    if (data.table === 'left') {
-                                                                        copy[idx].fromLeftIndex = data.index;
-                                                                        updateLeft((leftArr) => {
-                                                                            const leftCopy = [...leftArr];
-                                                                            leftCopy[data.index] = { ...leftCopy[data.index], isAssigned: true };
-                                                                            if (oldFromLeftIndex !== undefined && oldDriver1) {
-                                                                                leftCopy[oldFromLeftIndex] = { ...leftCopy[oldFromLeftIndex], isAssigned: false };
-                                                                            }
-                                                                            return sortItems(leftCopy);
-                                                                        });
-                                                                    } else {
-                                                                        copy[idx].fromLeftIndex = undefined;
-                                                                    }
-                                                                    return copy;
-                                                                });
-                                                                showRestNotification();
-                                                            };
-                                                            if (isDuplicate) {
-                                                                setWarningModal({
-                                                                    action: () => {
-                                                                        action();
-                                                                        setWarningModal(null);
-                                                                    }
-                                                                });
-                                                                return;
-                                                            }
-                                                            action();
-                                                        } catch (err) {
-                                                            console.error('Drop error:', err);
-                                                        }
-                                                    }}
-                                                    className={`${driverColor} py-1 px-2 cursor-pointer relative group`}
+                                                    ref={allowDnD ? setNodeRef : undefined}
+                                                    style={allowDnD ? style : undefined}
+                                                    {...(allowDnD ? attributes : {})}
+                                                    {...(allowDnD && it.Driver1 ? listeners : {})}
+                                                    onDragOver={allowDnD ? handleDragOverCell : undefined}
+                                                    onDragLeave={allowDnD ? handleDragLeaveCell : undefined}
+                                                    onDrop={allowDnD ? (e) => handleDropFromLeft(e, idx) : undefined}
+                                                    className={`${driverColor} py-1 px-2 cursor-pointer relative group ${allowDnD && isOver ? 'bg-gray-900 dark:bg-gray-900/30 border-dashed border-2 border-blue-300' : ''}`}
                                                     onMouseEnter={() => setHoveredRightIndex(idx)}
                                                     onMouseLeave={() => setHoveredRightIndex(null)}
                                                     onDoubleClick={() => {
@@ -1081,8 +1112,17 @@ export default function ScheduleTool() {
                                             </tr>
                                         );
                                     })}
-                                </tbody>
-                            </table>
+                                        </tbody>
+                                    </SortableContext>
+                                </table>
+                                <DragOverlay>
+                                    {activeDragName && (
+                                        <span className="px-2 py-0.5 rounded bg-gray-200 dark:bg-gray-700 shadow-lg">
+                                            {activeDragName}
+                                        </span>
+                                    )}
+                                </DragOverlay>
+                            </DndContext>
                         )}
                     </div>
                     <ScheduleSelectedStats
