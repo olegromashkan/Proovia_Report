@@ -824,6 +824,137 @@ export default function ScheduleTool() {
             console.error('Drop error:', err);
         }
     };
+    const SortableRow = ({ it, idx }: { it: Trip; idx: number }) => {
+        const driverColor = getDriverColor(it.Driver1);
+        const routeColor = getRouteColorClass(it.Calendar_Name, routeGroups);
+        const isEditing = editingRightIndex === idx;
+        const startTime = getTextAfterSpace(it.Start_Time);
+        const startClass = getStartClass(startTime);
+        const endTime = getTextAfterSpace(it.End_Time);
+        const endMinutes = parseTime(it.End_Time);
+        const endColor = getTimeColor(endMinutes, timeRangeRightEnd);
+        const vh = getVH(it.Calendar_Name);
+        const is2DT = vh === '2DT';
+        const rowClass = is2DT ? 'text-gray-500' : '';
+        const duration = getDuration(it, false);
+        const durationFormatted = formatDuration(duration);
+        const isSelected = selectedRight.includes(idx);
+        const showColorBadge = !is2DT;
+        const isLocked = lockedRight.has(idx);
+        const allowDnD = !is2DT && !isLocked;
+        const { attributes, listeners, setNodeRef, isOver, transform, transition } = useSortable({
+            id: idx,
+            data: { index: idx },
+            disabled: !allowDnD,
+        });
+        const style = {
+            transform: CSS.Transform.toString(transform),
+            transition,
+        };
+        return (
+            <tr
+                className={`transition-colors duration-150 ${isSelected ? '!bg-gray-900 !dark:bg-gray-900/30' : 'hover:bg-gray-100 dark:hover:bg-gray-700'} ${rowClass}`}
+                onMouseDown={(e) => handleMouseDownRight(e, idx)}
+                onMouseOver={() => handleMouseOverRight(idx)}
+            >
+                <td className="py-1 px-2">
+                    <span
+                        className={`inline-block px-1.5 py-0.5 rounded-full text-xs font-medium ${startClass}`}
+                    >
+                        {startTime}
+                    </span>
+                </td>
+                <td className="py-1 px-2">
+                    {showColorBadge && endColor ? (
+                        <span
+                            className="inline-block px-1.5 py-0.5 rounded-full text-xs font-medium text-black"
+                            style={{ backgroundColor: endColor }}
+                        >
+                            {endTime}
+                        </span>
+                    ) : (
+                        endTime
+                    )}
+                </td>
+                <td
+                    ref={allowDnD ? setNodeRef : undefined}
+                    style={allowDnD ? style : undefined}
+                    {...(allowDnD ? attributes : {})}
+                    {...(allowDnD && it.Driver1 ? listeners : {})}
+                    onDragOver={allowDnD ? handleDragOverCell : undefined}
+                    onDragLeave={allowDnD ? handleDragLeaveCell : undefined}
+                    onDrop={allowDnD ? (e) => handleDropFromLeft(e, idx) : undefined}
+                    className={`${driverColor} py-1 px-2 cursor-pointer relative group ${allowDnD && isOver ? 'bg-gray-900 dark:bg-gray-900/30 border-dashed border-2 border-blue-300' : ''}`}
+                    onMouseEnter={() => setHoveredRightIndex(idx)}
+                    onMouseLeave={() => setHoveredRightIndex(null)}
+                    onDoubleClick={() => {
+                        if (!isEditing) {
+                            setEditingRightIndex(idx);
+                            setEditValue(it.Driver1 || '');
+                        }
+                    }}
+                >
+                    {isEditing ? (
+                        <input
+                            type="text"
+                            value={editValue}
+                            onChange={(e) => setEditValue(e.target.value)}
+                            onBlur={() => handleEditBlur(idx)}
+                            onKeyDown={(e) => handleEditKeyDown(e, idx)}
+                            autoFocus
+                            className="input input-xs w-full py-0 px-1 border-blue-300 focus:border-blue-500 rounded"
+                        />
+                    ) : (
+                        it.Driver1 ? (
+                            <span
+                                className={`inline-flex items-center gap-1 px-2 py-0.5 rounded bg-gray-200 dark:bg-gray-600 hover:shadow-md transition-all duration-150 transform hover:scale-105`}
+                            >
+                                {isLocked && <div className="w-2 h-2 bg-green-500 rounded-full"></div>}
+                                <span>{it.Driver1}</span>
+                                {it.fromLeftIndex !== undefined && (
+                                    <span
+                                        className="underline cursor-pointer text-blue-500 text-xs ml-1"
+                                        onClick={() => handleUndoFromRight(it.fromLeftIndex!)}
+                                        title="Undo assignment"
+                                    >
+                                        <Icon name="arrow-counterclockwise" className="w-3 h-3" />
+                                    </span>
+                                )}
+                                <button
+                                    className="text-gray-500 hover:text-gray-700 ml-1"
+                                    onClick={() => toggleLock(idx)}
+                                    title={isLocked ? 'Unlock' : 'Lock'}
+                                >
+                                    <Icon name={isLocked ? 'lock' : 'unlock'} className="w-3 h-3" />
+                                </button>
+                                {animatingLocks.has(idx) && <img src="/success-gif.gif" alt="success" className="w-6 h-6 ml-2" />}
+                            </span>
+                        ) : (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-400 italic rounded border border-dashed border-gray-300 dark:border-gray-600">
+                                <Icon name="plus" className="w-3 h-3" />
+                                Drop here
+                            </span>
+                        )
+                    )}
+                </td>
+                <td className={`whitespace-nowrap ${routeColor} py-1 px-2`}>
+                    <div className="flex flex-col">
+                        <span>
+                            {hasSpecialCode(it.Calendar_Name) && <Icon name="exclamation-triangle" className="w-3 h-3 text-orange-500 mr-1 inline" />}
+                            {getRoute(it.Calendar_Name)}
+                        </span>
+                        <span className="text-gray-500 text-xs">{vh}</span>
+                    </div>
+                </td>
+                <td className="whitespace-nowrap py-1 px-2">{getTasks(it.Calendar_Name)}</td>
+                <td className="whitespace-nowrap py-1 px-2" style={{ color: getAmountColor(it.Order_Value, amountRangeRight) }}>
+                    {it.Order_Value}
+                </td>
+                <td className="py-1 px-2">{it.Contractor}</td>
+                <td className="py-1 px-2">{durationFormatted}</td>
+            </tr>
+        );
+    };
     return (
         <Layout title="Schedule Tool" fullWidth>
             <div className="flex gap-2 w-full h-[calc(100vh-4.5rem)] bg-base-100 dark:bg-base-100">
@@ -980,138 +1111,9 @@ export default function ScheduleTool() {
                                     </thead>
                                     <SortableContext items={itemsRight.map((_, idx) => idx)}>
                                         <tbody className={lockCopy ? 'select-none' : ''}>
-                                            {itemsRight.map((it, idx) => {
-                                        const driverColor = getDriverColor(it.Driver1);
-                                        const routeColor = getRouteColorClass(it.Calendar_Name, routeGroups);
-                                        const isEditing = editingRightIndex === idx;
-                                        const startTime = getTextAfterSpace(it.Start_Time);
-                                        const startClass = getStartClass(startTime);
-                                        const endTime = getTextAfterSpace(it.End_Time);
-                                        const endMinutes = parseTime(it.End_Time);
-                                        const endColor = getTimeColor(endMinutes, timeRangeRightEnd);
-                                        const vh = getVH(it.Calendar_Name);
-                                        const is2DT = vh === '2DT';
-                                        const rowClass = is2DT ? 'text-gray-500' : '';
-                                        const duration = getDuration(it, false);
-                                        const durationFormatted = formatDuration(duration);
-                                        const isSelected = selectedRight.includes(idx);
-                                        const showColorBadge = !is2DT;
-                                        const isLocked = lockedRight.has(idx);
-                                        const allowDnD = !is2DT && !isLocked;
-                                        const { attributes, listeners, setNodeRef, isOver, transform, transition } = useSortable({
-                                            id: idx,
-                                            data: { index: idx },
-                                            disabled: !allowDnD,
-                                        });
-                                        const style = {
-                                            transform: CSS.Transform.toString(transform),
-                                            transition,
-                                        };
-                                        return (
-                                            <tr
-                                                key={it.ID || `right-${idx}`}
-                                                className={`transition-colors duration-150 ${isSelected ? '!bg-gray-900 !dark:bg-gray-900/30' : 'hover:bg-gray-100 dark:hover:bg-gray-700'} ${rowClass}`}
-                                                onMouseDown={(e) => handleMouseDownRight(e, idx)}
-                                                onMouseOver={() => handleMouseOverRight(idx)}
-                                            >
-                                                <td className="py-1 px-2">
-                                                    <span
-                                                        className={`inline-block px-1.5 py-0.5 rounded-full text-xs font-medium ${startClass}`}
-                                                    >
-                                                        {startTime}
-                                                    </span>
-                                                </td>
-                                                <td className="py-1 px-2">
-                                                    {showColorBadge && endColor ? (
-                                                        <span
-                                                            className="inline-block px-1.5 py-0.5 rounded-full text-xs font-medium text-black"
-                                                            style={{ backgroundColor: endColor }}
-                                                        >
-                                                            {endTime}
-                                                        </span>
-                                                    ) : (
-                                                        endTime
-                                                    )}
-                                                </td>
-                                                <td
-                                                    ref={allowDnD ? setNodeRef : undefined}
-                                                    style={allowDnD ? style : undefined}
-                                                    {...(allowDnD ? attributes : {})}
-                                                    {...(allowDnD && it.Driver1 ? listeners : {})}
-                                                    onDragOver={allowDnD ? handleDragOverCell : undefined}
-                                                    onDragLeave={allowDnD ? handleDragLeaveCell : undefined}
-                                                    onDrop={allowDnD ? (e) => handleDropFromLeft(e, idx) : undefined}
-                                                    className={`${driverColor} py-1 px-2 cursor-pointer relative group ${allowDnD && isOver ? 'bg-gray-900 dark:bg-gray-900/30 border-dashed border-2 border-blue-300' : ''}`}
-                                                    onMouseEnter={() => setHoveredRightIndex(idx)}
-                                                    onMouseLeave={() => setHoveredRightIndex(null)}
-                                                    onDoubleClick={() => {
-                                                        if (!isEditing) {
-                                                            setEditingRightIndex(idx);
-                                                            setEditValue(it.Driver1 || '');
-                                                        }
-                                                    }}
-                                                >
-                                                    {isEditing ? (
-                                                        <input
-                                                            type="text"
-                                                            value={editValue}
-                                                            onChange={(e) => setEditValue(e.target.value)}
-                                                            onBlur={() => handleEditBlur(idx)}
-                                                            onKeyDown={(e) => handleEditKeyDown(e, idx)}
-                                                            autoFocus
-                                                            className="input input-xs w-full py-0 px-1 border-blue-300 focus:border-blue-500 rounded"
-                                                        />
-                                                    ) : (
-                                                        it.Driver1 ? (
-                                                            <span
-                                                                className={`inline-flex items-center gap-1 px-2 py-0.5 rounded bg-gray-200 dark:bg-gray-600 hover:shadow-md transition-all duration-150 transform hover:scale-105`}
-                                                            >
-                                                                {isLocked && <div className="w-2 h-2 bg-green-500 rounded-full"></div>}
-                                                                <span>{it.Driver1}</span>
-                                                                {it.fromLeftIndex !== undefined && (
-                                                                    <span
-                                                                        className="underline cursor-pointer text-blue-500 text-xs ml-1"
-                                                                        onClick={() => handleUndoFromRight(it.fromLeftIndex)}
-                                                                        title="Undo assignment"
-                                                                    >
-                                                                        <Icon name="arrow-counterclockwise" className="w-3 h-3" />
-                                                                    </span>
-                                                                )}
-                                                                <button
-                                                                    className="text-gray-500 hover:text-gray-700 ml-1"
-                                                                    onClick={() => toggleLock(idx)}
-                                                                    title={isLocked ? 'Unlock' : 'Lock'}
-                                                                >
-                                                                    <Icon name={isLocked ? 'lock' : 'unlock'} className="w-3 h-3" />
-                                                                </button>
-                                                                {animatingLocks.has(idx) && <img src="/success-gif.gif" alt="success" className="w-6 h-6 ml-2" />}
-                                                            </span>
-                                                        ) : (
-                                                            <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-400 italic rounded border border-dashed border-gray-300 dark:border-gray-600">
-                                                                <Icon name="plus" className="w-3 h-3" />
-                                                                Drop here
-                                                            </span>
-                                                        )
-                                                    )}
-                                                </td>
-                                                <td className={`whitespace-nowrap ${routeColor} py-1 px-2`}>
-                                                    <div className="flex flex-col">
-                                                        <span>
-                                                            {hasSpecialCode(it.Calendar_Name) && <Icon name="exclamation-triangle" className="w-3 h-3 text-orange-500 mr-1 inline" />}
-                                                            {getRoute(it.Calendar_Name)}
-                                                        </span>
-                                                        <span className="text-gray-500 text-xs">{vh}</span>
-                                                    </div>
-                                                </td>
-                                                <td className="whitespace-nowrap py-1 px-2">{getTasks(it.Calendar_Name)}</td>
-                                                <td className="whitespace-nowrap py-1 px-2" style={{ color: getAmountColor(it.Order_Value, amountRangeRight) }}>
-                                                    {it.Order_Value}
-                                                </td>
-                                                <td className="py-1 px-2">{it.Contractor}</td>
-                                                <td className="py-1 px-2">{durationFormatted}</td>
-                                            </tr>
-                                        );
-                                    })}
+                                            {itemsRight.map((it, idx) => (
+                                                <SortableRow key={it.ID || `right-${idx}`} it={it} idx={idx} />
+                                            ))}
                                         </tbody>
                                     </SortableContext>
                                 </table>
