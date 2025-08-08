@@ -108,6 +108,7 @@ export default function ScheduleTool() {
         useSensor(MouseSensor, { activationConstraint: { distance: 5 } }),
         useSensor(TouchSensor)
     );
+    const nativeDrag = useRef(false);
     const [activeDragId, setActiveDragId] = useState<number | null>(null);
     const [activeDragName, setActiveDragName] = useState<string>('');
     const filterIgnored = <T extends { Calendar_Name?: string }>(items: T[]) =>
@@ -710,6 +711,8 @@ export default function ScheduleTool() {
             }
         } catch (err) {
             console.error('Drop error:', err);
+        } finally {
+            nativeDrag.current = false;
         }
     };
     const toggleLock = (idx: number) => {
@@ -735,12 +738,14 @@ export default function ScheduleTool() {
         setLockedRight(newSet);
     };
     const handleDragStart = (event: DragStartEvent) => {
+        if (nativeDrag.current) return;
         const idx = event.active.data.current?.index as number | undefined;
         if (idx === undefined) return;
         setActiveDragId(idx);
         setActiveDragName(itemsRight[idx]?.Driver1 || '');
     };
     const handleDragEnd = (event: DragEndEvent) => {
+        if (nativeDrag.current) return;
         const { active, over } = event;
         setActiveDragId(null);
         setActiveDragName('');
@@ -762,6 +767,7 @@ export default function ScheduleTool() {
     const handleRightDragStart = (e: DragEvent<HTMLTableCellElement>, idx: number) => {
         const it = itemsRight[idx];
         if (!it.Driver1) return;
+        nativeDrag.current = true;
         e.dataTransfer.setData('text/plain', JSON.stringify({ table: 'right', index: idx, name: it.Driver1, fromLeftIndex: it.fromLeftIndex }));
         setDragImage(e, it.Driver1);
     };
@@ -842,6 +848,8 @@ export default function ScheduleTool() {
             }
         } catch (err) {
             console.error('Drop error:', err);
+        } finally {
+            nativeDrag.current = false;
         }
     };
     const SortableRow = ({ it, idx }: { it: Trip; idx: number }) => {
@@ -954,7 +962,6 @@ export default function ScheduleTool() {
                         ) : (
                             <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-400 italic rounded border border-dashed border-gray-300 dark:border-gray-600">
                                 <Icon name="plus" className="w-3 h-3" />
-                                Drop here
                             </span>
                         )
                     )}
