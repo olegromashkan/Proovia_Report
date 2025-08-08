@@ -692,20 +692,26 @@ export default function ScheduleTool() {
                 const prevRoute = getRoute(leftIt.Calendar_Name);
                 const prevCat = getCategory(prevRoute, routeGroups);
                 const routeMatch = prevRoute === targetRoute ? 0 : prevCat === targetCat ? 1 : 2;
+                let diff = start - end;
+                if (diff < 0) diff += 1440;
+                const restWarning =
+                    (timeSettings.enableRestWarning && end > timeSettings.lateEndHour * 60 && start < timeSettings.earlyStartHour * 60) ||
+                    (timeSettings.enableEarlyWarning && end <= timeSettings.earlyEndHour * 60 && start > timeSettings.lateStartHour * 60);
                 return {
                     name: leftIt.Driver1 || '',
                     leftIdx: idx,
-                    diff: start - end,
+                    diff,
                     isAssigned: leftIt.isAssigned,
                     prevRoute,
                     prevCalendar: leftIt.Calendar_Name,
                     routeMatch,
+                    restWarning,
                 };
             })
             .filter(d => allowedDrivers.includes(d.name) && !d.isAssigned)
             .sort((a, b) => {
-                const aDiff = a.diff < 0 ? Infinity : a.diff;
-                const bDiff = b.diff < 0 ? Infinity : b.diff;
+                const aDiff = a.restWarning ? Infinity : a.diff;
+                const bDiff = b.restWarning ? Infinity : b.diff;
                 if (a.routeMatch !== b.routeMatch) return a.routeMatch - b.routeMatch;
                 return aDiff - bDiff;
             });
@@ -1171,16 +1177,16 @@ export default function ScheduleTool() {
                                     <Icon name="plus" className="w-3 h-3" />
                                 </button>
                                 {driverMenuIndex === idx && (
-                                    <div className="absolute z-50 left-0 top-full mt-1 min-w-[300px] bg-base-100 dark:bg-gray-700 border border-gray-300 rounded-lg shadow-lg max-h-80 overflow-auto">
+                                    <div className="absolute z-50 left-0 top-full mt-1 min-w-[300px] bg-base-100 dark:bg-gray-700 border border-gray-300 rounded-lg shadow-lg max-h-80 overflow-y-auto">
                                         {getAvailableDrivers(it).length === 0 ? (
                                             <div className="px-4 py-3 text-gray-400 text-sm">No drivers available</div>
                                         ) : (
                                             getAvailableDrivers(it).map((d) => (
                                                 <div
                                                     key={d.leftIdx}
-                                                    className={`px-4 py-3 cursor-pointer hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-colors ${d.diff < 0 ? 'text-gray-400' : 'text-gray-900 dark:text-gray-100'}`}
+                                                    className={`px-4 py-3 cursor-pointer hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-colors ${d.restWarning ? 'text-gray-400' : 'text-gray-900 dark:text-gray-100'}`}
                                                     onClick={() => assignDriverFromMenu(d.leftIdx, idx)}
-                                                    title={d.diff < 0 ? 'Not enough rest between shifts' : undefined}
+                                                    title={d.restWarning ? 'Not enough rest between shifts' : undefined}
                                                 >
                                                     <div className="flex items-center justify-between">
                                                         <span className="font-medium">{d.name}</span>
@@ -1199,7 +1205,7 @@ export default function ScheduleTool() {
                                                             <span className="text-gray-500">{d.diff} min rest</span>
                                                         )}
                                                     </div>
-                                                    {d.diff < 0 && (
+                                                    {d.restWarning && (
                                                         <span className="mt-1 text-xs text-orange-500 flex items-center gap-1">
                                                             <Icon name="exclamation-triangle" className="w-3 h-3" />
                                                             not enough rest
