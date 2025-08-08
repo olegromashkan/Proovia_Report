@@ -1,4 +1,13 @@
-import { useEffect, useState, DragEvent, ChangeEvent, useRef, KeyboardEvent, useMemo, MouseEvent } from 'react';
+import {
+    useEffect,
+    useState,
+    DragEvent,
+    ChangeEvent,
+    useRef,
+    KeyboardEvent as ReactKeyboardEvent,
+    useMemo,
+    MouseEvent as ReactMouseEvent,
+} from 'react';
 import {
     DndContext,
     DragEndEvent,
@@ -108,6 +117,8 @@ export default function ScheduleTool() {
     const [animatingLocks, setAnimatingLocks] = useState<Set<number>>(new Set());
     const [driverMenuIndex, setDriverMenuIndex] = useState<number | null>(null);
     const [contextMenu, setContextMenu] = useState<{ x: number; y: number; visible: boolean }>({ x: 0, y: 0, visible: false });
+    const menuRef = useRef<HTMLUListElement>(null);
+    const closeContextMenu = () => setContextMenu({ x: 0, y: 0, visible: false });
     const historyRef = useRef<{ leftIdx: number }[]>([]);
     const [actionLog, setActionLog] = useState<{ user: string; action: string; time: number }[]>([]);
     const [logOpen, setLogOpen] = useState(false);
@@ -148,6 +159,44 @@ export default function ScheduleTool() {
             }
         }
     }, [routeGroups, timeSettings, ignoredPatterns]);
+
+    useEffect(() => {
+        const handleClick = (e: MouseEvent) => {
+            if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+                closeContextMenu();
+            }
+        };
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.key === 'Escape') closeContextMenu();
+        };
+        const handleScroll = () => closeContextMenu();
+
+        document.addEventListener('click', handleClick);
+        document.addEventListener('keydown', handleKeyDown);
+        window.addEventListener('scroll', handleScroll, true);
+        window.addEventListener('resize', handleScroll);
+
+        return () => {
+            document.removeEventListener('click', handleClick);
+            document.removeEventListener('keydown', handleKeyDown);
+            window.removeEventListener('scroll', handleScroll, true);
+            window.removeEventListener('resize', handleScroll);
+        };
+    }, []);
+
+    useEffect(() => {
+        if (contextMenu.visible && menuRef.current) {
+            const { innerWidth, innerHeight } = window;
+            const rect = menuRef.current.getBoundingClientRect();
+            let x = contextMenu.x;
+            let y = contextMenu.y;
+            if (x + rect.width > innerWidth) x = innerWidth - rect.width;
+            if (y + rect.height > innerHeight) y = innerHeight - rect.height;
+            if (x !== contextMenu.x || y !== contextMenu.y) {
+                setContextMenu(prev => ({ ...prev, x, y }));
+            }
+        }
+    }, [contextMenu]);
     const updateGroup = (idx: number, group: RouteGroup) => {
         setRouteGroups(arr => arr.map((g, i) => (i === idx ? group : g)));
     };
@@ -602,7 +651,7 @@ export default function ScheduleTool() {
         });
         setEditingRightIndex(null);
     };
-    const handleEditKeyDown = (e: KeyboardEvent<HTMLInputElement>, idx: number) => {
+    const handleEditKeyDown = (e: ReactKeyboardEvent<HTMLInputElement>, idx: number) => {
         if (e.key === 'Enter') {
             handleEditBlur(idx);
         } else if (e.key === 'Escape') {
@@ -709,7 +758,7 @@ export default function ScheduleTool() {
         if (vals.length === 0) return { min: 0, max: 0 };
         return { min: Math.min(...vals), max: Math.max(...vals) };
     }, [itemsRight]);
-    const handleMouseDownLeft = (e: MouseEvent<HTMLTableRowElement>, idx: number) => {
+    const handleMouseDownLeft = (e: ReactMouseEvent<HTMLTableRowElement>, idx: number) => {
         if (disableRowSelection) return;
         if (e.ctrlKey || e.metaKey) {
             setSelectedLeft(prev => prev.includes(idx) ? prev.filter(i => i !== idx) : [...prev, idx]);
@@ -736,7 +785,7 @@ export default function ScheduleTool() {
         setIsSelectingLeft(false);
         // Do not reset startLeftIndex to allow shift select
     };
-    const handleMouseDownRight = (e: MouseEvent<HTMLTableRowElement>, idx: number) => {
+    const handleMouseDownRight = (e: ReactMouseEvent<HTMLTableRowElement>, idx: number) => {
         if (disableRowSelection) return;
         if (e.ctrlKey || e.metaKey) {
             setSelectedRight(prev => prev.includes(idx) ? prev.filter(i => i !== idx) : [...prev, idx]);
@@ -1095,10 +1144,10 @@ export default function ScheduleTool() {
                 className="flex gap-2 w-full h-[calc(100vh-4.5rem)] bg-base-100 dark:bg-base-100"
                 onClick={() => {
                     setDriverMenuIndex(null);
-                    setContextMenu({ x: 0, y: 0, visible: false });
                 }}
                 onContextMenu={(e) => {
                     e.preventDefault();
+                    setDriverMenuIndex(null);
                     setContextMenu({ x: e.clientX, y: e.clientY, visible: true });
                 }}
             >
@@ -1369,14 +1418,39 @@ export default function ScheduleTool() {
             )}
             {contextMenu.visible && (
                 <ul
+                    ref={menuRef}
                     className="menu menu-sm bg-base-200 dark:bg-gray-700 rounded-box absolute z-50"
                     style={{ top: contextMenu.y, left: contextMenu.x }}
                 >
                     <li>
-                        <a onClick={undoLastAction}>Undo</a>
+                        <a
+                            onClick={() => {
+                                undoLastAction();
+                                closeContextMenu();
+                            }}
+                        >
+                            Undo
+                        </a>
                     </li>
                     <li>
-                        <a onClick={() => setLogOpen(true)}>View Log</a>
+                        <a
+                            onClick={() => {
+                                setLogOpen(true);
+                                closeContextMenu();
+                            }}
+                        >
+                            View Log
+                        </a>
+                    </li>
+                    <li>
+                        <a
+                            onClick={() => {
+                                if (typeof window !== 'undefined') window.location.reload();
+                                closeContextMenu();
+                            }}
+                        >
+                            Refresh Page
+                        </a>
                     </li>
                 </ul>
             )}
