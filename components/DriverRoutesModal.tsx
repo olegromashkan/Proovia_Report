@@ -70,24 +70,11 @@ function stylePunctuality(val: number | null) {
 }
 
 export default function DriverRoutesModal({ open, onClose, driver }: DriverRoutesModalProps) {
-    const today = new Date();
-    const sevenAgoDate = new Date();
-    sevenAgoDate.setDate(today.getDate() - 6);
-    const [start, setStart] = useState(formatDate(sevenAgoDate));
-    const [end, setEnd] = useState(formatDate(today));
+    const [start, setStart] = useState('');
+    const [end, setEnd] = useState('');
     const [items, setItems] = useState<Item[]>([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
-
-    useEffect(() => {
-        if (open) {
-            const t = new Date();
-            const s = new Date();
-            s.setDate(t.getDate() - 6);
-            setStart(formatDate(s));
-            setEnd(formatDate(t));
-        }
-    }, [open, driver]);
 
     useEffect(() => {
         if (!open) return;
@@ -95,15 +82,17 @@ export default function DriverRoutesModal({ open, onClose, driver }: DriverRoute
             setLoading(true);
             setError(null);
             try {
-                const params = new URLSearchParams({ start, end }).toString();
+                const params = new URLSearchParams();
+                if (start) params.append('start', start);
+                if (end) params.append('end', end);
                 const res = await fetch(`/api/driver-routes?${params}`);
                 if (!res.ok) throw new Error('Failed to load routes');
                 const data = await res.json();
                 const all = (data.items || []) as Item[];
                 const filtered = all.filter(it => it.driver.trim().toLowerCase() === driver.trim().toLowerCase());
-                // sort by date descending then take latest 7
+                // sort by date descending
                 const sorted = filtered.sort((a, b) => (a.date < b.date ? 1 : -1));
-                setItems(sorted.slice(0, 7));
+                setItems(sorted);
             } catch (err) {
                 setError('Failed to load routes');
                 setItems([]);
