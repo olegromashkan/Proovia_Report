@@ -39,6 +39,7 @@ import {
     formatDuration,
     getDuration,
     computeStats,
+    getCategory,
     getRouteColorClass,
     getAmountColor,
     getTimeColor,
@@ -683,15 +684,29 @@ export default function ScheduleTool() {
     };
     const getAvailableDrivers = (trip: Trip) => {
         const start = parseTime(trip.Start_Time);
+        const targetRoute = getRoute(trip.Calendar_Name);
+        const targetCat = getCategory(targetRoute, routeGroups);
         return itemsLeft
             .map((leftIt, idx) => {
                 const end = parseTime(getActualEnd(leftIt.End_Time, leftIt.Punctuality));
-                return { name: leftIt.Driver1 || '', leftIdx: idx, diff: start - end, isAssigned: leftIt.isAssigned };
+                const prevRoute = getRoute(leftIt.Calendar_Name);
+                const prevCat = getCategory(prevRoute, routeGroups);
+                const routeMatch = prevRoute === targetRoute ? 0 : prevCat === targetCat ? 1 : 2;
+                return {
+                    name: leftIt.Driver1 || '',
+                    leftIdx: idx,
+                    diff: start - end,
+                    isAssigned: leftIt.isAssigned,
+                    prevRoute,
+                    prevCalendar: leftIt.Calendar_Name,
+                    routeMatch,
+                };
             })
             .filter(d => allowedDrivers.includes(d.name) && !d.isAssigned)
             .sort((a, b) => {
                 const aDiff = a.diff < 0 ? Infinity : a.diff;
                 const bDiff = b.diff < 0 ? Infinity : b.diff;
+                if (a.routeMatch !== b.routeMatch) return a.routeMatch - b.routeMatch;
                 return aDiff - bDiff;
             });
     };
@@ -1156,33 +1171,45 @@ export default function ScheduleTool() {
                                     <Icon name="plus" className="w-3 h-3" />
                                 </button>
                                 {driverMenuIndex === idx && (
-                                    <div className="absolute z-50 left-0 top-full mt-1 min-w-[220px] bg-base-100 dark:bg-gray-700 border border-gray-300 rounded shadow-lg max-h-72 overflow-auto">
+                                    <div className="absolute z-50 left-0 top-full mt-1 min-w-[300px] bg-base-100 dark:bg-gray-700 border border-gray-300 rounded-lg shadow-lg max-h-80 overflow-auto">
                                         {getAvailableDrivers(it).length === 0 ? (
-                                            <div className="px-3 py-2 text-gray-400 text-sm">No drivers available</div>
+                                            <div className="px-4 py-3 text-gray-400 text-sm">No drivers available</div>
                                         ) : (
                                             getAvailableDrivers(it).map((d) => (
                                                 <div
                                                     key={d.leftIdx}
-                                                    className={`flex items-center gap-2 px-3 py-2 cursor-pointer hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-colors ${d.diff < 0 ? 'text-gray-400' : 'text-gray-900 dark:text-gray-100'
-                                                        }`}
+                                                    className={`px-4 py-3 cursor-pointer hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-colors ${d.diff < 0 ? 'text-gray-400' : 'text-gray-900 dark:text-gray-100'}`}
                                                     onClick={() => assignDriverFromMenu(d.leftIdx, idx)}
                                                     title={d.diff < 0 ? 'Not enough rest between shifts' : undefined}
                                                 >
-                                                    <span className="font-medium">{d.name}</span>
+                                                    <div className="flex items-center justify-between">
+                                                        <span className="font-medium">{d.name}</span>
+                                                        {d.routeMatch === 0 && (
+                                                            <span className="text-xs text-green-600 font-semibold">Best match</span>
+                                                        )}
+                                                        {d.routeMatch === 1 && (
+                                                            <span className="text-xs text-blue-600">Similar</span>
+                                                        )}
+                                                    </div>
+                                                    <div className="flex items-center justify-between text-xs mt-1">
+                                                        <span className={getRouteColorClass(d.prevCalendar, routeGroups)}>
+                                                            {d.prevRoute || '-'}
+                                                        </span>
+                                                        {d.diff >= 0 && (
+                                                            <span className="text-gray-500">{d.diff} min rest</span>
+                                                        )}
+                                                    </div>
                                                     {d.diff < 0 && (
-                                                        <span className="ml-2 text-xs text-orange-500 flex items-center gap-1">
+                                                        <span className="mt-1 text-xs text-orange-500 flex items-center gap-1">
                                                             <Icon name="exclamation-triangle" className="w-3 h-3" />
                                                             not enough rest
                                                         </span>
                                                     )}
                                                     {d.isAssigned && (
-                                                        <span className="ml-2 text-xs text-green-500 flex items-center gap-1">
+                                                        <span className="mt-1 text-xs text-green-500 flex items-center gap-1">
                                                             <Icon name="check2" className="w-3 h-3" />
                                                             already assigned
                                                         </span>
-                                                    )}
-                                                    {d.diff >= 0 && (
-                                                        <span className="ml-auto text-xs text-gray-500">{d.diff} min rest</span>
                                                     )}
                                                 </div>
                                             ))
