@@ -1,4 +1,17 @@
-import { useEffect, useState, DragEvent, ChangeEvent, useRef, KeyboardEvent, useMemo, MouseEvent } from 'react';
+import { useEffect, useState, ChangeEvent, useRef, KeyboardEvent, useMemo, MouseEvent } from 'react';
+import {
+    DndContext,
+    DragOverlay,
+    MouseSensor,
+    TouchSensor,
+    useSensor,
+    useSensors,
+    DragEndEvent,
+    DragStartEvent,
+    useDraggable,
+    useDroppable,
+} from '@dnd-kit/core';
+import { SortableContext, useSortable } from '@dnd-kit/sortable';
 import Layout from '../components/Layout';
 import Icon from '../components/Icon';
 import Modal from '../components/Modal';
@@ -81,7 +94,6 @@ export default function ScheduleTool() {
     const [ignoredPatterns, setIgnoredPatterns] = useState<string[]>(DEFAULT_IGNORED_PATTERNS);
     const [timeSettings, setTimeSettings] = useState<TimeSettings>(DEFAULT_TIME_SETTINGS);
     const [settingsOpen, setSettingsOpen] = useState(false);
-    const [hoveredRightIndex, setHoveredRightIndex] = useState<number | null>(null);
     const [selectedLeft, setSelectedLeft] = useState<number[]>([]);
     const [selectedRight, setSelectedRight] = useState<number[]>([]);
     const [isSelectingLeft, setIsSelectingLeft] = useState(false);
@@ -92,6 +104,12 @@ export default function ScheduleTool() {
     const [disableRowSelection, setDisableRowSelection] = useState(true);
     const [lockedRight, setLockedRight] = useState<Set<number>>(new Set());
     const [animatingLocks, setAnimatingLocks] = useState<Set<number>>(new Set());
+    const sensors = useSensors(
+        useSensor(MouseSensor, { activationConstraint: { distance: 5 } }),
+        useSensor(TouchSensor, { activationConstraint: { distance: 5 } })
+    );
+    const [activeDrag, setActiveDrag] = useState<{ name: string; source: string; index: number } | null>(null);
+    const { setNodeRef: setLeftDropRef } = useDroppable({ id: 'left-table' });
     const filterIgnored = <T extends { Calendar_Name?: string }>(items: T[]) =>
         items.filter(it =>
             !ignoredPatterns.some(pat =>
@@ -659,41 +677,6 @@ export default function ScheduleTool() {
         setIsSelectingRight(false);
         // Do not reset startRightIndex to allow shift select
     };
-    const setDragImage = (e: DragEvent<HTMLTableCellElement>, name: string) => {
-        const ghost = document.createElement('div');
-        ghost.style.position = 'absolute';
-        ghost.style.top = '-9999px';
-        ghost.style.backgroundColor = '#ffffff';
-        ghost.style.border = '1px solid #e5e7eb';
-        ghost.style.padding = '6px 12px';
-        ghost.style.borderRadius = '6px';
-        ghost.style.boxShadow = '0 4px 6px rgba(0,0,0,0.1)';
-        ghost.style.fontSize = '14px';
-        ghost.style.fontWeight = '500';
-        ghost.style.color = '#1f2937';
-        ghost.style.display = 'flex';
-        ghost.style.alignItems = 'center';
-        ghost.style.gap = '4px';
-        ghost.innerHTML = `<svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>${name}`;
-        document.body.appendChild(ghost);
-        e.dataTransfer?.setDragImage(ghost, 10, 10);
-        setTimeout(() => document.body.removeChild(ghost), 0);
-    };
-    const handleLeftDrop = (e: DragEvent<HTMLDivElement>) => {
-        e.preventDefault();
-        try {
-            const data = JSON.parse(e.dataTransfer.getData('text/plain'));
-            if (data.table === 'right') {
-                const name = data.name;
-                const leftIdx = itemsLeft.findIndex(it => it.Driver1 === name && it.isAssigned);
-                if (leftIdx !== -1) {
-                    handleUndoFromRight(leftIdx);
-                }
-            }
-        } catch (err) {
-            console.error('Drop error:', err);
-        }
-    };
     const toggleLock = (idx: number) => {
         const newSet = new Set(lockedRight);
         const isLocking = !newSet.has(idx);
@@ -716,11 +699,99 @@ export default function ScheduleTool() {
         }
         setLockedRight(newSet);
     };
+    const handleDragStart = (event: DragStartEvent) => {
+        const data = event.active.data.current as { name?: string; source: string; index: number };
+        if (data?.name) {
+            setActiveDrag({ name: data.name, source: data.source, index: data.index });
+        }
+    };
+    const handleDragEnd = (event: DragEndEvent) => {
+        const { active, over } = event;
+        const activeData = active.data.current as { name: string; source: string; index: number };
+        setActiveDrag(null);
+        if (!over || !activeData?.name) return;
+        const overId = over.id.toString();
+        if (activeData.source === 'right' && overId === 'left-table') {
+            const leftIdx = itemsLeft.findIndex(it => it.Driver1 === activeData.name && it.isAssigned);
+            if (leftIdx !== -1) {
+                handleUndoFromRight(leftIdx);
+            }
+            return;
+        }
+        if (!overId.startsWith('right-')) return;
+        const targetIdx = parseInt(overId.replace('right-', ''), 10);
+        const targetItem = itemsRight[targetIdx];
+        if (activeData.source === 'right') {
+            const sourceIdx = activeData.index;
+            if (sourceIdx === targetIdx) return;
+            updateRight(arr => {
+                const copy = [...arr];
+                const tempDriver = copy[targetIdx].Driver1;
+                const tempFrom = copy[targetIdx].fromLeftIndex;
+                copy[targetIdx].Driver1 = copy[sourceIdx].Driver1;
+                copy[targetIdx].fromLeftIndex = copy[sourceIdx].fromLeftIndex;
+                copy[sourceIdx].Driver1 = tempDriver;
+                copy[sourceIdx].fromLeftIndex = tempFrom;
+                return copy;
+            });
+            return;
+        }
+        if (activeData.source === 'left') {
+            const leftItem = itemsLeft[activeData.index];
+            let restMessage = '';
+            const actualEnd = parseTime(getActualEnd(leftItem?.End_Time, leftItem?.Punctuality));
+            const targetStart = parseTime(targetItem.Start_Time);
+            if (!isNaN(actualEnd) && !isNaN(targetStart)) {
+                if (timeSettings.enableRestWarning && actualEnd > timeSettings.lateEndHour * 60 && targetStart < timeSettings.earlyStartHour * 60) {
+                    restMessage = timeSettings.restMessage;
+                } else if (timeSettings.enableEarlyWarning && actualEnd <= timeSettings.earlyEndHour * 60 && targetStart > timeSettings.lateStartHour * 60) {
+                    restMessage = timeSettings.earlyMessage;
+                }
+            }
+            const showRestNotification = () => {
+                if (restMessage) {
+                    setNotification(restMessage);
+                    setTimeout(() => setNotification(null), 4000);
+                }
+            };
+            const name = activeData.name;
+            const isDuplicate = itemsRight.some(item => item.Driver1 === name && item.ID !== targetItem.ID);
+            const action = () => {
+                updateRight(arr => {
+                    const copy = [...arr];
+                    const oldFromLeftIndex = copy[targetIdx].fromLeftIndex;
+                    const oldDriver1 = copy[targetIdx].Driver1;
+                    copy[targetIdx] = { ...copy[targetIdx], Driver1: name, fromLeftIndex: activeData.index };
+                    updateLeft(leftArr => {
+                        const leftCopy = [...leftArr];
+                        leftCopy[activeData.index] = { ...leftCopy[activeData.index], isAssigned: true };
+                        if (oldFromLeftIndex !== undefined && oldDriver1) {
+                            leftCopy[oldFromLeftIndex] = { ...leftCopy[oldFromLeftIndex], isAssigned: false };
+                        }
+                        return sortItems(leftCopy);
+                    });
+                    return copy;
+                });
+                showRestNotification();
+            };
+            if (isDuplicate) {
+                setWarningModal({
+                    action: () => {
+                        action();
+                        setWarningModal(null);
+                    }
+                });
+                return;
+            }
+            action();
+        }
+    };
     return (
+        <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
         <Layout title="Schedule Tool" fullWidth>
             <div className="flex gap-2 w-full h-[calc(100vh-4.5rem)] bg-base-100 dark:bg-base-100">
                 {/* Left Table */}
-                <div className="flex-1 min-w-0 flex flex-col border-r border-gray-200 dark:border-gray-700 relative" onMouseUp={handleMouseUpLeft} onDragOver={(e) => e.preventDefault()} onDrop={handleLeftDrop}>
+                <div ref={setLeftDropRef} className="flex-1 min-w-0 flex flex-col border-r border-gray-200 dark:border-gray-700 relative" onMouseUp={handleMouseUpLeft}>
                     {renderStats(leftStats, clearAllLeft)}
                     <div className="flex-1 overflow-auto relative">
                         {isLoading ? (
@@ -758,6 +829,11 @@ export default function ScheduleTool() {
                                         const vh = getVH(it.Calendar_Name);
                                         const isSelected = selectedLeft.includes(idx);
                                         const showColorBadge = vh !== '2DT' && isAllowed;
+                                        const { attributes, listeners, setNodeRef } = useDraggable({
+                                            id: `left-${idx}`,
+                                            data: { source: 'left', index: idx, name: it.Driver1 },
+                                            disabled: !(isAllowed && !it.isAssigned),
+                                        });
                                         return (
                                             <tr
                                                 key={it.ID || `left-${idx}`}
@@ -786,12 +862,6 @@ export default function ScheduleTool() {
                                                     )}
                                                 </td>
                                                 <td
-                                                    draggable={isAllowed && !it.isAssigned}
-                                                    onDragStart={(e) => {
-                                                        e.dataTransfer.setData('text/plain', JSON.stringify({ table: 'left', index: idx, name: it.Driver1 }));
-                                                        setDragImage(e, it.Driver1 || '');
-                                                    }}
-                                                    onDragOver={(e) => e.preventDefault()}
                                                     className={`${driverColor} py-1 px-2 ${it.isAssigned ? 'text-gray-500 line-through' : ''} ${isAllowed && !it.isAssigned ? 'cursor-grab hover:bg-gray-200 dark:hover:bg-gray-600 rounded transition-colors duration-150' : ''}`}
                                                 >
                                                     {it.isAssigned ? (
@@ -807,6 +877,9 @@ export default function ScheduleTool() {
                                                         </div>
                                                     ) : (
                                                         <span
+                                                            ref={setNodeRef}
+                                                            {...listeners}
+                                                            {...attributes}
                                                             className={`inline-flex items-center gap-1 px-2 py-0.5 rounded ${isAllowed ? 'bg-gray-200 dark:bg-gray-600 hover:shadow-md transition-all duration-150 transform hover:scale-105' : 'bg-gray-100 dark:bg-gray-700 text-gray-400 opacity-60'}`}
                                                         >
                                                             <span>{it.Driver1}</span>
@@ -870,6 +943,7 @@ export default function ScheduleTool() {
                                     </tr>
                                 </thead>
                                 <tbody className={lockCopy ? 'select-none' : ''}>
+                                    <SortableContext items={itemsRight.map((_, idx) => `right-${idx}`)}>
                                     {itemsRight.map((it, idx) => {
                                         const driverColor = getDriverColor(it.Driver1);
                                         const routeColor = getRouteColorClass(it.Calendar_Name, routeGroups);
@@ -884,10 +958,20 @@ export default function ScheduleTool() {
                                         const rowClass = is2DT ? 'text-gray-500' : '';
                                         const duration = getDuration(it, false);
                                         const durationFormatted = formatDuration(duration);
-                                        const isHovered = hoveredRightIndex === idx;
                                         const isSelected = selectedRight.includes(idx);
                                         const showColorBadge = !is2DT;
                                         const isLocked = lockedRight.has(idx);
+                                        const {
+                                            attributes,
+                                            listeners,
+                                            setNodeRef,
+                                            isDragging,
+                                            isOver,
+                                        } = useSortable({
+                                            id: `right-${idx}`,
+                                            data: { source: 'right', index: idx, name: it.Driver1 },
+                                            disabled: isLocked || is2DT,
+                                        });
                                         return (
                                             <tr
                                                 key={it.ID || `right-${idx}`}
@@ -915,104 +999,8 @@ export default function ScheduleTool() {
                                                     )}
                                                 </td>
                                                 <td
-                                                    draggable={!!it.Driver1 && !isLocked}
-                                                    onDragStart={(e) => {
-                                                        if (!!it.Driver1 && !isLocked) {
-                                                            e.dataTransfer.setData('text/plain', JSON.stringify({ table: 'right', index: idx, name: it.Driver1 }));
-                                                            setDragImage(e, it.Driver1 || '');
-                                                        }
-                                                    }}
-                                                    onDragOver={(e) => {
-                                                        if (!isLocked) {
-                                                            e.preventDefault();
-                                                            e.currentTarget.classList.add('bg-gray-900', 'dark:bg-gray-900/30', 'border-dashed', 'border-2', 'border-blue-300');
-                                                        }
-                                                    }}
-                                                    onDragLeave={(e) => {
-                                                        e.currentTarget.classList.remove('bg-gray-900', 'dark:bg-gray-900/30', 'border-dashed', 'border-2', 'border-blue-300');
-                                                    }}
-                                                    onDrop={(e) => {
-                                                        if (isLocked) return;
-                                                        e.preventDefault();
-                                                        e.currentTarget.classList.remove('bg-gray-900', 'dark:bg-gray-900/30', 'border-dashed', 'border-2', 'border-blue-300');
-                                                        try {
-                                                            const data = JSON.parse(e.dataTransfer.getData('text/plain'));
-                                                            const name = data.name;
-                                                            if (!name) return;
-                                                            let restMessage = '';
-                                                            if (data.table === 'left') {
-                                                                const leftItem = itemsLeft[data.index];
-                                                                const actualEnd = parseTime(getActualEnd(leftItem?.End_Time, leftItem?.Punctuality));
-                                                                const targetStart = parseTime(it.Start_Time);
-                                                                if (!isNaN(actualEnd) && !isNaN(targetStart)) {
-                                                                    if (timeSettings.enableRestWarning && actualEnd > timeSettings.lateEndHour * 60 && targetStart < timeSettings.earlyStartHour * 60) {
-                                                                        restMessage = timeSettings.restMessage;
-                                                                    } else if (timeSettings.enableEarlyWarning && actualEnd <= timeSettings.earlyEndHour * 60 && targetStart > timeSettings.lateStartHour * 60) {
-                                                                        restMessage = timeSettings.earlyMessage;
-                                                                    }
-                                                                }
-                                                            } else if (data.table === 'right') {
-                                                                const sourceIdx = data.index;
-                                                                if (sourceIdx === idx) return;
-                                                                updateRight((arr) => {
-                                                                    const copy = [...arr];
-                                                                    const tempDriver = copy[idx].Driver1;
-                                                                    const tempFrom = copy[idx].fromLeftIndex;
-                                                                    copy[idx].Driver1 = copy[sourceIdx].Driver1;
-                                                                    copy[idx].fromLeftIndex = copy[sourceIdx].fromLeftIndex;
-                                                                    copy[sourceIdx].Driver1 = tempDriver;
-                                                                    copy[sourceIdx].fromLeftIndex = tempFrom;
-                                                                    return copy;
-                                                                });
-                                                                return;
-                                                            }
-                                                            const showRestNotification = () => {
-                                                                if (restMessage) {
-                                                                    setNotification(restMessage);
-                                                                    setTimeout(() => setNotification(null), 4000);
-                                                                }
-                                                            };
-                                                            const isDuplicate = itemsRight.some(item => item.Driver1 === name && item.ID !== it.ID);
-                                                            const action = () => {
-                                                                updateRight((arr) => {
-                                                                    const copy = [...arr];
-                                                                    const oldFromLeftIndex = copy[idx].fromLeftIndex;
-                                                                    const oldDriver1 = copy[idx].Driver1;
-                                                                    copy[idx] = { ...copy[idx], Driver1: name };
-                                                                    if (data.table === 'left') {
-                                                                        copy[idx].fromLeftIndex = data.index;
-                                                                        updateLeft((leftArr) => {
-                                                                            const leftCopy = [...leftArr];
-                                                                            leftCopy[data.index] = { ...leftCopy[data.index], isAssigned: true };
-                                                                            if (oldFromLeftIndex !== undefined && oldDriver1) {
-                                                                                leftCopy[oldFromLeftIndex] = { ...leftCopy[oldFromLeftIndex], isAssigned: false };
-                                                                            }
-                                                                            return sortItems(leftCopy);
-                                                                        });
-                                                                    } else {
-                                                                        copy[idx].fromLeftIndex = undefined;
-                                                                    }
-                                                                    return copy;
-                                                                });
-                                                                showRestNotification();
-                                                            };
-                                                            if (isDuplicate) {
-                                                                setWarningModal({
-                                                                    action: () => {
-                                                                        action();
-                                                                        setWarningModal(null);
-                                                                    }
-                                                                });
-                                                                return;
-                                                            }
-                                                            action();
-                                                        } catch (err) {
-                                                            console.error('Drop error:', err);
-                                                        }
-                                                    }}
-                                                    className={`${driverColor} py-1 px-2 cursor-pointer relative group`}
-                                                    onMouseEnter={() => setHoveredRightIndex(idx)}
-                                                    onMouseLeave={() => setHoveredRightIndex(null)}
+                                                    ref={setNodeRef}
+                                                    className={`${driverColor} py-1 px-2 cursor-pointer relative group ${isOver ? 'bg-gray-900 dark:bg-gray-900/30 border-dashed border-2 border-blue-300' : ''}`}
                                                     onDoubleClick={() => {
                                                         if (!isEditing) {
                                                             setEditingRightIndex(idx);
@@ -1033,6 +1021,9 @@ export default function ScheduleTool() {
                                                     ) : (
                                                         it.Driver1 ? (
                                                             <span
+                                                                {...attributes}
+                                                                {...listeners}
+                                                                style={{ opacity: isDragging ? 0.4 : 1 }}
                                                                 className={`inline-flex items-center gap-1 px-2 py-0.5 rounded bg-gray-200 dark:bg-gray-600 hover:shadow-md transition-all duration-150 transform hover:scale-105`}
                                                             >
                                                                 {isLocked && <div className="w-2 h-2 bg-green-500 rounded-full"></div>}
@@ -1081,6 +1072,7 @@ export default function ScheduleTool() {
                                             </tr>
                                         );
                                     })}
+                                    </SortableContext>
                                 </tbody>
                             </table>
                         )}
@@ -1182,5 +1174,13 @@ export default function ScheduleTool() {
                 </div>
             )}
         </Layout>
+        <DragOverlay>
+            {activeDrag ? (
+                <div className="px-2 py-1 bg-white border border-gray-300 rounded shadow text-sm font-medium text-gray-800">
+                    {activeDrag.name}
+                </div>
+            ) : null}
+        </DragOverlay>
+        </DndContext>
     );
 }

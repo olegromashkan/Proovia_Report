@@ -19,6 +19,8 @@
     "framer-motion": "^12.17.3",
     "lodash": "^4.17.21",
     "lucide-react": "^0.514.0",
+    "@dnd-kit/core": "^6.1.0",
+    "@dnd-kit/sortable": "^7.0.0",
     "next": "latest",
     "plotly.js-dist": "^2.30.0",
     "react": "latest",
