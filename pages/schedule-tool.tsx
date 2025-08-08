@@ -27,6 +27,7 @@ import ActionLogModal from '../components/ActionLogModal';
 import ScheduleNotesSidebar from '../components/ScheduleNotesSidebar';
 import ScheduleSettingsModal from '../components/ScheduleSettingsModal';
 import ScheduleSelectedStats from '../components/ScheduleSelectedStats';
+import DriverRoutesModal from '../components/DriverRoutesModal';
 import { Trip, RouteGroup, TimeSettings } from '../types/schedule';
 import {
     parseTime,
@@ -117,8 +118,13 @@ export default function ScheduleTool() {
     const [animatingLocks, setAnimatingLocks] = useState<Set<number>>(new Set());
     const [driverMenuIndex, setDriverMenuIndex] = useState<number | null>(null);
     const [contextMenu, setContextMenu] = useState<{ x: number; y: number; visible: boolean }>({ x: 0, y: 0, visible: false });
+    const [contextMenuDriver, setContextMenuDriver] = useState<string | null>(null);
+    const [routesModalDriver, setRoutesModalDriver] = useState<string | null>(null);
     const menuRef = useRef<HTMLUListElement>(null);
-    const closeContextMenu = () => setContextMenu({ x: 0, y: 0, visible: false });
+    const closeContextMenu = () => {
+        setContextMenu({ x: 0, y: 0, visible: false });
+        setContextMenuDriver(null);
+    };
     const historyRef = useRef<{ leftIdx: number }[]>([]);
     const [actionLog, setActionLog] = useState<{ user: string; action: string; time: number }[]>([]);
     const [logOpen, setLogOpen] = useState(false);
@@ -1090,6 +1096,13 @@ export default function ScheduleTool() {
                     className={`${driverColor} py-1 px-2 cursor-pointer relative group ${allowDnD && isOver ? 'bg-gray-900 dark:bg-gray-900/30 border-dashed border-2 border-blue-300' : ''}`}
                     onMouseEnter={() => setHoveredRightIndex(idx)}
                     onMouseLeave={() => setHoveredRightIndex(null)}
+                    onContextMenu={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        setDriverMenuIndex(null);
+                        if (it.Driver1) setContextMenuDriver(it.Driver1);
+                        setContextMenu({ x: e.clientX, y: e.clientY, visible: true });
+                    }}
                     onDoubleClick={() => {
                         if (!isEditing) {
                             setEditingRightIndex(idx);
@@ -1187,6 +1200,7 @@ export default function ScheduleTool() {
                 onContextMenu={(e) => {
                     e.preventDefault();
                     setDriverMenuIndex(null);
+                    setContextMenuDriver(null);
                     setContextMenu({ x: e.clientX, y: e.clientY, visible: true });
                 }}
             >
@@ -1481,6 +1495,18 @@ export default function ScheduleTool() {
                             View Log
                         </a>
                     </li>
+                    {contextMenuDriver && (
+                        <li>
+                            <a
+                                onClick={() => {
+                                    setRoutesModalDriver(contextMenuDriver);
+                                    closeContextMenu();
+                                }}
+                            >
+                                Previous Routes
+                            </a>
+                        </li>
+                    )}
                     <li>
                         <a
                             onClick={() => {
@@ -1494,6 +1520,11 @@ export default function ScheduleTool() {
                 </ul>
             )}
             <ActionLogModal open={logOpen} onClose={() => setLogOpen(false)} log={actionLog} />
+            <DriverRoutesModal
+                open={routesModalDriver !== null}
+                driver={routesModalDriver || ''}
+                onClose={() => setRoutesModalDriver(null)}
+            />
         </Layout>
     );
 }
