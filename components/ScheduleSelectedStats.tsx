@@ -1,16 +1,14 @@
 import Icon from './Icon';
 import { Trip } from '../types/schedule';
+import { getTasks, getDuration, formatDuration } from '../lib/scheduleUtils';
 
 interface Props {
     selected: number[];
     items: Trip[];
     isLeft: boolean;
-    getTasks: (text?: string) => string;
-    getDuration: (it: Trip, isLeft: boolean) => number;
-    formatDuration: (minutes: number) => string;
 }
 
-export default function ScheduleSelectedStats({ selected, items, isLeft, getTasks, getDuration, formatDuration }: Props) {
+export default function ScheduleSelectedStats({ selected, items, isLeft }: Props) {
     if (selected.length <= 1) return null;
     const selectedItems = items.filter((_, i) => selected.includes(i));
     let totalTasks = 0, countTasks = 0, totalAmount = 0, countAmount = 0, totalPunct = 0, countPunct = 0, totalDuration = 0, countDuration = 0;

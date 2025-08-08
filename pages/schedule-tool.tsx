@@ -6,7 +6,21 @@ import ScheduleNotesSidebar from '../components/ScheduleNotesSidebar';
 import ScheduleSettingsModal from '../components/ScheduleSettingsModal';
 import ScheduleSelectedStats from '../components/ScheduleSelectedStats';
 import { Trip, RouteGroup, TimeSettings } from '../types/schedule';
-import { parseTimeToMinutes } from '../lib/timeUtils';
+import {
+    parseTime,
+    getActualEnd,
+    getRoute,
+    getTasks,
+    getVH,
+    hasSpecialCode,
+    formatDuration,
+    getDuration,
+    computeStats,
+    getRouteColorClass,
+    getAmountColor,
+    getTimeColor,
+    getTextAfterSpace,
+} from '../lib/scheduleUtils';
 const DEFAULT_IGNORED_PATTERNS = [
     'every 2nd day north',
     'everyday',
@@ -359,72 +373,6 @@ export default function ScheduleTool() {
         setSortRight({ key, dir });
         updateRight((arr) => sortBy(arr, key, dir));
     };
-    // Helper function to extract text after the first space
-    const getTextAfterSpace = (text?: string) => {
-        if (!text) return '';
-        const index = text.indexOf(' ');
-        return index !== -1 ? text.substring(index + 1) : text;
-    };
-    // Helper to parse HH:mm or similar time strings into minutes
-    const parseTime = (time?: string): number => {
-        if (!time) return NaN;
-        const minutes = parseTimeToMinutes(getTextAfterSpace(time));
-        return minutes === null ? NaN : minutes;
-    };
-    // Helper to compute Actual End time = End_Time plus Punctuality minutes
-    const getActualEnd = (endTime?: string, punctuality?: string) => {
-        if (!endTime) return '';
-        const endDate = new Date(endTime);
-        if (isNaN(endDate.getTime())) return '';
-        const mins = parseInt(punctuality || '0', 10);
-        const actual = new Date(endDate.getTime() + (isNaN(mins) ? 0 : mins) * 60000);
-        return actual.toTimeString().slice(0, 5);
-    };
-    // Helper function to extract Calendar: after ":" up to "("
-    const getCalendar = (text?: string) => {
-        if (!text) return '';
-        const colonIndex = text.indexOf(':');
-        if (colonIndex === -1) return '';
-        const parenIndex = text.indexOf('(', colonIndex);
-        if (parenIndex === -1) return text.substring(colonIndex + 1).trim();
-        return text.substring(colonIndex + 1, parenIndex).trim();
-    };
-    // Helper function to get Route: just getCalendar
-    const getRoute = (text?: string) => {
-        return getCalendar(text);
-    };
-    // Helper function to extract Tasks: after "(" up to ")"
-    const getTasks = (text?: string) => {
-        if (!text) return '';
-        const openParen = text.indexOf('(');
-        if (openParen === -1) return '';
-        const closeParen = text.indexOf(')', openParen);
-        if (closeParen === -1) return text.substring(openParen + 1).trim();
-        return text.substring(openParen + 1, closeParen).trim();
-    };
-    // Helper function to extract VH: after "-" up to next "-"
-    const getVH = (text?: string) => {
-        if (!text) return '';
-        const routeUpper = getRoute(text)?.toUpperCase().replace(/[\s+]+/g, '+') || '';
-        const twoDTKeywords = new Set(['EDINBURGH', 'GLASGOW', 'ABERDEEN', 'EX+TR', 'INVERNESS', 'TQ+PL']);
-        if (Array.from(twoDTKeywords).some(kw => routeUpper.includes(kw))) {
-            return '2DT';
-        }
-        const firstDash = text.indexOf('-');
-        if (firstDash === -1) return '';
-        const secondDash = text.indexOf('-', firstDash + 1);
-        if (secondDash === -1) return text.substring(firstDash + 1).trim();
-        return text.substring(firstDash + 1, secondDash).trim();
-    };
-    const specialCodes = new Set(['LA', 'EX', 'CA', 'TQ', 'NE', 'ME', 'CT', 'SA', 'NR']);
-    // Helper function to check if route has special code
-    const hasSpecialCode = (calendarName?: string) => {
-        const calendar = getCalendar(calendarName);
-        if (!calendar) return false;
-        if (calendar.includes('EX+TR')) return false;
-        const parts = calendar.split(/[\s+]+/).map(p => p.trim()).filter(Boolean);
-        return parts.some(part => specialCodes.has(part));
-    };
     // Helper function to get color class for driver based on notes
     const getDriverColor = (driverName: string | undefined) => {
         if (!driverName) return '';
@@ -434,43 +382,6 @@ export default function ScheduleTool() {
             }
         }
         return '';
-    };
-    // Helper function to get color class for route
-    const getRouteColorClass = (route?: string): string => {
-        if (!route) return 'text-white';
-        let upper = route.toUpperCase().replace(/[\s+]+/g, '+');
-        for (const group of routeGroups) {
-            if (group.isFull) {
-                if (group.codes.includes(upper)) return group.color;
-            } else {
-                const parts = upper.split('+').map(p => p.trim()).filter(p => p !== '');
-                if (parts.some(p => group.codes.includes(p))) return group.color;
-            }
-        }
-        return 'text-white';
-    };
-    const getCategory = (route: string): string => {
-        let upper = route.toUpperCase().replace(/[\s+]+/g, '+');
-        for (const cat of routeGroups) {
-            if (cat.isFull) {
-                if (cat.codes.includes(upper)) return cat.name;
-            } else {
-                const parts = upper.split('+').map(p => p.trim()).filter(p => p !== '');
-                if (parts.some(p => cat.codes.includes(p))) return cat.name;
-            }
-        }
-        return 'Other';
-    };
-    const computeStats = (items: Trip[]) => {
-        const counts: Record<string, number> = {};
-        let total = 0;
-        items.forEach(it => {
-            const route = getRoute(it.Calendar_Name);
-            const cat = getCategory(route);
-            counts[cat] = (counts[cat] || 0) + 1;
-            total++;
-        });
-        return { counts, total };
     };
     const sortItems = (items: Trip[]): Trip[] => {
         const allowedDrivers = (notes['Available Drivers'] || '').split('\n').map(d => d.trim()).filter(d => d);
@@ -538,8 +449,8 @@ export default function ScheduleTool() {
             return [...sortedAllowed, ...notAllowed];
         }
     };
-    const leftStats = useMemo(() => computeStats(itemsLeft), [itemsLeft, routeGroups]);
-    const rightStats = useMemo(() => computeStats(itemsRight), [itemsRight, routeGroups]);
+    const leftStats = useMemo(() => computeStats(itemsLeft, routeGroups), [itemsLeft, routeGroups]);
+    const rightStats = useMemo(() => computeStats(itemsRight, routeGroups), [itemsRight, routeGroups]);
     const amountRangeLeft = useMemo(() => {
         const vals = itemsLeft.map(it => parseFloat(it.Order_Value || '0')).filter(v => !isNaN(v));
         if (vals.length === 0) return { min: 0, max: 0, lower: 0, upper: 0 };
@@ -572,32 +483,6 @@ export default function ScheduleTool() {
         const maxNonOutlier = nonOutliers.length > 0 ? Math.max(...nonOutliers) : Math.max(...vals);
         return { min: minNonOutlier, max: maxNonOutlier, lower, upper };
     }, [itemsRight]);
-    const getAmountColor = (val: string | undefined, range: { min: number; max: number; lower: number; upper: number }) => {
-        const num = parseFloat(val || '');
-        if (isNaN(num)) return 'text-gray-500';
-        if (num < range.lower || num > range.upper) return 'text-gray-800';
-        const ratio = range.max === range.min ? 0 : (num - range.min) / (range.max - range.min);
-        const hue = 0 + ratio * 120;
-        return `hsl(${hue}, 70%, 50%)`;
-    };
-    const getTimeColor = (val: number, range: { min: number; max: number }) => {
-        if (isNaN(val)) return '';
-        const ratio = range.max === range.min ? 0 : (val - range.min) / (range.max - range.min);
-        if (ratio < 0.25) {
-            const lightness = 90 - ratio * 4 * 20;
-            return `hsl(120, 60%, ${lightness}%)`;
-        } else if (ratio < 0.5) {
-            const hue = 120 - (ratio - 0.25) * 4 * 60;
-            return `hsl(${hue}, 60%, 70%)`;
-        } else if (ratio < 0.75) {
-            const hue = 60 - (ratio - 0.5) * 4 * 30;
-            return `hsl(${hue}, 60%, 70%)`;
-        } else {
-            const hue = 30 - (ratio - 0.75) * 4 * 30;
-            const lightness = 70 - (ratio - 0.75) * 4 * 20;
-            return `hsl(${hue}, 60%, ${lightness}%)`;
-        }
-    };
     const renderStats = (stats: { counts: Record<string, number>, total: number }, clearFn: () => void) => (
         <div className="text-xs flex flex-wrap gap-1 items-center bg-base-200 dark:bg-base-100 p-1 rounded-md shadow-sm">
             {routeGroups.map(cat => (
@@ -720,23 +605,6 @@ export default function ScheduleTool() {
         if (vals.length === 0) return { min: 0, max: 0 };
         return { min: Math.min(...vals), max: Math.max(...vals) };
     }, [itemsRight]);
-    const formatDuration = (minutes: number): string => {
-        if (isNaN(minutes) || minutes < 0) return '--:--';
-        const hours = Math.floor(minutes / 60);
-        const mins = minutes % 60;
-        return `${hours.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}`;
-    };
-    const getDuration = (it: Trip, isLeft: boolean) => {
-        if (isLeft) {
-            const start = parseTime(it.Start_Time);
-            const actualEnd = parseTime(getActualEnd(it.End_Time, it.Punctuality));
-            return isNaN(start) || isNaN(actualEnd) ? NaN : actualEnd - start;
-        } else {
-            const start = parseTime(it.Start_Time);
-            const end = parseTime(it.End_Time);
-            return isNaN(start) || isNaN(end) ? NaN : end - start;
-        }
-    };
     const handleMouseDownLeft = (e: MouseEvent<HTMLTableRowElement>, idx: number) => {
         if (disableRowSelection) return;
         if (e.ctrlKey || e.metaKey) {
@@ -878,7 +746,7 @@ export default function ScheduleTool() {
                                 <tbody className={lockCopy ? 'select-none' : ''}>
                                     {itemsLeft.map((it, idx) => {
                                         const driverColor = getDriverColor(it.Driver1);
-                                        const routeColor = getRouteColorClass(it.Calendar_Name);
+                                        const routeColor = getRouteColorClass(it.Calendar_Name, routeGroups);
                                         const isAllowed = allowedDrivers.includes(it.Driver1 || '');
                                         const startTime = getTextAfterSpace(it.Start_Time);
                                         const startClass = getStartClass(startTime);
@@ -977,9 +845,6 @@ export default function ScheduleTool() {
                         selected={selectedLeft}
                         items={itemsLeft}
                         isLeft={true}
-                        getTasks={getTasks}
-                        getDuration={getDuration}
-                        formatDuration={formatDuration}
                     />
                 </div>
                 {/* Right Table */}
@@ -1007,7 +872,7 @@ export default function ScheduleTool() {
                                 <tbody className={lockCopy ? 'select-none' : ''}>
                                     {itemsRight.map((it, idx) => {
                                         const driverColor = getDriverColor(it.Driver1);
-                                        const routeColor = getRouteColorClass(it.Calendar_Name);
+                                        const routeColor = getRouteColorClass(it.Calendar_Name, routeGroups);
                                         const isEditing = editingRightIndex === idx;
                                         const startTime = getTextAfterSpace(it.Start_Time);
                                         const startClass = getStartClass(startTime);
@@ -1224,9 +1089,6 @@ export default function ScheduleTool() {
                         selected={selectedRight}
                         items={itemsRight}
                         isLeft={false}
-                        getTasks={getTasks}
-                        getDuration={getDuration}
-                        formatDuration={formatDuration}
                     />
                 </div>
                 <ScheduleNotesSidebar
