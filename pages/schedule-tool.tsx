@@ -585,11 +585,14 @@ export default function ScheduleTool() {
         </div>
     );
     const handleUndo = (leftIdx: number) => {
+        const rightIdx = itemsRight.findIndex((item) => item.fromLeftIndex === leftIdx);
+        const route = rightIdx !== -1 ? getRoute(itemsRight[rightIdx].Calendar_Name) : '';
+        const driver = rightIdx !== -1 ? itemsRight[rightIdx].Driver1 || '' : '';
         updateRight((arr) => {
             const copy = [...arr];
-            const rightIdx = copy.findIndex((item) => item.fromLeftIndex === leftIdx);
-            if (rightIdx !== -1) {
-                copy[rightIdx] = { ...copy[rightIdx], Driver1: '', fromLeftIndex: undefined };
+            const idx = copy.findIndex((item) => item.fromLeftIndex === leftIdx);
+            if (idx !== -1) {
+                copy[idx] = { ...copy[idx], Driver1: '', fromLeftIndex: undefined };
             }
             return copy;
         });
@@ -598,8 +601,12 @@ export default function ScheduleTool() {
             copy[leftIdx] = { ...copy[leftIdx], isAssigned: false };
             return sortItems(copy);
         });
+        if (driver && route) logAction(`Unassigned ${driver} from route ${route}`);
     };
     const handleUndoFromRight = (leftIdx: number) => {
+        const item = itemsRight.find(it => it.fromLeftIndex === leftIdx);
+        const driver = item?.Driver1;
+        const route = item ? getRoute(item.Calendar_Name) : '';
         updateRight((arr) => {
             const copy = [...arr];
             const rightIdx = copy.findIndex((item) => item.fromLeftIndex === leftIdx);
@@ -613,6 +620,7 @@ export default function ScheduleTool() {
             }
             return copy;
         });
+        if (driver && route) logAction(`Unassigned ${driver} from route ${route}`);
     };
     const undoLastAction = () => {
         const last = historyRef.current.pop();
@@ -622,18 +630,20 @@ export default function ScheduleTool() {
     };
     const handleEditBlur = (idx: number) => {
         const newDriverName = editValue.trim();
+        const oldName = itemsRight[idx]?.Driver1 || '';
+        const route = getRoute(itemsRight[idx].Calendar_Name);
         if (newDriverName && itemsRight.some(item => item.Driver1 === newDriverName && item.ID !== itemsRight[idx].ID)) {
             setWarningModal({
                 action: () => {
                     updateRight((arr) => {
                         const copy = [...arr];
-                        const oldName = copy[idx].Driver1;
                         copy[idx] = { ...copy[idx], Driver1: newDriverName };
                         if (copy[idx].fromLeftIndex !== undefined && newDriverName !== oldName) {
                             copy[idx].fromLeftIndex = undefined;
                         }
                         return copy;
                     });
+                    logAction(`Changed driver on route ${route} from ${oldName || 'empty'} to ${newDriverName || 'empty'}`);
                     setWarningModal(null);
                     setEditingRightIndex(null);
                 }
@@ -642,13 +652,15 @@ export default function ScheduleTool() {
         }
         updateRight((arr) => {
             const copy = [...arr];
-            const oldName = copy[idx].Driver1;
             copy[idx] = { ...copy[idx], Driver1: newDriverName };
             if (copy[idx].fromLeftIndex !== undefined && newDriverName !== oldName) {
                 copy[idx].fromLeftIndex = undefined;
             }
             return copy;
         });
+        if (newDriverName !== oldName) {
+            logAction(`Changed driver on route ${route} from ${oldName || 'empty'} to ${newDriverName || 'empty'}`);
+        }
         setEditingRightIndex(null);
     };
     const handleEditKeyDown = (e: ReactKeyboardEvent<HTMLInputElement>, idx: number) => {
@@ -699,10 +711,13 @@ export default function ScheduleTool() {
         };
         const isDuplicate = itemsRight.some(item => item.Driver1 === name && item.ID !== itemsRight[rightIdx].ID);
         const action = () => {
+            const routeName = getRoute(itemsRight[rightIdx].Calendar_Name);
+            let replacedDriver: string | undefined;
             updateRight(arr => {
                 const copy = [...arr];
                 const oldFromLeftIndex = copy[rightIdx].fromLeftIndex;
                 const oldDriver1 = copy[rightIdx].Driver1;
+                replacedDriver = oldDriver1;
                 copy[rightIdx] = { ...copy[rightIdx], Driver1: name, fromLeftIndex: leftIdx };
                 updateLeft(leftArr => {
                     const leftCopy = [...leftArr];
@@ -716,7 +731,10 @@ export default function ScheduleTool() {
             });
             showRestNotification();
             historyRef.current.push({ leftIdx });
-            logAction(`Assigned ${name} to route ${getRoute(itemsRight[rightIdx].Calendar_Name)}`);
+            if (replacedDriver) {
+                logAction(`Unassigned ${replacedDriver} from route ${routeName}`);
+            }
+            logAction(`Assigned ${name} to route ${routeName}`);
         };
         if (isDuplicate) {
             setWarningModal({
@@ -887,6 +905,10 @@ export default function ScheduleTool() {
         const sourceIdx = active.data.current?.index;
         const targetIdx = over.data.current?.index;
         if (sourceIdx === undefined || targetIdx === undefined || sourceIdx === targetIdx) return;
+        const sourceDriver = itemsRight[sourceIdx]?.Driver1;
+        const targetDriver = itemsRight[targetIdx]?.Driver1;
+        const sourceRoute = getRoute(itemsRight[sourceIdx].Calendar_Name);
+        const targetRoute = getRoute(itemsRight[targetIdx].Calendar_Name);
         updateRight(arr => {
             const copy = [...arr];
             const tempDriver = copy[targetIdx].Driver1;
@@ -897,6 +919,8 @@ export default function ScheduleTool() {
             copy[sourceIdx].fromLeftIndex = tempFrom;
             return copy;
         });
+        if (sourceDriver) logAction(`Moved ${sourceDriver} from route ${sourceRoute} to ${targetRoute}`);
+        if (targetDriver) logAction(`Moved ${targetDriver} from route ${targetRoute} to ${sourceRoute}`);
     };
     const handleRightDragStart = (e: DragEvent<HTMLTableCellElement>, idx: number) => {
         const it = itemsRight[idx];
@@ -921,6 +945,7 @@ export default function ScheduleTool() {
                 const name = data.name;
                 if (!name) return;
                 const leftItem = itemsLeft[data.index];
+                const routeName = getRoute(itemsRight[idx].Calendar_Name);
                 let restMessage = '';
                 const actualEnd = parseTime(getActualEnd(leftItem?.End_Time, leftItem?.Punctuality));
                 const targetStart = parseTime(itemsRight[idx].Start_Time);
@@ -939,10 +964,12 @@ export default function ScheduleTool() {
                 };
                 const isDuplicate = itemsRight.some(item => item.Driver1 === name && item.ID !== itemsRight[idx].ID);
                 const action = () => {
+                    let replacedDriver: string | undefined;
                     updateRight(arr => {
                         const copy = [...arr];
                         const oldFromLeftIndex = copy[idx].fromLeftIndex;
                         const oldDriver1 = copy[idx].Driver1;
+                        replacedDriver = oldDriver1;
                         copy[idx] = { ...copy[idx], Driver1: name, fromLeftIndex: data.index };
                         updateLeft(leftArr => {
                             const leftCopy = [...leftArr];
@@ -955,6 +982,11 @@ export default function ScheduleTool() {
                         return copy;
                     });
                     showRestNotification();
+                    historyRef.current.push({ leftIdx: data.index });
+                    if (replacedDriver) {
+                        logAction(`Unassigned ${replacedDriver} from route ${routeName}`);
+                    }
+                    logAction(`Assigned ${name} to route ${routeName}`);
                 };
                 if (isDuplicate) {
                     setWarningModal({
@@ -969,6 +1001,9 @@ export default function ScheduleTool() {
             } else if (data.table === 'right') {
                 const sourceIdx = data.index;
                 if (sourceIdx === idx) return;
+                const sourceRoute = getRoute(itemsRight[sourceIdx].Calendar_Name);
+                const targetRoute = getRoute(itemsRight[idx].Calendar_Name);
+                const targetDriver = itemsRight[idx].Driver1;
                 updateRight(arr => {
                     const copy = [...arr];
                     const tempDriver = copy[idx].Driver1;
@@ -979,6 +1014,10 @@ export default function ScheduleTool() {
                     copy[sourceIdx].fromLeftIndex = tempFrom;
                     return copy;
                 });
+                logAction(`Moved ${data.name} from route ${sourceRoute} to ${targetRoute}`);
+                if (targetDriver) {
+                    logAction(`Moved ${targetDriver} from route ${targetRoute} to ${sourceRoute}`);
+                }
             }
         } catch (err) {
             console.error('Drop error:', err);
