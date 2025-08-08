@@ -3,6 +3,10 @@ import Layout from '../components/Layout';
 import Icon from '../components/Icon';
 import Modal from '../components/Modal';
 import { parseTimeToMinutes } from '../lib/timeUtils';
+import ScheduleNotes from '../components/ScheduleNotes';
+import ScheduleSettingsModal from '../components/ScheduleSettingsModal';
+import ScheduleStats from '../components/ScheduleStats';
+import SelectedStats from '../components/SelectedStats';
 interface Trip {
     ID: string;
     Start_Time?: string;
@@ -612,88 +616,6 @@ export default function ScheduleTool() {
             return `hsl(${hue}, 60%, ${lightness}%)`;
         }
     };
-    const renderStats = (stats: { counts: Record<string, number>, total: number }, clearFn: () => void) => (
-        <div className="text-xs flex flex-wrap gap-1 items-center bg-base-200 dark:bg-base-100 p-1 rounded-md shadow-sm">
-            {routeGroups.map(cat => (
-                <span
-                    key={cat.name}
-                    className={`px-1 py-0.5 rounded text-xs ${cat.color} bg-opacity-20 ${cat.color.replace('text-', 'bg-')} font-medium`}
-                >
-                    {cat.name}: {stats.counts[cat.name] || 0}
-                </span>
-            ))}
-            <span
-                className="px-1 py-0.5 rounded text-xs text-white bg-opacity-20 bg-gray-500 font-medium"
-            >
-                Other: {stats.counts['Other'] || 0}
-            </span>
-            <span
-                className="px-1 py-0.5 rounded text-xs text-white bg-opacity-20 bg-gray-700 font-medium"
-            >
-                Total: {stats.total}
-            </span>
-            <button onClick={clearFn} className="btn btn-error btn-outline btn-xs ml-1" title="Clear all items">
-                Clear
-            </button>
-        </div>
-    );
-    const renderSelectedStats = (selected: number[], items: Trip[], isLeft: boolean) => {
-        if (selected.length <= 1) return null;
-        const selectedItems = items.filter((_, i) => selected.includes(i));
-        let totalTasks = 0, countTasks = 0, totalAmount = 0, countAmount = 0, totalPunct = 0, countPunct = 0, totalDuration = 0, countDuration = 0;
-        const uniqueDrivers = new Set(selectedItems.map(it => it.Driver1).filter(Boolean)).size;
-        selectedItems.forEach(it => {
-            const tasks = parseFloat(getTasks(it.Calendar_Name) || '0');
-            if (!isNaN(tasks)) {
-                totalTasks += tasks;
-                countTasks++;
-            }
-            const amount = parseFloat(it.Order_Value || '0');
-            if (!isNaN(amount)) {
-                totalAmount += amount;
-                countAmount++;
-            }
-            const punct = parseFloat(it.Punctuality || '0');
-            if (!isNaN(punct)) {
-                totalPunct += punct;
-                countPunct++;
-            }
-            const dur = getDuration(it, isLeft);
-            if (!isNaN(dur)) {
-                totalDuration += dur;
-                countDuration++;
-            }
-        });
-        const avgTasks = countTasks > 0 ? totalTasks / countTasks : 0;
-        const avgAmount = countAmount > 0 ? totalAmount / countAmount : 0;
-        const avgPunct = countPunct > 0 ? totalPunct / countPunct : 0;
-        const avgDuration = countDuration > 0 ? totalDuration / countDuration : 0;
-        const avgDurationFormatted = formatDuration(avgDuration);
-        return (
-            <div className="text-xs flex flex-wrap gap-1.5 items-center bg-gray-800 dark:bg-gray-900/80 p-1.5 rounded-lg shadow-md sticky bottom-0 z-10 border-t border-gray-700 dark:border-gray-600">
-                <span className="px-1.5 py-0.5 bg-gray-700 dark:bg-gray-800/50 rounded-md font-medium text-gray-200 dark:text-gray-300 flex items-center gap-1">
-                    <Icon name="list-ul" className="w-3 h-3" />
-                    {selected.length} ({uniqueDrivers})
-                </span>
-                <span className="px-1.5 py-0.5 bg-gray-700 dark:bg-gray-800/50 rounded-md font-medium text-gray-200 dark:text-gray-300 flex items-center gap-1">
-                    <Icon name="check-square" className="w-3 h-3" />
-                    {totalTasks.toFixed(2)} / {avgTasks.toFixed(2)}
-                </span>
-                <span className="px-1.5 py-0.5 bg-gray-700 dark:bg-gray-800/50 rounded-md font-medium text-gray-200 dark:text-gray-300 flex items-center gap-1">
-                    <Icon name="currency-dollar" className="w-3 h-3" />
-                    {totalAmount.toFixed(2)} / {avgAmount.toFixed(2)}
-                </span>
-                <span className="px-1.5 py-0.5 bg-gray-700 dark:bg-gray-800/50 rounded-md font-medium text-gray-200 dark:text-gray-300 flex items-center gap-1">
-                    <Icon name="clock" className="w-3 h-3" />
-                    {avgPunct.toFixed(2)}
-                </span>
-                <span className="px-1.5 py-0.5 bg-gray-700 dark:bg-gray-800/50 rounded-md font-medium text-gray-200 dark:text-gray-300 flex items-center gap-1">
-                    <Icon name="hourglass" className="w-3 h-3" />
-                    {avgDurationFormatted}
-                </span>
-            </div>
-        );
-    };
     const handleUndo = (leftIdx: number) => {
         updateRight((arr) => {
             const copy = [...arr];
@@ -924,7 +846,7 @@ export default function ScheduleTool() {
             <div className="flex gap-2 w-full h-[calc(100vh-4.5rem)] bg-base-100 dark:bg-base-100">
                 {/* Left Table */}
                 <div className="flex-1 min-w-0 flex flex-col border-r border-gray-200 dark:border-gray-700 relative" onMouseUp={handleMouseUpLeft} onDragOver={(e) => e.preventDefault()} onDrop={handleLeftDrop}>
-                    {renderStats(leftStats, clearAllLeft)}
+                    <ScheduleStats stats={leftStats} routeGroups={routeGroups} clearFn={clearAllLeft} />
                     <div className="flex-1 overflow-auto relative">
                         {isLoading ? (
                             <div className="flex items-center justify-center h-full">
@@ -1044,11 +966,11 @@ export default function ScheduleTool() {
                             </table>
                         )}
                     </div>
-                    {renderSelectedStats(selectedLeft, itemsLeft, true)}
+                    <SelectedStats selected={selectedLeft} items={itemsLeft} isLeft={true} getTasks={getTasks} getDuration={getDuration} formatDuration={formatDuration} />
                 </div>
                 {/* Right Table */}
                 <div className="flex-1 min-w-0 flex flex-col relative">
-                    {renderStats(rightStats, clearAllRight)}
+                    <ScheduleStats stats={rightStats} routeGroups={routeGroups} clearFn={clearAllRight} />
                     <div className="flex-1 overflow-auto relative" onMouseUp={handleMouseUpRight}>
                         {isLoading ? (
                             <div className="flex items-center justify-center h-full">
@@ -1284,7 +1206,7 @@ export default function ScheduleTool() {
                             </table>
                         )}
                     </div>
-                    {renderSelectedStats(selectedRight, itemsRight, false)}
+                    <SelectedStats selected={selectedRight} items={itemsRight} isLeft={false} getTasks={getTasks} getDuration={getDuration} formatDuration={formatDuration} />
                 </div>
                 {/* Notes Sidebar */}
                 <div className="w-64 flex flex-col gap-1 h-full overflow-y-auto p-1 bg-base-200 dark:bg-base-100 rounded-md shadow-inner lg:w-64 md:w-48 sm:w-full sm:overflow-x-auto">
@@ -1352,188 +1274,11 @@ export default function ScheduleTool() {
                             </button>
                         </div>
                     </div>
-                    <div className="text-sm font-semibold text-base-content mb-1">Notes</div>
-                    <div className="flex flex-col gap-1">
-                        {PANELS.map((panel) => (
-                            <div
-                                key={panel.name}
-                                className={`card ${panel.color} shadow rounded-md overflow-hidden`}
-                            >
-                                <div className="p-1">
-                                    <div className="flex items-center justify-between mb-0.5">
-                                        <h3 className="text-xs font-medium flex items-center gap-1">
-                                            <Icon name={panel.icon} className="w-3 h-3" />
-                                            {panel.name}
-                                        </h3>
-                                        <button
-                                            onClick={() => clearNote(panel.name)}
-                                            className="btn btn-ghost btn-xs p-0 min-h-0 h-3 w-3 opacity-60 hover:opacity-100"
-                                            title="Clear note"
-                                        >
-                                            ✕
-                                        </button>
-                                    </div>
-                                    <textarea
-                                        className="textarea w-full text-xs bg-white dark:bg-base-100 border border-gray-300 dark:border-gray-600 p-1 rounded resize-none h-24 overflow-y-auto focus:outline-none focus:border-blue-500"
-                                        placeholder={`Notes for ${panel.name}...`}
-                                        value={notes[panel.name] || ''}
-                                        onChange={(e) => handleNoteChange(panel.name, e.target.value)}
-                                    />
-                                </div>
-                            </div>
-                        ))}
-                    </div>
+                    <ScheduleNotes panels={PANELS} notes={notes} onChange={handleNoteChange} onClear={clearNote} />
                 </div>
             </div>
-            <Modal open={settingsOpen} onClose={() => setSettingsOpen(false)} className="max-w-4xl">
-                <h3 className="font-bold text-xl mb-4">Settings</h3>
-                <div className="space-y-4 max-h-[70vh] overflow-y-auto pr-2">
-                    <section className="card bg-base-100 shadow p-4">
-                        <h4 className="card-title text-lg mb-2">Time Logic</h4>
-                        <div className="grid grid-cols-2 gap-2">
-                            <label className="flex items-center gap-2 text-sm">
-                                Late End Hour
-                                <input
-                                    type="number"
-                                    className="input input-bordered input-sm w-20"
-                                    value={timeSettings.lateEndHour}
-                                    onChange={(e) => setTimeSettings({ ...timeSettings, lateEndHour: parseInt(e.target.value) || 20 })}
-                                    min={0}
-                                    max={24}
-                                />
-                            </label>
-                            <label className="flex items-center gap-2 text-sm">
-                                Early Start Hour
-                                <input
-                                    type="number"
-                                    className="input input-bordered input-sm w-20"
-                                    value={timeSettings.earlyStartHour}
-                                    onChange={(e) => setTimeSettings({ ...timeSettings, earlyStartHour: parseInt(e.target.value) || 7 })}
-                                    min={0}
-                                    max={24}
-                                />
-                            </label>
-                            <label className="flex items-center gap-2 text-sm">
-                                Early End Hour
-                                <input
-                                    type="number"
-                                    className="input input-bordered input-sm w-20"
-                                    value={timeSettings.earlyEndHour}
-                                    onChange={(e) => setTimeSettings({ ...timeSettings, earlyEndHour: parseInt(e.target.value) || 17 })}
-                                    min={0}
-                                    max={24}
-                                />
-                            </label>
-                            <label className="flex items-center gap-2 text-sm">
-                                Late Start Hour
-                                <input
-                                    type="number"
-                                    className="input input-bordered input-sm w-20"
-                                    value={timeSettings.lateStartHour}
-                                    onChange={(e) => setTimeSettings({ ...timeSettings, lateStartHour: parseInt(e.target.value) || 9 })}
-                                    min={0}
-                                    max={24}
-                                />
-                            </label>
-                        </div>
-                        <div className="grid grid-cols-2 gap-2 mt-2">
-                            <label className="flex items-center gap-2 text-sm">
-                                <input
-                                    type="checkbox"
-                                    className="toggle toggle-sm"
-                                    checked={timeSettings.enableRestWarning}
-                                    onChange={(e) => setTimeSettings({ ...timeSettings, enableRestWarning: e.target.checked })}
-                                />
-                                Show Rest Warnings
-                            </label>
-                            <label className="flex items-center gap-2 text-sm">
-                                <input
-                                    type="checkbox"
-                                    className="toggle toggle-sm"
-                                    checked={timeSettings.enableEarlyWarning}
-                                    onChange={(e) => setTimeSettings({ ...timeSettings, enableEarlyWarning: e.target.checked })}
-                                />
-                                Show Early Warnings
-                            </label>
-                        </div>
-                        <input
-                            type="text"
-                            className="input input-bordered input-sm w-full mt-2"
-                            value={timeSettings.restMessage}
-                            onChange={(e) => setTimeSettings({ ...timeSettings, restMessage: e.target.value })}
-                            placeholder="Rest warning message"
-                        />
-                        <input
-                            type="text"
-                            className="input input-bordered input-sm w-full mt-2"
-                            value={timeSettings.earlyMessage}
-                            onChange={(e) => setTimeSettings({ ...timeSettings, earlyMessage: e.target.value })}
-                            placeholder="Early warning message"
-                        />
-                    </section>
-                    <section className="card bg-base-100 shadow p-4">
-                        <h4 className="card-title text-lg mb-2">Route Groups</h4>
-                        {routeGroups.map((group, idx) => (
-                            <div key={idx} className="border p-2 rounded-md mb-2 space-y-1">
-                                <div className="flex items-center gap-2">
-                                    <input
-                                        className="input input-bordered input-xs flex-1"
-                                        value={group.name}
-                                        onChange={(e) => updateGroup(idx, { ...group, name: e.target.value })}
-                                        placeholder="Group name"
-                                    />
-                                    <input
-                                        className="input input-bordered input-xs w-32"
-                                        value={group.color}
-                                        onChange={(e) => updateGroup(idx, { ...group, color: e.target.value })}
-                                        placeholder="text-color-500"
-                                    />
-                                    <label className="flex items-center gap-1 text-xs">
-                                        <input
-                                            type="checkbox"
-                                            checked={group.isFull}
-                                            onChange={(e) => updateGroup(idx, { ...group, isFull: e.target.checked })}
-                                        />
-                                        Full
-                                    </label>
-                                    <button
-                                        className="btn btn-xs btn-error"
-                                        onClick={() => setRouteGroups(arr => arr.filter((_, i) => i !== idx))}
-                                    >
-                                        Remove
-                                    </button>
-                                </div>
-                                <textarea
-                                    className="textarea textarea-bordered w-full text-xs h-16"
-                                    value={group.codes.join(', ')}
-                                    onChange={(e) => updateGroup(idx, { ...group, codes: e.target.value.split(',').map(c => c.trim().toUpperCase()).filter(Boolean) })}
-                                    placeholder="Codes, separated by comma"
-                                />
-                            </div>
-                        ))}
-                        <button
-                            className="btn btn-sm mt-2"
-                            onClick={() => setRouteGroups([...routeGroups, { name: 'New Group', codes: [], isFull: false, color: 'text-white' }])}
-                        >
-                            <Icon name="plus" className="w-4 h-4 mr-1" />
-                            Add Group
-                        </button>
-                    </section>
-                    <section className="card bg-base-100 shadow p-4">
-                        <h4 className="card-title text-lg mb-2">Ignored Calendar Patterns</h4>
-                        <textarea
-                            className="textarea textarea-bordered w-full text-xs h-24"
-                            value={ignoredPatterns.join('\n')}
-                            onChange={(e) => setIgnoredPatterns(e.target.value.split('\n').map(p => p.trim()).filter(Boolean))}
-                            placeholder="One pattern per line"
-                        />
-                    </section>
-                </div>
-                <div className="modal-action">
-                    <button className="btn btn-outline mr-auto" onClick={resetSettings}>Reset Defaults</button>
-                    <button className="btn" onClick={() => setSettingsOpen(false)}>Close</button>
-                </div>
-            </Modal>
+            </div>
+            <ScheduleSettingsModal open={settingsOpen} onClose={() => setSettingsOpen(false)} routeGroups={routeGroups} updateGroup={updateGroup} setRouteGroups={setRouteGroups} ignoredPatterns={ignoredPatterns} setIgnoredPatterns={setIgnoredPatterns} timeSettings={timeSettings} setTimeSettings={setTimeSettings} resetSettings={resetSettings} />
             {notification && (
                 <div className="toast toast-bottom toast-center z-50">
                     <div className="alert alert-info">
