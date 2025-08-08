@@ -7,6 +7,7 @@ import {
     KeyboardEvent as ReactKeyboardEvent,
     useMemo,
     MouseEvent as ReactMouseEvent,
+    CSSProperties,
 } from 'react';
 import {
     DndContext,
@@ -20,6 +21,7 @@ import {
 } from '@dnd-kit/core';
 import { SortableContext, useSortable, rectSwappingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import { useVirtualizer } from '@tanstack/react-virtual';
 import Layout from '../components/Layout';
 import Icon from '../components/Icon';
 import Modal from '../components/Modal';
@@ -141,6 +143,18 @@ export default function ScheduleTool() {
     const nativeDrag = useRef(false);
     const [activeDragId, setActiveDragId] = useState<number | null>(null);
     const [activeDragName, setActiveDragName] = useState<string>('');
+    const leftParentRef = useRef<HTMLDivElement>(null);
+    const rightParentRef = useRef<HTMLDivElement>(null);
+    const leftRowVirtualizer = useVirtualizer({
+        count: itemsLeft.length,
+        getScrollElement: () => leftParentRef.current,
+        estimateSize: () => 32,
+    });
+    const rightRowVirtualizer = useVirtualizer({
+        count: itemsRight.length,
+        getScrollElement: () => rightParentRef.current,
+        estimateSize: () => 32,
+    });
     const filterIgnored = <T extends { Calendar_Name?: string }>(items: T[]) =>
         items.filter(it =>
             !ignoredPatterns.some(pat =>
@@ -1056,7 +1070,7 @@ export default function ScheduleTool() {
             nativeDrag.current = false;
         }
     };
-    const SortableRow = ({ it, idx }: { it: Trip; idx: number }) => {
+    const SortableRow = ({ it, idx, style, measure }: { it: Trip; idx: number; style: CSSProperties; measure: (el: HTMLTableRowElement | null) => void }) => {
         const driverColor = getDriverColor(it.Driver1);
         const routeColor = getRouteColorClass(it.Calendar_Name, routeGroups);
         const isEditing = editingRightIndex === idx;
@@ -1079,15 +1093,20 @@ export default function ScheduleTool() {
             data: { index: idx },
             disabled: !allowDnD,
         });
-        const style = {
+        const sortableStyle = {
             transform: CSS.Transform.toString(transform),
             transition: transition || 'transform 200ms ease',
         };
         return (
             <tr
+                ref={(el) => {
+                    measure(el);
+                    if (allowDnD) setNodeRef(el);
+                }}
                 className={`transition-colors duration-150 ${isSelected ? '!bg-gray-900 !dark:bg-gray-900/30' : 'hover:bg-gray-100 dark:hover:bg-gray-700'} ${rowClass}`}
                 onMouseDown={(e) => handleMouseDownRight(e, idx)}
                 onMouseOver={() => handleMouseOverRight(idx)}
+                style={{ ...style, ...(allowDnD ? sortableStyle : {}) }}
             >
                 <td className="py-1 px-2">
                     <span
@@ -1109,8 +1128,6 @@ export default function ScheduleTool() {
                     )}
                 </td>
                 <td
-                    ref={allowDnD ? setNodeRef : undefined}
-                    style={allowDnD ? style : undefined}
                     {...(allowDnD ? attributes : {})}
                     {...(allowDnD && it.Driver1 ? listeners : {})}
                     draggable={allowDnD && !!it.Driver1}
@@ -1303,7 +1320,7 @@ export default function ScheduleTool() {
                 {/* Left Table */}
                 <div className="flex-1 min-w-0 flex flex-col border-r border-gray-200 dark:border-gray-700 relative" onMouseUp={handleMouseUpLeft} onDragOver={(e) => e.preventDefault()} onDrop={handleLeftDrop}>
                     {renderStats(leftStats, clearAllLeft)}
-                    <div className="flex-1 overflow-auto relative">
+                    <div className="flex-1 overflow-auto relative" ref={leftParentRef}>
                         {isLoading ? (
                             <div className="flex items-center justify-center h-full">
                                 <div className="loading loading-spinner loading-lg"></div>
@@ -1324,8 +1341,12 @@ export default function ScheduleTool() {
                                         <th className="cursor-pointer" onClick={() => applyLeftSort('Duration')}>Duration</th>
                                     </tr>
                                 </thead>
-                                <tbody className={lockCopy ? 'select-none' : ''}>
-                                    {itemsLeft.map((it, idx) => {
+                                <tbody
+                                    className={lockCopy ? 'select-none' : ''}
+                                    style={{ height: leftRowVirtualizer.getTotalSize(), position: 'relative', display: 'block', width: '100%' }}
+                                >
+                                    {leftRowVirtualizer.getVirtualItems().map(vr => {
+                                        const it = itemsLeft[vr.index];
                                         const driverColor = getDriverColor(it.Driver1);
                                         const routeColor = getRouteColorClass(it.Calendar_Name, routeGroups);
                                         const isAllowed = allowedDrivers.includes(it.Driver1 || '');
@@ -1337,14 +1358,16 @@ export default function ScheduleTool() {
                                         const duration = getDuration(it, true);
                                         const durationFormatted = formatDuration(duration);
                                         const vh = getVH(it.Calendar_Name);
-                                        const isSelected = selectedLeft.includes(idx);
+                                        const isSelected = selectedLeft.includes(vr.index);
                                         const showColorBadge = vh !== '2DT' && isAllowed;
                                         return (
                                             <tr
-                                                key={it.ID || `left-${idx}`}
+                                                ref={vr.measureElement}
+                                                key={it.ID || `left-${vr.index}`}
                                                 className={`transition-colors duration-150 ${isSelected ? '!bg-gray-900 !dark:bg-gray-900/30' : 'hover:bg-gray-100 dark:hover:bg-gray-700'}`}
-                                                onMouseDown={(e) => handleMouseDownLeft(e, idx)}
-                                                onMouseOver={() => handleMouseOverLeft(idx)}
+                                                onMouseDown={(e) => handleMouseDownLeft(e, vr.index)}
+                                                onMouseOver={() => handleMouseOverLeft(vr.index)}
+                                                style={{ position: 'absolute', top: vr.start, left: 0, width: '100%', height: vr.size }}
                                             >
                                                 <td className="py-1 px-2">
                                                     <span
@@ -1369,7 +1392,7 @@ export default function ScheduleTool() {
                                                 <td
                                                     draggable={isAllowed && !it.isAssigned}
                                                     onDragStart={(e) => {
-                                                        e.dataTransfer.setData('text/plain', JSON.stringify({ table: 'left', index: idx, name: it.Driver1 }));
+                                                        e.dataTransfer.setData('text/plain', JSON.stringify({ table: 'left', index: vr.index, name: it.Driver1 }));
                                                         setDragImage(e, it.Driver1 || '');
                                                     }}
                                                     onDragOver={(e) => e.preventDefault()}
@@ -1380,7 +1403,7 @@ export default function ScheduleTool() {
                                                             <span className="px-2 py-0.5 bg-gray-200 dark:bg-gray-600 rounded">{it.Driver1}</span>
                                                             <span
                                                                 className="underline cursor-pointer text-blue-500 text-xs"
-                                                                onClick={() => handleUndoFromRight(idx)}
+                                                                onClick={() => handleUndoFromRight(vr.index)}
                                                                 title="Undo assignment"
                                                             >
                                                                 <Icon name="arrow-counterclockwise" className="w-3 h-3" />
@@ -1431,7 +1454,7 @@ export default function ScheduleTool() {
                 {/* Right Table */}
                 <div className="flex-1 min-w-0 flex flex-col relative">
                     {renderStats(rightStats, clearAllRight)}
-                    <div className="flex-1 overflow-auto relative" onMouseUp={handleMouseUpRight}>
+                    <div className="flex-1 overflow-auto relative" onMouseUp={handleMouseUpRight} ref={rightParentRef}>
                         {isLoading ? (
                             <div className="flex items-center justify-center h-full">
                                 <div className="loading loading-spinner loading-lg"></div>
@@ -1452,10 +1475,22 @@ export default function ScheduleTool() {
                                         </tr>
                                     </thead>
                                     <SortableContext items={itemsRight.map((_, idx) => idx)} strategy={rectSwappingStrategy}>
-                                        <tbody className={lockCopy ? 'select-none' : ''}>
-                                            {itemsRight.map((it, idx) => (
-                                                <SortableRow key={it.ID || `right-${idx}`} it={it} idx={idx} />
-                                            ))}
+                                        <tbody
+                                            className={lockCopy ? 'select-none' : ''}
+                                            style={{ height: rightRowVirtualizer.getTotalSize(), position: 'relative', display: 'block', width: '100%' }}
+                                        >
+                                            {rightRowVirtualizer.getVirtualItems().map(vr => {
+                                                const it = itemsRight[vr.index];
+                                                return (
+                                                    <SortableRow
+                                                        key={it.ID || `right-${vr.index}`}
+                                                        it={it}
+                                                        idx={vr.index}
+                                                        style={{ position: 'absolute', top: vr.start, left: 0, width: '100%', height: vr.size }}
+                                                        measure={vr.measureElement}
+                                                    />
+                                                );
+                                            })}
                                         </tbody>
                                     </SortableContext>
                                 </table>
