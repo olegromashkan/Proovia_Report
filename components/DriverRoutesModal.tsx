@@ -115,67 +115,83 @@ export default function DriverRoutesModal({ open, onClose, driver }: DriverRoute
     }, [open, start, end, driver]);
 
     return (
-        <Modal open={open} onClose={onClose}>
-            <h3 className="font-bold text-lg mb-2">Previous Routes - {driver}</h3>
-            <div className="flex gap-2 mb-2">
-                <label className="flex items-center gap-1">
-                    <span>Start:</span>
-                    <input type="date" className="input input-xs" value={start} onChange={e => setStart(e.target.value)} />
-                </label>
-                <label className="flex items-center gap-1">
-                    <span>End:</span>
-                    <input type="date" className="input input-xs" value={end} onChange={e => setEnd(e.target.value)} />
-                </label>
-            </div>
-            {error && <div className="text-red-500 mb-2">{error}</div>}
-            {loading ? (
-                <div className="flex items-center justify-center p-4">
-                    <div className="loading loading-spinner"></div>
+        <Modal open={open} onClose={onClose} className="w-11/12 max-w-5xl">
+            <div className="w-full">
+                <h3 className="font-bold text-xl mb-4">Previous Routes - {driver}</h3>
+                <div className="flex gap-4 mb-4">
+                    <label className="flex items-center gap-2">
+                        <span className="text-sm font-medium">Start:</span>
+                        <input
+                            type="date"
+                            className="input input-sm border border-gray-300 rounded px-3 py-1"
+                            value={start}
+                            onChange={e => setStart(e.target.value)}
+                        />
+                    </label>
+                    <label className="flex items-center gap-2">
+                        <span className="text-sm font-medium">End:</span>
+                        <input
+                            type="date"
+                            className="input input-sm border border-gray-300 rounded px-3 py-1"
+                            value={end}
+                            onChange={e => setEnd(e.target.value)}
+                        />
+                    </label>
                 </div>
-            ) : (
-                <div className="overflow-auto max-h-96">
-                    <table className="table table-xs table-zebra w-full text-xs">
-                        <thead>
-                            <tr>
-                                <th>Date</th>
-                                <th>Route</th>
-                                <th>Start</th>
-                                <th>Actual End</th>
-                                <th>Punctuality</th>
-                                <th>Price</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {items.map((it, idx) => {
-                                const actualEnd = getActualEnd(
-                                    it.end_time ? `${it.date}T${it.end_time}` : undefined,
-                                    String(it.punctuality ?? '0')
-                                );
-                                const route = getRoute(it.calendar);
-                                return (
-                                    <tr key={idx}>
-                                        <td>{it.date}</td>
-                                        <td className={getRouteColorClass(it.calendar, DEFAULT_ROUTE_GROUPS)}>{route || '-'}</td>
-                                        <td>{it.start_time || '-'}</td>
-                                        <td>{actualEnd || '-'}</td>
-                                        <td>{stylePunctuality(it.punctuality ?? null)}</td>
-                                        <td className={`text-[color:${priceTextColor(it.price)}]`}>
-                                            {it.price !== undefined && it.price !== null ? `£${it.price}` : '-'}
+                {error && <div className="text-red-500 mb-4 p-2 bg-red-50 border border-red-200 rounded">{error}</div>}
+                {loading ? (
+                    <div className="flex items-center justify-center p-8">
+                        <div className="loading loading-spinner loading-lg"></div>
+                    </div>
+                ) : (
+                    <div className="overflow-auto" style={{ maxHeight: '60vh' }}>
+                        <table className="table table-sm w-full">
+                            <thead className="sticky top-0 bg-base-200">
+                                <tr>
+                                    <th className="text-left p-3">Date</th>
+                                    <th className="text-left p-3">Route</th>
+                                    <th className="text-left p-3">Start Time</th>
+                                    <th className="text-left p-3">Actual End</th>
+                                    <th className="text-left p-3">Punctuality</th>
+                                    <th className="text-left p-3">Price</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {items.map((it, idx) => {
+                                    const actualEnd = getActualEnd(
+                                        it.end_time ? `${it.date}T${it.end_time}` : undefined,
+                                        String(it.punctuality ?? '0')
+                                    );
+                                    const route = getRoute(it.calendar);
+                                    return (
+                                        <tr key={idx} className="hover:bg-base-50">
+                                            <td className="p-3">{it.date}</td>
+                                            <td className={`p-3 ${getRouteColorClass(it.calendar, DEFAULT_ROUTE_GROUPS)}`}>
+                                                {route || '-'}
+                                            </td>
+                                            <td className="p-3">{it.start_time || '-'}</td>
+                                            <td className="p-3">{actualEnd || '-'}</td>
+                                            <td className="p-3">{stylePunctuality(it.punctuality ?? null)}</td>
+                                            <td className="p-3" style={{ color: priceTextColor(it.price) }}>
+                                                {it.price !== undefined && it.price !== null ? `£${it.price}` : '-'}
+                                            </td>
+                                        </tr>
+                                    );
+                                })}
+                                {items.length === 0 && (
+                                    <tr>
+                                        <td colSpan={6} className="text-center py-8 text-gray-500">
+                                            No routes found for the selected period
                                         </td>
                                     </tr>
-                                );
-                            })}
-                            {items.length === 0 && (
-                                <tr>
-                                    <td colSpan={6} className="text-center py-2">No routes found</td>
-                                </tr>
-                            )}
-                        </tbody>
-                    </table>
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
+                )}
+                <div className="flex justify-end gap-2 mt-6 pt-4 border-t border-gray-200">
+                    <button className="btn btn-primary" onClick={onClose}>Close</button>
                 </div>
-            )}
-            <div className="modal-action">
-                <button className="btn" onClick={onClose}>Close</button>
             </div>
         </Modal>
     );
