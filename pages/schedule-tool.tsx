@@ -20,6 +20,7 @@ import {
 } from '@dnd-kit/core';
 import { SortableContext, useSortable, rectSwappingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import { useVirtualizer } from '@tanstack/react-virtual';
 import Layout from '../components/Layout';
 import Icon from '../components/Icon';
 import Modal from '../components/Modal';
@@ -138,6 +139,12 @@ export default function ScheduleTool() {
         useSensor(MouseSensor, { activationConstraint: { distance: 5 } }),
         useSensor(TouchSensor)
     );
+    const leftTableRef = useRef<HTMLDivElement>(null);
+    const leftRowVirtualizer = useVirtualizer({
+        count: itemsLeft.length,
+        getScrollElement: () => leftTableRef.current,
+        estimateSize: () => 40,
+    });
     const nativeDrag = useRef(false);
     const [activeDragId, setActiveDragId] = useState<number | null>(null);
     const [activeDragName, setActiveDragName] = useState<string>('');
@@ -1303,7 +1310,7 @@ export default function ScheduleTool() {
                 {/* Left Table */}
                 <div className="flex-1 min-w-0 flex flex-col border-r border-gray-200 dark:border-gray-700 relative" onMouseUp={handleMouseUpLeft} onDragOver={(e) => e.preventDefault()} onDrop={handleLeftDrop}>
                     {renderStats(leftStats, clearAllLeft)}
-                    <div className="flex-1 overflow-auto relative">
+                    <div className="flex-1 overflow-auto relative" ref={leftTableRef}>
                         {isLoading ? (
                             <div className="flex items-center justify-center h-full">
                                 <div className="loading loading-spinner loading-lg"></div>
@@ -1324,8 +1331,13 @@ export default function ScheduleTool() {
                                         <th className="cursor-pointer" onClick={() => applyLeftSort('Duration')}>Duration</th>
                                     </tr>
                                 </thead>
-                                <tbody className={lockCopy ? 'select-none' : ''}>
-                                    {itemsLeft.map((it, idx) => {
+                                <tbody
+                                    className={lockCopy ? 'select-none block relative' : 'block relative'}
+                                    style={{ height: leftRowVirtualizer.getTotalSize() }}
+                                >
+                                    {leftRowVirtualizer.getVirtualItems().map(vr => {
+                                        const it = itemsLeft[vr.index];
+                                        const idx = vr.index;
                                         const driverColor = getDriverColor(it.Driver1);
                                         const routeColor = getRouteColorClass(it.Calendar_Name, routeGroups);
                                         const isAllowed = allowedDrivers.includes(it.Driver1 || '');
@@ -1345,6 +1357,13 @@ export default function ScheduleTool() {
                                                 className={`transition-colors duration-150 ${isSelected ? '!bg-gray-900 !dark:bg-gray-900/30' : 'hover:bg-gray-100 dark:hover:bg-gray-700'}`}
                                                 onMouseDown={(e) => handleMouseDownLeft(e, idx)}
                                                 onMouseOver={() => handleMouseOverLeft(idx)}
+                                                style={{
+                                                    position: 'absolute',
+                                                    top: 0,
+                                                    left: 0,
+                                                    width: '100%',
+                                                    transform: `translateY(${vr.start}px)`,
+                                                }}
                                             >
                                                 <td className="py-1 px-2">
                                                     <span
