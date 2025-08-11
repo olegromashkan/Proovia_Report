@@ -1,5 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
-import db from '../../lib/db';
+import { safeAll } from '../../lib/db';
 import { parseDate } from '../../lib/dateUtils';
 import { parseTimeToMinutes } from '../../lib/timeUtils';
 
@@ -19,8 +19,8 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
 
   const tableName =
     table === 'copy_of_tomorrow_trips' ? 'copy_of_tomorrow_trips' : 'schedule_trips';
-  const rows = db.prepare(`SELECT data FROM ${tableName}`).all();
-  const driverRows = db.prepare('SELECT data FROM drivers_report').all();
+  const rows = safeAll(`SELECT data FROM ${tableName}`);
+  const driverRows = safeAll('SELECT data FROM drivers_report');
   const driverMap: Record<string, string> = {};
   driverRows.forEach((r: any) => {
     const d = JSON.parse(r.data);
