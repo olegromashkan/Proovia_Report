@@ -34,7 +34,7 @@ function openDatabase() {
   }
 }
 
-const db: Database = global.sqliteDb || openDatabase();
+let db: Database = global.sqliteDb || openDatabase();
 if (!global.sqliteDb) {
   try {
     db.pragma('journal_mode = WAL');
@@ -283,6 +283,39 @@ export function init() {
         delivery_failed
       ) VALUES (1, 457766, 232168, 217055, 15113, 222004, 217919, 4085)`,
     ).run();
+  }
+}
+
+function recoverFromCorruption(err: any) {
+  if (err && err.code === 'SQLITE_CORRUPT') {
+    resetDbFiles();
+    db = openDatabase();
+    try {
+      db.pragma('journal_mode = WAL');
+    } catch (e) {
+      console.error('Failed to set journal_mode to WAL', e);
+    }
+    try {
+      db.pragma('busy_timeout = 3600000');
+    } catch (e) {
+      console.error('Failed to set busy_timeout', e);
+    }
+    global.sqliteDb = db;
+    init();
+    return true;
+  }
+  return false;
+}
+
+export function safeAll(sql: string, params?: any[]) {
+  const run = () => db.prepare(sql).all(params);
+  try {
+    return run();
+  } catch (err: any) {
+    if (recoverFromCorruption(err)) {
+      return run();
+    }
+    throw err;
   }
 }
 
