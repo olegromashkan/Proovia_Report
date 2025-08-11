@@ -34,7 +34,10 @@ export default function Navbar() {
   const navGroups: NavGroup[] = useMemo(() => [
     {
       label: 'General',
-      links: [{ href: '/', icon: 'house', label: 'Home' }],
+      links: [
+        { href: '/', icon: 'house', label: 'Home' },
+        { href: '/pdf-editor', icon: 'pen', label: 'PDF Editor' },
+      ],
     },
     {
       label: 'Driver Control',

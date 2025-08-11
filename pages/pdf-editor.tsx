@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import Head from 'next/head';
 import Layout from '../components/Layout';
 import {
   FileUp,
@@ -17,7 +18,6 @@ import {
 import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
 // @ts-ignore - pdfjs-dist types are optional
 import * as pdfjsLib from 'pdfjs-dist';
-import 'pdfjs-dist/web/pdf_viewer.css';
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.6.82/pdf.worker.min.js`;
 
@@ -811,6 +811,12 @@ export default function PdfEditorPage() {
 
   return (
     <Layout title="PDF Editor" fullWidth>
+      <Head>
+        <link
+          rel="stylesheet"
+          href="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.6.82/pdf_viewer.min.css"
+        />
+      </Head>
       <div className="border-b bg-base-100 sticky top-0 z-40">
         <div className="px-4 py-3 flex items-center gap-3">
           <Button onClick={() => fileInputRef.current?.click()}>
