@@ -54,6 +54,7 @@ export default function Navbar() {
       links: [
         { href: '/full-report', icon: 'table-list', label: 'Full Report' },
         { href: '/monthly-report', icon: 'calendar', label: 'Monthly' },
+        { href: '/daily-driver-stats', icon: 'table-list', label: 'Daily Stats' },
         { href: '/van-state', icon: 'truck', label: 'Van State' },
       ],
     },
