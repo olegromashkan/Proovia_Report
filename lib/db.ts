@@ -1,12 +1,40 @@
 import Database from 'better-sqlite3';
+import fs from 'fs';
 
 declare global {
   // eslint-disable-next-line no-var
   var sqliteDb: Database | undefined;
 }
 
-const db: Database =
-  global.sqliteDb || new Database('database.db', { timeout: 3600000 });
+const DB_PATH = 'database.db';
+
+function resetDbFiles() {
+  for (const suffix of ['', '-wal', '-shm']) {
+    try {
+      fs.unlinkSync(`${DB_PATH}${suffix}`);
+    } catch {
+      // ignore errors when files do not exist
+    }
+  }
+}
+
+if (!fs.existsSync(DB_PATH)) {
+  resetDbFiles();
+}
+
+function openDatabase() {
+  try {
+    return new Database(DB_PATH, { timeout: 3600000 });
+  } catch (err: any) {
+    if (err.code === 'SQLITE_CORRUPT') {
+      resetDbFiles();
+      return new Database(DB_PATH, { timeout: 3600000 });
+    }
+    throw err;
+  }
+}
+
+const db: Database = global.sqliteDb || openDatabase();
 if (!global.sqliteDb) {
   try {
     db.pragma('journal_mode = WAL');
