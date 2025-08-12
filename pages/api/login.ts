@@ -23,7 +23,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       ),
     );
   } catch (err: any) {
-    if (err.code === 'SQLITE_BUSY') {
+    if (err.code === '55P03') {
       res.status(503).json({ message: 'Database is busy' });
       return;
     }
@@ -41,7 +41,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       ),
     );
   } catch (err: any) {
-    if (err.code === 'SQLITE_BUSY') {
+    if (err.code === '55P03') {
       res.status(503).json({ message: 'Database is busy' });
       return;
     }

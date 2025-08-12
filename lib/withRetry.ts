@@ -3,7 +3,9 @@ export async function withRetry<T>(fn: () => T | Promise<T>, retries = 5, delay 
     try {
       return await fn();
     } catch (err: any) {
-      if (err.code !== 'SQLITE_BUSY' || attempt >= retries) {
+      // For PostgreSQL we retry on serialization failures or lock timeouts
+      const retryable = err.code === '55P03' || err.code === '40001';
+      if (!retryable || attempt >= retries) {
         throw err;
       }
     }
