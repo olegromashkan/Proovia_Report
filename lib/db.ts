@@ -1,389 +1,66 @@
-// lib/db.ts
-import Database from 'better-sqlite3';
-import fs from 'fs';
+import { Pool } from 'pg';
+import dotenv from 'dotenv';
 
-declare global {
-  // eslint-disable-next-line no-var
-  var sqliteDb: Database | undefined;
+dotenv.config();
+
+const pool = new Pool({
+  host: process.env.PGHOST,
+  port: Number(process.env.PGPORT) || 5432,
+  user: process.env.PGUSER,
+  password: process.env.PGPASSWORD,
+  database: process.env.PGDATABASE,
+});
+
+function mapParams(sql: string, params: any[]) {
+  let index = 1;
+  const text = sql.replace(/\?/g, () => `$${index++}`);
+  return { text, values: params };
 }
 
-const DB_PATH = 'database.db';
-
-function resetDbFiles() {
-  for (const suffix of ['', '-wal', '-shm']) {
-    try {
-      fs.unlinkSync(`${DB_PATH}${suffix}`);
-    } catch {
-      // ignore errors when files do not exist
-    }
-  }
+function prepare(sql: string) {
+  const stmt: any = {
+    all: (...params: any[]) => {
+      const { text, values } = mapParams(sql, params);
+      return pool.query(text, values).then((res) => res.rows);
+    },
+    get: (...params: any[]) => {
+      const { text, values } = mapParams(sql, params);
+      return pool.query(text, values).then((res) => res.rows[0]);
+    },
+    run: (...params: any[]) => {
+      const { text, values } = mapParams(sql, params);
+      return pool.query(text, values);
+    },
+  };
+  return stmt;
 }
 
-if (!fs.existsSync(DB_PATH)) {
-  resetDbFiles();
+function exec(sql: string) {
+  return pool.query(sql);
 }
 
-function openDatabase() {
-  const db = new Database(DB_PATH, { timeout: 3600000 });
-  try {
-    db.pragma('journal_mode = WAL');
-  } catch (err) {
-    console.error('Failed to set journal_mode to WAL', err);
-  }
-  try {
-    db.pragma('busy_timeout = 3600000');
-  } catch (err) {
-    console.error('Failed to set busy_timeout', err);
-  }
-  return db;
-}
-
-let db: Database = global.sqliteDb || openDatabase();
-if (!global.sqliteDb) {
-  global.sqliteDb = db;
-}
-
-export function init() {
-  db.exec(`
-    CREATE TABLE IF NOT EXISTS copy_of_tomorrow_trips (
-      id TEXT PRIMARY KEY,
-      data TEXT,
-      created_at TEXT DEFAULT CURRENT_TIMESTAMP
-    );
-    CREATE TABLE IF NOT EXISTS event_stream (
-      id TEXT PRIMARY KEY,
-      data TEXT,
-      created_at TEXT DEFAULT CURRENT_TIMESTAMP
-    );
-    CREATE TABLE IF NOT EXISTS drivers_report (
-      id TEXT PRIMARY KEY,
-      data TEXT,
-      created_at TEXT DEFAULT CURRENT_TIMESTAMP
-    );
-    CREATE TABLE IF NOT EXISTS van_checks (
-      id TEXT PRIMARY KEY,
-      data TEXT,
-      created_at TEXT DEFAULT CURRENT_TIMESTAMP
-    );
-    CREATE TABLE IF NOT EXISTS schedule_trips (
-      id TEXT PRIMARY KEY,
-      data TEXT,
-      created_at TEXT DEFAULT CURRENT_TIMESTAMP
-    );
-    CREATE TABLE IF NOT EXISTS schedule_trips_tool (
-      id TEXT PRIMARY KEY,
-      data TEXT,
-      created_at TEXT DEFAULT CURRENT_TIMESTAMP
-    );
-    CREATE TABLE IF NOT EXISTS schedule_trips_tool2 (
-      id TEXT PRIMARY KEY,
-      data TEXT,
-      created_at TEXT DEFAULT CURRENT_TIMESTAMP
-    );
-    CREATE TABLE IF NOT EXISTS schedule_notes (
-      panel TEXT PRIMARY KEY,
-      content TEXT,
-      created_at TEXT DEFAULT CURRENT_TIMESTAMP
-    );
-    CREATE TABLE IF NOT EXISTS csv_trips (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      data TEXT,
-      created_at TEXT DEFAULT CURRENT_TIMESTAMP
-    );
-    CREATE TABLE IF NOT EXISTS notifications (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      type TEXT,
-      message TEXT,
-      created_at TEXT DEFAULT CURRENT_TIMESTAMP
-    );
-    CREATE TABLE IF NOT EXISTS users (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      username TEXT UNIQUE,
-      password TEXT,
-      photo TEXT,
-      header TEXT,
-      role TEXT DEFAULT 'user',
-      status TEXT DEFAULT 'offline',
-      status_message TEXT,
-      last_seen TEXT DEFAULT CURRENT_TIMESTAMP,
-      created_at TEXT DEFAULT CURRENT_TIMESTAMP
-    );
-
-    CREATE TABLE IF NOT EXISTS friends (
-      user_id INTEGER,
-      friend_id INTEGER,
-      created_at TEXT DEFAULT CURRENT_TIMESTAMP
-    );
-
-    CREATE TABLE IF NOT EXISTS tasks (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      creator TEXT,
-      assignee TEXT,
-      text TEXT,
-      due_at TEXT,
-      completed INTEGER DEFAULT 0,
-      created_at TEXT DEFAULT CURRENT_TIMESTAMP
-    );
-
-    CREATE TABLE IF NOT EXISTS chats (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      name TEXT,
-      photo TEXT,
-      pinned INTEGER DEFAULT 0,
-      created_at TEXT DEFAULT CURRENT_TIMESTAMP
-    );
-
-    CREATE TABLE IF NOT EXISTS chat_members (
-      chat_id INTEGER,
-      username TEXT,
-      created_at TEXT DEFAULT CURRENT_TIMESTAMP
-    );
-
-    CREATE TABLE IF NOT EXISTS messages (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      chat_id INTEGER,
-      sender TEXT,
-      receiver TEXT,
-      text TEXT,
-      reply_to INTEGER,
-      pinned INTEGER DEFAULT 0,
-      created_at TEXT DEFAULT CURRENT_TIMESTAMP
-    );
-    CREATE TABLE IF NOT EXISTS posts (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      username TEXT,
-      content TEXT,
-      image TEXT,
-      created_at TEXT DEFAULT CURRENT_TIMESTAMP,
-      updated_at TEXT,
-      type TEXT DEFAULT 'user'
-    );
-    CREATE TABLE IF NOT EXISTS post_likes (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      post_id INTEGER,
-      username TEXT,
-      created_at TEXT DEFAULT CURRENT_TIMESTAMP,
-      UNIQUE(post_id, username)
-    );
-    CREATE TABLE IF NOT EXISTS post_comments (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      post_id INTEGER,
-      username TEXT,
-      text TEXT,
-      created_at TEXT DEFAULT CURRENT_TIMESTAMP
-    );
-    CREATE TABLE IF NOT EXISTS backgrounds (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      url TEXT
-    );
-    CREATE TABLE IF NOT EXISTS test_templates (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      name TEXT,
-      questions TEXT,
-      created_at TEXT DEFAULT CURRENT_TIMESTAMP
-    );
-    CREATE TABLE IF NOT EXISTS training_tests (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      test_id INTEGER,
-      name TEXT,
-      email TEXT,
-      answers TEXT,
-      scores TEXT,
-      created_at TEXT DEFAULT CURRENT_TIMESTAMP
-    );
-    CREATE TABLE IF NOT EXISTS legacy_totals (
-      id INTEGER PRIMARY KEY,
-      total_orders INTEGER,
-      collection_total INTEGER,
-      collection_complete INTEGER,
-      collection_failed INTEGER,
-      delivery_total INTEGER,
-      delivery_complete INTEGER,
-      delivery_failed INTEGER
-    );
-  `);
-
-  // ensure legacy databases have the created_at column
-  const tables = [
-    'copy_of_tomorrow_trips',
-    'event_stream',
-    'drivers_report',
-    'schedule_trips',
-    'schedule_trips_tool',
-    'schedule_trips_tool2',
-    'schedule_notes',
-    'csv_trips',
-    'van_checks',
-    'users',
-    'posts',
-    'post_likes',
-    'post_comments',
-    'chats',
-    'chat_members',
-    'messages',
-  ];
-  for (const table of tables) {
-    try {
-      db.exec(`ALTER TABLE ${table} ADD COLUMN created_at TEXT`);
-    } catch {
-      // ignore if column already exists
-    }
-  }
-
-  function addColumnIfMissing(table: string, column: string, definition: string) {
-    const info = db.prepare(`PRAGMA table_info(${table})`).all() as Array<{ name: string }>;
-    if (!info.find((c) => c.name === column)) {
-      if (/current_timestamp/i.test(definition)) {
-        // SQLite не может добавить колонку с неконстантным дефолтом
-        db.exec(`ALTER TABLE ${table} ADD COLUMN ${column} TEXT`);
-      } else {
-        db.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${definition}`);
-      }
-    }
-  }
-
-  addColumnIfMissing('users', 'role', "TEXT DEFAULT 'admin'");
-  addColumnIfMissing('users', 'status', "TEXT DEFAULT 'offline'");
-  addColumnIfMissing('users', 'status_message', 'TEXT');
-  addColumnIfMissing('users', 'last_seen', 'TEXT DEFAULT CURRENT_TIMESTAMP');
-  addColumnIfMissing('tasks', 'due_at', 'TEXT');
-  addColumnIfMissing('posts', 'updated_at', 'TEXT');
-  addColumnIfMissing('posts', 'type', "TEXT DEFAULT 'user'");
-  addColumnIfMissing('messages', 'chat_id', 'INTEGER');
-  addColumnIfMissing('messages', 'reply_to', 'INTEGER');
-  addColumnIfMissing('messages', 'pinned', 'INTEGER DEFAULT 0');
-  addColumnIfMissing('messages', 'image', 'TEXT');
-  addColumnIfMissing('messages', 'edited_at', 'TEXT');
-  addColumnIfMissing('messages', 'deleted', 'INTEGER DEFAULT 0');
-  addColumnIfMissing('chats', 'photo', 'TEXT');
-  addColumnIfMissing('chats', 'pinned', 'INTEGER DEFAULT 0');
-  addColumnIfMissing('training_tests', 'scores', 'TEXT');
-  addColumnIfMissing('training_tests', 'test_id', 'INTEGER');
-
-  // seed legacy totals if not already present
-  const legacyRow = db.prepare('SELECT 1 FROM legacy_totals WHERE id = 1').get();
-  if (!legacyRow) {
-    db.prepare(
-      `INSERT INTO legacy_totals (
-        id,
-        total_orders,
-        collection_total,
-        collection_complete,
-        collection_failed,
-        delivery_total,
-        delivery_complete,
-        delivery_failed
-      ) VALUES (1, 457766, 232168, 217055, 15113, 222004, 217919, 4085)`,
-    ).run();
-  }
-}
-
-function recoverFromCorruption(err: any) {
-  if (err && err.code === 'SQLITE_CORRUPT') {
-    try {
-      resetDbFiles();
-    } catch (e) {
-      console.error('Failed to reset DB files', e);
-    }
-    db = openDatabase();
-    global.sqliteDb = db;
-    try {
-      init();
-    } catch (e) {
-      console.error('Failed to re-init DB after corruption', e);
-    }
-    return true;
-  }
-  return false;
-}
-
-/**
- * Универсальная подготовка параметров для better-sqlite3:
- * - массив -> spread как позиционные `?`
- * - объект -> именованные параметры (:name/@name/$name)
- * - undefined/ничего -> без параметров
- */
-function runAll(sql: string, params?: any[] | Record<string, any>) {
-  const stmt = db.prepare(sql);
+export function safeAll<T = any>(sql: string, params?: any[]): Promise<T[]> {
+  const stmt = prepare(sql);
   if (Array.isArray(params)) return stmt.all(...params);
-  if (params && typeof params === 'object') return stmt.all(params);
   return stmt.all();
 }
 
-function runGet(sql: string, params?: any[] | Record<string, any>) {
-  const stmt = db.prepare(sql);
+export function safeGet<T = any>(sql: string, params?: any[]): Promise<T | undefined> {
+  const stmt = prepare(sql);
   if (Array.isArray(params)) return stmt.get(...params);
-  if (params && typeof params === 'object') return stmt.get(params);
   return stmt.get();
 }
 
-function runRun(sql: string, params?: any[] | Record<string, any>) {
-  const stmt = db.prepare(sql);
+export function safeRun(sql: string, params?: any[]): Promise<any> {
+  const stmt = prepare(sql);
   if (Array.isArray(params)) return stmt.run(...params);
-  if (params && typeof params === 'object') return stmt.run(params);
   return stmt.run();
 }
 
-/** Безопасные обёртки с авто-восстановлением при SQLITE_CORRUPT */
-export function safeAll<T = any>(sql: string, params?: any[] | Record<string, any>): T[] {
-  try {
-    return runAll(sql, params) as T[];
-  } catch (err: any) {
-    if (recoverFromCorruption(err)) {
-      return runAll(sql, params) as T[];
-    }
-    // Подсказка для дебага количества плейсхолдеров/параметров
-    console.error('safeAll error', {
-      sql,
-      paramsType: Array.isArray(params) ? 'array' : typeof params,
-      paramsLen: Array.isArray(params) ? params.length : (params ? Object.keys(params).length : 0),
-      message: err?.message,
-    });
-    throw err;
-  }
-}
-
-export function safeGet<T = any>(sql: string, params?: any[] | Record<string, any>): T | undefined {
-  try {
-    return runGet(sql, params) as T | undefined;
-  } catch (err: any) {
-    if (recoverFromCorruption(err)) {
-      return runGet(sql, params) as T | undefined;
-    }
-    console.error('safeGet error', { sql, message: err?.message });
-    throw err;
-  }
-}
-
-export function safeRun(sql: string, params?: any[] | Record<string, any>) {
-  try {
-    return runRun(sql, params);
-  } catch (err: any) {
-    if (recoverFromCorruption(err)) {
-      return runRun(sql, params);
-    }
-    console.error('safeRun error', { sql, message: err?.message });
-    throw err;
-  }
-}
-
-/**
- * Помощник для IN-клаузы.
- * Использование:
- *   const { clause, params } = inClause('id', [1,2,3]);
- *   const rows = safeAll(`SELECT * FROM t WHERE ${clause}`, params);
- */
-export function inClause<T>(column: string, values: T[]) {
-  if (!Array.isArray(values)) throw new Error('inClause: values must be an array');
-  if (values.length === 0) return { clause: '1=0', params: [] as T[] }; // пустой IN
-  const placeholders = values.map(() => '?').join(',');
-  return { clause: `${column} IN (${placeholders})`, params: values };
-}
-
-init();
-
 export function addNotification(type: string, message: string) {
-  safeRun('INSERT INTO notifications (type, message) VALUES (?, ?)', [type, message]);
+  return safeRun('INSERT INTO notifications (type, message) VALUES (?, ?)', [type, message]);
 }
 
-export default db;
+export { pool };
+
+export default { prepare, exec };
