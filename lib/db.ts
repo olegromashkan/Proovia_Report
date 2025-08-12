@@ -1,3 +1,4 @@
+// lib/db.ts
 import Database from 'better-sqlite3';
 import fs from 'fs';
 
@@ -23,19 +24,7 @@ if (!fs.existsSync(DB_PATH)) {
 }
 
 function openDatabase() {
-  try {
-    return new Database(DB_PATH, { timeout: 3600000 });
-  } catch (err: any) {
-    if (err.code === 'SQLITE_CORRUPT') {
-      resetDbFiles();
-      return new Database(DB_PATH, { timeout: 3600000 });
-    }
-    throw err;
-  }
-}
-
-let db: Database = global.sqliteDb || openDatabase();
-if (!global.sqliteDb) {
+  const db = new Database(DB_PATH, { timeout: 3600000 });
   try {
     db.pragma('journal_mode = WAL');
   } catch (err) {
@@ -46,6 +35,11 @@ if (!global.sqliteDb) {
   } catch (err) {
     console.error('Failed to set busy_timeout', err);
   }
+  return db;
+}
+
+let db: Database = global.sqliteDb || openDatabase();
+if (!global.sqliteDb) {
   global.sqliteDb = db;
 }
 
@@ -235,12 +229,12 @@ export function init() {
       // ignore if column already exists
     }
   }
+
   function addColumnIfMissing(table: string, column: string, definition: string) {
     const info = db.prepare(`PRAGMA table_info(${table})`).all() as Array<{ name: string }>;
     if (!info.find((c) => c.name === column)) {
       if (/current_timestamp/i.test(definition)) {
-        // SQLite cannot add a column with a non-constant default, so create the
-        // column without the default in this case.
+        // SQLite не может добавить колонку с неконстантным дефолтом
         db.exec(`ALTER TABLE ${table} ADD COLUMN ${column} TEXT`);
       } else {
         db.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${definition}`);
@@ -267,9 +261,7 @@ export function init() {
   addColumnIfMissing('training_tests', 'test_id', 'INTEGER');
 
   // seed legacy totals if not already present
-  const legacyRow = db
-    .prepare('SELECT 1 FROM legacy_totals WHERE id = 1')
-    .get();
+  const legacyRow = db.prepare('SELECT 1 FROM legacy_totals WHERE id = 1').get();
   if (!legacyRow) {
     db.prepare(
       `INSERT INTO legacy_totals (
@@ -288,44 +280,110 @@ export function init() {
 
 function recoverFromCorruption(err: any) {
   if (err && err.code === 'SQLITE_CORRUPT') {
-    resetDbFiles();
+    try {
+      resetDbFiles();
+    } catch (e) {
+      console.error('Failed to reset DB files', e);
+    }
     db = openDatabase();
-    try {
-      db.pragma('journal_mode = WAL');
-    } catch (e) {
-      console.error('Failed to set journal_mode to WAL', e);
-    }
-    try {
-      db.pragma('busy_timeout = 3600000');
-    } catch (e) {
-      console.error('Failed to set busy_timeout', e);
-    }
     global.sqliteDb = db;
-    init();
+    try {
+      init();
+    } catch (e) {
+      console.error('Failed to re-init DB after corruption', e);
+    }
     return true;
   }
   return false;
 }
 
-export function safeAll(sql: string, params?: any[]) {
-  const run = () => db.prepare(sql).all(params);
+/**
+ * Универсальная подготовка параметров для better-sqlite3:
+ * - массив -> spread как позиционные `?`
+ * - объект -> именованные параметры (:name/@name/$name)
+ * - undefined/ничего -> без параметров
+ */
+function runAll(sql: string, params?: any[] | Record<string, any>) {
+  const stmt = db.prepare(sql);
+  if (Array.isArray(params)) return stmt.all(...params);
+  if (params && typeof params === 'object') return stmt.all(params);
+  return stmt.all();
+}
+
+function runGet(sql: string, params?: any[] | Record<string, any>) {
+  const stmt = db.prepare(sql);
+  if (Array.isArray(params)) return stmt.get(...params);
+  if (params && typeof params === 'object') return stmt.get(params);
+  return stmt.get();
+}
+
+function runRun(sql: string, params?: any[] | Record<string, any>) {
+  const stmt = db.prepare(sql);
+  if (Array.isArray(params)) return stmt.run(...params);
+  if (params && typeof params === 'object') return stmt.run(params);
+  return stmt.run();
+}
+
+/** Безопасные обёртки с авто-восстановлением при SQLITE_CORRUPT */
+export function safeAll<T = any>(sql: string, params?: any[] | Record<string, any>): T[] {
   try {
-    return run();
+    return runAll(sql, params) as T[];
   } catch (err: any) {
     if (recoverFromCorruption(err)) {
-      return run();
+      return runAll(sql, params) as T[];
     }
+    // Подсказка для дебага количества плейсхолдеров/параметров
+    console.error('safeAll error', {
+      sql,
+      paramsType: Array.isArray(params) ? 'array' : typeof params,
+      paramsLen: Array.isArray(params) ? params.length : (params ? Object.keys(params).length : 0),
+      message: err?.message,
+    });
     throw err;
   }
+}
+
+export function safeGet<T = any>(sql: string, params?: any[] | Record<string, any>): T | undefined {
+  try {
+    return runGet(sql, params) as T | undefined;
+  } catch (err: any) {
+    if (recoverFromCorruption(err)) {
+      return runGet(sql, params) as T | undefined;
+    }
+    console.error('safeGet error', { sql, message: err?.message });
+    throw err;
+  }
+}
+
+export function safeRun(sql: string, params?: any[] | Record<string, any>) {
+  try {
+    return runRun(sql, params);
+  } catch (err: any) {
+    if (recoverFromCorruption(err)) {
+      return runRun(sql, params);
+    }
+    console.error('safeRun error', { sql, message: err?.message });
+    throw err;
+  }
+}
+
+/**
+ * Помощник для IN-клаузы.
+ * Использование:
+ *   const { clause, params } = inClause('id', [1,2,3]);
+ *   const rows = safeAll(`SELECT * FROM t WHERE ${clause}`, params);
+ */
+export function inClause<T>(column: string, values: T[]) {
+  if (!Array.isArray(values)) throw new Error('inClause: values must be an array');
+  if (values.length === 0) return { clause: '1=0', params: [] as T[] }; // пустой IN
+  const placeholders = values.map(() => '?').join(',');
+  return { clause: `${column} IN (${placeholders})`, params: values };
 }
 
 init();
 
 export function addNotification(type: string, message: string) {
-  db.prepare('INSERT INTO notifications (type, message) VALUES (?, ?)').run(
-    type,
-    message,
-  );
+  safeRun('INSERT INTO notifications (type, message) VALUES (?, ?)', [type, message]);
 }
 
 export default db;
