@@ -30,7 +30,7 @@ export default function TasksPanel({ open, onClose }: TasksPanelProps) {
   const [assignee, setAssignee] = useState('');
   const [due, setDue] = useState('');
   const { data } = useFetch<FetchUsers>(open ? '/api/users' : null);
-  const users = data?.users || [];
+  const users = Array.isArray(data?.users) ? data.users : [];
 
   const load = async () => {
     const res = await fetch('/api/tasks');

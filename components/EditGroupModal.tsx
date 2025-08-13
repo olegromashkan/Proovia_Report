@@ -14,7 +14,7 @@ export default function EditGroupModal({ open, chat, onClose, onSaved }: Props) 
   const [photo, setPhoto] = useState<string>('');
   const [members, setMembers] = useState<string[]>([]);
   const { data } = useFetch<{ users: any[] }>(open ? '/api/users' : null);
-  const users = data?.users || [];
+  const users = Array.isArray(data?.users) ? data.users : [];
 
   useEffect(() => {
     if (chat && open) {
