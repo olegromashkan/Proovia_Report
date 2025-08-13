@@ -23,7 +23,8 @@ export default function UploadHistory() {
         throw new Error('Failed to fetch upload history');
       }
       const data = await res.json();
-      setItems(data.items as Item[]);
+      const items = Array.isArray(data.items) ? data.items : [];
+      setItems(items as Item[]);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
     } finally {

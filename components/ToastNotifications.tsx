@@ -15,7 +15,10 @@ export default function ToastNotifications() {
     const res = await fetch('/api/notifications?type=task');
     if (res.ok) {
       const data = await res.json();
-      setItems(data.items as Notification[]);
+      const notifications = Array.isArray(data.items) ? data.items : [];
+      setItems(notifications as Notification[]);
+    } else {
+      setItems([]);
     }
   };
 
