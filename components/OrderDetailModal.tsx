@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, ReactNode } from "react";
 import Modal from "./Modal";
 
 const getField = (data: any, key: string) => {
@@ -105,10 +105,11 @@ const PunctualityIndicator = ({ punctuality }: { punctuality: number | null }) =
   );
 };
 
-const Section = ({ title, children }: { title: string; children: React.ReactNode }) => (
+const Section = ({ title, icon, children }: { title: string; icon?: ReactNode; children: ReactNode }) => (
   <div className="mb-8">
     <h3 className="text-lg font-semibold  mb-4 flex items-center">
       <div className="w-1 h-6 bg-blue-600 rounded-full mr-3"></div>
+      {icon && <span className="mr-2 flex items-center">{icon}</span>}
       {title}
     </h3>
     {children}

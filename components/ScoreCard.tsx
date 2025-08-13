@@ -49,7 +49,7 @@ export default function ScoreCard({ score, pdfUrl }: ScoreCardProps) {
                 >
                   <tbody>
                     <tr>
-                      <td align="center" style={{ borderRadius: '25px' }} bgcolor="#b53133">
+                      <td align="center" style={{ borderRadius: '25px', backgroundColor: '#b53133' }}>
                         <a
                           href={pdfUrl}
                           target="_blank"

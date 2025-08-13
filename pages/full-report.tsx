@@ -233,7 +233,7 @@ const ScrollingStats = ({
           data={stats.topContractors}
           color="from-orange-500 to-orange-600"
         />
-        <FailedReasonsCard trips={trips} onClick={onFailuresClick} />
+        <FailedReasonsCard trips={trips as any} onClick={onFailuresClick} />
       </div>
     </div>
   );
@@ -1220,12 +1220,12 @@ export default function FullReport() {
       <FailureAnalysisModal
         open={showFailureAnalysis}
         onClose={() => setShowFailureAnalysis(false)}
-        trips={trips}
+        trips={trips as any}
       />
       <FailedTripsModal
         open={showFailed}
         onClose={() => setShowFailed(false)}
-        trips={failedTrips}
+        trips={failedTrips as any}
       />
     </Layout>
   );
