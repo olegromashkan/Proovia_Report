@@ -1,7 +1,6 @@
 import { useState, useRef, useEffect, useCallback, memo } from 'react';
 import { Bot, Send, Sparkles, X, User, Loader } from 'lucide-react';
 import debounce from 'lodash/debounce';
-import '../styles/AiChatPanel.css'; // If in src/styles/
 
 interface AiChatPanelProps {
   open: boolean;

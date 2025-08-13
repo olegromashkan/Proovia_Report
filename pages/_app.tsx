@@ -3,6 +3,7 @@ import Head from 'next/head';
 import Script from 'next/script';
 import { useEffect } from 'react';
 import '../styles/globals.css';
+import '../styles/AiChatPanel.css';
 
 export default function MyApp({ Component, pageProps }: AppProps) {
   useEffect(() => {

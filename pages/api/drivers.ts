@@ -81,7 +81,7 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
         const updateStmt = db.prepare(
           'UPDATE drivers_report SET data = ? WHERE id = ?'
         );
-        const tr = db.transaction((arr: string[]) => {
+        const tr = (db as any).transaction((arr: string[]) => {
           arr.forEach((driverId: string) => {
             const row = getStmt.get(driverId);
             if (!row) return;
@@ -119,7 +119,7 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
       const { ids } = (req.body || {}) as { ids?: string[] };
       if (Array.isArray(ids)) {
         const stmt = db.prepare('DELETE FROM drivers_report WHERE id = ?');
-        const tr = db.transaction((arr: string[]) => {
+        const tr = (db as any).transaction((arr: string[]) => {
           arr.forEach(id => stmt.run(id));
         });
         tr(ids);
