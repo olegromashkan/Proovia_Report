@@ -16,7 +16,10 @@ export default function useNotifications(autoLoad: boolean = true) {
     const res = await fetch('/api/notifications');
     if (res.ok) {
       const data = await res.json();
-      setItems(data.items as Notification[]);
+      const notifications = Array.isArray(data.items) ? data.items : [];
+      setItems(notifications as Notification[]);
+    } else {
+      setItems([]);
     }
     setLoading(false);
   }, []);
