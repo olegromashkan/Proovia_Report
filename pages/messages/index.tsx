@@ -9,7 +9,7 @@ import EditGroupModal from '../../components/EditGroupModal';
 export default function MessagesPage() {
   const { data } = useFetch<{ users: any[] }>('/api/users?last=1');
   const { data: chatData } = useFetch<{ chats: any[] }>('/api/chats');
-  const users = data?.users || [];
+  const users = Array.isArray(data?.users) ? data.users : [];
   const chats = chatData?.chats || [];
   const [active, setActive] = useState<{ type: 'user' | 'chat'; id: string | number; name?: string; photo?: string } | null>(null);
   const [query, setQuery] = useState('');

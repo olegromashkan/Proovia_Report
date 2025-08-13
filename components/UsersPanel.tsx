@@ -4,7 +4,7 @@ import useCurrentUser from '../lib/useCurrentUser';
 
 export default function UsersPanel() {
   const { data } = useFetch<{ users: any[] }>('/api/users');
-  const users = data?.users || [];
+  const users = Array.isArray(data?.users) ? data.users : [];
   const me = useCurrentUser();
   const isAdmin = me?.role === 'admin';
 

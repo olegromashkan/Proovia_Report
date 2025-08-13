@@ -35,7 +35,8 @@ export default function UserMenu({ showButton = true, showName = false }: UserMe
   const isAuthenticated = username && username.trim() !== '';
   
   const { data, error } = useFetch<{ users: any[] }>(isAuthenticated ? '/api/users' : null);
-  const userInfo = data?.users?.find((u: any) => u?.username === username);
+  const users = Array.isArray(data?.users) ? data.users : [];
+  const userInfo = users.find((u: any) => u?.username === username);
 
   // Close menu when clicking outside
   useEffect(() => {

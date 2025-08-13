@@ -42,7 +42,7 @@ export default function ChatWindow({ user, chatId, name, photo }: ChatWindowProp
   const inputRef = useRef<HTMLInputElement>(null);
   const emojiPickerRef = useRef<HTMLDivElement>(null);
   const { data: usersData } = useFetch<{ users: any[] }>('/api/users');
-  const users = usersData?.users || [];
+  const users = Array.isArray(usersData?.users) ? usersData.users : [];
 
   const load = async () => {
     if (!user && !chatId) return;

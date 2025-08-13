@@ -7,7 +7,7 @@ import ChatPanel from '../components/ChatPanel';
 
 export default function Users() {
   const { data } = useFetch<{ users: any[] }>('/api/users');
-  const users = data?.users || [];
+  const users = Array.isArray(data?.users) ? data.users : [];
   const [chatUser, setChatUser] = useState('');
   const [chatOpen, setChatOpen] = useState(false);
   const [query, setQuery] = useState('');

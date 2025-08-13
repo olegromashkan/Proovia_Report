@@ -12,7 +12,7 @@ interface Props {
 export default function CreateGroupModal({ open, onClose, onCreated }: Props) {
   const me = useUser();
   const { data } = useFetch<{ users: any[] }>(open ? '/api/users' : null);
-  const users = data?.users || [];
+  const users = Array.isArray(data?.users) ? data.users : [];
   const [name, setName] = useState('');
   const [members, setMembers] = useState<string[]>([]);
   const [photo, setPhoto] = useState('');
