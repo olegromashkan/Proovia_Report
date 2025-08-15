@@ -1,11 +1,11 @@
 import { useState } from 'react';
-import Layout from '../components/Layout';
-import DatabasePanel from '../components/DatabasePanel';
-import CustomizePanel from '../components/CustomizePanel';
-import UsersPanel from '../components/UsersPanel';
-import UploadSettingsPanel from '../components/UploadSettingsPanel';
-import BackgroundSettingsPanel from '../components/BackgroundSettingsPanel';
-import ContractorsPanel from '../components/ContractorsPanel';
+import Layout from '../../components/Layout';
+import DatabasePanel from '../../components/DatabasePanel';
+import CustomizePanel from '../../components/CustomizePanel';
+import UsersPanel from '../../components/UsersPanel';
+import UploadSettingsPanel from '../../components/UploadSettingsPanel';
+import BackgroundSettingsPanel from '../../components/BackgroundSettingsPanel';
+import ContractorsPanel from '../../components/ContractorsPanel';
 
 // Fallback Layout component if the import fails
 const FallbackLayout = ({ children, title, fullWidth }) => (
