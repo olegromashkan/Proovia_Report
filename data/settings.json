@@ -1,0 +1,4 @@
+{
+  "engine": "mock",
+  "duckdbPath": "./data/analytics.duckdb"
+}
